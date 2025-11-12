@@ -1,0 +1,96 @@
+:root {
+  --primary: #00879a;
+  --white: #fff;
+  --black: #000;
+  --text-base: #ccc;
+  --background: #f9fbfd;
+  --card: #f1fbfb;
+  --text-primary: #111;
+  --text-muted: #666;
+  --border: #dce3e3;
+}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html {
+  font-size: 100%;
+}
+body {
+  font-weight: 400;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    "Noto Sans", "Liberation Sans", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  overflow-y: overlay;
+  // background-color: #191b24;
+}
+button,
+input,
+[tabindex] {
+  outline: none;
+  border: none;
+  background: transparent;
+}
+
+/* Ẩn spinner trên Chrome, Safari, Edge, Opera */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Ẩn spinner trên Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+a[href] {
+  text-decoration: none;
+}
+
+// scrollbar-custom
+html ::-webkit-scrollbar {
+  border-radius: 0px;
+  width: 8px;
+}
+html *::-webkit-scrollbar {
+  border-radius: 0;
+  width: 8px;
+}
+
+html ::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background-color: rgba(22, 24, 35, 0.06);
+}
+html *::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background-color: rgba(22, 24, 35, 0.06);
+}
+
+html ::-webkit-scrollbar-track {
+  border-radius: 0px;
+  background-color: rgba(0, 0, 0, 0);
+}
+html *::-webkit-scrollbar-track {
+  border-radius: 0;
+  background-color: rgba(0, 0, 0, 0);
+}
+
+/* Đồng bộ font cho toàn bộ control mặc định */
+button,
+input,
+select,
+textarea {
+  font-family: inherit; /* ép kế thừa font từ body */
+}
+
+/* ép font cho a, button, menu... */
+a,
+button {
+  font-family: inherit;
+  font-weight: inherit;
+  color: inherit;
+}

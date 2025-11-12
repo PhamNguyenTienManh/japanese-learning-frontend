@@ -1,0 +1,38 @@
+.tabs {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.tabs-list {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  background-color: #ddd5d7;
+  border-radius: 10px;
+}
+
+.tabs-trigger {
+  flex: 1;
+  padding: 6px 12px;
+  margin: 4px 4px;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: transparent;
+  border-radius: 10px;
+
+  cursor: pointer;
+  transition: 0.2s ease;
+  color: #777;
+  border-radius: 8px;
+
+  &.active {
+    color: var(--black);
+    font-weight: 600;
+    background-color: var(--white);
+  }
+}
+
+.tabs-content {
+  padding-top: 4px;
+}
