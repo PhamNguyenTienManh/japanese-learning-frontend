@@ -11,11 +11,10 @@ import {
   faTrash,
   faArrowLeft,
 } from "@fortawesome/free-solid-svg-icons";
-import { Link } from "react-router-dom"; // or next/link if you're using Next
+import { Link } from "react-router-dom";
 
 const cx = classNames.bind(styles);
 
-// Mock saved words data (you can replace with props or fetch)
 const mockSavedWords = [
   {
     id: 1,
@@ -59,25 +58,31 @@ export default function Notebook() {
     <div className={cx("root")}>
       <div className={cx("container")}>
         <div className={cx("header")}>
-          <Link to="/dictionary" className={cx("back-link")}>
-            <FontAwesomeIcon icon={faArrowLeft} />
+          <Button
+            to="/dictionary"
+            text
+            className={"back-link"}
+            leftIcon={<FontAwesomeIcon icon={faArrowLeft} />}
+          >
             <span>Quay lại từ điển</span>
-          </Link>
+          </Button>
 
           <h1 className={cx("title")}>Sổ tay của tôi</h1>
           <p className={cx("subtitle")}>{savedWords.length} từ đã lưu</p>
         </div>
 
         <div className={cx("actions")}>
-          <Link to="/dictionary/notebook/flashcards">
-            <Button outline className={"bg-transparent"}>
-              Luyện tập Flashcard
-            </Button>
-          </Link>
+          <Button
+            to="/dictionary/notebook/flashcards"
+            className={"orange"}
+            outline
+          >
+            Luyện tập Flashcard
+          </Button>
 
           <Button
             outline
-            className={"bg-transparent"}
+            className={"orange"}
             onClick={() => alert("Xuất file PDF (chưa tích hợp)")}
           >
             Xuất PDF

@@ -4,7 +4,7 @@ import styles from "./Flashcards.module.scss";
 
 import Button from "~/components/Button";
 import Card from "~/components/Card";
-import Progress from "~/components/Progress"; // nếu Progress là default export; nếu không, import phù hợp
+import Progress from "~/components/Progress";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft,
@@ -12,11 +12,9 @@ import {
   faChevronRight,
   faVolumeUp,
 } from "@fortawesome/free-solid-svg-icons";
-import { Link } from "react-router-dom";
 
 const cx = classNames.bind(styles);
 
-// Mock flashcard data (thay bằng props hoặc fetch khi cần)
 const mockFlashcards = [
   {
     id: 1,
@@ -81,10 +79,14 @@ export default function Flashcards() {
       <div className={cx("container")}>
         {/* Header */}
         <div className={cx("header")}>
-          <Link to="/dictionary/notebook" className={cx("back-link")}>
-            <FontAwesomeIcon icon={faArrowLeft} />
+          <Button
+            to="/dictionary/notebook"
+            text
+            className={"back-link"}
+            leftIcon={<FontAwesomeIcon icon={faArrowLeft} />}
+          >
             <span className={cx("back-text")}>Quay lại sổ tay</span>
-          </Link>
+          </Button>
 
           <h1 className={cx("title")}>Luyện tập Flashcard</h1>
           <p className={cx("subtitle")}>
@@ -92,13 +94,10 @@ export default function Flashcards() {
           </p>
         </div>
 
-        {/* Progress */}
         <div className={cx("progress-wrap")}>
-          {/* Progress component: nếu export default khác tên hãy điều chỉnh import */}
           <Progress value={progress} className={cx("progress")} />
         </div>
 
-        {/* Flashcard area */}
         <div className={cx("flashcard-area")}>
           {currentCard ? (
             <>
@@ -144,11 +143,7 @@ export default function Flashcards() {
 
               {/* Actions */}
               <div className={cx("actions")}>
-                <Button
-                  variant="outline"
-                  onClick={handleReset}
-                  className={"bg-transparent"}
-                >
+                <Button outline onClick={handleReset} className={"orange"}>
                   <FontAwesomeIcon
                     icon={faRotate}
                     className={cx("icon-left")}
@@ -159,7 +154,7 @@ export default function Flashcards() {
                 <Button
                   onClick={handleNext}
                   disabled={currentIndex >= total - 1}
-                  className={cx("next-btn")}
+                  className={"green"}
                 >
                   Tiếp theo
                   <FontAwesomeIcon
