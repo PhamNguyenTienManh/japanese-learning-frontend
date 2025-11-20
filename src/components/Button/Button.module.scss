@@ -104,3 +104,28 @@
     color: var(--primary) !important;
   }
 }
+
+.green {
+  color: var(--white);
+  background-color: var(--primary);
+  padding: 12px 16px;
+
+  &:hover {
+    background-color: #1994a5;
+  }
+}
+
+.orange {
+  padding: 12px 16px;
+  color: var(--black);
+
+  &:hover {
+    background-color: #fc5f00;
+    color: var(--white);
+  }
+}
+
+.full {
+  width: 100%;
+  justify-content: center;
+}

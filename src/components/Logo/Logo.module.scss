@@ -1,0 +1,29 @@
+.logo {
+  font-weight: 700;
+  font-size: 22px;
+  text-decoration: none;
+  //   display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &-main {
+    transition: color 0.2s;
+  }
+
+  &-sub {
+    font-size: 26px;
+    color: #ffd86e;
+  }
+}
+
+.color-white {
+  .logo-main {
+    color: #fff;
+  }
+}
+
+.color-green {
+  .logo-main {
+    color: #00879a;
+  }
+}

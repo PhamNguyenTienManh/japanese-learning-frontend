@@ -1,0 +1,202 @@
+// ====== BASE ======
+.wrapper {
+  width: 100%;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+// Container chuẩn giống footer
+.container {
+  width: 100%;
+  padding: 0 20px;
+  margin: 0 auto;
+  max-width: 1280px;
+  display: flex;
+  flex-direction: column;
+}
+
+// ====== HERO ======
+.hero {
+  padding: 80px 0 60px;
+  text-align: center;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+
+  &-inner {
+    @extend .container;
+  }
+
+  &-title {
+    font-size: 46px;
+    font-weight: 700;
+    line-height: 1.25;
+    margin-bottom: 20px;
+
+    @media (max-width: 768px) {
+      font-size: 34px;
+    }
+  }
+
+  &-desc {
+    font-size: 18px;
+    color: var(--muted-foreground);
+    margin-bottom: 28px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .primary {
+    color: var(--primary);
+  }
+
+  &-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+}
+
+// ====== SECTION TITLE ======
+.section-title {
+  font-size: 34px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 50px;
+
+  @media (max-width: 768px) {
+    font-size: 28px;
+  }
+}
+
+// ====== FEATURES ======
+.features {
+  padding: 70px 0;
+
+  .grid {
+    @extend .container;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+
+    @media (max-width: 992px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 26px;
+  border-radius: 14px;
+  transition: 0.25s ease;
+
+  &:hover {
+    border-color: var(--primary);
+    transform: translateY(-3px);
+  }
+
+  &-title {
+    margin: 10px 0 6px;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  &-desc {
+    color: var(--muted-foreground);
+    font-size: 15px;
+  }
+}
+
+.icon-box {
+  width: 48px;
+  height: 48px;
+  background: rgba(var(--primary-rgb), 0.15);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .icon {
+    font-size: 22px;
+    color: var(--primary);
+  }
+}
+
+// ====== BENEFITS ======
+.benefits {
+  background: rgba(var(--card-rgb), 0.5);
+  padding: 70px 0;
+
+  .benefit-grid {
+    @extend .container;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 26px;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .benefit-item {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .benefit-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(var(--primary-rgb), 0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .check {
+      color: var(--primary);
+      font-size: 20px;
+    }
+  }
+
+  .benefit-title {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .benefit-desc {
+    font-size: 14px;
+    color: var(--muted-foreground);
+  }
+}
+
+// ====== CTA ======
+.cta {
+  padding: 80px 0;
+  text-align: center;
+
+  &-title {
+    font-size: 34px;
+    font-weight: 700;
+    margin-bottom: 10px;
+
+    @media (max-width: 768px) {
+      font-size: 28px;
+    }
+  }
+
+  &-desc {
+    font-size: 18px;
+    color: var(--muted-foreground);
+    margin-bottom: 28px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}

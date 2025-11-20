@@ -1,0 +1,196 @@
+.root {
+  min-height: 100vh;
+  padding: 3rem 1rem;
+  background: var(--bg);
+}
+
+.container {
+  max-width: 56rem;
+  margin: 0 auto;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.title {
+  font-size: 2.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: var(--muted-foreground);
+}
+
+/* Search */
+.search {
+  margin-bottom: 1.75rem;
+}
+
+.search-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.search-input-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 1.125rem;
+  width: 1.125rem;
+  color: var(--muted-foreground);
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--input);
+  outline: none;
+}
+
+/* Quick links */
+.quick-links {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border);
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+/* Results */
+.results {
+  display: grid;
+  gap: 1rem;
+}
+
+.empty {
+  padding: 2rem;
+  text-align: center;
+}
+
+.empty-text {
+  color: var(--muted-foreground);
+}
+
+/* Word card */
+.word-card {
+  padding: 1rem;
+  transition: border 0.15s ease;
+  border-radius: 0.75rem;
+}
+
+.word-grid {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.word-main {
+  flex: 1;
+}
+
+.word-actions {
+  display: flex;
+  align-items: start;
+}
+
+/* Header inside card */
+.word-header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.kanji {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.jlpt {
+  background: rgba(59, 130, 246, 0.08); /* primary-10 */
+  color: var(--primary);
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+/* reading / meaning */
+.reading {
+  margin-bottom: 0.75rem;
+}
+
+.hiragana {
+  font-size: 1rem;
+  color: var(--muted-foreground);
+}
+
+.romaji {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+.meaning {
+  margin-bottom: 0.75rem;
+}
+
+/* examples */
+.examples-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  margin-bottom: 0.25rem;
+}
+
+.example-item {
+  padding-left: 0.75rem;
+  border-left: 2px solid rgba(59, 130, 246, 0.15);
+  margin-bottom: 0.5rem;
+}
+
+.example-jp {
+  margin-bottom: 0.25rem;
+}
+
+.example-vi {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+/* small utilities */
+.icon-inline {
+  height: 1rem;
+  width: 1rem;
+  vertical-align: middle;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .word-grid {
+    flex-direction: column;
+  }
+
+  .search-row {
+    flex-direction: column;
+  }
+}

@@ -13,6 +13,7 @@ function Button({
   text = false,
   rounded = false,
   noMargin = false,
+  full,
   leftIcon,
   rightIcon,
   children,
@@ -40,6 +41,7 @@ function Button({
     text,
     rounded,
     noMargin,
+    full,
     leftIcon,
     rightIcon,
   });

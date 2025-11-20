@@ -1,0 +1,98 @@
+.pricing {
+  padding: 70px 0;
+}
+
+.pricing .section-title {
+  text-align: center;
+  font-size: 34px;
+  font-weight: 700;
+  margin-bottom: 50px;
+}
+
+.pricing .plans {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+
+  @media (max-width: 992px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.plan-card {
+  padding: 28px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+
+  &.highlight {
+    border-color: var(--primary);
+    transform: scale(1.05);
+    z-index: 1;
+  }
+}
+
+.plan-card .badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.plan-card .plan-name {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.plan-card .plan-desc {
+  font-size: 14px;
+  color: var(--muted-foreground);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.plan-card .plan-price {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--primary);
+  text-align: center;
+}
+
+.plan-card .plan-btn {
+  display: block;
+  margin: 0 auto 16px;
+  text-align: center;
+}
+
+.plan-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.plan-features .feature-item {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plan-features .feature-item span {
+  color: var(--primary);
+}

@@ -1,0 +1,90 @@
+.card {
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  transition: border 0.2s ease;
+}
+
+.grid {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.main {
+  flex: 1;
+}
+
+.actions {
+  display: flex;
+  align-items: flex-start;
+}
+
+.header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.kanji {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.jlpt {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.reading {
+  margin-bottom: 0.75rem;
+}
+
+.hiragana {
+  font-size: 1rem;
+  color: var(--muted-foreground);
+}
+
+.romaji {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+
+.meaning {
+  margin-bottom: 0.75rem;
+}
+
+.examples-label {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.example-item {
+  padding-left: 0.75rem;
+  border-left: 2px solid rgba(59, 130, 246, 0.2);
+  margin-bottom: 0.5rem;
+}
+
+.example-vi {
+  font-size: 0.85rem;
+  color: var(--muted-foreground);
+}
+
+.icon {
+  height: 1rem;
+  width: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .grid {
+    flex-direction: column;
+  }
+}

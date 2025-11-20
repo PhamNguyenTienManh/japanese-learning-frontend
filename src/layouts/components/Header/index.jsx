@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import Button from "~/components/Button";
 import styles from "./Header.module.scss";
+import Logo from "~/components/Logo";
 
 const cx = classNames.bind(styles);
 
@@ -20,10 +21,7 @@ function Header() {
     <header className={cx("header")}>
       <div className={cx("container")}>
         {/* Logo */}
-        <Button to="/" className={cx("logo")} text>
-          <span className={cx("logo-main")}>日本語</span>
-          <span className={cx("logo-sub")}>Learn</span>
-        </Button>
+        <Logo />
 
         {/* Navigation */}
         <nav className={cx("nav")}>

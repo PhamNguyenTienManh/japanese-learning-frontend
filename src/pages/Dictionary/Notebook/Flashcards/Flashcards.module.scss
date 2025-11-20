@@ -1,0 +1,191 @@
+.root {
+  min-height: 100vh;
+  padding: 3rem 1rem;
+  background: var(--bg);
+}
+
+.container {
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+/* Header */
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted-foreground);
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+}
+
+.back-text {
+  margin-left: 0.25rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0.25rem 0;
+}
+
+.subtitle {
+  color: var(--muted-foreground);
+}
+
+/* Progress */
+.progress-wrap {
+  margin-bottom: 1.5rem;
+}
+
+.progress {
+  height: 0.5rem;
+  border-radius: 999px;
+}
+
+/* Flashcard area */
+.flashcard-area {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Card */
+.card {
+  width: 100%;
+  min-height: 18.75rem; /* 300px */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  padding: 3rem;
+  border-radius: 12px;
+}
+
+/* small visual flip effect (class only, not true 3D flip) */
+.card.flipped {
+  transform: translateY(-4px) scale(1.01);
+}
+
+/* Front / Back */
+.front,
+.back {
+  width: 100%;
+}
+
+.front-top {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.kanji {
+  font-size: 4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.audio-btn {
+  height: 2.5rem;
+  width: 2.5rem;
+  padding: 0.25rem;
+}
+
+.hiragana {
+  margin-top: 1rem;
+  font-size: 1.25rem;
+  color: var(--muted-foreground);
+}
+
+.romaji {
+  font-size: 1rem;
+  color: var(--muted-foreground);
+}
+
+.hint {
+  margin-top: 2rem;
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
+}
+
+/* Back */
+.meaning {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.meta {
+  color: var(--muted-foreground);
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.next-btn {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.icon-left {
+  margin-right: 0.5rem;
+}
+
+.icon-right {
+  margin-left: 0.5rem;
+}
+
+/* Empty / Finished */
+.empty {
+  padding: 2.5rem;
+  text-align: center;
+}
+
+.empty-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.empty-sub {
+  color: var(--muted-foreground);
+  margin-bottom: 1rem;
+}
+
+.restart-btn {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .kanji {
+    font-size: 3rem;
+  }
+
+  .card {
+    padding: 2rem;
+    min-height: 16rem;
+  }
+
+  .actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .next-btn {
+    width: 100%;
+  }
+}

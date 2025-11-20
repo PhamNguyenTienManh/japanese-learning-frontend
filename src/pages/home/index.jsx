@@ -14,10 +14,10 @@ import {
   faHeart,
   faComments,
 } from "@fortawesome/free-solid-svg-icons";
-import { faPen } from "@fortawesome/free-solid-svg-icons";
 import Card from "~/components/Card";
 import Badge from "~/components/Badge";
 import Tabs, { TabsContent, TabsList, TabsTrigger } from "~/components/Tabs";
+import WordCard from "~/components/WordCard";
 
 // Mock data
 const mockWords = [
@@ -42,6 +42,12 @@ const mockWords = [
     romaji: "gakkou",
     meaning: "trường học",
     jlptLevel: "N5",
+    examples: [
+      {
+        japanese: "学校に行きます。",
+        vietnamese: "Tôi đi đến trường.",
+      },
+    ],
   },
   {
     id: 3,
@@ -50,6 +56,12 @@ const mockWords = [
     romaji: "sensei",
     meaning: "giáo viên, thầy/cô",
     jlptLevel: "N5",
+    examples: [
+      {
+        japanese: "田中先生は優しいです。",
+        vietnamese: "Thầy Tanaka rất tốt bụng.",
+      },
+    ],
   },
 ];
 
@@ -108,13 +120,21 @@ function Home() {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    const q = searchQuery.trim();
+
+    if (!q) {
+      setSearchResults(mockWords);
+      return;
+    }
+
     const filtered = mockWords.filter(
-      (w) =>
-        w.kanji.includes(searchQuery) ||
-        w.hiragana.includes(searchQuery) ||
-        w.romaji.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        w.meaning.toLowerCase().includes(searchQuery.toLowerCase())
+      (word) =>
+        word.kanji.includes(q) ||
+        word.hiragana.includes(q) ||
+        word.romaji.toLowerCase().includes(q.toLowerCase()) ||
+        word.meaning.toLowerCase().includes(q.toLowerCase())
     );
+
     setSearchResults(filtered);
   };
 
@@ -162,43 +182,25 @@ function Home() {
               </TabsList>
 
               <TabsContent value="text">
-                {searchResults.length === 0 ? (
-                  <Card className={cx("no-result")}>
-                    <p>Không tìm thấy kết quả nào</p>
-                  </Card>
-                ) : (
-                  searchResults.map((word) => (
-                    <Card key={word.id} className={cx("word-card")}>
-                      <div className={cx("word-header")}>
-                        <h3>{word.kanji}</h3>
-                        <Badge>{word.jlptLevel}</Badge>
-                        <Button text onClick={() => playAudio(word.hiragana)}>
-                          <FontAwesomeIcon icon={faVolumeHigh} />
-                        </Button>
-                        <Button text onClick={() => toggleSaveWord(word.id)}>
-                          <FontAwesomeIcon
-                            icon={faBookmark}
-                            className={cx({
-                              saved: savedWords.includes(word.id),
-                            })}
-                          />
-                        </Button>
-                      </div>
-                      <p className={cx("reading")}>{word.hiragana}</p>
-                      <p className={cx("meaning")}>{word.meaning}</p>
-                      {word.examples && (
-                        <div className={cx("examples")}>
-                          {word.examples.map((ex, i) => (
-                            <div key={i}>
-                              <p>{ex.japanese}</p>
-                              <span>{ex.vietnamese}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                <section className={cx("results")}>
+                  {searchResults.length === 0 ? (
+                    <Card className={cx("empty")}>
+                      <p className={cx("empty-text")}>
+                        Không tìm thấy kết quả nào
+                      </p>
                     </Card>
-                  ))
-                )}
+                  ) : (
+                    searchResults.map((word) => (
+                      <WordCard
+                        key={word.id}
+                        word={word}
+                        saved={savedWords.includes(word.id)}
+                        onToggleSave={toggleSaveWord}
+                        onPlay={playAudio}
+                      />
+                    ))
+                  )}
+                </section>
               </TabsContent>
 
               <TabsContent value="handwriting">
