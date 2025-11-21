@@ -7,19 +7,15 @@ import Input from "~/components/Input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
-  faVolumeHigh,
-  faBookmark,
   faFire,
   faEye,
   faHeart,
   faComments,
 } from "@fortawesome/free-solid-svg-icons";
 import Card from "~/components/Card";
-import Badge from "~/components/Badge";
 import Tabs, { TabsContent, TabsList, TabsTrigger } from "~/components/Tabs";
 import WordCard from "~/components/WordCard";
 
-// Mock data
 const mockWords = [
   {
     id: 1,

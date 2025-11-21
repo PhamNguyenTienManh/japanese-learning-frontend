@@ -1,0 +1,139 @@
+.root {
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  transition: border 0.15s ease, transform 0.12s ease;
+}
+
+.root:hover {
+  border-color: var(--primary);
+  transform: translateY(-3px);
+}
+
+.inner {
+  display: flex;
+  gap: 1rem;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.main {
+  flex: 1;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-weight: 700;
+}
+
+.name {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.desc {
+  color: var(--muted-foreground);
+  margin-bottom: 0.75rem;
+}
+
+.meta {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
+}
+
+.meta-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.meta-icon {
+  font-size: 0.95rem;
+  color: var(--muted-foreground);
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-direction: column;
+  width: 100%;
+}
+
+@media (min-width: 480px) {
+  .actions {
+    width: auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .actions {
+    width: 220px;
+    flex-direction: column;
+  }
+}
+
+.btn-start {
+  width: 100%;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: 10px;
+}
+
+.btn-outline {
+  width: 100%;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+}
+
+.n5 {
+  background: rgba(34, 197, 94, 0.08) !important;
+  color: rgb(34, 197, 94) !important;
+  border-color: rgba(34, 197, 94);
+}
+
+.n4 {
+  background: rgba(59, 130, 246, 0.08) !important;
+  color: rgb(59, 130, 246) !important;
+  border-color: rgba(59, 130, 246);
+}
+
+.n3 {
+  background: rgba(234, 179, 8, 0.08) !important;
+  color: rgb(234, 179, 8) !important;
+  border-color: rgba(234, 179, 8);
+}
+
+.n2 {
+  background: rgba(249, 115, 22, 0.08) !important;
+  color: rgb(249, 115, 22) !important;
+  border-color: rgba(249, 115, 22);
+}
+
+.n1 {
+  background: rgba(239, 68, 68, 0.08) !important;
+  color: rgb(239, 68, 68);
+  border-color: rgba(239, 68, 68);
+}

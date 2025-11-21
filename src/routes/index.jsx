@@ -7,6 +7,10 @@ import Dictionary from "~/pages/Dictionary";
 import Home from "~/pages/home";
 import Notebook from "~/pages/Dictionary/Notebook";
 import Flashcards from "~/pages/Dictionary/Notebook/Flashcards";
+import Practice from "~/pages/Practice";
+import TestPage from "~/pages/Practice/TestPage";
+import TestRunner from "~/pages/Practice/TestPage/TestRunner";
+import Results from "~/pages/Practice/TestPage/Results";
 
 export const publicRouter = [
   { path: config.routes.home, component: Home },
@@ -17,6 +21,10 @@ export const publicRouter = [
   { path: config.routes.dictionary, component: Dictionary },
   { path: config.routes.notebook, component: Notebook },
   { path: config.routes.flashcards, component: Flashcards },
+  { path: config.routes.practice, component: Practice },
+  { path: config.routes.level, component: TestPage },
+  { path: config.routes.test, component: TestRunner },
+  { path: config.routes.results, component: Results },
 ];
 
 export const privateRoutes = [];
