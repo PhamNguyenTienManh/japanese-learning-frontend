@@ -128,3 +128,167 @@
   border-radius: 10px;
   border: 1px solid var(--border);
 }
+
+
+
+// Thêm vào file Home.module.scss
+
+.search-form {
+  position: relative; // Important for absolute positioning of popup
+}
+
+.handwriting-popup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  z-index: 10;
+  animation: slideDown 0.3s ease-out;
+  border: 1px solid #e0e0e0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+  }
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+  line-height: 1;
+
+  &:hover {
+    color: #333;
+  }
+}
+
+.canvas-container {
+  margin-bottom: 16px;
+  flex: 19;
+  
+  canvas {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: crosshair;
+    background-color: #fff;
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  button {
+    flex: 1;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+}
+
+.results-list {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 16px;
+
+  h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+  }
+}
+
+.kanji-suggestions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: 8px;
+}
+
+.kanji-item {
+  background: #f5f5f5;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  &:hover {
+    background: #e8f4ff;
+    border-color: #4a90e2;
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.kanji-char {
+  font-size: 24px;
+  font-weight: 500;
+  color: #333;
+}
+
+.confidence {
+  font-size: 11px;
+  color: #666;
+  font-weight: 500;
+}

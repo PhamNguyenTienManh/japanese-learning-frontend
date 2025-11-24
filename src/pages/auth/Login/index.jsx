@@ -80,7 +80,7 @@ function LoginPage() {
         <Button
           outline
           full
-          onClick={() => console.log("[Google login]")}
+          onClick={() =>     window.location.href = "http://localhost:9090/api/auth/google"}
           leftIcon={<FontAwesomeIcon icon={faGoogle} />}
         >
           Đăng nhập với Google

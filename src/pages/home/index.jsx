@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Tabs, { TabsContent, TabsList, TabsTrigger } from "~/components/Tabs";
@@ -9,7 +9,6 @@ import {
   faHeart,
   faComments,
 } from "@fortawesome/free-solid-svg-icons";
-
 import WordCard from "~/components/WordCard";
 import Button from "~/components/Button";
 import styles from "./Home.module.scss";
@@ -112,7 +111,8 @@ function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(mockWords);
   const [savedWords, setSavedWords] = useState([]);
-  const [activeTab, setActiveTab] = useState("text");
+  const [showHandwriting, setShowHandwriting] = useState(false);
+  const [recognizedResults, setRecognizedResults] = useState([]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -142,6 +142,114 @@ function Home() {
 
   const playAudio = (text) => alert(`Phát âm: ${text}`);
 
+  useEffect(() => {
+    if (!showHandwriting) return;
+
+    const canvas = document.getElementById("handwriting-canvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    ctx.lineWidth = 1;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let timeoutId = null;
+
+    const getMousePos = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY,
+      };
+    };
+
+    const startDrawing = (e) => {
+      isDrawing = true;
+      const pos = getMousePos(e);
+      lastX = pos.x;
+      lastY = pos.y;
+    };
+
+    const draw = (e) => {
+      if (!isDrawing) return;
+      const pos = getMousePos(e);
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+      lastX = pos.x;
+      lastY = pos.y;
+      if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(handleRecognize, 100);
+    };
+
+    const stopDrawing = () => {
+      isDrawing = false;
+    }
+
+    canvas.addEventListener("mousedown", startDrawing);
+    canvas.addEventListener("mousemove", draw);
+    canvas.addEventListener("mouseup", stopDrawing);
+    canvas.addEventListener("mouseout", stopDrawing);
+
+    return () => {
+      canvas.removeEventListener("mousedown", startDrawing);
+      canvas.removeEventListener("mousemove", draw);
+      canvas.removeEventListener("mouseup", stopDrawing);
+      canvas.removeEventListener("mouseout", stopDrawing);
+    };
+  }, [showHandwriting]);
+
+  const handleClear = () => {
+    const canvas = document.getElementById("handwriting-canvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setRecognizedResults([]);
+  };
+
+  const handleRecognize = async () => {
+    const canvas = document.getElementById("handwriting-canvas");
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
+
+    try {
+      const res = await fetch("http://127.0.0.1:5000/recognize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const results = await res.json();
+      setRecognizedResults(results);
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi khi nhận dạng kanji.");
+    }
+  };
+
+  const handleSelectKanji = (kanji) => {
+    setSearchQuery(kanji);
+    setShowHandwriting(false);
+    setRecognizedResults([]);
+    // Trigger search with the selected kanji
+    const filtered = mockWords.filter(
+      (word) =>
+        word.kanji.includes(kanji) ||
+        word.hiragana.includes(kanji) ||
+        word.romaji.toLowerCase().includes(kanji.toLowerCase()) ||
+        word.meaning.toLowerCase().includes(kanji.toLowerCase())
+    );
+    setSearchResults(filtered);
+  };
+
   return (
     <div className={cx("wrapper")}>
       <div className={cx("container")}>
@@ -164,47 +272,86 @@ function Home() {
               <Button
                 text
                 className={cx("pen-btn")}
-                onClick={() => setActiveTab("handwriting")}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowHandwriting(true);
+                }}
               >
                 ✏️
               </Button>
+
+              {/* Handwriting Popup */}
+              {showHandwriting && (
+                <div className={cx("handwriting-popup")}>
+                  <div className={cx("popup-header")}>
+                    <h3>Viết kanji tại đây</h3>
+                    <button
+                      className={cx("close-btn")}
+                      onClick={() => {
+                        setShowHandwriting(false);
+                        setRecognizedResults([]);
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div style={{display:"flex", flexDirection: "row", flex: "1"}}>
+
+                  <div className={cx("canvas-container")}>
+                    <canvas
+                      id="handwriting-canvas"
+                      width={400}
+                      height={130}
+                    />
+                  </div>
+
+                  <div className={cx("button-group")}>
+                    <Button text onClick={handleClear}>
+                      Xóa
+                    </Button>
+                  </div>
+                  </div>
+
+                  {recognizedResults.length > 0 && (
+                    <div className={cx("results-list")}>
+                      <div className={cx("kanji-suggestions")}>
+                        {recognizedResults.map((result, index) => (
+                          <button
+                            key={index}
+                            className={cx("kanji-item")}
+                            onClick={() => handleSelectKanji(result.kanji)}
+                          >
+                            <span className={cx("kanji-char")}>
+                              {result.kanji}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </form>
 
-            {/* Tabs */}
-            <Tabs active={activeTab} onChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="text">Nhập văn bản</TabsTrigger>
-                <TabsTrigger value="handwriting">Viết tay</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="text">
-                <section className={cx("results")}>
-                  {searchResults.length === 0 ? (
-                    <Card className={cx("empty")}>
-                      <p className={cx("empty-text")}>
-                        Không tìm thấy kết quả nào
-                      </p>
-                    </Card>
-                  ) : (
-                    searchResults.map((word) => (
-                      <WordCard
-                        key={word.id}
-                        word={word}
-                        saved={savedWords.includes(word.id)}
-                        onToggleSave={toggleSaveWord}
-                        onPlay={playAudio}
-                      />
-                    ))
-                  )}
-                </section>
-              </TabsContent>
-
-              <TabsContent value="handwriting">
-                <Card className={cx("handwriting")}>
-                  <p>Khu vực viết tay (chưa tích hợp canvas)</p>
+            <section className={cx("results")}>
+              {searchResults.length === 0 ? (
+                <Card className={cx("empty")}>
+                  <p className={cx("empty-text")}>
+                    Không tìm thấy kết quả nào
+                  </p>
                 </Card>
-              </TabsContent>
-            </Tabs>
+              ) : (
+                searchResults.map((word) => (
+                  <WordCard
+                    key={word.id}
+                    word={word}
+                    saved={savedWords.includes(word.id)}
+                    onToggleSave={toggleSaveWord}
+                    onPlay={playAudio}
+                  />
+                ))
+              )}
+            </section>
           </div>
 
           <aside className={cx("sidebar")}>
