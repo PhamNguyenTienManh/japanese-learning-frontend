@@ -10,7 +10,7 @@ import Logo from "~/components/Logo";
 const cx = classNames.bind(styles);
 
 function Header() {
-  const [login, isLogin] = useState(false);
+  const [login, isLogin] = useState(true);
   const [openMenu, setOpenMenu] = useState(null);
 
   const toggleMenu = (menuName) => {
@@ -76,10 +76,10 @@ function Header() {
               AI Chat
             </Button>
             <div className={cx("dropdown-menu")}>
-              <Button to="/chat" text>
+              <Button to="/chat-ai" text>
                 Trò chuyện AI
               </Button>
-              <Button to="/chat/handwriting" text>
+              <Button to="/chat-ai/handwriting" text>
                 Nhận diện chữ viết
               </Button>
             </div>
@@ -126,6 +126,12 @@ function Header() {
               <div className={cx("dropdown-menu", "right")}>
                 <Button to="/dashboard" text>
                   Bảng điều khiển
+                </Button>
+                <Button to="/dashboard/achievements" text>
+                  Thành tích
+                </Button>
+                <Button to="/dashboard/goals" text>
+                  Mục tiêu
                 </Button>
                 <Button to="/dashboard/settings" text>
                   Cài đặt

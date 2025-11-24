@@ -11,6 +11,14 @@ import Practice from "~/pages/Practice";
 import TestPage from "~/pages/Practice/TestPage";
 import TestRunner from "~/pages/Practice/TestPage/TestRunner";
 import Results from "~/pages/Practice/TestPage/Results";
+import ChatAI from "~/pages/ChatAI";
+import Community from "~/pages/Community";
+import PostDetail from "~/pages/Community/PostDetail";
+import NewPost from "~/pages/Community/NewPost";
+import Dashboard from "~/pages/Dashboard";
+import Achievements from "~/pages/Dashboard/Achievements";
+import Goals from "~/pages/Dashboard/Goals";
+import Setting from "~/pages/Dashboard/Setting";
 
 export const publicRouter = [
   { path: config.routes.home, component: Home },
@@ -25,6 +33,14 @@ export const publicRouter = [
   { path: config.routes.level, component: TestPage },
   { path: config.routes.test, component: TestRunner },
   { path: config.routes.results, component: Results },
+  { path: config.routes.chatAI, component: ChatAI },
+  { path: config.routes.community, component: Community },
+  { path: config.routes.postDetail, component: PostDetail },
+  { path: config.routes.newPost, component: NewPost },
+  { path: config.routes.dashboard, component: Dashboard },
+  { path: config.routes.achievements, component: Achievements },
+  { path: config.routes.goals, component: Goals },
+  { path: config.routes.setting, component: Setting },
 ];
 
 export const privateRoutes = [];

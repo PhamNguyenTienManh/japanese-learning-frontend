@@ -129,3 +129,15 @@
   width: 100%;
   justify-content: center;
 }
+
+.chat {
+  background-color: var(--primary);
+  .icon {
+    margin-right: 0;
+  }
+}
+
+.disabled {
+  opacity: 50%;
+  pointer-events: none;
+}

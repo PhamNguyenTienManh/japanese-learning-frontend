@@ -1,0 +1,312 @@
+.wrapper {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 24px 16px 64px;
+  display: flex;
+  justify-content: center;
+}
+
+.main {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 960px;
+}
+
+/* Header */
+
+.header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+  }
+}
+
+.header-icon {
+  font-size: 24px;
+  color: #00879a;
+}
+
+.header-subtitle {
+  margin-top: 4px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.header-link-btn {
+  margin-top: 4px;
+}
+
+/* Chat card */
+
+.chat-card {
+  display: flex;
+  flex-direction: column;
+  height: 520px;
+  max-height: calc(100vh - 240px);
+}
+
+/* Messages */
+
+.messages {
+  flex: 1;
+  padding: 16px 16px 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message-row {
+  display: flex;
+  gap: 10px;
+}
+
+.message-row.user {
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  height: 32px;
+  width: 32px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-user {
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.avatar-assistant {
+  background: rgba(79, 70, 229, 0.16);
+}
+
+.avatar-icon {
+  font-size: 16px;
+  color: #00879a;
+}
+
+.message-body {
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+}
+
+.message-body-user {
+  align-items: flex-end;
+}
+
+.message-body-assistant {
+  align-items: flex-start;
+}
+
+.bubble {
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.bubble-user {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+.bubble-assistant {
+  background: #f9fafb;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+.bubble-text {
+  white-space: pre-line;
+}
+
+.timestamp {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* Typing */
+
+.typing-bubble {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  display: inline-flex;
+  align-items: center;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #9ca3af;
+    animation: chat-bounce 0.9s infinite ease-in-out;
+  }
+
+  span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+}
+
+@keyframes chat-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+/* Suggestions */
+
+.suggestions {
+  padding: 0 16px 10px;
+}
+
+.suggestions-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.suggestions-icon {
+  font-size: 14px;
+}
+
+.suggestions-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+@media (min-width: 640px) {
+  .suggestions-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.suggestion-btn {
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 8px 10px;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.suggestion-btn:hover {
+  border-color: #00879a;
+  background: rgba(79, 70, 229, 0.04);
+}
+
+/* Input area */
+
+.input-area {
+  border-top: 1px solid #e5e7eb;
+  padding: 10px 12px;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-input {
+  flex: 1;
+}
+
+.send-btn {
+  min-width: 44px;
+}
+
+.input-note {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* Features */
+
+.features {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+@media (min-width: 640px) {
+  .features {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.feature-card {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.feature-icon-wrap {
+  height: 40px;
+  width: 40px;
+  border-radius: 12px;
+  background: rgba(79, 70, 229, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.feature-icon {
+  font-size: 18px;
+  color: #00879a;
+}
+
+.feature-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.feature-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+}

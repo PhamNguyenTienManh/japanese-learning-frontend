@@ -13,6 +13,7 @@ function Button({
   text = false,
   rounded = false,
   noMargin = false,
+  disabled = false,
   full,
   leftIcon,
   rightIcon,
@@ -44,6 +45,7 @@ function Button({
     full,
     leftIcon,
     rightIcon,
+    disabled,
   });
 
   return (

@@ -11,6 +11,14 @@ const routes = {
   level: "/practice/:level",
   test: "/practice/:level/:testId/test",
   results: "/practice/:level/:testId/results",
+  chatAI: "/chat-ai",
+  community: "/community",
+  postDetail: "/community/:post",
+  newPost: "/community/new",
+  dashboard: "/dashboard",
+  achievements: "/dashboard/achievements",
+  goals: "/dashboard/goals",
+  setting: "/dashboard/settings",
 };
 
 export default routes;
