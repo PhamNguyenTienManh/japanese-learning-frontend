@@ -43,9 +43,6 @@ function Header() {
               <Button to="/dictionary/notebook" text>
                 Sổ tay từ vựng
               </Button>
-              <Button to="/dictionary/notebook/flashcards" text>
-                Flashcards
-              </Button>
             </div>
           </div>
 
@@ -78,9 +75,6 @@ function Header() {
             <div className={cx("dropdown-menu")}>
               <Button to="/chat-ai" text>
                 Trò chuyện AI
-              </Button>
-              <Button to="/chat-ai/handwriting" text>
-                Nhận diện chữ viết
               </Button>
             </div>
           </div>

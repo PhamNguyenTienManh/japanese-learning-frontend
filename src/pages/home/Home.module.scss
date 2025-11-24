@@ -1,6 +1,6 @@
 .wrapper {
   min-height: 100vh;
-  background-color: var(--background, #f9fbfd);
+  background-color: var(--background);
   display: flex;
   justify-content: center;
   padding: 40px 20px;
@@ -9,10 +9,6 @@
 .container {
   width: 100%;
   max-width: 1200px;
-
-  @media (max-width: 992px) {
-    grid-template-columns: 1fr;
-  }
 }
 
 .header {
@@ -27,7 +23,7 @@
 
   p {
     font-size: 14px;
-    color: #666;
+    color: var(--grey);
   }
 }
 
@@ -53,7 +49,6 @@
   flex: 2;
 }
 
-/* --- SIDEBAR --- */
 .sidebar {
   flex: 1;
   gap: 24px;
@@ -65,7 +60,7 @@
 .section {
   h4 {
     font-size: 14px;
-    color: #555;
+    color: var(--grey-low);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -77,15 +72,15 @@
 .trend-card,
 .post-card {
   padding: 14px 16px;
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--card, #f1fbfb);
+  background: var(--card);
   margin-bottom: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
   transition: 0.2s ease;
 
   &:hover {
-    border-color: var(--primary, #008080);
+    border-color: var(--primary);
     transform: translateY(-2px);
   }
 
@@ -93,7 +88,7 @@
     display: flex;
     gap: 10px;
     font-size: 12px;
-    color: #777;
+    color: var(--grey);
     margin-top: 6px;
   }
 }
@@ -105,7 +100,7 @@
 
   .rank {
     font-weight: 700;
-    color: var(--primary, #008080);
+    color: var(--primary);
     font-size: 14px;
   }
 
@@ -115,42 +110,21 @@
   }
 }
 
-/* --- NO RESULT / HANDWRITING --- */
 .no-result {
   text-align: center;
   padding: 32px;
   font-size: 14px;
-  color: #777;
-  background: #fff;
+  color: var(--grey);
+  background: var(--white);
   border-radius: 10px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
 }
 
 .handwriting {
   padding: 40px;
   text-align: center;
-  color: #777;
-  background: #fff;
+  color: var(--grey);
+  background: var(--white);
   border-radius: 10px;
-  border: 1px solid #e0e0e0;
-}
-
-/* --- RESPONSIVE --- */
-@media (max-width: 768px) {
-  .wrapper {
-    padding: 20px;
-  }
-
-  .container {
-    grid-template-columns: 1fr;
-  }
-
-  .sidebar {
-    position: static;
-  }
-
-  .trend-card,
-  .post-card {
-    background: #fff;
-  }
+  border: 1px solid var(--border);
 }

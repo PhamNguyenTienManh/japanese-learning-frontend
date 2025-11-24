@@ -1,10 +1,7 @@
 import { useState } from "react";
 import classNames from "classnames/bind";
-import styles from "./Home.module.scss";
-
-import Button from "~/components/Button";
-import Input from "~/components/Input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Tabs, { TabsContent, TabsList, TabsTrigger } from "~/components/Tabs";
 import {
   faSearch,
   faFire,
@@ -12,9 +9,12 @@ import {
   faHeart,
   faComments,
 } from "@fortawesome/free-solid-svg-icons";
-import Card from "~/components/Card";
-import Tabs, { TabsContent, TabsList, TabsTrigger } from "~/components/Tabs";
+
 import WordCard from "~/components/WordCard";
+import Button from "~/components/Button";
+import styles from "./Home.module.scss";
+import Input from "~/components/Input";
+import Card from "~/components/Card";
 
 const mockWords = [
   {
@@ -213,7 +213,7 @@ function Home() {
                 <FontAwesomeIcon icon={faFire} /> TỪ NỔI BẬT
               </h4>
               {trendingWords.map((w, i) => (
-                <Card key={w.id} className={cx("trend-card")}>
+                <Card key={w.id}>
                   <div className={cx("trend-header")}>
                     <span className={cx("rank")}>{i + 1}</span>
                     <h5>{w.kanji}</h5>

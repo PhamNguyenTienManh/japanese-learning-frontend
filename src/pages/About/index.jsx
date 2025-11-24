@@ -47,7 +47,6 @@ function About() {
   return (
     <div className={cx("wrapper")}>
       <div className={cx("container")}>
-        {/* Hero */}
         <section className={cx("hero")}>
           <div className={cx("hero-inner")}>
             <h1 className={cx("hero-title")}>
@@ -60,16 +59,13 @@ function About() {
             </p>
 
             <div className={cx("hero-actions")}>
-              <Button to="/" className={"green"}>
+              <Button to="/" primary>
                 Bắt đầu học ngay
               </Button>
-              <Button outline className={"orange"}>
-                Tìm hiểu thêm
-              </Button>
+              <Button outline>Tìm hiểu thêm</Button>
             </div>
           </div>
         </section>
-        {/* Features */}
         <section className={cx("features")}>
           <h2 className={cx("section-title")}>Tính năng chính</h2>
 
@@ -154,15 +150,14 @@ function About() {
             ))}
           </div>
         </section>
-        <Pricing /> {/* section Pricing */}
-        {/* CTA */}
+        <Pricing />
         <section className={cx("cta")}>
           <h2 className={cx("cta-title")}>Sẵn sàng bắt đầu chưa?</h2>
           <p className={cx("cta-desc")}>
             Tham gia ngay hôm nay và bắt đầu hành trình học tiếng Nhật của bạn.
           </p>
 
-          <Button to="/" className={"green"}>
+          <Button to="/" primary>
             Bắt đầu học ngay
           </Button>
         </section>
