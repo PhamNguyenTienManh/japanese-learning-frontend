@@ -1,4 +1,5 @@
 .card {
+  margin: 16px 0;
   background-color: var(--card);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -10,4 +11,9 @@
     border-color: var(--primary);
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
   }
+}
+
+.auth {
+  width: 100%;
+  max-width: 450px;
 }

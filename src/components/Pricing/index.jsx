@@ -63,11 +63,11 @@ function Pricing() {
             <div className={cx("plan-price")}>{plan.price}</div>
 
             {plan.highlight ? (
-              <Button to="/" className={`green`} full>
+              <Button to="/" primary full>
                 Nâng cấp ngay
               </Button>
             ) : (
-              <Button to="/" className={"orange"} full outline>
+              <Button to="/" full outline>
                 Bắt đầu ngay
               </Button>
             )}

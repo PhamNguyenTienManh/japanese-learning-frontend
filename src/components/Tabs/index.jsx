@@ -12,7 +12,6 @@ function Tabs({ children, defaultValue = "", active, onChange }) {
     if (onChange) onChange(newValue);
   };
 
-  // Clone child components and inject value state
   return (
     <div className={cx("tabs")}>
       {Array.isArray(children)
@@ -37,7 +36,6 @@ function Tabs({ children, defaultValue = "", active, onChange }) {
   );
 }
 
-// TabsList
 function TabsList({ children, active, onChange }) {
   return (
     <div className={cx("tabs-list")}>
@@ -58,7 +56,6 @@ function TabsList({ children, active, onChange }) {
 }
 TabsList.displayName = "TabsList";
 
-// TabsTrigger
 function TabsTrigger({ value, children, active, onChange }) {
   const isActive = active === value;
   return (
@@ -72,7 +69,6 @@ function TabsTrigger({ value, children, active, onChange }) {
 }
 TabsTrigger.displayName = "TabsTrigger";
 
-// TabsContent
 function TabsContent({ value, active, children }) {
   if (value !== active) return null;
   return <div className={cx("tabs-content")}>{children}</div>;

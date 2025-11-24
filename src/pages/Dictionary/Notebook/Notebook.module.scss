@@ -1,151 +1,413 @@
-.root {
+.wrapper {
   min-height: 100vh;
-  padding: 3rem 1rem;
-  background: var(--bg);
+  background: #f5f5f5;
+  padding: 24px 16px 64px;
+}
+
+.main {
+  display: flex;
+  justify-content: center;
 }
 
 .container {
-  max-width: 56rem;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 1120px;
 }
 
 /* Header */
+
 .header {
-  margin-bottom: 1.25rem;
+  margin-bottom: 20px;
 }
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.header-icon {
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.link-more {
+  margin-left: auto;
+  font-size: 13px;
+  color: #4f46e5;
+  text-decoration: none;
+}
+
+.link-more.small {
+  margin-left: 0;
+}
+
+.link-more:hover {
+  text-decoration: underline;
+}
+
+/* Back link */
 
 .back-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  color: var(--muted-foreground);
-  text-decoration: none;
-  margin-bottom: 0.5rem;
+  gap: 6px;
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.15s ease;
 }
 
-.title {
-  font-size: 2rem;
+.back-link:hover {
+  color: #111827;
+}
+
+.back-icon {
+  font-size: 12px;
+}
+
+/* Create block */
+
+.create-block {
+  margin-bottom: 20px;
+}
+
+.create-btn {
+  width: 100%;
+  height: 68px;
+  justify-content: center;
+}
+
+.create-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.create-text {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.create-card {
+  padding: 18px 20px;
+}
+
+.section-title {
+  font-size: 18px;
   font-weight: 700;
-  margin: 0.25rem 0;
+  margin-bottom: 10px;
 }
 
-.subtitle {
-  color: var(--muted-foreground);
+/* Form */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-/* Top actions */
+.field {
+  width: 100%;
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.notebook-input {
+  /* thêm style riêng nếu cần */
+}
+
+.select {
+  width: 100%;
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  padding: 0 10px;
+  font-size: 13px;
+  background: #f9fafb;
+  outline: none;
+}
+
+.select:focus {
+  border-color: #4f46e5;
+  background: #ffffff;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.form-btn {
+  min-width: 120px;
+}
+
+/* Sections */
+
+.section {
+  margin-bottom: 24px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+/* Personal notebooks */
+
+.notebooks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notebook-card {
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.notebook-card:hover {
+  border-color: #4f46e5;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+.notebook-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.notebook-main {
+  flex: 1;
+}
+
+.notebook-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.notebook-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Grid for discover/premium */
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.discover-card,
+.premium-card {
+  padding: 14px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.premium-card {
+  border: 2px solid rgba(79, 70, 229, 0.3);
+}
+
+.discover-card:hover,
+.premium-card:hover {
+  border-color: #4f46e5;
+}
+
+.discover-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.discover-meta {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.discover-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.avatar-placeholder {
+  height: 24px;
+  width: 24px;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.12);
+}
+
+.premium-badge {
+  height: 24px;
+  width: 24px;
+  border-radius: 999px;
+  background: #4f46e5;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.discover-views {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* Actions in detail view */
+
 .actions {
   display: flex;
-  gap: 0.5rem;
-  margin: 1rem 0 1.5rem;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
-/* Empty card */
-.empty {
-  padding: 2rem;
+.add-icon {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+.flash-btn {
+  white-space: nowrap;
+}
+
+/* Add word card */
+
+.add-card {
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+
+/* Words list */
+
+.words-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.empty-card {
+  padding: 32px 20px;
   text-align: center;
 }
 
 .empty-text {
-  color: var(--muted-foreground);
-  margin-bottom: 1rem;
-}
-
-/* Word list */
-.list {
-  display: grid;
-  gap: 1rem;
+  font-size: 14px;
+  color: #6b7280;
 }
 
 /* Word card */
+
 .word-card {
-  padding: 1rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--border);
-  background: var(--card);
-  transition: border 0.15s ease;
+  padding: 16px 18px;
 }
 
 .word-row {
   display: flex;
-  gap: 1rem;
   align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .word-main {
   flex: 1;
 }
 
-.word-actions {
-  display: flex;
-  align-items: start;
-}
-
-/* Word header */
 .word-header {
   display: flex;
-  gap: 0.5rem;
   align-items: center;
-  margin-bottom: 0.5rem;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
-.kanji {
-  font-size: 1.5rem;
+.word-kanji {
+  font-size: 22px;
   font-weight: 700;
 }
 
-.jlpt {
-  background: rgba(59, 130, 246, 0.08);
-  color: var(--primary);
-  padding: 0.125rem 0.5rem;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
+.word-sub {
+  margin-bottom: 4px;
 }
 
-.audio-btn {
-  margin-left: auto;
-  height: 2rem;
-  width: 2rem;
-  padding: 0.25rem;
+.word-hira {
+  font-size: 15px;
+  color: #6b7280;
 }
 
-/* reading */
-.reading {
-  margin-bottom: 0.5rem;
+.word-meaning {
+  font-size: 14px;
 }
 
-.hiragana {
-  color: var(--muted-foreground);
-}
-
-.romaji {
-  color: var(--muted-foreground);
-  font-size: 0.9rem;
-}
-
-/* meaning */
-.meaning {
-  margin-bottom: 0.5rem;
-}
-
-.label {
+.word-meaning-label {
   font-weight: 600;
-  margin-right: 0.25rem;
 }
 
-/* saved date */
-.saved-date {
-  font-size: 0.85rem;
-  color: var(--muted-foreground);
+/* Icon buttons */
+
+.icon-btn {
+  min-width: auto;
+  padding: 4px 6px;
 }
 
-/* Responsive */
-@media (max-width: 640px) {
-  .word-row {
-    flex-direction: column;
-  }
+.icon-btn.danger {
+  color: #ef4444;
+}
 
-  .audio-btn {
-    margin-left: 0;
-  }
+.volume-icon {
+  font-size: 14px;
+}
+
+.trash-icon {
+  font-size: 14px;
 }

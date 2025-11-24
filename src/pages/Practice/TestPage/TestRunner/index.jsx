@@ -2,96 +2,122 @@ import { useState } from "react";
 import classNames from "classnames/bind";
 import styles from "./TestRunner.module.scss";
 
-import Button from "~/components/Button";
 import Card from "~/components/Card";
+import Button from "~/components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faClock,
   faChevronLeft,
   faChevronRight,
-  faFlag,
 } from "@fortawesome/free-solid-svg-icons";
 
 const cx = classNames.bind(styles);
 
-const mockQuestions = [
-  {
-    id: 1,
-    section: "Chữ và từ vựng",
-    question: "「学校」の読み方は？",
-    options: ["がっこう", "がくこう", "がっこ", "がくこ"],
-    correctAnswer: 0,
+// Mock test questions organized by section
+const mockSections = {
+  vocabulary: {
+    title: "Từ vựng",
+    questions: [
+      {
+        id: 1,
+        question: "「学校」の読み方は？",
+        options: ["がっこう", "がくこう", "がっこ", "がくこ"],
+        correctAnswer: 0,
+      },
+      {
+        id: 2,
+        question: "「先生」の意味は？",
+        options: ["học sinh", "giáo viên", "bạn bè", "gia đình"],
+        correctAnswer: 1,
+      },
+      {
+        id: 3,
+        question: "「新しい」の対義語は？",
+        options: ["古い", "大きい", "小さい", "高い"],
+        correctAnswer: 0,
+      },
+    ],
   },
-  {
-    id: 2,
-    section: "Chữ và từ vựng",
-    question: "「先生」の意味は？",
-    options: ["học sinh", "giáo viên", "bạn bè", "gia đình"],
-    correctAnswer: 1,
+  grammar: {
+    title: "Ngữ pháp - Đọc hiểu",
+    questions: [
+      {
+        id: 4,
+        question: "私は毎日学校___行きます。",
+        options: ["に", "を", "で", "が"],
+        correctAnswer: 0,
+      },
+      {
+        id: 5,
+        question: "これは___の本ですか。",
+        options: ["だれ", "なに", "どこ", "いつ"],
+        correctAnswer: 0,
+      },
+      {
+        id: 6,
+        question:
+          "田中さんは毎日何時に起きますか。\n\n田中さんは毎朝6時に起きます。朝ごはんを食べて、7時に家を出ます。",
+        options: ["5時", "6時", "7時", "8時"],
+        correctAnswer: 1,
+      },
+    ],
   },
-  {
-    id: 3,
-    section: "Ngữ pháp",
-    question: "私は毎日学校___行きます。",
-    options: ["に", "を", "で", "が"],
-    correctAnswer: 0,
+  listening: {
+    title: "Thi nghe",
+    questions: [
+      {
+        id: 7,
+        question: "Nghe đoạn hội thoại và chọn đáp án đúng (1)",
+        options: ["Cơm trưa", "Cơm tối", "Cơm sáng", "Đồ uống"],
+        correctAnswer: 0,
+      },
+      {
+        id: 8,
+        question: "Nghe đoạn hội thoại và chọn đáp án đúng (2)",
+        options: ["Ở nhà", "Ở trường", "Ở công ty", "Ở quán cà phê"],
+        correctAnswer: 2,
+      },
+    ],
   },
-  {
-    id: 4,
-    section: "Ngữ pháp",
-    question: "これは___の本ですか。",
-    options: ["だれ", "なに", "どこ", "いつ"],
-    correctAnswer: 0,
-  },
-  {
-    id: 5,
-    section: "Đọc hiểu",
-    question:
-      "田中さんは毎日何時に起きますか。\n\n田中さんは毎朝6時に起きます。朝ごはんを食べて、7時に家を出ます。",
-    options: ["5時", "6時", "7時", "8時"],
-    correctAnswer: 1,
-  },
-];
+};
 
 function TestRunner() {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState(
-    Array(mockQuestions.length).fill(null)
-  );
-  const [timeRemaining] = useState(3600);
+  const [currentSection, setCurrentSection] = useState("vocabulary");
+  const [currentQuestionInSection, setCurrentQuestionInSection] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [timeRemaining] = useState(3600); // mock, chưa chạy countdown
 
-  const progress = ((currentQuestion + 1) / mockQuestions.length) * 100;
-  const answeredCount = answers.filter((a) => a !== null).length;
+  const sections = Object.entries(mockSections);
+  const currentSectionData = mockSections[currentSection];
+  const currentQuestion =
+    currentSectionData.questions[currentQuestionInSection];
+  const questionIndex = currentQuestion.id;
 
   const handleAnswer = (optionIndex) => {
-    const newAnswers = [...answers];
-    newAnswers[currentQuestion] = optionIndex;
-    setAnswers(newAnswers);
+    setAnswers({ ...answers, [questionIndex]: optionIndex });
   };
 
   const handleNext = () => {
-    if (currentQuestion < mockQuestions.length - 1) {
-      setCurrentQuestion((prev) => prev + 1);
+    if (currentQuestionInSection < currentSectionData.questions.length - 1) {
+      setCurrentQuestionInSection(currentQuestionInSection + 1);
     }
   };
 
   const handlePrevious = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion((prev) => prev - 1);
+    if (currentQuestionInSection > 0) {
+      setCurrentQuestionInSection(currentQuestionInSection - 1);
     }
   };
 
-  const handleSubmit = () => {
-    if (answeredCount < mockQuestions.length) {
-      const confirmed = window.confirm(
-        `Bạn chưa trả lời ${
-          mockQuestions.length - answeredCount
-        } câu. Bạn có chắc muốn nộp bài?`
-      );
-      if (!confirmed) return;
-    }
+  const handleSectionChange = (sectionKey) => {
+    setCurrentSection(sectionKey);
+    setCurrentQuestionInSection(0);
+  };
 
-    console.log("Submitting answers:", answers);
+  const handleSubmit = () => {
+    // TODO: tính điểm + điều hướng sang trang kết quả
+    console.log("[app] Submitting answers:", answers);
+    alert("Đã nộp bài (mock). Sau này sẽ chuyển sang trang kết quả.");
   };
 
   const formatTime = (seconds) => {
@@ -100,140 +126,183 @@ function TestRunner() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const question = mockQuestions[currentQuestion];
+  const getTotalAnswered = () => Object.keys(answers).length;
+
+  const getTotalQuestions = () =>
+    sections.reduce((sum, [, section]) => sum + section.questions.length, 0);
 
   return (
     <div className={cx("wrapper")}>
       <main className={cx("main")}>
         <div className={cx("container")}>
-          {/* Header */}
-          <div className={cx("header")}>
-            <div className={cx("header-left")}>
-              <span className={cx("badge", "badge-level")}>N5</span>
-              <h1 className={cx("title")}>Đề thi JLPT N5 - Đề số 1</h1>
-            </div>
+          {/* Breadcrumb */}
+          <div className={cx("breadcrumb")}>Thi thử / JLPT - N5 / Test 1</div>
 
-            <div className={cx("header-right")}>
-              <FontAwesomeIcon icon={faClock} className={cx("header-icon")} />
-              <span className={cx("timer")}>{formatTime(timeRemaining)}</span>
-            </div>
+          {/* Section Tabs */}
+          <div className={cx("section-tabs")}>
+            {sections.map(([key, section]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleSectionChange(key)}
+                className={cx("section-tab", {
+                  active: currentSection === key,
+                })}
+              >
+                {section.title}
+              </button>
+            ))}
           </div>
 
-          {/* Progress */}
-          <div className={cx("progress")}>
-            <div
-              className={cx("progress-bar")}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className={cx("progress-text")}>
-            Câu {currentQuestion + 1} / {mockQuestions.length} • Đã trả lời:{" "}
-            {answeredCount}
-          </p>
+          <div className={cx("layout")}>
+            {/* Left: Question */}
+            <div className={cx("left")}>
+              <Card className={cx("question-card")}>
+                {/* Question header */}
+                <div className={cx("question-header")}>
+                  <div className={cx("badge-row")}>
+                    <span className={cx("badge", "badge-main")}>
+                      {currentQuestionInSection + 1}
+                    </span>
+                    {currentQuestionInSection > 0 && (
+                      <span className={cx("badge", "badge-main")}>
+                        {currentQuestionInSection}.1
+                      </span>
+                    )}
+                  </div>
+                  <h2 className={cx("question-text")}>
+                    {currentQuestion.question}
+                  </h2>
+                </div>
 
-          {/* Question Card */}
-          <Card className={cx("question-card")}>
-            <div className={cx("question-header")}>
-              <span className={cx("badge", "badge-section")}>
-                {question.section}
-              </span>
-              <h2 className={cx("question-text")}>
-                {question.question.split("\n").map((line, index) => (
-                  <span key={index}>
-                    {line}
-                    {index < question.question.split("\n").length - 1 && <br />}
-                  </span>
-                ))}
-              </h2>
-            </div>
-
-            {/* Options */}
-            <div className={cx("options")}>
-              {question.options.map((option, index) => {
-                const isSelected = answers[currentQuestion] === index;
-                return (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => handleAnswer(index)}
-                    className={cx("option", { selected: isSelected })}
-                  >
-                    <div className={cx("option-inner")}>
-                      <div
-                        className={cx("option-radio", {
-                          active: isSelected,
-                        })}
+                {/* Options */}
+                <div className={cx("options")}>
+                  {currentQuestion.options.map((option, index) => {
+                    const selected = answers[questionIndex] === index;
+                    return (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => handleAnswer(index)}
+                        className={cx("option", { selected })}
                       >
-                        {isSelected && (
-                          <span className={cx("option-radio-dot")} />
-                        )}
-                      </div>
-                      <span className={cx("option-text")}>{option}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </Card>
+                        <div className={cx("option-inner")}>
+                          <div
+                            className={cx("option-radio", {
+                              selected,
+                            })}
+                          >
+                            {selected && (
+                              <div className={cx("option-radio-dot")} />
+                            )}
+                          </div>
+                          <span className={cx("option-label")}>{option}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
 
-          {/* Navigation buttons */}
-          <div className={cx("nav-buttons")}>
-            <Button
-              outline
-              text
-              className={"orange"}
-              onClick={handlePrevious}
-              disabled={currentQuestion === 0}
-              leftIcon={<FontAwesomeIcon icon={faChevronLeft} />}
-            >
-              Câu trước
-            </Button>
-
-            {currentQuestion === mockQuestions.length - 1 ? (
-              <Button
-                primary
-                className={"green"}
-                onClick={handleSubmit}
-                leftIcon={<FontAwesomeIcon icon={faFlag} />}
-              >
-                Nộp bài
-              </Button>
-            ) : (
-              <Button
-                primary
-                className={"green"}
-                onClick={handleNext}
-                rightIcon={<FontAwesomeIcon icon={faChevronRight} />}
-              >
-                Câu tiếp
-              </Button>
-            )}
-          </div>
-
-          {/* Question Navigator */}
-          <Card className={cx("navigator-card")}>
-            <h3 className={cx("navigator-title")}>Danh sách câu hỏi</h3>
-            <div className={cx("navigator-grid")}>
-              {mockQuestions.map((_, index) => {
-                const isCurrent = currentQuestion === index;
-                const isAnswered = answers[index] !== null;
-
-                return (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => setCurrentQuestion(index)}
-                    className={cx("navigator-item", {
-                      current: isCurrent,
-                      answered: isAnswered,
-                    })}
+                {/* Navigation buttons */}
+                <div className={cx("nav-row")}>
+                  <Button
+                    outline
+                    onClick={handlePrevious}
+                    disabled={currentQuestionInSection === 0}
+                    leftIcon={
+                      <FontAwesomeIcon
+                        icon={faChevronLeft}
+                        className={cx("nav-icon")}
+                      />
+                    }
                   >
-                    {index + 1}
-                  </button>
-                );
-              })}
+                    Câu trước
+                  </Button>
+
+                  <Button
+                    primary
+                    className={cx("next-btn")}
+                    onClick={handleNext}
+                    disabled={
+                      currentQuestionInSection ===
+                      currentSectionData.questions.length - 1
+                    }
+                    rightIcon={
+                      <FontAwesomeIcon
+                        icon={faChevronRight}
+                        className={cx("nav-icon")}
+                      />
+                    }
+                  >
+                    Câu tiếp
+                  </Button>
+                </div>
+              </Card>
             </div>
-          </Card>
+
+            {/* Right: Sidebar */}
+            <aside className={cx("right")}>
+              {/* Time */}
+              <Card className={cx("time-card")}>
+                <p className={cx("time-label")}>Thời gian làm bài</p>
+                <div className={cx("time-row")}>
+                  <FontAwesomeIcon icon={faClock} className={cx("time-icon")} />
+                  <span className={cx("time-value")}>
+                    {formatTime(timeRemaining)}
+                  </span>
+                </div>
+                <p className={cx("time-sub")}>
+                  Đã trả lời {getTotalAnswered()}/{getTotalQuestions()} câu
+                </p>
+              </Card>
+
+              {/* Actions */}
+              <div className={cx("action-buttons")}>
+                <Button
+                  primary
+                  className={cx("submit-btn")}
+                  onClick={handleSubmit}
+                >
+                  Nộp bài
+                </Button>
+                <Button outline className={cx("save-btn")}>
+                  Lưu bài
+                </Button>
+              </div>
+
+              {/* Question list */}
+              <Card className={cx("list-card")}>
+                <p className={cx("list-title")}>Danh sách câu hỏi</p>
+                <div className={cx("list-grid")}>
+                  {sections.map(([sectionKey, section]) =>
+                    section.questions.map((q, idx) => {
+                      const answered = answers[q.id] !== undefined;
+                      const isCurrent =
+                        currentSection === sectionKey &&
+                        currentQuestionInSection === idx;
+
+                      return (
+                        <button
+                          key={q.id}
+                          type="button"
+                          className={cx("list-item", {
+                            answered,
+                            current: isCurrent,
+                          })}
+                          onClick={() => {
+                            setCurrentSection(sectionKey);
+                            setCurrentQuestionInSection(idx);
+                          }}
+                        >
+                          {q.id}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </Card>
+            </aside>
+          </div>
         </div>
       </main>
     </div>

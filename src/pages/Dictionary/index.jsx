@@ -126,7 +126,7 @@ export default function Dictionary() {
               />
             </div>
 
-            <Button type="submit" className={"green"}>
+            <Button type="submit" primary>
               Tìm kiếm
             </Button>
           </div>

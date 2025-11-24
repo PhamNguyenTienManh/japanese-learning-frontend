@@ -9,30 +9,21 @@ import {
   faBookmark as faBookmarkSolid,
 } from "@fortawesome/free-solid-svg-icons";
 import { faBookmark as faBookmarkRegular } from "@fortawesome/free-regular-svg-icons";
+import Card from "../Card";
 
 const cx = classNames.bind(styles);
 
 function WordCard({ word, saved, onToggleSave, onPlay }) {
   return (
-    <div className={cx("card")}>
+    <Card className={cx("card")}>
       <div className={cx("grid")}>
         <div className={cx("main")}>
           {/* Header */}
           <div className={cx("header")}>
             <h3 className={cx("kanji")}>{word.kanji}</h3>
             <span className={cx("jlpt")}>{word.jlptLevel}</span>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onPlay(word.hiragana)}
-              className={cx("btn-audio")}
-            >
-              <FontAwesomeIcon icon={faVolumeUp} className={cx("icon")} />
-            </Button>
           </div>
 
-          {/* Reading */}
           <div className={cx("reading")}>
             <p className={cx("hiragana")}>{word.hiragana}</p>
             <p className={cx("romaji")}>[{word.romaji}]</p>
@@ -42,6 +33,8 @@ function WordCard({ word, saved, onToggleSave, onPlay }) {
           <div className={cx("meaning")}>
             <strong>Nghĩa: </strong> {word.meaning}
           </div>
+
+          <div className={cx("divider")}></div>
 
           {/* Examples */}
           {word.examples.length > 0 && (
@@ -60,11 +53,10 @@ function WordCard({ word, saved, onToggleSave, onPlay }) {
 
         {/* Save button */}
         <div className={cx("actions")}>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onToggleSave(word.id)}
-          >
+          <Button onClick={() => onPlay(word.hiragana)} className={"orange"}>
+            <FontAwesomeIcon icon={faVolumeUp} className={cx("icon")} />
+          </Button>
+          <Button onClick={() => onToggleSave(word.id)} className={"orange"}>
             <FontAwesomeIcon
               icon={saved ? faBookmarkSolid : faBookmarkRegular}
               className={cx("icon")}
@@ -72,7 +64,7 @@ function WordCard({ word, saved, onToggleSave, onPlay }) {
           </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 

@@ -16,18 +16,33 @@
   color: var(--text-base);
 }
 
-.icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
+.primary {
+  color: var(--white);
+  background-color: var(--primary);
+  padding: 12px 16px;
 
-  &:first-child {
-    margin-right: 8px;
+  &:hover {
+    background-color: var(--primary-hover);
   }
+}
 
-  &:last-child {
-    margin-left: 8px;
+.outline {
+  border: 1px solid var(--text-base);
+  padding: 12px 16px;
+  color: var(--black);
+
+  &:hover {
+    background-color: var(--orange);
+    color: var(--white);
+  }
+}
+
+.orange {
+  color: var(--black);
+
+  &:hover {
+    background-color: var(--orange);
+    color: var(--white);
   }
 }
 
@@ -41,15 +56,6 @@
   }
 }
 
-.outline {
-  border: 1px solid var(--text-base);
-}
-
-.register {
-  background-color: var(--white);
-  color: var(--primary);
-}
-
 .user {
   color: white;
 
@@ -58,30 +64,8 @@
   }
 }
 
-.submit {
-  margin-top: 6px;
-  color: var(--white);
-  background-color: var(--primary);
-  padding: 12px 0;
-
-  &:hover {
-    background-color: #1994a5;
-  }
-}
-
-.google {
-  padding: 12px 0;
-  width: 100%;
-  justify-content: center;
-  color: var(--black);
-
-  &:hover {
-    background-color: #fc5f00;
-    color: var(--white);
-  }
-}
-
 .link {
+  padding: 6px 8px;
   color: var(--primary);
   text-decoration: none;
 
@@ -91,12 +75,12 @@
   }
 }
 
-.back-link {
+.back {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
-  color: var(--text-base);
+  padding: 6px 8px;
+  color: var(--grey);
   text-decoration: none;
   margin-bottom: 20px;
   transition: color 0.2s ease;
@@ -104,27 +88,6 @@
     color: var(--primary) !important;
   }
 }
-
-.green {
-  color: var(--white);
-  background-color: var(--primary);
-  padding: 12px 16px;
-
-  &:hover {
-    background-color: #1994a5;
-  }
-}
-
-.orange {
-  padding: 12px 16px;
-  color: var(--black);
-
-  &:hover {
-    background-color: #fc5f00;
-    color: var(--white);
-  }
-}
-
 .full {
   width: 100%;
   justify-content: center;
@@ -140,4 +103,19 @@
 .disabled {
   opacity: 50%;
   pointer-events: none;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+
+  &:first-child {
+    margin-right: 8px;
+  }
+
+  &:last-child {
+    margin-left: 8px;
+  }
 }

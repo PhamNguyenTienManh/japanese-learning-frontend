@@ -1,17 +1,19 @@
 import { useState } from "react";
-import Button from "~/components/Button";
-import Input from "~/components/Input";
-import styles from "./Register.module.scss";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 import {
   faArrowLeft,
   faEnvelope,
   faLock,
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
-import { faGoogle } from "@fortawesome/free-brands-svg-icons";
+
+import styles from "./Register.module.scss";
+import Button from "~/components/Button";
+import Input from "~/components/Input";
 import { Link } from "react-router-dom";
+import Card from "~/components/Card";
 
 const cx = classNames.bind(styles);
 
@@ -42,18 +44,11 @@ function Register() {
 
   return (
     <div className={cx("wrapper")}>
-      <div className={cx("card")}>
-        {/* Back to home */}
-        <Button
-          to="/"
-          text
-          className={"back-link"}
-          leftIcon={<FontAwesomeIcon icon={faArrowLeft} />}
-        >
+      <Card className={"auth"}>
+        <Button to="/" back leftIcon={<FontAwesomeIcon icon={faArrowLeft} />}>
           Quay lại trang chủ
         </Button>
 
-        {/* Header */}
         <div className={cx("header")}>
           <h1>Tạo tài khoản</h1>
           <p>Bắt đầu hành trình học tiếng Nhật của bạn</p>
@@ -61,7 +56,6 @@ function Register() {
 
         {/* Signup Form */}
         <form onSubmit={handleSubmit} className={cx("form")}>
-          {/* Họ và tên */}
           <div className={cx("form-group")}>
             <label htmlFor="name">Họ và tên</label>
             <Input
@@ -76,7 +70,6 @@ function Register() {
             />
           </div>
 
-          {/* Email */}
           <div className={cx("form-group")}>
             <label htmlFor="email">Email</label>
             <Input
@@ -91,7 +84,6 @@ function Register() {
             />
           </div>
 
-          {/* Mật khẩu */}
           <div className={cx("form-group")}>
             <label htmlFor="password">Mật khẩu</label>
             <Input
@@ -108,7 +100,6 @@ function Register() {
             <p className={cx("hint-text")}>Tối thiểu 8 ký tự</p>
           </div>
 
-          {/* Xác nhận mật khẩu */}
           <div className={cx("form-group")}>
             <label htmlFor="confirmPassword">Xác nhận mật khẩu</label>
             <Input
@@ -135,46 +126,42 @@ function Register() {
               }
             />
             <label htmlFor="terms">
-              Tôi đồng ý với{" "}
-              <Link to="/terms" className={cx("link")}>
+              Tôi đồng ý với
+              <Button to="/terms" link>
                 Điều khoản sử dụng
-              </Link>{" "}
-              và{" "}
-              <Link to="/privacy" className={cx("link")}>
+              </Button>
+              và
+              <Button to="/privacy" link>
                 Chính sách bảo mật
-              </Link>
+              </Button>
             </label>
           </div>
 
-          {/* Submit */}
-          <Button primary type="submit" className={"submit"}>
+          <Button primary type="submit">
             Đăng ký
           </Button>
         </form>
 
-        {/* Divider */}
         <div className={cx("divider")}>
           <span>hoặc</span>
         </div>
 
-        {/* Google Signup */}
         <Button
           outline
-          className={"google"}
+          full
           onClick={() => console.log("[Google signup]")}
           leftIcon={<FontAwesomeIcon icon={faGoogle} />}
         >
           Đăng ký với Google
         </Button>
 
-        {/* Login link */}
         <p className={cx("register-text")}>
           Đã có tài khoản?
-          <Button to="/login" text className={"link"}>
+          <Button to="/login" link>
             Đăng nhập
           </Button>
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

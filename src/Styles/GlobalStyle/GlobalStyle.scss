@@ -1,13 +1,17 @@
 :root {
   --primary: #00879a;
+  --primary-low: #c1e4e8;
+  --primary-hover: #1f9bac;
   --white: #fff;
   --black: #000;
+  --grey: #777;
+  --grey-low: #555;
+  --orange: #fc5f00;
   --text-base: #ccc;
+  --text-high: #333;
   --background: #f9fbfd;
   --card: #f1fbfb;
-  --text-primary: #111;
-  --text-muted: #666;
-  --border: #dce3e3;
+  --border: #cdd4d4;
 }
 * {
   margin: 0;

@@ -11,106 +11,99 @@
 
 .container {
   width: 100%;
-  max-width: 960px;
+  max-width: 1120px;
 }
 
-/* Header */
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.header-left {
-  .badge-level {
-    margin-bottom: 4px;
-  }
-}
-
-.title {
-  font-size: 2rem;
-  font-weight: 700;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.header-icon {
-  font-size: 18px;
-}
-
-.timer {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-/* Progress */
-
-.progress {
-  width: 100%;
-  height: 8px;
-  border-radius: 999px;
-  background: #e5e5e5;
-  overflow: hidden;
-  margin-bottom: 4px;
-}
-
-.progress-bar {
-  height: 100%;
-  background: #16a34a;
-  transition: width 0.2s ease;
-}
-
-.progress-text {
+.breadcrumb {
   font-size: 13px;
-  color: #666;
+  color: #6b7280;
   margin-bottom: 16px;
 }
 
-/* Badge */
-
-.badge {
+.section-tabs {
   display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
+  padding: 4px;
   border-radius: 999px;
-  font-size: 12px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  margin-bottom: 20px;
+}
+
+.section-tab {
+  border: none;
+  background: transparent;
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 14px;
   font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.badge-level {
-  background: rgba(34, 197, 94, 0.1);
-  color: #16a34a;
-  border: 1px solid rgba(34, 197, 94, 0.3);
+.section-tab:hover {
+  color: #1f2933;
 }
 
-.badge-section {
-  background: #f3f4f6;
-  color: #374151;
+.section-tab.active {
+  background: #fb923c;
+  color: #ffffff;
+}
+
+/* Layout */
+
+.layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.left {
+  flex: 1;
+}
+
+.right {
+  width: 280px;
 }
 
 /* Question card */
 
 .question-card {
-  padding: 24px;
-  margin-bottom: 16px;
+  padding: 20px 22px;
+  background: #ffffff;
 }
 
 .question-header {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+}
+
+.badge-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badge-main {
+  background: #2563eb;
+  color: #ffffff;
 }
 
 .question-text {
-  margin-top: 12px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  line-height: 1.6;
   white-space: pre-line;
+  line-height: 1.6;
 }
 
 /* Options */
@@ -118,116 +111,182 @@
 .options {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .option {
   width: 100%;
   text-align: left;
-  padding: 12px 16px;
-  border-radius: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
   border: 2px solid #e5e7eb;
-  background: #fff;
+  background: #ffffff;
   cursor: pointer;
   transition: all 0.15s ease;
+}
 
-  &:hover {
-    border-color: #a855f7;
-  }
+.option:hover {
+  border-color: #2563eb;
 }
 
 .option.selected {
-  border-color: #a855f7;
-  background: rgba(168, 85, 247, 0.08);
+  border-color: #2563eb;
+  background: #eff6ff;
 }
 
 .option-inner {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .option-radio {
-  width: 24px;
   height: 24px;
+  width: 24px;
   border-radius: 999px;
   border: 2px solid #d1d5db;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
-.option-radio.active {
-  border-color: #a855f7;
-  background: #a855f7;
+.option-radio.selected {
+  border-color: #2563eb;
+  background: #2563eb;
 }
 
 .option-radio-dot {
-  width: 8px;
   height: 8px;
+  width: 8px;
   border-radius: 999px;
-  background: #fff;
+  background: #ffffff;
 }
 
-.option-text {
-  font-size: 15px;
+.option-label {
+  font-size: 14px;
 }
 
-/* Navigation buttons */
+/* Navigation row */
 
-.nav-buttons {
+.nav-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-top: 18px;
 }
 
-.nav-btn {
-  min-width: 120px;
+.nav-icon {
+  font-size: 14px;
 }
 
-.nav-submit {
-  /* nếu Button hỗ trợ primary thì chỗ này chỉ cần class để margin/align */
+.next-btn {
+  margin-left: auto;
 }
 
-/* Question navigator */
+/* Sidebar: time card */
 
-.navigator-card {
-  padding: 16px 20px;
-  margin-top: 16px;
+.time-card {
+  padding: 16px 18px;
+  background: #ffffff;
+  margin-bottom: 14px;
 }
 
-.navigator-title {
+.time-label {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.time-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.time-icon {
+  font-size: 16px;
+  color: #2563eb;
+}
+
+.time-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.time-sub {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+/* Sidebar: actions */
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 12px 10px;
   font-size: 15px;
   font-weight: 600;
-  margin-bottom: 12px;
 }
 
-.navigator-grid {
-  display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
-  gap: 8px;
+.save-btn {
+  width: 100%;
+  padding: 12px 10px;
+  font-size: 15px;
+  font-weight: 600;
 }
 
-.navigator-item {
-  height: 36px;
-  border-radius: 10px;
-  border: 2px solid #e5e7eb;
-  background: #fff;
+/* Sidebar: list card */
+
+.list-card {
+  padding: 16px 18px;
+  background: #ffffff;
+}
+
+.list-title {
   font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.list-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.list-item {
+  height: 32px;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  background: #ffffff;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.navigator-item.current {
-  border-color: #a855f7;
-  background: #a855f7;
-  color: #fff;
+.list-item:hover {
+  border-color: #2563eb;
 }
 
-.navigator-item.answered {
-  border-color: #16a34a;
-  background: rgba(22, 163, 74, 0.08);
-  color: #16a34a;
+.list-item.answered {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.list-item.current {
+  border-color: #fb923c;
+  background: #ffedd5;
+  color: #c2410c;
 }
