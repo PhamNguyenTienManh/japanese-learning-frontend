@@ -67,16 +67,16 @@ const ContributionService = {
 
 
 
-    async addComment(commentData) {
+    async addComment(commentData, token) {
         try {
-            const response = await fetch(`${this.BASE_URL}/add-mean`, {
+            const response = await fetch(`${this.LOCAL_URL}/contributions/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    ...commentData,
-                    token: this.TOKEN
+                    ...commentData
                 })
             });
 

@@ -72,8 +72,7 @@ const MainContent = ({ selectedKanji }) => {
         return (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
                 <div style={{ textAlign: 'center', color: '#999' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '12px' }}>📝</div>
-                    <div>Chọn một kanji để xem chi tiết</div>
+                    <div>Tìm một kanji để xem chi tiết</div>
                 </div>
             </div>
         );
@@ -86,11 +85,11 @@ const MainContent = ({ selectedKanji }) => {
                 <div style={{display: 'flex', flexDirection: "row", justifyContent:"space-between"}}>
 
                     {/* Header */}
-                    <div style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
-                        <h1 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>
+                    <div style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '0px solid #e0e0e0' }}>
+                        <h1 style={{ fontSize: '20px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>
                             Chi tiết chữ kanji {kanjiData.kanji}
                         </h1>
-                        <div style={{ fontSize: '14px', lineHeight: '2', color: '#555' }}>
+                        <div style={{ fontSize: '20px', lineHeight: '2', color: '#555' }}>
                             <p>
                                 <span style={{ color: '#666', display: 'inline-block', width: '100px' }}>Hán tự:</span>
                                 <span style={{ fontWeight: '600', color: '#333' }}>{kanjiData.kanji} - {kanjiData.mean}</span>

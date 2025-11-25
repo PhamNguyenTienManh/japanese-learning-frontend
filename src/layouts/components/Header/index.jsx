@@ -37,7 +37,7 @@ function Header() {
               Từ điển
             </Button>
             <div className={cx("dropdown-menu")}>
-              <Button to="/dictionary" text>
+              <Button to="/kanji" text>
                 Tra cứu từ điển
               </Button>
               <Button to="/jlpt" text>

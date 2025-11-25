@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGoogle } from "@fortawesome/free-brands-svg-icons";
@@ -12,6 +12,7 @@ import styles from "./LoginPage.module.scss";
 import Button from "~/components/Button";
 import Input from "~/components/Input";
 import Card from "~/components/Card";
+import { Navigate } from "react-router-dom";
 
 const cx = classNames.bind(styles);
 
@@ -19,10 +20,46 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("[Login attempt]", { email, password });
+    try {
+      const res = await fetch("http://localhost:9090/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (data.data.access_token) {
+        const token = data.data.access_token;
+        localStorage.setItem("token", token);
+        window.location.href = "/"
+      } else {
+        alert(data.message || "Đăng nhập thất bại");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Không thể kết nối server!");
+    }
   };
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:9090/api/auth/google";
+  };
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    console.log("token la", token);
+    
+
+    if (token) {
+      localStorage.setItem("token", token);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      window.location.href = "/";
+    }
+  }, []);
 
   return (
     <div className={cx("wrapper")}>
@@ -77,10 +114,11 @@ function LoginPage() {
           <span>hoặc</span>
         </div>
 
+        {/* Google */}
         <Button
           outline
           full
-          onClick={() =>     window.location.href = "http://localhost:9090/api/auth/google"}
+          onClick={handleGoogleLogin}
           leftIcon={<FontAwesomeIcon icon={faGoogle} />}
         >
           Đăng nhập với Google
@@ -96,5 +134,6 @@ function LoginPage() {
     </div>
   );
 }
+
 
 export default LoginPage;

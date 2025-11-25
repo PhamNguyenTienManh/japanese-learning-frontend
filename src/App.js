@@ -3,9 +3,25 @@ import { publicRouter } from "./routes";
 import { DefaultLayout } from "~/layouts";
 import { Fragment } from "react/jsx-runtime";
 import { AnimatePresence, motion } from "framer-motion";
+import { useEffect } from "react";
 
 function AnimatedRoutes() {
   const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+
+    if (token) {
+      localStorage.setItem("token", token);
+
+      // Xóa token khỏi URL để sạch sẽ
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      // Chuyển về trang chủ
+      window.location.href = "/";
+    }
+  }, []);
 
   return (
     <AnimatePresence mode="wait">
