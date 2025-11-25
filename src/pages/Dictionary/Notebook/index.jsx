@@ -445,7 +445,7 @@ function Notebook() {
           {/* Actions */}
           <div className={cx("actions")}>
             <Button
-              className={"green"}
+              primary
               onClick={() => setShowAddWord((v) => !v)}
               leftIcon={<FontAwesomeIcon icon={faPlus} />}
             >
@@ -542,12 +542,11 @@ function Notebook() {
                 </div>
 
                 <div className={cx("form-actions")}>
-                  <Button primary className={"green"} onClick={handleAddWord}>
+                  <Button primary onClick={handleAddWord}>
                     Thêm từ
                   </Button>
                   <Button
                     outline
-                    className={"orange"}
                     onClick={() => setShowAddWord(false)}
                   >
                     Hủy
@@ -561,12 +560,12 @@ function Notebook() {
           <div className={cx("words-list")}>
             {(!currentNotebook?.words ||
               currentNotebook.words.length === 0) && (
-              <Card className={cx("empty-card")}>
-                <p className={cx("empty-text")}>
-                  Chưa có từ nào trong sổ tay này
-                </p>
-              </Card>
-            )}
+                <Card className={cx("empty-card")}>
+                  <p className={cx("empty-text")}>
+                    Chưa có từ nào trong sổ tay này
+                  </p>
+                </Card>
+              )}
 
             {currentNotebook?.words?.map((word) => (
               <Card key={word.id} className={cx("word-card")}>

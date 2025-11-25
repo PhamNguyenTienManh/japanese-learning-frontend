@@ -20,6 +20,8 @@ import Achievements from "~/pages/Dashboard/Achievements";
 import Goals from "~/pages/Dashboard/Goals";
 import Setting from "~/pages/Dashboard/Setting";
 import KanjiLookup from "~/pages/KanjiLookup";
+import JLPT from "~/pages/Dictionary/JLPT";
+import Reading from "~/pages/Reading";
 
 export const publicRouter = [
   { path: config.routes.home, component: Home },
@@ -43,6 +45,10 @@ export const publicRouter = [
   { path: config.routes.goals, component: Goals },
   { path: config.routes.setting, component: Setting },
   { path: config.routes.kanjiLookup, component: KanjiLookup },
+  { path: config.routes.jlpt, component: JLPT },
+  { path: config.routes.reading, component: Reading },
+
+
 ];
 
 export const privateRoutes = [];

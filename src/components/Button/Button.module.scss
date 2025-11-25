@@ -37,26 +37,6 @@
   }
 }
 
-.orange {
-  color: var(--black);
-
-  &:hover {
-    background-color: var(--orange);
-    color: var(--white);
-  }
-}
-
-.green {
-  background-color: #54e654; // xanh lá
-  color: white;
-  padding: 12px 0;
-  transition: background-color 0.3s ease; // mượt mà khi hover
-
-  &:hover {
-    background-color: #008000; // xanh đậm hơn khi hover
-  }
-}
-
 .text {
   background: none;
   padding: 6px 8px;
@@ -64,6 +44,16 @@
 
   &:hover {
     color: var(--white) !important;
+  }
+}
+
+.orange {
+  padding: 12px 16px;
+  color: var(--black);
+
+  &:hover {
+    background-color: var(--orange);
+    color: var(--white);
   }
 }
 
@@ -99,6 +89,7 @@
     color: var(--primary) !important;
   }
 }
+
 .full {
   width: 100%;
   justify-content: center;
@@ -128,5 +119,17 @@
 
   &:last-child {
     margin-left: 8px;
+  }
+}
+
+.no-margin {
+  .icon {
+    margin: 0;
+  }
+}
+
+.iconOnly {
+  .icon {
+    margin: 0;
   }
 }

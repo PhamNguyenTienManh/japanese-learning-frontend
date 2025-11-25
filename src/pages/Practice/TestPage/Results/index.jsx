@@ -237,7 +237,6 @@ function Results() {
             <Button
               primary
               href="/practice/n5/1/test"
-              className={"green"}
               leftIcon={<FontAwesomeIcon icon={faRotateLeft} />}
             >
               Làm lại bài thi

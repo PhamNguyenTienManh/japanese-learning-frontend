@@ -255,11 +255,8 @@ function PostDetail() {
               />
               <Button
                 primary
-                className={"green"}
                 disabled={!comment.trim()}
-                leftIcon={
-                  <FontAwesomeIcon icon={faPaperPlane} className={cx("icon")} />
-                }
+                leftIcon={<FontAwesomeIcon icon={faPaperPlane} />}
                 onClick={handleComment}
               >
                 Gửi bình luận

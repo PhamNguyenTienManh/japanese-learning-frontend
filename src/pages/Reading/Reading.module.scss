@@ -1,0 +1,282 @@
+.wrapper {
+  padding: 24px 0;
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 2.4rem;
+  font-weight: 700;
+}
+
+.controlsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.difficultyGroup {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.difficultyButton {
+  border-radius: 999px;
+
+  &.easy {
+    // nếu muốn màu riêng cho "Dễ" thì thêm ở đây
+  }
+
+  &.hard {
+    // màu riêng cho "Khó" nếu cần
+  }
+
+  &.active {
+    // extra style nếu Button chưa đủ highlight
+  }
+}
+
+.furiganaToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary-color);
+}
+
+.furiganaLabel {
+  font-size: 1.3rem;
+  color: var(--text-secondary);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr);
+  gap: 16px;
+
+  @media (max-width: 992px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.articleItem {
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &.active {
+    border-color: var(--primary-color);
+    background-color: rgba(25, 118, 210, 0.06);
+  }
+}
+
+.articleItemInner {
+  display: flex;
+  gap: 12px;
+}
+
+.thumb {
+  flex-shrink: 0;
+  width: 96px;
+  height: 72px;
+}
+
+.thumbImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.articleInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.articleTitle {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.articleHiragana {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.articleMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.articleDate {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
+
+.readDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background-color: #22c55e;
+}
+
+.moreLink {
+  font-size: 1.2rem;
+  margin-top: 4px;
+  color: var(--primary-color);
+}
+
+.content {
+  min-height: 300px;
+}
+
+.articleCard {
+  padding: 20px;
+}
+
+.articleHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.articleHeaderMain {
+  flex: 1;
+}
+
+.articleMainTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.articleMainHiragana {
+  font-size: 1.3rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.articleMainDate {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
+
+.likeButton {
+  .fa-heart,
+  svg {
+    font-size: 1.6rem;
+  }
+
+  &.liked {
+    color: #ef4444;
+  }
+}
+
+.imageWrap {
+  margin-bottom: 16px;
+}
+
+.mainImage {
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+/* audio player */
+
+.audioPlayer {
+  margin-bottom: 16px;
+}
+
+.audioControlsRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.audioPlayButton {
+  border-radius: 999px;
+}
+
+.audioInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+}
+
+.audioIcon {
+  font-size: 1.2rem;
+}
+
+.audioTime {
+  font-variant-numeric: tabular-nums;
+}
+
+.audioProgressBar {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--bg-muted, #e5e7eb);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.audioProgress {
+  height: 100%;
+  border-radius: 999px;
+  background-color: var(--primary-color);
+  transition: width 0.15s linear;
+}
+
+.articleText {
+  font-size: 1.4rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 12px;
+}
+
+.toolButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

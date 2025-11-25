@@ -87,7 +87,7 @@ export default function TestCard({
           <Button
             to={startLink}
             full
-            className={"green"}
+            primary
             leftIcon={<FontAwesomeIcon icon={faPlay} />}
           >
             {completed ? "Làm lại" : "Bắt đầu"}
