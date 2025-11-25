@@ -19,6 +19,7 @@ import Dashboard from "~/pages/Dashboard";
 import Achievements from "~/pages/Dashboard/Achievements";
 import Goals from "~/pages/Dashboard/Goals";
 import Setting from "~/pages/Dashboard/Setting";
+import KanjiLookup from "~/pages/KanjiLookup";
 
 export const publicRouter = [
   { path: config.routes.home, component: Home },
@@ -41,6 +42,7 @@ export const publicRouter = [
   { path: config.routes.achievements, component: Achievements },
   { path: config.routes.goals, component: Goals },
   { path: config.routes.setting, component: Setting },
+  { path: config.routes.kanjiLookup, component: KanjiLookup },
 ];
 
 export const privateRoutes = [];

@@ -1,3 +1,5 @@
+import KanjiLookup from "~/pages/KanjiLookup";
+
 const routes = {
   home: "/",
   login: "/login",
@@ -19,6 +21,7 @@ const routes = {
   achievements: "/dashboard/achievements",
   goals: "/dashboard/goals",
   setting: "/dashboard/settings",
+  kanjiLookup: "/kanji"
 };
 
 export default routes;
