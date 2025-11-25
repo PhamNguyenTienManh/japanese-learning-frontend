@@ -14,8 +14,14 @@ import {
   faBookOpen,
   faComments,
   faLightbulb,
-  faPen,
 } from "@fortawesome/free-solid-svg-icons";
+
+// Import API functions
+import {
+  sendMessage,
+  getUserLastSession,
+  createSession,
+} from "~/services/aiService";
 
 const cx = classNames.bind(styles);
 
@@ -27,33 +33,168 @@ const suggestedPrompts = [
 ];
 
 function ChatAI() {
-  const [messages, setMessages] = useState([
-    {
-      id: "1",
-      role: "assistant",
-      content:
-        "こんにちは！Xin chào! Tôi là trợ lý AI học tiếng Nhật của bạn. Tôi có thể giúp bạn:\n\n• Giải thích ngữ pháp và từ vựng\n• Luyện hội thoại tiếng Nhật\n• Trả lời câu hỏi về JLPT\n• Kiểm tra và sửa lỗi câu văn\n\nBạn muốn học gì hôm nay?",
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      messagesEndRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
     }
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // Chỉ scroll khi có message mới và không đang loading
+    if (messages.length > 0 && !isLoading) {
+      // Delay nhỏ để đảm bảo DOM đã render xong
+      const timeoutId = setTimeout(() => {
+        scrollToBottom();
+      }, 100);
 
-  const handleSend = (messageText) => {
+      return () => clearTimeout(timeoutId);
+    }
+  }, [messages, isLoading]);
+
+  // Khởi tạo session khi component mount
+  useEffect(() => {
+    initializeSession();
+  }, []);
+
+  const initializeSession = async () => {
+    try {
+      setIsInitializing(true);
+
+      // Gọi API để lấy session cuối cùng của user
+      console.log("Fetching user's last session...");
+      const sessionResponse = await getUserLastSession();
+
+      // Kiểm tra xem có session hay không
+      if (sessionResponse && sessionResponse.success && sessionResponse.data) {
+        // ĐÃ CÓ SESSION - Load lịch sử
+        const sessionData = sessionResponse.data;
+        console.log("Found existing session:", sessionData._id);
+        console.log("Session messages:", sessionData.messages); // Debug messages
+        setSessionId(sessionData._id);
+
+        if (sessionData.messages && sessionData.messages.length > 0) {
+          // Format messages từ API
+          const formattedMessages = sessionData.messages
+            .filter((msg) => msg && msg.content) // Lọc bỏ messages không hợp lệ
+            .map((msg, index) => ({
+              id: msg._id || index.toString(),
+              role: msg.role === "ai" ? "assistant" : msg.role, // Chuyển "ai" thành "assistant"
+              content: msg.content,
+              timestamp: new Date(msg.timestamp),
+            }));
+          setMessages(formattedMessages);
+        } else {
+          // Session có nhưng chưa có tin nhắn
+          setMessages([
+            {
+              id: "welcome",
+              role: "assistant",
+              content:
+                "こんにちは！Xin chào! Tôi là trợ lý AI học tiếng Nhật của bạn. Tôi có thể giúp bạn:\n\n• Giải thích ngữ pháp và từ vựng\n• Luyện hội thoại tiếng Nhật\n• Trả lời câu hỏi về JLPT\n• Kiểm tra và sửa lỗi câu văn\n\nBạn muốn học gì hôm nay?",
+              timestamp: new Date(),
+            },
+          ]);
+        }
+      } else {
+        // CHƯA CÓ SESSION - Tạo mới
+        console.log("No existing session, creating new one...");
+        const newSessionResponse = await createSession();
+
+        if (
+          newSessionResponse &&
+          newSessionResponse.success &&
+          newSessionResponse.data
+        ) {
+          const newSessionData = newSessionResponse.data;
+          setSessionId(newSessionData._id);
+          console.log("Created new session:", newSessionData._id);
+
+          // Hiển thị message chào mừng
+          setMessages([
+            {
+              id: "welcome",
+              role: "assistant",
+              content:
+                "こんにちは！Xin chào! Tôi là trợ lý AI học tiếng Nhật của bạn. Tôi có thể giúp bạn:\n\n• Giải thích ngữ pháp và từ vựng\n• Luyện hội thoại tiếng Nhật\n• Trả lời câu hỏi về JLPT\n• Kiểm tra và sửa lỗi câu văn\n\nBạn muốn học gì hôm nay?",
+              timestamp: new Date(),
+            },
+          ]);
+        }
+      }
+    } catch (error) {
+      console.error("Error initializing session:", error);
+
+      // Nếu lỗi là do chưa có session (404 hoặc data null), thử tạo mới
+      if (error.message.includes("404") || error.message.includes("null")) {
+        try {
+          console.log("Creating new session after error...");
+          const newSessionResponse = await createSession();
+
+          if (
+            newSessionResponse &&
+            newSessionResponse.success &&
+            newSessionResponse.data
+          ) {
+            setSessionId(newSessionResponse.data._id);
+
+            setMessages([
+              {
+                id: "welcome",
+                role: "assistant",
+                content:
+                  "こんにちは！Xin chào! Tôi là trợ lý AI học tiếng Nhật của bạn. Tôi có thể giúp bạn:\n\n• Giải thích ngữ pháp và từ vựng\n• Luyện hội thoại tiếng Nhật\n• Trả lời câu hỏi về JLPT\n• Kiểm tra và sửa lỗi câu văn\n\nBạn muốn học gì hôm nay?",
+                timestamp: new Date(),
+              },
+            ]);
+          }
+        } catch (createError) {
+          console.error("Error creating session:", createError);
+          // Set sessionId tạm để không block UI
+          setSessionId(`temp-${Date.now()}`);
+
+          setMessages([
+            {
+              id: "error",
+              role: "assistant",
+              content:
+                "⚠️ Không thể kết nối với server. Vui lòng kiểm tra kết nối và thử lại.",
+              timestamp: new Date(),
+            },
+          ]);
+        }
+      } else {
+        // Lỗi khác
+        setSessionId(`temp-${Date.now()}`);
+
+        setMessages([
+          {
+            id: "error",
+            role: "assistant",
+            content:
+              "⚠️ Không thể kết nối với server. Vui lòng kiểm tra kết nối và thử lại.",
+            timestamp: new Date(),
+          },
+        ]);
+      }
+    } finally {
+      setIsInitializing(false);
+    }
+  };
+
+  const handleSend = async (messageText) => {
     const textToSend = messageText || input;
 
-    if (!textToSend.trim() || isLoading) return;
+    if (!textToSend.trim() || isLoading || !sessionId) return;
 
     const userMessage = {
       id: Date.now().toString(),
@@ -65,18 +206,39 @@ function ChatAI() {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+    setTimeout(() => scrollToBottom(), 150);
 
-    // Fake AI trả lời
-    setTimeout(() => {
-      const aiMessage = {
+    try {
+      // Gửi message đến API
+      const response = await sendMessage(sessionId, textToSend);
+      console.log("Send message response:", response); // Debug response
+
+      if (response && response.success && response.data) {
+        const aiMessage = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: response.data.aiMessage, // Sửa từ response.data.response thành aiMessage
+          timestamp: new Date(response.data.timestamp || Date.now()),
+        };
+        setMessages((prev) => [...prev, aiMessage]);
+      } else {
+        throw new Error("Invalid response from API");
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+
+      // Hiển thị thông báo lỗi
+      const errorMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: `Tôi đã nhận được câu hỏi của bạn: "${textToSend}"\n\nĐây là một câu trả lời mẫu. Trong phiên bản thực tế, tôi sẽ sử dụng AI để trả lời chi tiết và chính xác hơn về ngữ pháp, từ vựng và hội thoại tiếng Nhật.`,
+        content:
+          "Xin lỗi, đã có lỗi xảy ra khi xử lý tin nhắn của bạn. Vui lòng thử lại.",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, aiMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -85,6 +247,58 @@ function ChatAI() {
       handleSend();
     }
   };
+
+  // Hàm tạo cuộc trò chuyện mới
+  const handleNewChat = async () => {
+    try {
+      setIsInitializing(true);
+      setMessages([]);
+
+      // Tạo session mới
+      const newSessionResponse = await createSession();
+
+      if (
+        newSessionResponse &&
+        newSessionResponse.success &&
+        newSessionResponse.data
+      ) {
+        setSessionId(newSessionResponse.data._id);
+
+        setMessages([
+          {
+            id: "welcome",
+            role: "assistant",
+            content:
+              "こんにちは！Xin chào! Tôi là trợ lý AI học tiếng Nhật của bạn. Tôi có thể giúp bạn:\n\n• Giải thích ngữ pháp và từ vựng\n• Luyện hội thoại tiếng Nhật\n• Trả lời câu hỏi về JLPT\n• Kiểm tra và sửa lỗi câu văn\n\nBạn muốn học gì hôm nay?",
+            timestamp: new Date(),
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error creating new chat:", error);
+    } finally {
+      setIsInitializing(false);
+    }
+  };
+
+  // Hiển thị loading khi đang khởi tạo
+  if (isInitializing) {
+    return (
+      <div className={cx("wrapper")}>
+        <main className={cx("main")}>
+          <div className={cx("container")}>
+            <div className={cx("header")}>
+              <div className={cx("header-title")}>
+                <FontAwesomeIcon icon={faRobot} className={cx("header-icon")} />
+                <h1>AI Chat</h1>
+              </div>
+              <p className={cx("header-subtitle")}>Đang khởi tạo...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("wrapper")}>
@@ -140,21 +354,45 @@ function ChatAI() {
                         })}
                       >
                         <p className={cx("bubble-text")}>
-                          {message.content.split("\n").map((line, i) => (
-                            <span key={i}>
-                              {line}
-                              {i < message.content.split("\n").length - 1 && (
-                                <br />
-                              )}
-                            </span>
-                          ))}
+                          {(message.content || "")
+                            .split("\n")
+                            .map((line, i) => (
+                              <span key={i}>
+                                {line}
+                                {i <
+                                  (message.content || "").split("\n").length -
+                                    1 && <br />}
+                              </span>
+                            ))}
                         </p>
                       </div>
                       <span className={cx("timestamp")}>
-                        {message.timestamp.toLocaleTimeString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {(() => {
+                          const now = new Date();
+                          const msgDate = new Date(message.timestamp);
+
+                          const isToday =
+                            now.getFullYear() === msgDate.getFullYear() &&
+                            now.getMonth() === msgDate.getMonth() &&
+                            now.getDate() === msgDate.getDate();
+
+                          if (isToday) {
+                            // Chỉ hiển thị giờ và phút
+                            return msgDate.toLocaleTimeString("vi-VN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            });
+                          } else {
+                            // Hiển thị ngày + giờ
+                            return msgDate.toLocaleString("vi-VN", {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            });
+                          }
+                        })()}
                       </span>
                     </div>
                   </div>
@@ -182,8 +420,8 @@ function ChatAI() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Suggested prompts – chỉ hiện khi chưa có message user */}
-            {messages.length === 1 && (
+            {/* Suggested prompts */}
+            {messages.length <= 1 && (
               <div className={cx("suggestions")}>
                 <p className={cx("suggestions-title")}>
                   <FontAwesomeIcon
@@ -199,6 +437,7 @@ function ChatAI() {
                       type="button"
                       className={cx("suggestion-btn")}
                       onClick={() => handleSend(prompt)}
+                      disabled={isLoading}
                     >
                       {prompt}
                     </button>
@@ -213,15 +452,16 @@ function ChatAI() {
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyPress}
+                  onKeyPress={handleKeyPress}
                   placeholder="Nhập câu hỏi của bạn..."
-                  className={"chat-input"}
+                  className={cx("chat-input")}
+                  disabled={isLoading || !sessionId}
                 />
                 <Button
                   primary
                   className={cx("chat")}
                   onClick={() => handleSend()}
-                  disabled={!input.trim() || isLoading}
+                  disabled={!input.trim() || isLoading || !sessionId}
                   leftIcon={<FontAwesomeIcon icon={faPaperPlane} />}
                 />
               </div>

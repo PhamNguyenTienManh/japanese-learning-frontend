@@ -50,7 +50,7 @@ export default function LevelCard({
               <span>{totalTests} đề thi</span>
             </div>
 
-            <div className={cx("meta-item")}>
+            {/* <div className={cx("meta-item")}>
               <FontAwesomeIcon icon={faClock} className={cx("meta-icon")} />
               <span>{duration}</span>
             </div>
@@ -58,21 +58,13 @@ export default function LevelCard({
             <div className={cx("meta-item")}>
               <FontAwesomeIcon icon={faBullseye} className={cx("meta-icon")} />
               <span>{questions} câu hỏi</span>
-            </div>
+            </div> */}
           </div>
         </div>
 
         <div className={cx("actions")}>
-          <Button to={startTo} className={"green"} onClick={onStart}>
+          <Button to={startTo} className="green" onClick={onStart}>
             Bắt đầu luyện thi
-          </Button>
-          <Button
-            to={resultsTo}
-            outline
-            className={"orange"}
-            onClick={onResults}
-          >
-            Xem kết quả
           </Button>
         </div>
       </div>
