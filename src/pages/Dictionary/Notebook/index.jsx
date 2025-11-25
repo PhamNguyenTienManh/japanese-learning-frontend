@@ -450,7 +450,7 @@ function Notebook() {
           {/* Actions */}
           <div className={cx("actions")}>
             <Button
-              className={"green"}
+              primary
               onClick={() => setShowAddWord((v) => !v)}
               leftIcon={<FontAwesomeIcon icon={faPlus} />}
             >
@@ -469,12 +469,154 @@ function Notebook() {
           {showAddWord && (
             <Card className={cx("add-card")}>
               <h3 className={cx("section-title")}>Thêm từ mới</h3>
-              {/* Form giữ nguyên như cũ */}
+              <div className={cx("form")}>
+                <div className={cx("field")}>
+                  <label className={cx("label")}>Từ</label>
+                  <Input
+                    placeholder="Nhập từ..."
+                    value={newWord.term}
+                    onChange={(e) =>
+                      setNewWord((prev) => ({
+                        ...prev,
+                        term: e.target.value,
+                      }))
+                    }
+                    className={"notebook-input"}
+                  />
+                </div>
+                <div className={cx("field")}>
+                  <label className={cx("label")}>Phonetic</label>
+                  <Input
+                    placeholder="Nhập phonetic..."
+                    value={newWord.phonetic}
+                    onChange={(e) =>
+                      setNewWord((prev) => ({
+                        ...prev,
+                        phonetic: e.target.value,
+                      }))
+                    }
+                    className={"notebook-input"}
+                  />
+                </div>
+                <div className={cx("field")}>
+                  <label className={cx("label")}>Nghĩa của từ</label>
+                  <Input
+                    placeholder="Nhập nghĩa..."
+                    value={newWord.meaning}
+                    onChange={(e) =>
+                      setNewWord((prev) => ({
+                        ...prev,
+                        meaning: e.target.value,
+                      }))
+                    }
+                    className={"notebook-input"}
+                  />
+                </div>
+                <div className={cx("field")}>
+                  <label className={cx("label")}>Thêm ghi chú</label>
+                  <Input
+                    placeholder="Nhập ghi chú..."
+                    value={newWord.note}
+                    onChange={(e) =>
+                      setNewWord((prev) => ({
+                        ...prev,
+                        note: e.target.value,
+                      }))
+                    }
+                    className={"notebook-input"}
+                  />
+                </div>
+                <div className={cx("field")}>
+                  <label className={cx("label")}>Từ loại</label>
+                  <select
+                    className={cx("select")}
+                    value={newWord.category}
+                    onChange={(e) =>
+                      setNewWord((prev) => ({
+                        ...prev,
+                        category: e.target.value,
+                      }))
+                    }
+                  >
+                    {wordCategories.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className={cx("form-actions")}>
+                  <Button primary onClick={handleAddWord}>
+                    Thêm từ
+                  </Button>
+                  <Button
+                    outline
+                    onClick={() => setShowAddWord(false)}
+                  >
+                    Hủy
+                  </Button>
+                </div>
+              </div>
             </Card>
           )}
 
           {/* Words list */}
-          {/* Giữ nguyên */}
+
+          <div className={cx("words-list")}>
+            {(!currentNotebook?.words ||
+              currentNotebook.words.length === 0) && (
+                <Card className={cx("empty-card")}>
+                  <p className={cx("empty-text")}>
+                    Chưa có từ nào trong sổ tay này
+                  </p>
+                </Card>
+              )}
+
+            {currentNotebook?.words?.map((word) => (
+              <Card key={word.id} className={cx("word-card")}>
+                <div className={cx("word-row")}>
+                  <div className={cx("word-main")}>
+                    <div className={cx("word-header")}>
+                      <h3 className={cx("word-kanji")}>{word.kanji}</h3>
+                      <Button
+                        text
+                        className={cx("icon-btn")}
+                        onClick={() =>
+                          handlePlayAudio(word.hiragana || word.kanji)
+                        }
+                        leftIcon={
+                          <FontAwesomeIcon
+                            icon={faVolumeHigh}
+                            className={cx("volume-icon")}
+                          />
+                        }
+                      />
+                    </div>
+                    <div className={cx("word-sub")}>
+                      <p className={cx("word-hira")}>{word.hiragana}</p>
+                    </div>
+                    <p className={cx("word-meaning")}>
+                      <span className={cx("word-meaning-label")}>Nghĩa:</span>{" "}
+                      {word.meaning}
+                    </p>
+                  </div>
+                  <Button
+                    text
+                    className={cx("icon-btn", "danger")}
+                    onClick={() => removeWord(currentNotebook.id, word.id)}
+                    leftIcon={
+                      <FontAwesomeIcon
+                        icon={faTrash}
+                        className={cx("trash-icon")}
+                      />
+                    }
+                  />
+                </div>
+              </Card>
+            ))}
+          </div>
+
         </div>
       </main>
     </div>

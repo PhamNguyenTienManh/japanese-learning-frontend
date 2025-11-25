@@ -89,7 +89,7 @@ function Setting() {
                     className={cx("textarea")}
                   />
                 </div>
-                <Button className={"green"}>Lưu thay đổi</Button>
+                <Button primary>Lưu thay đổi</Button>
               </div>
             </Card>
 
@@ -184,7 +184,7 @@ function Setting() {
                     className={"settings-input"}
                   />
                 </div>
-                <Button className={"green"}>Đổi mật khẩu</Button>
+                <Button primary>Đổi mật khẩu</Button>
               </div>
             </Card>
 
@@ -203,7 +203,7 @@ function Setting() {
                     <Button outline full className={"orange"}>
                       Sáng
                     </Button>
-                    <Button outline full className={"green"}>
+                    <Button full primary>
                       Tối
                     </Button>
                     <Button outline full className={"orange"}>

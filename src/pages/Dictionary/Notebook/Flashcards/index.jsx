@@ -81,11 +81,10 @@ export default function Flashcards() {
         <div className={cx("header")}>
           <Button
             to="/dictionary/notebook"
-            text
-            className={"back-link"}
+            back
             leftIcon={<FontAwesomeIcon icon={faArrowLeft} />}
           >
-            <span className={cx("back-text")}>Quay lại sổ tay</span>
+            Quay lại sổ tay
           </Button>
 
           <h1 className={cx("title")}>Luyện tập Flashcard</h1>
@@ -111,15 +110,16 @@ export default function Flashcards() {
                       <h2 className={cx("kanji")}>{currentCard.kanji}</h2>
 
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        outline
                         onClick={(e) => {
                           e.stopPropagation();
                           playAudio(currentCard.hiragana);
                         }}
-                        className={cx("audio-btn")}
+                        className={"no-margin"}
+                        leftIcon={
+                          <FontAwesomeIcon icon={faVolumeUp} />
+                        }
                       >
-                        <FontAwesomeIcon icon={faVolumeUp} />
                       </Button>
                     </div>
 
@@ -143,24 +143,27 @@ export default function Flashcards() {
 
               {/* Actions */}
               <div className={cx("actions")}>
-                <Button outline onClick={handleReset} className={"orange"}>
-                  <FontAwesomeIcon
-                    icon={faRotate}
-                    className={cx("icon-left")}
-                  />
+                <Button
+                  outline
+                  onClick={handleReset}
+                  leftIcon={<FontAwesomeIcon icon={faRotate} />
+                  }>
                   Bắt đầu lại
                 </Button>
 
                 <Button
                   onClick={handleNext}
                   disabled={currentIndex >= total - 1}
-                  className={"green"}
+                  primary
+                  rightIcon={
+                    <FontAwesomeIcon
+                      icon={faChevronRight}
+                      className={cx("icon-right")}
+                    />
+                  }
                 >
                   Tiếp theo
-                  <FontAwesomeIcon
-                    icon={faChevronRight}
-                    className={cx("icon-right")}
-                  />
+
                 </Button>
               </div>
             </>
