@@ -1,0 +1,230 @@
+.wrapper {
+  min-height: 100vh;
+  padding: 3rem 1rem;
+  background: var(--background);
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  &-inner {
+    padding: 16px 24px;
+  }
+
+  .title {
+    font-size: 24px;
+    font-weight: 700;
+  }
+}
+
+/* ================= FEATURES ================= */
+
+.features {
+  padding: 20px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  .feature-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+  }
+
+  .feature-icon {
+    font-size: 16px;
+  }
+
+  .feature-label {
+    font-size: 14px;
+    font-weight: 500;
+  }
+}
+
+/* ================= LAYOUT ================= */
+
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  padding: 0 24px;
+  margin: 0 auto;
+}
+
+/* ================= SIDEBAR ================= */
+.sidebar {
+  .filter-block {
+    margin-bottom: 24px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .filter-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .filter-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+
+    &.active {
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .filter-label {
+      font-size: 14px;
+    }
+  }
+
+  .radio {
+    cursor: pointer;
+    accent-color: var(--primary);
+  }
+}
+.checkbox {
+  accent-color: var(--primary);
+}
+/* ================= CONTENT ================= */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Display options card */
+.display-card {
+  padding: 14px;
+}
+
+.display-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  .display-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .display-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .display-label {
+      font-size: 14px;
+    }
+  }
+
+  .display-actions {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+/* ================= VOCAB GRID ================= */
+.vocab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+/* ================= VOCAB CARD ================= */
+.vocab-card {
+  padding: 16px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .vocab-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+/* Header của vocab */
+.vocab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .vocab-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .kanji {
+    font-size: 26px;
+    font-weight: 700;
+  }
+
+  .sound-button {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+}
+
+.add-button {
+  min-width: 32px;
+  height: 32px;
+}
+
+/* Hiragana */
+.hiragana {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Meaning block */
+.meaning-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .meaning {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .translation {
+    font-size: 13px;
+    color: #6b7280;
+  }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    order: 2;
+  }
+}
