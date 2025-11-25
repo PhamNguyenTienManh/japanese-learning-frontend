@@ -30,8 +30,8 @@ export default function TestCard({
     sections = [],
   } = test || {};
 
-  const startLink = `${basePath}/${id}/test`;
-  const resultsLink = `${basePath}/${id}/results`;
+  const startLink = `${basePath}/test/${id}`;
+  const resultsLink = `${basePath}/results${id}`;
 
   return (
     <Card className={`${cx("root")} ${className}`}>
@@ -55,8 +55,7 @@ export default function TestCard({
             </div>
 
             <div className={cx("meta-item")}>
-              <FontAwesomeIcon icon={faBookOpen} className={cx("meta-icon")} />
-              <span>{questions} câu hỏi</span>
+              <span>Điểm đạt: {questions} điểm</span>
             </div>
 
             {completed && typeof score === "number" && (
@@ -72,7 +71,7 @@ export default function TestCard({
               {Array.isArray(sections) && sections.length > 0 ? (
                 sections.map((s, i) => (
                   <div key={i} className={cx("section-item")}>
-                    • {s.name} ({s.questions} câu)
+                    • {s.name} ({s.questions} điểm)
                   </div>
                 ))
               ) : (

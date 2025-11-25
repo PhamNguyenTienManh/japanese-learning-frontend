@@ -1,8 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import classNames from "classnames/bind";
 import styles from "./TestPage.module.scss";
 
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import Badge from "~/components/Badge";
 import TestCard from "~/components/TestCard";
@@ -17,74 +17,98 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import Button from "~/components/Button";
 
+import { getExamsByLevel } from "~/services/examService";
+
 const cx = classNames.bind(styles);
 
-export default function TestPage({
-  levelInfo = {},
-  tests = [],
-  basePath = "/practice",
-}) {
-  if (!tests.length) {
-    tests = [
-      {
-        id: 1,
-        name: "Đề thi JLPT N5 - Đề số 1",
-        duration: 60,
-        questions: 50,
-        completed: true,
-        score: 85,
-        sections: [
-          { name: "Chữ và từ vựng", questions: 20 },
-          { name: "Ngữ pháp", questions: 15 },
-          { name: "Đọc hiểu", questions: 10 },
-          { name: "Nghe hiểu", questions: 5 },
-        ],
-      },
-      {
-        id: 2,
-        name: "Đề thi JLPT N5 - Đề số 2",
-        duration: 60,
-        questions: 50,
-        completed: false,
-        sections: [
-          { name: "Chữ và từ vựng", questions: 20 },
-          { name: "Ngữ pháp", questions: 15 },
-          { name: "Đọc hiểu", questions: 10 },
-          { name: "Nghe hiểu", questions: 5 },
-        ],
-      },
-      {
-        id: 3,
-        name: "Đề thi JLPT N5 - Đề số 3",
-        duration: 60,
-        questions: 50,
-        completed: false,
-        sections: [
-          { name: "Chữ và từ vựng", questions: 20 },
-          { name: "Ngữ pháp", questions: 15 },
-          { name: "Đọc hiểu", questions: 10 },
-          { name: "Nghe hiểu", questions: 5 },
-        ],
-      },
-    ];
-  }
+export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
+  const { level } = useParams();
+  const upperLevel = level?.toUpperCase();
+  const [tests, setTests] = useState([]);
 
-  if (!levelInfo.code) {
-    levelInfo = {
-      code: "N5",
-      name: "Đề thi JLPT N5",
-      description: "Bộ đề thi luyện tập trình độ sơ cấp N5",
-      colorClass: "n5",
-    };
-  }
-  const {
-    code = "N?",
-    name = "Level",
-    description = "",
-    colorClass = "n5",
-  } = levelInfo;
+  useEffect(() => {
+    async function fetchTests() {
+      try {
+        const res = await getExamsByLevel(upperLevel);
+        // API trả về { success: true, data: [...] }
+        const apiTests = res.data || [];
+
+        // map dữ liệu API + thêm các trường mặc định
+        const levelDefaults = {
+          N5: {
+            duration: 90,
+            pass_score: 80,
+            sections: [
+              { name: "Từ vựng", questions: 40 },
+              { name: "Ngữ pháp - Đọc hiểu", questions: 80 },
+              { name: "Nghe hiểu", questions: 60 },
+            ],
+          },
+          N4: {
+            duration: 115,
+            pass_score: 90,
+            sections: [
+              { name: "Từ vựng", questions: 40 },
+              { name: "Ngữ pháp - Đọc hiểu", questions: 80 },
+              { name: "Nghe hiểu", questions: 60 },
+            ],
+          },
+          N3: {
+            duration: 140,
+            pass_score: 95,
+            sections: [
+              { name: "Từ vựng", questions: 40 },
+              { name: "Ngữ pháp - Đọc hiểu", questions: 80 },
+              { name: "Nghe hiểu", questions: 60 },
+            ],
+          },
+          N2: {
+            duration: 155,
+            pass_score: 90,
+            sections: [
+              { name: "Từ vựng", questions: 120 },
+              { name: "Nghe hiểu", questions: 60 },
+            ],
+          },
+          N1: {
+            duration: 165,
+            pass_score: 100,
+            sections: [
+              { name: "Từ vựng", questions: 120 },
+              { name: "Nghe hiểu", questions: 60 },
+            ],
+          },
+        };
+
+        // Map API
+        const mappedTests = apiTests.map((t) => {
+          const defaults = levelDefaults[t.level] || {};
+          return {
+            id: t._id,
+            name: t.title,
+            duration: defaults.duration || 60,
+            pass_score: defaults.pass_score || 80,
+            completed: false,
+            sections: defaults.sections || [
+              { name: "Chữ và từ vựng", questions: 20 },
+              { name: "Ngữ pháp", questions: 15 },
+              { name: "Đọc hiểu", questions: 10 },
+            ],
+          };
+        });
+
+        setTests(mappedTests);
+      } catch (err) {
+        console.error("Lỗi khi tải đề thi:", err);
+        setTests([]); // nếu lỗi thì trả về rỗng
+      }
+    }
+
+    fetchTests();
+  }, [upperLevel]);
 
   const testList = Array.isArray(tests) ? tests : [];
+
   return (
     <div className={cx("root")}>
       <main className={cx("main")}>
@@ -97,14 +121,14 @@ export default function TestPage({
             </Link>
 
             <div className={cx("title-row")}>
-              <Badge className={cx("badge", colorClass)}>{code}</Badge>
-              <h1 className={cx("title")}>{name}</h1>
+              <Badge className={cx("badge", level)}>{upperLevel}</Badge>
+              <h1 className={cx("title")}>Đề thi LPT {upperLevel}</h1>
             </div>
 
-            {description && <p className={cx("subtitle")}>{description}</p>}
+            {/* {description && <p className={cx("subtitle")}>{description}</p>} */}
           </div>
 
-          {/* Stats overview (optional) */}
+          {/* Stats overview */}
           <div className={cx("stats-grid")}>
             <Card className={cx("stat-card")}>
               <div className={cx("stat-inner")}>
@@ -181,7 +205,7 @@ export default function TestPage({
                 <TestCard
                   key={test.id}
                   test={test}
-                  basePath={`${basePath}/${code.toLowerCase()}`}
+                  basePath={`${basePath}/${upperLevel.toLowerCase()}`}
                 />
               ))
             )}

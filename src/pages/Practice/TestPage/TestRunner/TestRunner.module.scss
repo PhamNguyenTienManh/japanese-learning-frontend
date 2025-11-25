@@ -39,19 +39,18 @@
   color: #4b5563;
   cursor: pointer;
   transition: all 0.15s ease;
-}
 
-.section-tab:hover {
-  color: #1f2933;
-}
+  &:hover {
+    color: #1f2933;
+  }
 
-.section-tab.active {
-  background: #fb923c;
-  color: #ffffff;
+  &.active {
+    background: #fb923c;
+    color: #ffffff;
+  }
 }
 
 /* Layout */
-
 .layout {
   display: flex;
   gap: 20px;
@@ -67,7 +66,6 @@
 }
 
 /* Question card */
-
 .question-card {
   padding: 20px 22px;
   background: #ffffff;
@@ -99,15 +97,130 @@
   color: #ffffff;
 }
 
+.badge-kind {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
 .question-text {
   font-size: 16px;
   font-weight: 600;
   white-space: pre-line;
   line-height: 1.6;
+  color: #1f2937;
+}
+
+/* Audio Player */
+.audio-player {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #bfdbfe;
+}
+
+.audio-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.audio-play-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #1d4ed8;
+  }
+
+  svg {
+    font-size: 14px;
+  }
+}
+
+.audio-progress-wrapper {
+  flex: 1;
+}
+
+.audio-progress-bar {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.audio-progress-fill {
+  height: 100%;
+  background: #2563eb;
+  border-radius: 999px;
+  transition: width 0.1s linear;
+}
+
+.audio-time {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* Text read box */
+.text-read-box {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+
+  p {
+    color: #78350f;
+    line-height: 1.7;
+    white-space: pre-line;
+    margin: 0;
+  }
+}
+
+/* Images */
+.general-image,
+.content-image {
+  margin-bottom: 16px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+}
+
+/* Content Section */
+.content-section {
+  margin-bottom: 18px;
+}
+
+.content-question {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 14px;
+  line-height: 1.6;
 }
 
 /* Options */
-
 .options {
   display: flex;
   flex-direction: column;
@@ -123,15 +236,15 @@
   background: #ffffff;
   cursor: pointer;
   transition: all 0.15s ease;
-}
 
-.option:hover {
-  border-color: #2563eb;
-}
+  &:hover {
+    border-color: #2563eb;
+  }
 
-.option.selected {
-  border-color: #2563eb;
-  background: #eff6ff;
+  &.selected {
+    border-color: #2563eb;
+    background: #eff6ff;
+  }
 }
 
 .option-inner {
@@ -149,11 +262,11 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
 
-.option-radio.selected {
-  border-color: #2563eb;
-  background: #2563eb;
+  &.selected {
+    border-color: #2563eb;
+    background: #2563eb;
+  }
 }
 
 .option-radio-dot {
@@ -165,10 +278,10 @@
 
 .option-label {
   font-size: 14px;
+  color: #1f2937;
 }
 
 /* Navigation row */
-
 .nav-row {
   display: flex;
   align-items: center;
@@ -185,7 +298,6 @@
 }
 
 /* Sidebar: time card */
-
 .time-card {
   padding: 16px 18px;
   background: #ffffff;
@@ -212,6 +324,7 @@
 .time-value {
   font-size: 22px;
   font-weight: 700;
+  color: #1f2937;
 }
 
 .time-sub {
@@ -221,7 +334,6 @@
 }
 
 /* Sidebar: actions */
-
 .action-buttons {
   display: flex;
   flex-direction: column;
@@ -244,7 +356,6 @@
 }
 
 /* Sidebar: list card */
-
 .list-card {
   padding: 16px 18px;
   background: #ffffff;
@@ -254,6 +365,7 @@
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 10px;
+  color: #1f2937;
 }
 
 .list-grid {
@@ -273,20 +385,21 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
-}
+  color: #4b5563;
 
-.list-item:hover {
-  border-color: #2563eb;
-}
+  &:hover {
+    border-color: #2563eb;
+  }
 
-.list-item.answered {
-  border-color: #2563eb;
-  background: #eff6ff;
-  color: #2563eb;
-}
+  &.answered {
+    border-color: #2563eb;
+    background: #eff6ff;
+    color: #2563eb;
+  }
 
-.list-item.current {
-  border-color: #fb923c;
-  background: #ffedd5;
-  color: #c2410c;
+  &.current {
+    border-color: #fb923c;
+    background: #ffedd5;
+    color: #c2410c;
+  }
 }
