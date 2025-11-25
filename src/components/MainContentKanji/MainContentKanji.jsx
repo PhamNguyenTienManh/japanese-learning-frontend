@@ -1,116 +1,170 @@
-import React from 'react';
+import { useState, useEffect } from "react";
+import HanziWriter from "../hanzi_writer/hanzi_writer";
+import Contribution from "../contribution/contribution";
 
-const contributions = [
-    { text: 'Có công lực sẽ có thành công', likes: 107, dislikes: 1, author: 'Huể Kem' },
-    { text: 'CÔNG SỨC bỏ ra thì sẽ THÀNH CÔNG ...', likes: 32, dislikes: 3, author: 'Mĩ Đỗ Ri' },
-    { text: 'Làm Công (工). Bị Đánh(攻) sẽ ăn công (功) Làm Công (T).', likes: 11, dislikes: 0, author: 'Minh Khuê' },
-    { text: 'Công lực là công lao có ích', likes: 3, dislikes: 3, author: '...' },
-    { text: 'bó công sức ắt sẽ t c', likes: 2, dislikes: 0, author: 'Vân Thanh' },
-];
-const KanjiDetailHeader = () => (
-    <div className="flex justify-between items-start mb-6">
-        <div>
-            <h1 className="text-2xl font-bold mb-4">Chi tiết chữ kanji công</h1>
-            <div className="space-y-1 text-sm">
-                <p>Hán tự: <span className="font-bold text-lg text-blue-700">功 - CÔNG</span></p>
-                <p>Kunyomi: <span className="text-red-500 font-medium">いさお</span></p>
-                <p>Onyomi: <span className="text-red-500 font-medium">コウ、ク</span></p>
-                <p>Số nét: <span className="font-medium">5</span></p>
-                <p>JLPT: <span className="font-medium">N1</span></p>
-                <p>Bộ: <span className="font-medium">力 LỰC, 工 CÔNG</span></p>
+const MainContent = ({ selectedKanji }) => {
+    const [kanjiData, setKanjiData] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (!selectedKanji) return;
+
+        const fetchKanjiDetail = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const res = await fetch('https://mazii.net/api/search/kanji', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        dict: 'javi',
+                        type: 'kanji',
+                        query: selectedKanji,
+                        page: 1
+                    })
+                });
+
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+                const data = await res.json();
+
+                if (data && data.results && data.results.length > 0) {
+                    setKanjiData(data.results[0]);
+                } else {
+                    throw new Error('Không tìm thấy dữ liệu kanji');
+                }
+            } catch (err) {
+                console.error('Error fetching kanji:', err);
+                setError(err.message);
+                setKanjiData(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchKanjiDetail();
+    }, [selectedKanji]);
+
+    if (loading) {
+        return (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', marginBottom: '12px' }}>⏳</div>
+                    <div style={{ color: '#666' }}>Đang tải dữ liệu...</div>
+                </div>
             </div>
-        </div>
-        <button className="text-sm text-blue-500 hover:underline">Phân tích</button>
-    </div>
-);
+        );
+    }
 
-const KanjiStrokeOrder = () => (
-    <div className="flex justify-end mb-8">
-        {/* Khu vực hiển thị thứ tự viết Kanji */}
-        <div className="w-32 h-32 border rounded-lg bg-gray-50 flex items-center justify-center relative">
-            <span className="text-6xl text-gray-700 opacity-20">功</span>
-            {/* Các con số chỉ thứ tự nét viết */}
-            <span className="absolute top-2 left-1 text-xs text-red-500">5</span>
-            <span className="absolute top-1/3 left-1/4 text-xs text-purple-500">3</span>
-            <span className="absolute top-1/2 right-4 text-xs text-green-500">1</span>
-        </div>
-    </div>
-);
+    if (error) {
+        return (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
+                <div style={{ textAlign: 'center', color: '#d32f2f' }}>
+                    <div style={{ fontSize: '24px', marginBottom: '12px' }}>❌</div>
+                    <div>Lỗi: {error}</div>
+                </div>
+            </div>
+        );
+    }
 
-const MeaningSection = () => (
-    <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-700 mb-2">Nghĩa</h2>
-        <p className="text-gray-800 mb-4">
-            Việc. Công hiệu. Công lao. Đỗ gì làm khéo tốt cũng gọi là công. Lễ tang, để tang chín tháng gọi là đại công (大功), để tang năm tháng gọi là tiểu công (小功).
-        </p>
+    if (!kanjiData) {
+        return (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
+                <div style={{ textAlign: 'center', color: '#999' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '12px' }}>📝</div>
+                    <div>Chọn một kanji để xem chi tiết</div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ flex: 1, backgroundColor: '#fff', overflowY: 'auto', padding: '40px 32px' }}>
+            <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+
+                <div style={{display: 'flex', flexDirection: "row", justifyContent:"space-between"}}>
+
+                    {/* Header */}
+                    <div style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
+                        <h1 style={{ fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '16px' }}>
+                            Chi tiết chữ kanji {kanjiData.kanji}
+                        </h1>
+                        <div style={{ fontSize: '14px', lineHeight: '2', color: '#555' }}>
+                            <p>
+                                <span style={{ color: '#666', display: 'inline-block', width: '100px' }}>Hán tự:</span>
+                                <span style={{ fontWeight: '600', color: '#333' }}>{kanjiData.kanji} - {kanjiData.mean}</span>
+                            </p>
+                            <p>
+                                <span style={{ color: '#666', display: 'inline-block', width: '100px' }}>Kunyomi:</span>
+                                <span>{kanjiData.kun || 'N/A'}</span>
+                            </p>
+                            <p>
+                                <span style={{ color: '#666', display: 'inline-block', width: '100px' }}>Onyomi:</span>
+                                <span>{kanjiData.on || 'N/A'}</span>
+                            </p>
+                            <p>
+                                <span style={{ color: '#666', display: 'inline-block', width: '100px' }}>Số nét:</span>
+                                <span>{kanjiData.stroke_count}</span>
+                            </p>
+                            {kanjiData.level && kanjiData.level.length > 0 && (
+                                <p>
+                                    <span style={{ color: '#666', display: 'inline-block', width: '100px' }}>JLPT:</span>
+                                    <span>{kanjiData.level.join(', ')}</span>
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Kanji Display */}
+                    {/* <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '60px', backgroundColor: '#fafafa', borderRadius: '12px', marginBottom: '32px', border: '2px solid #e0e0e0' }}>
+                        <div style={{ fontSize: '160px', fontWeight: 'bold', color: '#1976d2', lineHeight: 1 }}>
+                            {kanjiData.kanji}
+                        </div>
+                    </div> */}
+
+                    <HanziWriter kanji={kanjiData.kanji}/>
+                </div>
+
+                {/* Meaning */}
+                {kanjiData.detail && (
+                    <div style={{ marginBottom: '32px' }}>
+                        <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '12px', borderLeft: '4px solid #1976d2', paddingLeft: '12px' }}>
+                            Nghĩa
+                        </h2>
+                        <div style={{ fontSize: '14px', lineHeight: '1.8', color: '#555', backgroundColor: '#f5f5f5', padding: '16px', borderRadius: '8px' }}>
+                            {kanjiData.detail.split('##').map((para, idx) => (
+                                <p key={idx} style={{ marginBottom: idx < kanjiData.detail.split('##').length - 1 ? '12px' : '0' }}>
+                                    {para.replace('$', '').trim()}
+                                </p>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Examples */}
+                {kanjiData.examples && kanjiData.examples.length > 0 && (
+                    <div style={{ marginBottom: '32px' }}>
+                        <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '12px', borderLeft: '4px solid #1976d2', paddingLeft: '12px' }}>
+                            Ví dụ ({kanjiData.examples.length})
+                        </h2>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {kanjiData.examples.slice(0, 10).map((ex, index) => (
+                                <div key={index} style={{ backgroundColor: '#f5f5f5', padding: '16px', borderRadius: '8px', borderLeft: '3px solid #1976d2' }}>
+                                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>
+                                        {ex.w} {ex.p && <span style={{ color: '#999', fontSize: '14px' }}>({ex.p.trim()})</span>}
+                                    </div>
+                                    {ex.h && <div style={{ fontSize: '13px', color: '#1976d2', marginBottom: '4px' }}>{ex.h}</div>}
+                                    {ex.m && <div style={{ fontSize: '14px', color: '#666' }}>{ex.m}</div>}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+            <Contribution kanjiId={kanjiData.mobileId} kanjiChar={kanjiData.kanji} />
+        </div>
         
-        <h2 className="text-xl font-bold text-gray-700 mb-2">Giải nghĩa</h2>
-        <ul className="list-disc list-inside space-y-1 ml-4 text-gray-800">
-            <li>Việc. Như nông công (農功) việc làm ruộng.</li>
-            {/* ... Thêm các giải nghĩa khác nếu cần */}
-        </ul>
-        <button className="text-sm text-blue-500 hover:underline mt-2">Xem thêm</button>
-    </div>
-);
-
-const ContributionItem = ({ text, likes, dislikes, author }) => (
-    <div className="border-b py-3 flex justify-between items-start">
-        <p className="text-gray-800 flex-1 pr-4">{text}</p>
-        <div className="flex flex-col items-end space-y-1 text-xs text-gray-500">
-            <div className="flex space-x-3">
-                <span className="flex items-center text-green-600">
-                    👍 <span className="ml-1">{likes}</span>
-                </span>
-                <span className="flex items-center text-red-600">
-                    👎 <span className="ml-1">{dislikes}</span>
-                </span>
-            </div>
-            <span className="text-blue-500 hover:underline cursor-pointer">{author}</span>
-        </div>
-    </div>
-);
-
-const ContributionSection = () => (
-    <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-700 mb-4">Có 20 ý kiến đóng góp</h2>
-        <div className="border rounded-lg p-4 bg-white shadow-sm">
-            {contributions.map((item, index) => (
-                <ContributionItem key={index} {...item} />
-            ))}
-        </div>
-    </div>
-);
-
-const Pagination = () => (
-    <div className="flex justify-center items-center space-x-2 py-4">
-        {[1, 2, 3, 4].map(page => (
-            <button 
-                key={page}
-                className={`w-8 h-8 rounded-full border ${page === 1 ? 'bg-blue-600 text-white font-bold border-blue-600' : 'bg-white text-gray-700 hover:bg-gray-100'}`}
-            >
-                {page}
-            </button>
-        ))}
-        {/* Thêm mũi tên chuyển trang nếu cần */}
-    </div>
-);
-
-const MainContent = () => (
-    <div className="flex-1 p-8 bg-gray-50 overflow-y-auto">
-        {/* Biểu tượng phóng to, thu nhỏ */}
-        <div className="flex justify-end mb-4 space-x-2 text-xl text-gray-500">
-            <button title="Phóng to" className="hover:text-gray-700">🔍</button>
-            <button title="Thu nhỏ" className="hover:text-gray-700">🔎</button>
-            <button title="Đóng" className="hover:text-gray-700">❌</button>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-xl">
-            <KanjiDetailHeader />
-            <KanjiStrokeOrder />
-            <MeaningSection />
-            <ContributionSection />
-        </div>
-        <Pagination />
-    </div>
-);
+    );
+};
 export default MainContent;

@@ -1,0 +1,12 @@
+/* KanjiLookupInterface.css */
+
+.kanji-lookup-interface {
+    /* flex: chuyển thành display: flex; */
+    display: flex;
+
+    /* h-screen: chuyển thành height: 100vh; */
+    height: 100vh; 
+
+    /* bg-gray-100: chuyển thành background-color: (một màu xám nhạt); */
+    background-color: #f3f4f6; /* Đây là mã màu xám nhạt tương đương với bg-gray-100 của Tailwind */
+}
