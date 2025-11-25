@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ThumbsUp, ThumbsDown, Send } from "lucide-react";
 import ContributionService from "~/services/contributionService";
 const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => {
-    
+
     const [comments, setComments] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [newComment, setNewComment] = useState("");
@@ -106,13 +106,11 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
         setCurrentPage(1);
 
         try {
+            const token = localStorage.getItem("token");
             await ContributionService.addComment({
-                wordId: kanjiId,
-                word: kanjiChar,
-                mean: newComment,
-                type: 'kanji',
-                dict: 'javi'
-            });
+                kanjiId: kanjiId,
+                content: newComment,
+            }, token);
         } catch (err) {
             console.error('Error submitting comment:', err);
         }
@@ -165,9 +163,9 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
 
     if (loading) {
         return (
-            <div style={{ 
-                maxWidth: '1000px', 
-                margin: '0 auto', 
+            <div style={{
+                maxWidth: '1000px',
+                margin: '0 auto',
                 padding: '40px',
                 textAlign: 'center'
             }}>
@@ -179,9 +177,9 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
 
     if (error) {
         return (
-            <div style={{ 
-                maxWidth: '1000px', 
-                margin: '0 auto', 
+            <div style={{
+                maxWidth: '1000px',
+                margin: '0 auto',
                 padding: '40px',
                 textAlign: 'center'
             }}>
@@ -192,17 +190,17 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
     }
 
     return (
-        <div style={{ 
-            maxWidth: '1000px', 
-            margin: '0 auto', 
+        <div style={{
+            maxWidth: '1000px',
+            margin: '0 auto',
             padding: '20px',
             backgroundColor: '#fff',
             borderRadius: '8px'
         }}>
             {/* Header */}
-            <div style={{ 
-                fontSize: '15px', 
-                color: '#606060', 
+            <div style={{
+                fontSize: '15px',
+                color: '#606060',
                 marginBottom: '20px',
                 fontWeight: '500'
             }}>
@@ -211,8 +209,8 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
 
             {/* Comment Input */}
             <div style={{ marginBottom: '32px' }}>
-                <div style={{ 
-                    display: 'flex', 
+                <div style={{
+                    display: 'flex',
                     gap: '12px',
                     alignItems: 'flex-start',
                     position: 'relative'
@@ -266,10 +264,10 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
 
             {/* Comments List */}
             {comments.length === 0 ? (
-                <div style={{ 
-                    textAlign: 'center', 
-                    padding: '40px', 
-                    color: '#999' 
+                <div style={{
+                    textAlign: 'center',
+                    padding: '40px',
+                    color: '#999'
                 }}>
                     <div style={{ fontSize: '48px', marginBottom: '12px' }}>💬</div>
                     <div>Chưa có ý kiến đóng góp nào</div>
@@ -284,15 +282,15 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
                             const displayDislikes = comment.dislikes + (isDisliked ? 1 : 0);
 
                             return (
-                                <div key={comment.id} style={{ 
+                                <div key={comment.id} style={{
                                     padding: '12px 0',
                                     borderBottom: '1px solid #f0f0f0'
                                 }}>
                                     {/* Comment Content */}
                                     <div style={{ marginBottom: '8px' }}>
-                                        <div style={{ 
-                                            fontSize: '14px', 
-                                            lineHeight: '1.6', 
+                                        <div style={{
+                                            fontSize: '14px',
+                                            lineHeight: '1.6',
                                             color: '#030303',
                                             marginBottom: '4px',
                                             whiteSpace: 'pre-wrap'
@@ -302,9 +300,9 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
                                     </div>
 
                                     {/* Comment Actions */}
-                                    <div style={{ 
-                                        display: 'flex', 
-                                        alignItems: 'center', 
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
                                         gap: '16px',
                                         fontSize: '13px',
                                         color: '#606060'
@@ -356,7 +354,7 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
                                         </button>
 
                                         {/* Author */}
-                                        <div style={{ 
+                                        <div style={{
                                             marginLeft: 'auto',
                                             display: 'flex',
                                             alignItems: 'center',
@@ -364,7 +362,7 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
                                             fontSize: '12px',
                                             color: '#909090'
                                         }}>
-                                            <span style={{ 
+                                            <span style={{
                                                 color: '#606060',
                                                 fontWeight: '500',
                                             }}>
@@ -379,9 +377,9 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
 
                     {/* Pagination */}
                     {totalPages > 1 && (
-                        <div style={{ 
-                            display: 'flex', 
-                            justifyContent: 'center', 
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'center',
                             alignItems: 'center',
                             gap: '8px',
                             marginTop: '32px',
@@ -413,7 +411,7 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
                             {/* Page Numbers */}
                             {renderPageNumbers().map((page, index) => (
                                 page === '...' ? (
-                                    <span key={`ellipsis-${index}`} style={{ 
+                                    <span key={`ellipsis-${index}`} style={{
                                         padding: '8px 12px',
                                         color: '#606060'
                                     }}>
