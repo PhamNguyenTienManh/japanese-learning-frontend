@@ -20,12 +20,14 @@ import Achievements from "~/pages/Dashboard/Achievements";
 import Goals from "~/pages/Dashboard/Goals";
 import Setting from "~/pages/Dashboard/Setting";
 import KanjiLookup from "~/pages/KanjiLookup";
+import ResetPassword from "~/pages/auth/ResetPass";
 
 export const publicRouter = [
   { path: config.routes.home, component: Home },
   { path: config.routes.login, component: LoginPage },
   { path: config.routes.register, component: RegisterPage },
   { path: config.routes.forgotPassword, component: ForgotPasswordPage },
+  { path: config.routes.resetPassword, component: ResetPassword },
   { path: config.routes.about, component: About },
   { path: config.routes.dictionary, component: Dictionary },
   { path: config.routes.notebook, component: Notebook },

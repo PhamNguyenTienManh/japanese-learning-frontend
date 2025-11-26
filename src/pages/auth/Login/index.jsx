@@ -12,7 +12,7 @@ import styles from "./LoginPage.module.scss";
 import Button from "~/components/Button";
 import Input from "~/components/Input";
 import Card from "~/components/Card";
-import { Navigate } from "react-router-dom";
+import authService from "~/services/authService";
 
 const cx = classNames.bind(styles);
 
@@ -22,41 +22,29 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     try {
-      const res = await fetch("http://localhost:9090/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
+      const data = await authService.login(email, password);
 
       if (data.data.access_token) {
-        const token = data.data.access_token;
-        localStorage.setItem("token", token);
-        window.location.href = "/"
+        authService.saveToken(data.data.access_token);
+        window.location.href = "/";
       } else {
         alert(data.message || "Đăng nhập thất bại");
       }
     } catch (error) {
-      console.error("Login error:", error);
-      alert("Không thể kết nối server!");
+      alert(error.message || "Không thể kết nối server!");
     }
   };
-  const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:9090/api/auth/google";
-  };
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
-    console.log("token la", token);
-    
 
+  const handleGoogleLogin = () => {
+    window.location.href = authService.getGoogleLoginUrl();
+  };
+
+  useEffect(() => {
+    // Xử lý callback từ Google OAuth
+    const token = authService.handleGoogleCallback();
     if (token) {
-      localStorage.setItem("token", token);
-      window.history.replaceState({}, document.title, window.location.pathname);
       window.location.href = "/";
     }
   }, []);
@@ -134,6 +122,5 @@ function LoginPage() {
     </div>
   );
 }
-
 
 export default LoginPage;

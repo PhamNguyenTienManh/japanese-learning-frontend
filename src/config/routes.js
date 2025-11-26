@@ -1,3 +1,4 @@
+import ResetPassword from "~/pages/auth/ResetPass";
 import KanjiLookup from "~/pages/KanjiLookup";
 
 const routes = {
@@ -5,6 +6,7 @@ const routes = {
   login: "/login",
   register: "/signup",
   forgotPassword: "/forgot-password",
+  resetPassword: "/reset-password",
   about: "/about",
   dictionary: "/dictionary",
   notebook: "/dictionary/notebook",

@@ -67,7 +67,7 @@ const Sidebar = ({ keyword, onSelectKanji, selectedKanji }) => {
       padding: '20px 16px'
     }}>
       <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '16px', padding: '0 8px' }}>
-        Kết quả tra cứu kanji
+        Kết quả tra kanji
       </h2>
 
       {loading ? (

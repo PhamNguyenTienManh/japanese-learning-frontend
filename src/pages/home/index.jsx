@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import Tabs, { TabsContent, TabsList, TabsTrigger } from "~/components/Tabs";
 import {
-  faSearch,
   faFire,
   faEye,
   faHeart,
@@ -12,8 +11,8 @@ import {
 import WordCard from "~/components/WordCard";
 import Button from "~/components/Button";
 import styles from "./Home.module.scss";
-import Input from "~/components/Input";
 import Card from "~/components/Card";
+import SearchInput from "~/components/searchInput/searchInput";
 
 const mockWords = [
   {
@@ -108,30 +107,27 @@ const communityPosts = [
 const cx = classNames.bind(styles);
 
 function Home() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(mockWords);
   const [savedWords, setSavedWords] = useState([]);
   const [showHandwriting, setShowHandwriting] = useState(false);
   const [recognizedResults, setRecognizedResults] = useState([]);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    const q = searchQuery.trim();
+  const handleSearch = (keyword) => {
+    const q = keyword.trim();
 
     if (!q) {
-      setSearchResults(mockWords);
       return;
     }
 
-    const filtered = mockWords.filter(
-      (word) =>
-        word.kanji.includes(q) ||
-        word.hiragana.includes(q) ||
-        word.romaji.toLowerCase().includes(q.toLowerCase()) ||
-        word.meaning.toLowerCase().includes(q.toLowerCase())
-    );
-
-    setSearchResults(filtered);
+    // Navigate to KanjiLookup page with search query
+    navigate('/kanji', {
+      state: {
+        searchQuery: q,
+        tab: 'vocab'
+      }
+    });
   };
 
   const toggleSaveWord = (id) => {
@@ -187,7 +183,7 @@ function Home() {
       lastX = pos.x;
       lastY = pos.y;
       if (timeoutId) clearTimeout(timeoutId);
-    timeoutId = setTimeout(handleRecognize, 100);
+      timeoutId = setTimeout(handleRecognize, 100);
     };
 
     const stopDrawing = () => {
@@ -236,125 +232,26 @@ function Home() {
   };
 
   const handleSelectKanji = (kanji) => {
-    setSearchQuery(kanji);
-    setShowHandwriting(false);
-    setRecognizedResults([]);
-    // Trigger search with the selected kanji
-    const filtered = mockWords.filter(
-      (word) =>
-        word.kanji.includes(kanji) ||
-        word.hiragana.includes(kanji) ||
-        word.romaji.toLowerCase().includes(kanji.toLowerCase()) ||
-        word.meaning.toLowerCase().includes(kanji.toLowerCase())
-    );
-    setSearchResults(filtered);
+    // Navigate to KanjiLookup with selected kanji
+    navigate('/kanji-lookup', {
+      state: {
+        searchQuery: kanji,
+        tab: 'kanji'
+      }
+    });
   };
 
   return (
     <div className={cx("wrapper")}>
       <div className={cx("container")}>
-        <div className={cx("header")}>
-          <h1>Chào ngày mới! 👋</h1>
-          <p>Hôm nay bạn muốn học gì?</p>
-        </div>
-
         <div className={cx("content")}>
-          <div className={cx("main")}>
-            <form onSubmit={handleSearch} className={cx("search-form")}>
-              <Input
-                type="text"
-                placeholder="日本、nihon, Nhật Bản"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={"search"}
-                leftIcon={<FontAwesomeIcon icon={faSearch} />}
-              />
-              <Button
-                text
-                className={cx("pen-btn")}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setShowHandwriting(true);
-                }}
-              >
-                ✏️
-              </Button>
-
-              {/* Handwriting Popup */}
-              {showHandwriting && (
-                <div className={cx("handwriting-popup")}>
-                  <div className={cx("popup-header")}>
-                    <h3>Viết kanji tại đây</h3>
-                    <button
-                      className={cx("close-btn")}
-                      onClick={() => {
-                        setShowHandwriting(false);
-                        setRecognizedResults([]);
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div style={{display:"flex", flexDirection: "row", flex: "1"}}>
-
-                  <div className={cx("canvas-container")}>
-                    <canvas
-                      id="handwriting-canvas"
-                      width={400}
-                      height={130}
-                    />
-                  </div>
-
-                  <div className={cx("button-group")}>
-                    <Button text onClick={handleClear}>
-                      Xóa
-                    </Button>
-                  </div>
-                  </div>
-
-                  {recognizedResults.length > 0 && (
-                    <div className={cx("results-list")}>
-                      <div className={cx("kanji-suggestions")}>
-                        {recognizedResults.map((result, index) => (
-                          <button
-                            key={index}
-                            className={cx("kanji-item")}
-                            onClick={() => handleSelectKanji(result.kanji)}
-                          >
-                            <span className={cx("kanji-char")}>
-                              {result.kanji}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </form>
-
-            <section className={cx("results")}>
-              {searchResults.length === 0 ? (
-                <Card className={cx("empty")}>
-                  <p className={cx("empty-text")}>
-                    Không tìm thấy kết quả nào
-                  </p>
-                </Card>
-              ) : (
-                searchResults.map((word) => (
-                  <WordCard
-                    key={word.id}
-                    word={word}
-                    saved={savedWords.includes(word.id)}
-                    onToggleSave={toggleSaveWord}
-                    onPlay={playAudio}
-                  />
-                ))
-              )}
-            </section>
-          </div>
-
           <aside className={cx("sidebar")}>
+            <div style={{ width: "100%", display: "flex" }}>
+              <div className={cx("header")}>
+                <h1>Chào ngày mới! 👋</h1>
+                <p>Hôm nay bạn muốn học gì?</p>
+              </div>
+            </div>
             <div className={cx("section")}>
               <h4>
                 <FontAwesomeIcon icon={faFire} /> TỪ NỔI BẬT
@@ -394,7 +291,34 @@ function Home() {
                 </Card>
               ))}
             </div>
+
           </aside>
+          <div className={cx("main")}>
+            <div style={{ width: "70vw" }}>
+              <SearchInput onSearch={handleSearch} />
+            </div>
+
+            <section className={cx("results")}>
+              {searchResults.length === 0 ? (
+                <Card className={cx("empty")}>
+                  <p className={cx("empty-text")}>
+                    Không tìm thấy kết quả nào
+                  </p>
+                </Card>
+              ) : (
+                searchResults.map((word) => (
+                  <WordCard
+                    key={word.id}
+                    word={word}
+                    saved={savedWords.includes(word.id)}
+                    onToggleSave={toggleSaveWord}
+                    onPlay={playAudio}
+                  />
+                ))
+              )}
+            </section>
+          </div>
+
         </div>
       </div>
     </div>

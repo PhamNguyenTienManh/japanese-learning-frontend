@@ -10,3 +10,75 @@
     /* bg-gray-100: chuyển thành background-color: (một màu xám nhạt); */
     background-color: #f3f4f6; /* Đây là mã màu xám nhạt tương đương với bg-gray-100 của Tailwind */
 }
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f5f5;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.tabs {
+  display: flex;
+  background-color: #fff;
+  border-bottom: 2px solid #e0e0e0;
+  padding: 0 32px;
+}
+
+.tab {
+  padding: 16px 24px;
+  border: none;
+  background: none;
+  font-size: 16px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+
+  &:hover {
+    color: #333;
+  }
+
+  &.active {
+    color: #007bff;
+    border-bottom-color: #007bff;
+  }
+}
+
+.content-wrapper {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.search-header {
+  padding: 20px 32px;
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+@media (max-width: 768px) {
+  .tabs {
+    padding: 0 16px;
+  }
+
+  .tab {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+
+  .search-header {
+    padding: 16px;
+  }
+}

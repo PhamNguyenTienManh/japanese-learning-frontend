@@ -12,14 +12,14 @@ import {
   faTrash,
   faArrowLeft,
   faPlus,
-  faPenToSquare, // Thêm icon edit
+  faPenToSquare,
   faCheck,
   faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 
 const cx = classNames.bind(styles);
 
-const wordCategories = ["Từ vựng", "Hán tự", "Ngữ pháp"];
+const wordCategories = ["word", "kanji", "grammar", "other"];
 
 function Notebook() {
   const [notebooks, setNotebooks] = useState([]);
@@ -29,20 +29,21 @@ function Notebook() {
   const [newNotebookName, setNewNotebookName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [editingNotebookId, setEditingNotebookId] = useState(null); // Thêm state
-  const [editingName, setEditingName] = useState(""); // Thêm state
+  const [editingNotebookId, setEditingNotebookId] = useState(null);
+  const [editingName, setEditingName] = useState("");
   const [newWord, setNewWord] = useState({
-    term: "",
+    name: "",
     phonetic: "",
-    meaning: "",
-    note: "",
-    category: "Từ vựng",
+    mean: "",
+    notes: "",
+    type: "word",
   });
 
   useEffect(() => {
     fetchNotebooks();
   }, []);
 
+  // Fetch danh sách notebooks
   const fetchNotebooks = async () => {
     try {
       setLoading(true);
@@ -57,6 +58,19 @@ function Notebook() {
     }
   };
 
+  // Fetch words của một notebook
+  const fetchWords = async (notebookId) => {
+    try {
+      const response = await notebookService.getWord(notebookId);
+      return response.data || [];
+    } catch (err) {
+      console.error('Failed to fetch words:', err);
+      setError('Không thể tải danh sách từ');
+      return [];
+    }
+  };
+
+  // Tạo notebook mới
   const handleCreateNotebook = async () => {
     if (!newNotebookName.trim()) return;
 
@@ -65,10 +79,16 @@ function Notebook() {
       const newNotebook = await notebookService.createNotebook(
         newNotebookName.trim()
       );
+      
       await fetchNotebooks();
       setNewNotebookName("");
       setShowCreateNotebook(false);
-      setSelectedNotebook(newNotebook._id);
+      
+      // Set selected notebook to the new one
+      if (newNotebook && newNotebook._id) {
+        setSelectedNotebook(newNotebook._id);
+      }
+      
       setError(null);
     } catch (err) {
       console.error('Failed to create notebook:', err);
@@ -92,7 +112,7 @@ function Notebook() {
     setEditingName("");
   };
 
-  // Lưu tên notebook mới
+  // Cập nhật tên notebook
   const handleUpdateNotebook = async (notebookId, e) => {
     e.stopPropagation();
     
@@ -105,6 +125,7 @@ function Notebook() {
       setLoading(true);
       await notebookService.updateNotebook(notebookId, editingName.trim());
 
+      // Update local state
       setNotebooks((prev) =>
         prev.map((notebook) =>
           notebook._id === notebookId
@@ -124,17 +145,18 @@ function Notebook() {
     }
   };
 
+  // Thêm từ mới
   const handleAddWord = async () => {
-    if (!newWord.term.trim() || !selectedNotebook) return;
+    if (!newWord.name.trim() || !selectedNotebook) return;
 
     try {
       setLoading(true);
       const wordData = {
-        kanji: newWord.term,
-        hiragana: newWord.phonetic,
-        meaning: newWord.meaning,
-        note: newWord.note,
-        category: newWord.category,
+        name: newWord.name,
+        phonetic: newWord.phonetic,
+        mean: newWord.meaning,
+        notes: newWord.note,
+        type: newWord.type,
       };
 
       const addedWord = await notebookService.addWord(
@@ -142,25 +164,31 @@ function Notebook() {
         wordData
       );
 
+      // Refresh words list
+      const updatedWords = await fetchWords(selectedNotebook);
+      
+      
+      // Update notebooks state
       setNotebooks((prev) =>
         prev.map((notebook) => {
           if (notebook._id === selectedNotebook) {
             return {
               ...notebook,
-              wordCount: notebook.wordCount + 1,
-              words: [...(notebook.words || []), addedWord],
+              wordCount: updatedWords.length,
+              words: updatedWords,
             };
           }
           return notebook;
         })
       );
 
+      // Reset form
       setNewWord({
-        term: "",
+        name: "",
         phonetic: "",
-        meaning: "",
-        note: "",
-        category: "Từ vựng",
+        mean: "",
+        notes: "",
+        type: "word",
       });
       setShowAddWord(false);
       setError(null);
@@ -172,23 +200,29 @@ function Notebook() {
     }
   };
 
+  // Xóa từ
   const removeWord = async (notebookId, wordId) => {
     try {
       setLoading(true);
       await notebookService.deleteWord(notebookId, wordId);
 
+      // Refresh words list
+      const updatedWords = await fetchWords(notebookId);
+
+      // Update notebooks state
       setNotebooks((prev) =>
         prev.map((notebook) => {
           if (notebook._id === notebookId) {
             return {
               ...notebook,
-              wordCount: Math.max(0, notebook.wordCount - 1),
-              words: notebook.words.filter((w) => w.id !== wordId),
+              wordCount: updatedWords.length,
+              words: updatedWords,
             };
           }
           return notebook;
         })
       );
+      
       setError(null);
     } catch (err) {
       console.error('Failed to delete word:', err);
@@ -198,6 +232,7 @@ function Notebook() {
     }
   };
 
+  // Xóa notebook
   const removeNotebook = async (notebookId) => {
     if (!window.confirm('Bạn có chắc muốn xóa sổ tay này?')) return;
 
@@ -206,9 +241,11 @@ function Notebook() {
       await notebookService.deleteNotebook(notebookId);
 
       setNotebooks((prev) => prev.filter((n) => n._id !== notebookId));
+      
       if (selectedNotebook === notebookId) {
         setSelectedNotebook(null);
       }
+      
       setError(null);
     } catch (err) {
       console.error('Failed to delete notebook:', err);
@@ -218,10 +255,45 @@ function Notebook() {
     }
   };
 
+  // Load words khi chọn notebook
+  const handleSelectNotebook = async (notebookId) => {
+    setSelectedNotebook(notebookId);
+    
+    try {
+      setLoading(true);
+      const words = await fetchWords(notebookId);
+      
+      
+      // Update notebook with words
+      setNotebooks((prev) =>
+        prev.map((notebook) => {
+          if (notebook._id === notebookId) {
+            return {
+              ...notebook,
+              words: words,
+              wordCount: words.length,
+            };
+          }
+          return notebook;
+        })
+      );
+    } catch (err) {
+      console.error('Failed to load words:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const currentNotebook = notebooks.find((n) => n._id === selectedNotebook);
 
   const handlePlayAudio = (text) => {
-    alert(`Phát âm: ${text}`);
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ja-JP';
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert(`Phát âm: ${text}`);
+    }
   };
 
   const ErrorMessage = () => {
@@ -234,6 +306,7 @@ function Notebook() {
     );
   };
 
+  // VIEW: NOTEBOOK LIST
   if (!selectedNotebook) {
     return (
       <div className={cx("wrapper")}>
@@ -267,6 +340,11 @@ function Notebook() {
                         onChange={(e) => setNewNotebookName(e.target.value)}
                         className={"notebook-input"}
                         disabled={loading}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            handleCreateNotebook();
+                          }
+                        }}
                       />
                     </div>
                     <div className={cx("form-actions")}>
@@ -298,17 +376,19 @@ function Notebook() {
             <section className={cx("section")}>
               <h2 className={cx("section-title")}>Sổ tay của bạn</h2>
               {loading && <p>Đang tải...</p>}
+              {!loading && notebooks.length === 0 && (
+                <p className={cx("empty-text")}>Chưa có sổ tay nào. Hãy tạo sổ tay đầu tiên!</p>
+              )}
               <div className={cx("notebooks-list")}>
                 {notebooks.map((notebook) => (
                   <Card
                     key={notebook._id}
                     className={cx("notebook-card")}
-                    onClick={() => !editingNotebookId && setSelectedNotebook(notebook._id)}
+                    onClick={() => !editingNotebookId && handleSelectNotebook(notebook._id)}
                   >
                     <div className={cx("notebook-row")}>
                       <div className={cx("notebook-main")}>
                         {editingNotebookId === notebook._id ? (
-                          // Edit mode
                           <div className={cx("edit-mode")}>
                             <Input
                               value={editingName}
@@ -340,12 +420,12 @@ function Notebook() {
                             </div>
                           </div>
                         ) : (
-                          // View mode
                           <>
                             <h3 className={cx("notebook-name")}>{notebook.name}</h3>
                             <div className={cx("notebook-meta")}>
+                              
                               <span>
-                                Ngày tạo: {notebook.createdAt ? notebook.createdAt.slice(0, 10) : ''}
+                                Ngày tạo: {notebook.createdAt ? new Date(notebook.createdAt).toLocaleDateString('vi-VN') : ''}
                               </span>
                             </div>
                           </>
@@ -391,12 +471,12 @@ function Notebook() {
         <div className={cx("container")}>
           <ErrorMessage />
           
-          {/* Header với edit inline */}
           <div className={cx("header")}>
             <button
               type="button"
               onClick={() => setSelectedNotebook(null)}
               className={cx("back-link")}
+              disabled={loading}
             >
               <FontAwesomeIcon icon={faArrowLeft} className={cx("back-icon")} />
               <span>Quay lại</span>
@@ -420,12 +500,14 @@ function Notebook() {
                     text
                     className={cx("icon-btn", "success")}
                     onClick={(e) => handleUpdateNotebook(currentNotebook._id, e)}
+                    disabled={loading}
                     leftIcon={<FontAwesomeIcon icon={faCheck} />}
                   />
                   <Button
                     text
                     className={cx("icon-btn", "cancel")}
                     onClick={cancelEditNotebook}
+                    disabled={loading}
                     leftIcon={<FontAwesomeIcon icon={faTimes} />}
                   />
                 </div>
@@ -437,6 +519,7 @@ function Notebook() {
                   text
                   className={cx("icon-btn", "edit")}
                   onClick={(e) => startEditNotebook(currentNotebook, e)}
+                  disabled={loading}
                   leftIcon={<FontAwesomeIcon icon={faPenToSquare} />}
                 />
               </div>
@@ -447,12 +530,12 @@ function Notebook() {
             </p>
           </div>
 
-          {/* Actions */}
           <div className={cx("actions")}>
             <Button
-              className={"green"}
+              primary
               onClick={() => setShowAddWord((v) => !v)}
               leftIcon={<FontAwesomeIcon icon={faPlus} />}
+              disabled={loading}
             >
               Thêm từ
             </Button>
@@ -465,16 +548,183 @@ function Notebook() {
             </Button>
           </div>
 
-          {/* Add word form */}
           {showAddWord && (
             <Card className={cx("add-card")}>
               <h3 className={cx("section-title")}>Thêm từ mới</h3>
-              {/* Form giữ nguyên như cũ */}
+              <div className={cx("form")}>
+                <div className={cx("field")}>
+                  <label className={cx("label")}>Từ (Kanji)</label>
+                  <Input
+                    placeholder="Nhập từ..."
+                    value={newWord.name}
+                    onChange={(e) =>
+                      setNewWord((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                    className={"notebook-input"}
+                    disabled={loading}
+                  />
+                </div>
+                <div className={cx("field")}>
+                  <label className={cx("label")}>Hiragana</label>
+                  <Input
+                    placeholder="Nhập hiragana..."
+                    value={newWord.phonetic}
+                    onChange={(e) =>
+                      setNewWord((prev) => ({
+                        ...prev,
+                        phonetic: e.target.value,
+                      }))
+                    }
+                    className={"notebook-input"}
+                    disabled={loading}
+                  />
+                </div>
+                <div className={cx("field")}>
+                  <label className={cx("label")}>Nghĩa của từ</label>
+                  <Input
+                    placeholder="Nhập nghĩa..."
+                    value={newWord.meaning}
+                    onChange={(e) =>
+                      setNewWord((prev) => ({
+                        ...prev,
+                        meaning: e.target.value,
+                      }))
+                    }
+                    className={"notebook-input"}
+                    disabled={loading}
+                  />
+                </div>
+                <div className={cx("field")}>
+                  <label className={cx("label")}>Thêm ghi chú</label>
+                  <Input
+                    placeholder="Nhập ghi chú..."
+                    value={newWord.note}
+                    onChange={(e) =>
+                      setNewWord((prev) => ({
+                        ...prev,
+                        note: e.target.value,
+                      }))
+                    }
+                    className={"notebook-input"}
+                    disabled={loading}
+                  />
+                </div>
+                <div className={cx("field")}>
+                  <label className={cx("label")}>Từ loại</label>
+                  <select
+                    className={cx("select")}
+                    value={newWord.type}
+                    onChange={(e) =>
+                      setNewWord((prev) => ({
+                        ...prev,
+                        type: e.target.value,
+                      }))
+                    }
+                    disabled={loading}
+                  >
+                    {wordCategories.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className={cx("form-actions")}>
+                  <Button 
+                    primary 
+                    onClick={handleAddWord}
+                    disabled={loading || !newWord.name.trim()}
+                  >
+                    {loading ? "Đang thêm..." : "Thêm từ"}
+                  </Button>
+                  <Button
+                    outline
+                    onClick={() => {
+                      setShowAddWord(false);
+                      setNewWord({
+                        name: "",
+                        phonetic: "",
+                        mean: "",
+                        notes: "",
+                        type: "word",
+                      });
+                    }}
+                    disabled={loading}
+                  >
+                    Hủy
+                  </Button>
+                </div>
+              </div>
             </Card>
           )}
 
-          {/* Words list */}
-          {/* Giữ nguyên */}
+          <div className={cx("words-list")}>
+            {loading && <p>Đang tải từ...</p>}
+            
+            {!loading && (!currentNotebook?.words || currentNotebook.words.length === 0) && (
+              <Card className={cx("empty-card")}>
+                <p className={cx("empty-text")}>
+                  Chưa có từ nào trong sổ tay này
+                </p>
+              </Card>
+            )}
+
+            {!loading && currentNotebook?.words?.map((word) => (
+              <Card key={word._id || word.id} className={cx("word-card")}>
+                <div className={cx("word-row")}>
+                  <div className={cx("word-main")}>
+                    <div className={cx("word-header")}>
+                      <h3 className={cx("word-kanji")}>{word.name}</h3>
+                      <Button
+                        text
+                        className={cx("icon-btn")}
+                        onClick={() => handlePlayAudio(word.phonetic || word.phonetic)}
+                        disabled={loading}
+                        // leftIcon={
+                        //   <FontAwesomeIcon
+                        //     icon={faVolumeHigh}
+                        //     className={cx("volume-icon")}
+                        //   />
+                        // }
+                      />
+                    </div>
+                    <div className={cx("word-sub")}>
+                      <p className={cx("word-hira")}>{word.phonetic}</p>
+                    </div>
+                    <p className={cx("word-meaning")}>
+                      <span className={cx("word-meaning-label")}>Nghĩa:</span>{" "}
+                      {word.mean}
+                    </p>
+                    {word.notes && (
+                      <p className={cx("word-note")}>
+                        <span className={cx("word-note-label")}>Ghi chú:</span>{" "}
+                        {word.notes}
+                      </p>
+                    )}
+                    {word.type && (
+                      <span className={cx("word-category")}>{word.type}</span>
+                    )}
+                  </div>
+                  <Button
+                    text
+                    className={cx("icon-btn", "danger")}
+                    onClick={() => removeWord(currentNotebook._id, word._id || word.id)}
+                    disabled={loading}
+                    leftIcon={
+                      <FontAwesomeIcon
+                        icon={faTrash}
+                        className={cx("trash-icon")}
+                      />
+                    }
+                  />
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
       </main>
     </div>
