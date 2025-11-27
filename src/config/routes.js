@@ -8,7 +8,7 @@ const routes = {
   about: "/about",
   dictionary: "/dictionary",
   notebook: "/dictionary/notebook",
-  flashcards: "/flashcards",
+  flashcards: "/dictionary/notebook/flashcards",
   practice: "/practice",
   level: "/practice/:level",
   test: "/practice/:level/test/:testId",
