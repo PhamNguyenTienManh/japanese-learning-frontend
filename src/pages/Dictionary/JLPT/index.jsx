@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -11,12 +11,14 @@ import {
     faPlus,
     faVolumeHigh,
     faDownload,
+    faChevronLeft,
+    faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 
 import Button from "~/components/Button";
 import styles from "./JLPT.module.scss";
 import Card from "~/components/Card";
-
+import { getJlptWords, getJlptKanji, getJlptGrammar } from "~/services/jlptService";
 
 const cx = classNames.bind(styles);
 
@@ -46,73 +48,197 @@ const jlptFeatures = [
 const vocabularyTypes = ["Từ vựng", "Ngữ pháp", "Hán tự"];
 const jlptLevels = ["N5", "N4", "N3", "N2", "N1"];
 
-const sampleVocabulary = [
-    {
-        id: 1,
-        kanji: "人",
-        hiragana: "たり と ヒト にん ひとり",
-        meaning: "con người; nhân loại; người khác",
-        translation: "person; human; people; mankind",
-    },
-    {
-        id: 2,
-        kanji: "年",
-        hiragana: "ねん と し と ねん",
-        meaning: "năm; niên; tuổi",
-        translation: "year; age; years old",
-    },
-    {
-        id: 3,
-        kanji: "中",
-        hiragana: "ちゅう と なか",
-        meaning: "giữa; trong; trung",
-        translation: "middle; inside; center; during",
-    },
-    {
-        id: 4,
-        kanji: "何",
-        hiragana: "なに で も なん",
-        meaning: "cái gì; bao nhiêu",
-        translation: "what; which; how many",
-    },
-    {
-        id: 5,
-        kanji: "私",
-        hiragana: "わたし あ たし",
-        meaning: "tôi; cá nhân; tư nhân",
-        translation: "I; me; private; personal",
-    },
-    {
-        id: 6,
-        kanji: "で も",
-        hiragana: "で も",
-        meaning: "nhưng; tuy nhiên; thậm chí",
-        translation: "but; however; even; any",
-    },
-];
-
-const initialDisplayOptions = [
-    { label: "Từ vựng", checked: true },
-    { label: "Phiên âm", checked: true },
-    { label: "Nghĩa", checked: true },
-];
+// Display options cho từng loại
+const initialDisplayOptions = {
+    "Từ vựng": [
+        { label: "Từ vựng", checked: true },
+        { label: "Phiên âm", checked: true },
+        { label: "Nghĩa", checked: true },
+    ],
+    "Ngữ pháp": [
+        { label: "Từ vựng", checked: true },
+        { label: "Nghĩa", checked: true },
+    ],
+    "Hán tự": [
+        { label: "Từ vựng", checked: true },
+        { label: "Nghĩa", checked: true },
+    ],
+};
 
 function JLPT() {
     const [selectedType, setSelectedType] = useState("Từ vựng");
     const [selectedLevel, setSelectedLevel] = useState("N5");
-    const [displaySettings, setDisplaySettings] =
-        useState(initialDisplayOptions);
+    const [displaySettings, setDisplaySettings] = useState(initialDisplayOptions);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [data, setData] = useState([]);
+    const [totalPages, setTotalPages] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    const handleToggleDisplayOption = (label) => {
-        setDisplaySettings((prev) =>
-            prev.map((opt) =>
-                opt.label === label ? { ...opt, checked: !opt.checked } : opt
-            )
-        );
+    const itemsPerPage = 9;
+
+    // Fetch data khi thay đổi type, level, hoặc page
+    useEffect(() => {
+        fetchData();
+    }, [selectedType, selectedLevel, currentPage]);
+
+    const fetchData = async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            let response;
+
+            if (selectedType === "Từ vựng") {
+                response = await getJlptWords(currentPage, itemsPerPage, selectedLevel);
+            } else if (selectedType === "Ngữ pháp") {
+                response = await getJlptGrammar(currentPage, itemsPerPage, selectedLevel);
+            } else if (selectedType === "Hán tự") {
+                response = await getJlptKanji(currentPage, itemsPerPage, selectedLevel);
+            }
+
+            if (response?.success) {
+                setData(response.data.data || []);
+                setTotalPages(response.data.totalPages || 0);
+            }
+        } catch (err) {
+            setError(err.message);
+            console.error("Error fetching data:", err);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const isShown = (label) =>
-        displaySettings.find((o) => o.label === label)?.checked;
+    const handleToggleDisplayOption = (label) => {
+        setDisplaySettings((prev) => ({
+            ...prev,
+            [selectedType]: prev[selectedType].map((opt) =>
+                opt.label === label ? { ...opt, checked: !opt.checked } : opt
+            ),
+        }));
+    };
+
+    const isShown = (label) => {
+        const options = displaySettings[selectedType];
+        return options?.find((o) => o.label === label)?.checked;
+    };
+
+    const currentDisplayOptions = displaySettings[selectedType] || [];
+
+    const handlePageChange = (pageNumber) => {
+        setCurrentPage(pageNumber);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleTypeChange = (type) => {
+        setSelectedType(type);
+        setCurrentPage(1);
+    };
+
+    const handleLevelChange = (level) => {
+        setSelectedLevel(level);
+        setCurrentPage(1);
+    };
+
+    const getPageNumbers = () => {
+        const pages = [];
+
+        if (totalPages <= 6) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            pages.push(1);
+
+            if (currentPage <= 3) {
+                for (let i = 2; i <= 4; i++) {
+                    pages.push(i);
+                }
+                pages.push('...');
+                pages.push(totalPages);
+            } else if (currentPage >= totalPages - 2) {
+                pages.push('...');
+                for (let i = totalPages - 3; i <= totalPages; i++) {
+                    pages.push(i);
+                }
+            } else {
+                pages.push('...');
+                for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                    pages.push(i);
+                }
+                pages.push('...');
+                pages.push(totalPages);
+            }
+        }
+
+        return pages;
+    };
+
+    // Render card theo loại
+    const renderCard = (item, index) => {
+        if (selectedType === "Từ vựng") {
+            return (
+                <Card key={index}>
+                    <div className={cx("vocab-inner")}>
+                        <div className={cx("vocab-header")}>
+                            <div className={cx("vocab-main")}>
+                                <Button
+                                    outline
+                                    className={"no-margin"}
+                                    leftIcon={<FontAwesomeIcon icon={faVolumeHigh} />}
+                                ></Button>
+                                {isShown("Từ vựng") && (
+                                    <span className={cx("kanji")}>{item.word}</span>
+                                )}
+                            </div>
+                            <Button
+                                outline
+                                className={"no-margin"}
+                                leftIcon={<FontAwesomeIcon icon={faPlus} />}
+                            ></Button>
+                        </div>
+                        {isShown("Phiên âm") && (
+                            <div className={cx("hiragana")}>{item.phonetic}</div>
+                        )}
+                        {isShown("Nghĩa") && (
+                            <div className={cx("meaning-block")}>
+                                <p className={cx("meaning")}>{item.meanings}</p>
+                            </div>
+                        )}
+                    </div>
+                </Card>
+            );
+        } else if (selectedType === "Ngữ pháp") {
+            return (
+                <div key={item._id} className={cx("grammar-item")}>
+                    <div className={cx("grammar-content")}>
+                        {isShown("Từ vựng") && (
+                            <div className={cx("grammar-pattern")}>{item.title}</div>
+                        )}
+                        {isShown("Nghĩa") && (
+                            <div className={cx("grammar-meaning")}>{item.mean}</div>
+                        )}
+                    </div>
+                    <Button
+                        outline
+                        className={"no-margin"}
+                        leftIcon={<FontAwesomeIcon icon={faPlus} />}
+                    ></Button>
+                </div>
+            );
+        } else if (selectedType === "Hán tự") {
+            return (
+                <div key={item._id} className={cx("kanji-item")}>
+                    {isShown("Từ vựng") && (
+                        <div className={cx("kanji-char")}>{item.kanji}</div>
+                    )}
+                    {isShown("Nghĩa") && (
+                        <div className={cx("kanji-meaning")}>{item.mean}</div>
+                    )}
+                </div>
+            );
+        }
+    };
 
     return (
         <div className={cx("wrapper")}>
@@ -128,10 +254,12 @@ function JLPT() {
                             key={feature.label}
                             to={feature.href}
                             primary
-                            leftIcon={<FontAwesomeIcon
-                                icon={feature.icon}
-                                className={cx("feature-icon")}
-                            />}
+                            leftIcon={
+                                <FontAwesomeIcon
+                                    icon={feature.icon}
+                                    className={cx("feature-icon")}
+                                />
+                            }
                         >
                             {feature.label}
                         </Button>
@@ -141,7 +269,7 @@ function JLPT() {
                 <div className={cx("layout")}>
                     {/* Sidebar */}
                     <aside className={cx("sidebar")}>
-                        <Card >
+                        <Card>
                             {/* Loại từ */}
                             <div className={cx("filter-block")}>
                                 <h3 className={cx("filter-title")}>Chọn loại từ</h3>
@@ -158,7 +286,7 @@ function JLPT() {
                                                 name="vocab-type"
                                                 value={type}
                                                 checked={selectedType === type}
-                                                onChange={(e) => setSelectedType(e.target.value)}
+                                                onChange={(e) => handleTypeChange(e.target.value)}
                                                 className={cx("radio")}
                                             />
                                             <span className={cx("filter-label")}>{type}</span>
@@ -183,7 +311,7 @@ function JLPT() {
                                                 name="level"
                                                 value={level}
                                                 checked={selectedLevel === level}
-                                                onChange={(e) => setSelectedLevel(e.target.value)}
+                                                onChange={(e) => handleLevelChange(e.target.value)}
                                                 className={cx("radio")}
                                             />
                                             <span className={cx("filter-label")}>{level}</span>
@@ -200,7 +328,7 @@ function JLPT() {
                         <Card className={cx("display-card")}>
                             <div className={cx("display-row")}>
                                 <div className={cx("display-options")}>
-                                    {displaySettings.map((option) => (
+                                    {currentDisplayOptions.map((option) => (
                                         <label
                                             key={option.label}
                                             className={cx("display-option")}
@@ -224,81 +352,90 @@ function JLPT() {
                                     <Button
                                         outline
                                         className={"no-margin"}
-                                        leftIcon={
-                                            <FontAwesomeIcon icon={faDownload} />
-                                        }
-                                    >
-                                    </Button>
+                                        leftIcon={<FontAwesomeIcon icon={faDownload} />}
+                                    ></Button>
                                     <Button
                                         outline
                                         className={"no-margin"}
-                                        leftIcon={
-                                            <FontAwesomeIcon icon={faPlay} />
-                                        }
-                                    >
-                                    </Button>
+                                        leftIcon={<FontAwesomeIcon icon={faPlay} />}
+                                    ></Button>
                                     <Button
                                         outline
                                         className={"no-margin"}
-                                        leftIcon={
-                                            <FontAwesomeIcon icon={faShuffle} />
-                                        }
-                                    >
-                                    </Button>
+                                        leftIcon={<FontAwesomeIcon icon={faShuffle} />}
+                                    ></Button>
                                 </div>
                             </div>
                         </Card>
 
-                        {/* Vocabulary grid */}
-                        <div className={cx("vocab-grid")}>
-                            {sampleVocabulary.map((vocab) => (
-                                <Card key={vocab.id} >
-                                    <div className={cx("vocab-inner")}>
-                                        <div className={cx("vocab-header")}>
-                                            <div className={cx("vocab-main")}>
-                                                <Button
-                                                    outline
-                                                    className={"no-margin"}
-                                                    leftIcon={<FontAwesomeIcon icon={faVolumeHigh} />}
-                                                >
-                                                </Button>
-                                                {isShown("Từ vựng") && (
-                                                    <span className={cx("kanji")}>
-                                                        {vocab.kanji}
-                                                    </span>
-                                                )}
-                                            </div>
+                        {/* Loading state */}
+                        {loading && (
+                            <div className={cx("loading")}>Đang tải dữ liệu...</div>
+                        )}
 
-                                            <Button
-                                                outline
-                                                className={"no-margin"}
-                                                leftIcon={<FontAwesomeIcon icon={faPlus} />}
-                                            >
-                                            </Button>
-                                        </div>
+                        {/* Error state */}
+                        {error && (
+                            <div className={cx("error")}>Lỗi: {error}</div>
+                        )}
 
-                                        {/* Hiragana */}
-                                        {isShown("Phiên âm") && (
-                                            <div className={cx("hiragana")}>
-                                                {vocab.hiragana}
-                                            </div>
-                                        )}
+                        {/* Grid */}
+                        {!loading && !error && (
+                            <div className={cx("vocab-grid", {
+                                "kanji-grid": selectedType === "Hán tự"
+                            })}>
+                                {data.length > 0 ? (
+                                    data.map((item, index) => renderCard(item, index))
+                                ) : (
+                                    <div className={cx("no-data")}>Không có dữ liệu</div>
+                                )}
+                            </div>
+                        )}
 
-                                        {/* Meaning + translation */}
-                                        {isShown("Nghĩa") && (
-                                            <div className={cx("meaning-block")}>
-                                                <p className={cx("meaning")}>
-                                                    {vocab.meaning}
-                                                </p>
-                                                <p className={cx("translation")}>
-                                                    {vocab.translation}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </Card>
-                            ))}
-                        </div>
+                        {/* Pagination */}
+                        {!loading && !error && totalPages > 1 && (
+                            <div className={cx("pagination")}>
+                                <button
+                                    className={cx("pagination-btn", "pagination-arrow", {
+                                        disabled: currentPage === 1,
+                                    })}
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                >
+                                    <FontAwesomeIcon icon={faChevronLeft} />
+                                </button>
+
+                                {getPageNumbers().map((page, index) =>
+                                    page === "..." ? (
+                                        <span
+                                            key={`ellipsis-${index}`}
+                                            className={cx("pagination-ellipsis")}
+                                        >
+                                            ...
+                                        </span>
+                                    ) : (
+                                        <button
+                                            key={page}
+                                            className={cx("pagination-btn", {
+                                                active: currentPage === page,
+                                            })}
+                                            onClick={() => handlePageChange(page)}
+                                        >
+                                            {page}
+                                        </button>
+                                    )
+                                )}
+
+                                <button
+                                    className={cx("pagination-btn", "pagination-arrow", {
+                                        disabled: currentPage === totalPages,
+                                    })}
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    <FontAwesomeIcon icon={faChevronRight} />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -306,4 +443,4 @@ function JLPT() {
     );
 }
 
-export default JLPT
+export default JLPT;
