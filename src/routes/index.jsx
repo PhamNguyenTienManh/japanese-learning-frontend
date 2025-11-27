@@ -23,6 +23,7 @@ import KanjiLookup from "~/pages/KanjiLookup";
 import ResetPassword from "~/pages/auth/ResetPass";
 import JLPT from "~/pages/Dictionary/JLPT";
 import Reading from "~/pages/Reading";
+import ExamReview from "~/pages/ExamReview/ExamReview";
 
 export const publicRouter = [
   { path: config.routes.home, component: Home },
@@ -49,7 +50,7 @@ export const publicRouter = [
   { path: config.routes.kanjiLookup, component: KanjiLookup },
   { path: config.routes.jlpt, component: JLPT },
   { path: config.routes.reading, component: Reading },
-
+  { path: config.routes.resultDetail, component: ExamReview },
 
 ];
 

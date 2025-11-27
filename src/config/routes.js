@@ -13,6 +13,7 @@ const routes = {
   level: "/practice/:level",
   test: "/practice/:level/test/:testId",
   results: "/practice/:level/results/:testId",
+  resultDetail: "/practice/:level/results/detail/:testId",
   chatAI: "/chat-ai",
   community: "/community",
   postDetail: "/community/:post",

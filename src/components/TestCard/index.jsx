@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./TestCard.module.scss";
 
@@ -11,7 +12,9 @@ import {
   faBookOpen,
   faPlay,
   faCheckCircle,
+  faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
+import { startExam } from "~/services/examService";
 
 const cx = classNames.bind(styles);
 
@@ -30,8 +33,50 @@ export default function TestCard({
     sections = [],
   } = test || {};
 
-  const startLink = `${basePath}/test/${id}`;
-  const resultsLink = `${basePath}/results${id}`;
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+
+  console.log("test: ", test);
+
+  const resultsLink = `${basePath}/results/${id}`;
+
+  // Hàm xử lý khi nhấn "Bắt đầu" hoặc "Làm lại"
+  const handleStartExam = async () => {
+    try {
+      setIsLoading(true);
+
+      // Gọi API để bắt đầu bài thi
+      const response = await startExam(id);
+
+      // Log để kiểm tra cấu trúc response
+      console.log("Response từ API startExam:", response);
+
+      // Lấy examResultId từ response.data._id
+      const examResultId = response?.data?._id;
+
+      if (examResultId) {
+        // Lưu examResultId vào localStorage
+        localStorage.setItem("currentExamResultId", examResultId);
+
+        // Lưu thêm thông tin khác
+        localStorage.setItem("currentExamId", id);
+        localStorage.setItem("examStartTime", response.data.start_time);
+
+        console.log("Đã lưu examResultId:", examResultId);
+
+        // Chuyển hướng đến trang làm bài
+        navigate(`${basePath}/test/${id}`);
+      } else {
+        console.error("Response structure:", JSON.stringify(response, null, 2));
+        throw new Error("Không nhận được examResultId từ server");
+      }
+    } catch (error) {
+      console.error("Lỗi khi bắt đầu bài thi:", error);
+      alert("Có lỗi xảy ra khi bắt đầu bài thi. Vui lòng thử lại!");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Card className={`${cx("root")} ${className}`}>
@@ -85,12 +130,23 @@ export default function TestCard({
 
         <div className={cx("actions")}>
           <Button
-            to={startLink}
+            onClick={handleStartExam}
             full
             primary
-            leftIcon={<FontAwesomeIcon icon={faPlay} />}
+            disabled={isLoading}
+            leftIcon={
+              <FontAwesomeIcon
+                icon={isLoading ? faSpinner : faPlay}
+                spin={isLoading}
+              />
+            }
           >
-            {completed ? "Làm lại" : "Bắt đầu"}
+            {isLoading
+              ? "Đang tải..."
+              : completed
+                ? "Làm lại"
+                : "Bắt đầu"
+            }
           </Button>
 
           {completed && (
