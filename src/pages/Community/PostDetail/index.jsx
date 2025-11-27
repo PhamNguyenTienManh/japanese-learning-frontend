@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./PostDetail.module.scss";
 
@@ -12,128 +13,278 @@ import {
   faShareNodes,
   faArrowLeft,
   faPaperPlane,
+  faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
+import formatDateVN from "~/services/formatDate";
+import postService from "~/services/postService";
+import { faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
+import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
+import decodeToken from "~/services/pairToken";
 
 const cx = classNames.bind(styles);
 
-const mockPost = {
-  id: 1,
-  title: "Cách phân biệt は và が trong tiếng Nhật",
-  content: `Xin chào các bạn!
 
-Mình đang học N5 và thấy rất khó phân biệt khi nào dùng は và khi nào dùng が. Mình đã đọc nhiều tài liệu nhưng vẫn chưa hiểu rõ.
-
-Ví dụ:
-- 私は学生です。(Tôi là học sinh)
-- 私が学生です。(Tôi là học sinh)
-
-Hai câu này có gì khác nhau không? Khi nào thì dùng は và khi nào dùng が?
-
-Mong các bạn giải thích giúp mình. Cảm ơn các bạn rất nhiều!`,
-  author: {
-    name: "Nguyễn Văn A",
-    avatar: "/diverse-user-avatars.png",
-    level: "N5",
-    posts: 12,
-    joined: "3 tháng trước",
-  },
-  category: "Ngữ pháp",
-  views: 234,
-  likes: 45,
-  isLiked: false,
-  comments: 12,
-  createdAt: "2 giờ trước",
-  tags: ["ngữ pháp", "N5", "は", "が"],
-};
-
-const mockComments = [
-  {
-    id: 1,
-    author: {
-      name: "Trần Thị B",
-      avatar: "/diverse-user-avatar-set-2.png",
-      level: "N3",
-    },
-    content: `Mình giải thích đơn giản nhé:
-
-は dùng để giới thiệu chủ đề của câu (topic marker)
-が dùng để nhấn mạnh chủ ngữ (subject marker)
-
-Ví dụ:
-- 私は学生です。→ Nói về bản thân (chủ đề là "tôi")
-- 私が学生です。→ Nhấn mạnh "tôi" là học sinh (không phải người khác)
-
-Hi vọng giúp ích cho bạn!`,
-    likes: 23,
-    createdAt: "1 giờ trước",
-  },
-  {
-    id: 2,
-    author: {
-      name: "Lê Văn C",
-      avatar: "/diverse-user-avatars-3.png",
-      level: "N2",
-    },
-    content: `Thêm một ví dụ nữa cho bạn dễ hiểu:
-
-Câu hỏi: 誰が学生ですか？(Ai là học sinh?)
-Trả lời: 私が学生です。(Tôi là học sinh) → Dùng が vì nhấn mạnh
-
-Câu hỏi: あなたは学生ですか？(Bạn có phải là học sinh không?)
-Trả lời: はい、私は学生です。(Vâng, tôi là học sinh) → Dùng は vì nói về chủ đề`,
-    likes: 18,
-    createdAt: "30 phút trước",
-  },
-];
 
 function PostDetail() {
-  const [post, setPost] = useState(mockPost);
-  const [comment, setComment] = useState("");
-  const [comments, setComments] = useState(mockComments);
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-  const handleLike = () => {
-    setPost((prev) => ({
-      ...prev,
-      likes: prev.isLiked ? prev.likes - 1 : prev.likes + 1,
-      isLiked: !prev.isLiked,
-    }));
+  const [post, setPost] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [comment, setComment] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const getLoggedInUserId = () => {
+    const token = localStorage.getItem("token")
+
+    if (token) {
+      const decoded = decodeToken(token);
+
+      return decoded?.sub
+    }
+    return null;
   };
 
-  const handleComment = () => {
+  const currentUserId = getLoggedInUserId();
+
+  // Fetch post detail
+useEffect(() => {
+  const fetchPostDetail = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await postService.getPostById(id);
+
+      // Xử lý response
+      const postData = response.post || response.data || response;
+      console.log("data", postData);
+      
+      // Thêm isLiked vào postData
+      const likedArray = Array.isArray(postData.liked) ? postData.liked : [];
+      const enrichedPost = {
+        ...postData,
+        isLiked: likedArray.includes(currentUserId)
+      };
+      
+      setPost(enrichedPost);
+
+      // Fetch comments
+      await fetchComments();
+    } catch (err) {
+      setError("Không thể tải bài viết. Vui lòng thử lại sau.");
+      console.error("Fetch post error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (id) {
+    fetchPostDetail();
+  }
+}, [id]);
+
+  // Fetch comments
+  const fetchComments = async () => {
+    setCommentsLoading(true);
+    try {
+      const response = await postService.getComments(id);
+
+      // Xử lý response
+      let commentsData = [];
+      if (Array.isArray(response)) {
+        commentsData = response;
+      } else if (response?.comments && Array.isArray(response.comments)) {
+        commentsData = response.comments;
+      } else if (response?.data && Array.isArray(response.data)) {
+        commentsData = response.data;
+      }
+
+      // Map comments với thông tin like
+      const mappedComments = commentsData.map(c => {
+        const likedArray = Array.isArray(c.liked) ? c.liked : [];
+        const isUserLiked = likedArray.includes(currentUserId);
+
+
+        return {
+          ...c,
+          // Đếm số lượng like từ mảng liked
+          likeCount: likedArray.length || (c.likes || c.likeCount || 0),
+          // Kiểm tra user hiện tại đã like chưa
+          isLiked: isUserLiked
+        };
+      });
+
+      setComments(mappedComments);
+    } catch (err) {
+      console.error("Fetch comments error:", err);
+      // Không set error, chỉ log để comments section vẫn hiển thị
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  // Handle like post
+  const handleLike = async () => {
+    try {
+      const response = await postService.toggleLike(id);
+
+      setPost((prev) => {
+        const currentLiked = Array.isArray(prev.liked) ? prev.liked : [];
+        const isCurrentlyLiked = currentLiked.includes(currentUserId);
+
+        if (response?.data?.liked && Array.isArray(response.data.liked)) {
+          return {
+            ...prev,
+            liked: response.data.liked,
+            isLiked: response.data.liked.includes(currentUserId)
+          };
+        }
+
+        let newLiked;
+        if (isCurrentlyLiked) {
+          newLiked = currentLiked.filter(uid => uid !== currentUserId);
+        } else {
+          newLiked = [...currentLiked, currentUserId];
+        }
+
+        return {
+          ...prev,
+          liked: newLiked,
+          isLiked: !isCurrentlyLiked
+        };
+      });
+    } catch (err) {
+      console.error("Toggle like error:", err);
+    }
+  };
+
+  // Handle comment submit
+  const handleComment = async () => {
     if (!comment.trim()) return;
 
-    const newComment = {
-      id: comments.length + 1,
-      author: {
-        name: "Bạn",
-        avatar: "/current-user.jpg",
-        level: "N5",
-      },
-      content: comment,
-      likes: 0,
-      createdAt: "Vừa xong",
-    };
+    setSubmitting(true);
+    try {
+      const response = await postService.addComment(id, comment);
+      console.log("Add comment response:", response);
 
-    setComments((prev) => [...prev, newComment]);
-    setComment("");
-    setPost((prev) => ({ ...prev, comments: prev.comments + 1 }));
+      // Refresh comments
+      await fetchComments();
+
+      // Update post comment count
+      setPost((prev) => ({
+        ...prev,
+        comments: prev.comments + 1
+      }));
+
+      // Clear input
+      setComment("");
+    } catch (err) {
+      console.error("Add comment error:", err);
+      alert("Không thể gửi bình luận. Vui lòng thử lại.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
+  // Handle comment like
+  const handleCommentLike = async (commentId) => {
+    try {
+      const response = await postService.toggleCommentLike(commentId);
+
+      // Update comments state với dữ liệu mới từ response
+      setComments((prev) =>
+        prev.map((c) => {
+          const cId = c._id || c.id || c.commentId;
+          if (cId === commentId) {
+            // Nếu response trả về liked array, dùng nó
+            if (response?.data?.liked) {
+              return {
+                ...c,
+                liked: response.data.liked,
+                likeCount: response.data.liked.length,
+                isLiked: response.data.liked.includes(currentUserId)
+              };
+            }
+            // Fallback: toggle manually
+            return {
+              ...c,
+              isLiked: !c.isLiked,
+              likeCount: c.isLiked ? c.likeCount - 1 : c.likeCount + 1,
+            };
+          }
+          return c;
+        })
+      );
+    } catch (err) {
+      console.error("Toggle comment like error:", err);
+    }
+  };
+
+  // Handle back
   const handleBack = () => {
-    // Tùy cách bạn routing: có thể dùng navigate, hoặc window.history
-    window.history.back();
+    navigate("/community");
   };
+
+  // Handle share
+  const handleShare = () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({
+        title: post.title,
+        url: url,
+      });
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(url);
+      alert("Link đã được sao chép!");
+    }
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className={cx("wrapper")}>
+        <main className={cx("main")}>
+          <div className={cx("container")}>
+            <div className={cx("loading")}>
+              <FontAwesomeIcon icon={faSpinner} spin size="2x" />
+              <p>Đang tải bài viết...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !post) {
+    return (
+      <div className={cx("wrapper")}>
+        <main className={cx("main")}>
+          <div className={cx("container")}>
+            <Card className={cx("error-card")}>
+              <p className={cx("error-message")}>
+                {error || "Không tìm thấy bài viết"}
+              </p>
+              <Button outline onClick={handleBack}>
+                Quay lại cộng đồng
+              </Button>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("wrapper")}>
       <main className={cx("main")}>
         <div className={cx("container")}>
           {/* Back Button */}
-          <button
-            type="button"
-            onClick={handleBack}
-            className={cx("back-link")}
-          >
+          <button type="button" onClick={handleBack} className={cx("back-link")}>
             <FontAwesomeIcon icon={faArrowLeft} className={cx("back-icon")} />
             <span>Quay lại cộng đồng</span>
           </button>
@@ -143,49 +294,57 @@ function PostDetail() {
             {/* Header */}
             <div className={cx("post-header")}>
               <img
-                src={post.author.avatar || "/placeholder.svg"}
-                alt={post.author.name}
+                src={
+                  post.profile_id?.image_url ||
+                  post.authorAvatar ||
+                  "/placeholder.svg"
+                }
+                alt={post.profile_id?.name || "Anonymous"}
                 className={cx("avatar")}
               />
               <div className={cx("post-header-main")}>
                 <div className={cx("post-author-row")}>
-                  <span className={cx("author-name")}>{post.author.name}</span>
-                  <span className={cx("badge", "badge-level")}>
-                    {post.author.level}
+                  <span className={cx("author-name")}>
+                    {post.profile_id?.name || "Anonymous"}
                   </span>
                 </div>
                 <div className={cx("author-meta")}>
-                  <span>{post.createdAt}</span>
-                  <span className={cx("dot")}>•</span>
-                  <span>{post.author.posts} bài viết</span>
-                  <span className={cx("dot")}>•</span>
-                  <span>Tham gia {post.author.joined}</span>
+                  <span>{post.created_at ? formatDateVN(post.created_at) : "Vừa xong"}</span>
+                  {(post.author?.posts || post.authorPosts) && (
+                    <>
+                      <span className={cx("dot")}>•</span>
+                      <span>
+                        {post.author?.posts || post.authorPosts} bài viết
+                      </span>
+                    </>
+                  )}
+                  {(post.author?.joined || post.authorJoined) && (
+                    <>
+                      <span className={cx("dot")}>•</span>
+                      <span>
+                        Tham gia {post.author?.joined || post.authorJoined}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
-              <span className={cx("badge", "badge-category")}>
-                {post.category}
-              </span>
+              {(post.category || post.categoryName) && (
+                <span className={cx("badge", "badge-category")}>
+                  {post.category || post.categoryName}
+                </span>
+              )}
             </div>
 
             {/* Title */}
             <h1 className={cx("title")}>{post.title}</h1>
 
-            {/* Tags */}
-            <div className={cx("tags")}>
-              {post.tags.map((tag) => (
-                <span key={tag} className={cx("badge", "badge-tag")}>
-                  #{tag}
-                </span>
-              ))}
-            </div>
-
             {/* Content */}
             <div className={cx("content")}>
               <p className={cx("content-text")}>
-                {post.content.split("\n").map((line, i) => (
+                {(post.content || post.description || "").split("\n").map((line, i) => (
                   <span key={i}>
                     {line}
-                    {i < post.content.split("\n").length - 1 && <br />}
+                    {i < (post.content || post.description || "").split("\n").length - 1 && <br />}
                   </span>
                 ))}
               </p>
@@ -194,23 +353,20 @@ function PostDetail() {
             {/* Stats */}
             <div className={cx("stats")}>
               <div className={cx("stat-item")}>
-                <FontAwesomeIcon icon={faEye} className={cx("stat-icon")} />
-                <span>{post.views} lượt xem</span>
-              </div>
-              <div className={cx("stat-item")}>
                 <FontAwesomeIcon icon={faHeart} className={cx("stat-icon")} />
-                <span>{post.likes} lượt thích</span>
+                <span>{post.liked.length || 0} lượt thích</span>
               </div>
               <div className={cx("stat-item")}>
                 <FontAwesomeIcon
                   icon={faCommentDots}
                   className={cx("stat-icon")}
                 />
-                <span>{post.comments} bình luận</span>
+                <span>
+                  {post.comments || post.commentCount || 0} bình luận
+                </span>
               </div>
             </div>
 
-            {/* Actions */}
             <div className={cx("actions")}>
               <Button
                 className={"orange"}
@@ -224,12 +380,13 @@ function PostDetail() {
                   />
                 }
               >
-                {post.isLiked ? "Đã thích" : "Thích"}
+                {post.liked.includes(currentUserId) ? "Đã thích" : "Thích"}
               </Button>
 
               <Button
                 outline
                 className={"orange"}
+                onClick={handleShare}
                 leftIcon={
                   <FontAwesomeIcon icon={faShareNodes} className={cx("icon")} />
                 }
@@ -255,64 +412,91 @@ function PostDetail() {
               />
               <Button
                 primary
-                disabled={!comment.trim()}
-                leftIcon={<FontAwesomeIcon icon={faPaperPlane} />}
+                disabled={!comment.trim() || submitting}
+                leftIcon={
+                  submitting ? (
+                    <FontAwesomeIcon icon={faSpinner} spin />
+                  ) : (
+                    <FontAwesomeIcon icon={faPaperPlane} />
+                  )
+                }
                 onClick={handleComment}
               >
-                Gửi bình luận
+                {submitting ? "Đang gửi..." : "Gửi bình luận"}
               </Button>
             </div>
 
             {/* Comment list */}
-            <div className={cx("comment-list")}>
-              {comments.map((c) => (
-                <div key={c.id} className={cx("comment-item")}>
-                  <img
-                    src={c.author.avatar || "/placeholder.svg"}
-                    alt={c.author.name}
-                    className={cx("comment-avatar")}
-                  />
-                  <div className={cx("comment-body")}>
-                    <div className={cx("comment-bubble")}>
-                      <div className={cx("comment-header")}>
-                        <span className={cx("comment-author")}>
-                          {c.author.name}
-                        </span>
-                        <span
-                          className={cx("badge", "badge-level", "badge-sm")}
-                        >
-                          {c.author.level}
-                        </span>
-                        <span className={cx("comment-time")}>
-                          • {c.createdAt}
-                        </span>
-                      </div>
-                      <p className={cx("comment-text")}>
-                        {c.content.split("\n").map((line, i) => (
-                          <span key={i}>
-                            {line}
-                            {i < c.content.split("\n").length - 1 && <br />}
-                          </span>
-                        ))}
-                      </p>
-                    </div>
+            {commentsLoading ? (
+              <div className={cx("comments-loading")}>
+                <FontAwesomeIcon icon={faSpinner} spin />
+                <span>Đang tải bình luận...</span>
+              </div>
+            ) : (
+              <div className={cx("comment-list")}>
+                {comments.length === 0 ? (
+                  <p className={cx("no-comments")}>
+                    Chưa có bình luận nào. Hãy là người đầu tiên bình luận!
+                  </p>
+                ) : (
+                  comments.map((c) => (
+                    <div key={c._id || c.id || c.commentId} className={cx("comment-item")}>
+                      <img
+                        src={
+                          c.profileId?.image_url || "https://img.tripi.vn/cdn-cgi/image/width=700,height=700/https://gcs.tripi.vn/public-tripi/tripi-feed/img/482752AXp/anh-mo-ta.png"
+                        }
+                        alt={c.profileId?.name}
+                        className={cx("comment-avatar")}
+                      />
+                      <div className={cx("comment-body")}>
+                        <div className={cx("comment-bubble")}>
+                          <div className={cx("comment-header")}>
+                            <span className={cx("comment-author")}>
+                              {c.profileId?.name || "Anonymous"}
+                            </span>
+                            <span className={cx("comment-time")}>
+                              • {formatDateVN(c.createdAt)}
+                            </span>
+                          </div>
+                          <p className={cx("comment-text")}>
+                            {(c.content || "").split("\n").map((line, i) => (
+                              <span key={i}>
+                                {line}
+                                {i < (c.content || "").split("\n").length - 1 && <br />}
+                              </span>
+                            ))}
+                          </p>
+                        </div>
 
-                    <div className={cx("comment-actions")}>
-                      <button type="button" className={cx("comment-like-btn")}>
-                        <FontAwesomeIcon
-                          icon={faHeart}
-                          className={cx("comment-like-icon")}
-                        />
-                        <span>{c.likes}</span>
-                      </button>
-                      <button type="button" className={cx("comment-reply-btn")}>
-                        Trả lời
-                      </button>
+                        <div className={cx("comment-actions")}>
+                          <button
+                            type="button"
+                            className={cx("comment-like-btn", {
+                              liked: c.isLiked,
+                            })}
+                            onClick={() =>
+                              handleCommentLike(c._id || c.id || c.commentId)
+                            }
+                          >
+                            <FontAwesomeIcon
+                              icon={c.isLiked ? faHeartSolid : faHeartRegular}
+                              className={cx("comment-like-icon")}
+                            />
+                            <span>{c.likeCount}</span>
+                          </button>
+                          {/* <button
+                            type="button"
+                            className={cx("comment-reply-btn")}
+                          >
+                            Trả lời
+                          </button> */}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  ))
+                )}
+              </div>
+            )}
           </Card>
         </div>
       </main>
