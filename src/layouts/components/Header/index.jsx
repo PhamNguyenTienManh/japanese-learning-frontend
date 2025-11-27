@@ -40,6 +40,9 @@ function Header() {
               <Button to="/kanji" text>
                 Tra cứu từ điển
               </Button>
+              <Button to="/jlpt" text>
+                JLPT
+              </Button>
               <Button to="/dictionary/notebook" text>
                 Sổ tay từ vựng
               </Button>
@@ -58,8 +61,9 @@ function Header() {
               <Button to="/practice" text>
                 Tổng quan
               </Button>
+
               <Button to="/practice/n5" text>
-                JLPT N5
+                Thi Thử N5
               </Button>
             </div>
           </div>

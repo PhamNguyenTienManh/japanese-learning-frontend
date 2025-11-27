@@ -1,6 +1,4 @@
 import ResetPassword from "~/pages/auth/ResetPass";
-import KanjiLookup from "~/pages/KanjiLookup";
-
 const routes = {
   home: "/",
   login: "/login",
@@ -10,7 +8,7 @@ const routes = {
   about: "/about",
   dictionary: "/dictionary",
   notebook: "/dictionary/notebook",
-  flashcards: "dictionary/notebook/flashcards",
+  flashcards: "/flashcards",
   practice: "/practice",
   level: "/practice/:level",
   test: "/practice/:level/test/:testId",
@@ -23,7 +21,11 @@ const routes = {
   achievements: "/dashboard/achievements",
   goals: "/dashboard/goals",
   setting: "/dashboard/settings",
-  kanjiLookup: "/kanji"
+  kanjiLookup: "/kanji",
+  jlpt: "/jlpt",
+  reading: "/reading"
+
+
 };
 
 export default routes;

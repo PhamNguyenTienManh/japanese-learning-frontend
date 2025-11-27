@@ -62,11 +62,11 @@ export default function LevelCard({
           </div>
         </div>
 
-        <div className={cx("actions")}>
-          <Button to={startTo} className="green" onClick={onStart}>
-            Bắt đầu luyện thi
-          </Button>
-        </div>
+
+        <Button to={startTo} primary onClick={onStart}>
+          Bắt đầu luyện thi
+        </Button>
+
       </div>
     </div>
   );

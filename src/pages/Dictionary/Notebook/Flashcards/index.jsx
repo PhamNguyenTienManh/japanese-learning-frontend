@@ -187,11 +187,10 @@ export default function Flashcards() {
         <div className={cx("header")}>
           <Button
             to="/dictionary/notebook"
-            text
-            className={"back-link"}
+            back
             leftIcon={<FontAwesomeIcon icon={faArrowLeft} />}
           >
-            <span className={cx("back-text")}>Quay lại sổ tay</span>
+            Quay lại sổ tay
           </Button>
 
           <h1 className={cx("title")}>Luyện tập Flashcard</h1>
@@ -230,6 +229,7 @@ export default function Flashcards() {
               {selectedCategory}
             </Button>
 
+<<<<<<< HEAD
             {showFilter && (
               <Card className={cx("filter-dropdown")}>
                 {wordCategories.map((type) => (
@@ -249,6 +249,76 @@ export default function Flashcards() {
               </Card>
             )}
           </div>
+=======
+                      <Button
+                        outline
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playAudio(currentCard.hiragana);
+                        }}
+                        className={"no-margin"}
+                        leftIcon={
+                          <FontAwesomeIcon icon={faVolumeUp} />
+                        }
+                      >
+                      </Button>
+                    </div>
+
+                    <p className={cx("hiragana")}>{currentCard.hiragana}</p>
+                    {currentCard.romaji && (
+                      <p className={cx("romaji")}>[{currentCard.romaji}]</p>
+                    )}
+                    <p className={cx("hint")}>Nhấn để xem nghĩa</p>
+                  </div>
+                ) : (
+                  <div className={cx("back")}>
+                    <p className={cx("meaning")}>{currentCard.meaning}</p>
+                    <div className={cx("meta")}>
+                      <p className={cx("meta-kanji")}>{currentCard.kanji}</p>
+                      <p className={cx("meta-hira")}>{currentCard.hiragana}</p>
+                    </div>
+                    <p className={cx("hint")}>Nhấn để quay lại</p>
+                  </div>
+                )}
+              </Card>
+
+              {/* Actions */}
+              <div className={cx("actions")}>
+                <Button
+                  outline
+                  onClick={handleReset}
+                  leftIcon={<FontAwesomeIcon icon={faRotate} />
+                  }>
+                  Bắt đầu lại
+                </Button>
+
+                <Button
+                  onClick={handleNext}
+                  disabled={currentIndex >= total - 1}
+                  primary
+                  rightIcon={
+                    <FontAwesomeIcon
+                      icon={faChevronRight}
+                      className={cx("icon-right")}
+                    />
+                  }
+                >
+                  Tiếp theo
+
+                </Button>
+              </div>
+            </>
+          ) : (
+            <Card className={cx("empty")}>
+              <h2 className={cx("empty-title")}>Hoàn thành!</h2>
+              <p className={cx("empty-sub")}>Bạn đã hoàn thành {total} thẻ</p>
+              <Button onClick={handleReset} className={cx("restart-btn")}>
+                <FontAwesomeIcon icon={faRotate} className={cx("icon-left")} />
+                Luyện lại
+              </Button>
+            </Card>
+          )}
+>>>>>>> e2e0589859a219dc7cc732157e9f83de5b8bc5b3
         </div>
 
         {loading && (
