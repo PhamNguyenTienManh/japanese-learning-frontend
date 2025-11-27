@@ -38,7 +38,7 @@ const notebookService = {
 
   getNotebooks: async () => {
     try {
-      const response = await axiosInstance.get('/notebook');
+      const response = await axiosInstance.get('/notebook/my_notebook');
       return response.data.data;
       
     } catch (error) {
@@ -66,30 +66,45 @@ const notebookService = {
     }
   },
 
-  // Thêm từ vào notebook
-  addWord: async (notebookId, wordData) => {
-    try {
-      const response = await axiosInstance.post(
-        `/notebook/${notebookId}/words`,
-        wordData
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error adding word:', error);
-      throw error;
-    }
-  },
+  
 
   // Xóa từ khỏi notebook
   deleteWord: async (notebookId, wordId) => {
     try {
       const response = await axiosInstance.delete(
-        `/notebook/${notebookId}/words/${wordId}`
+        `/notebook-item/${wordId}`
       );
       return response.data;
     } catch (error) {
       console.error('Error deleting word:', error);
       throw error;
+    }
+  },
+
+  getWord: async (notebookId) => {
+    try{
+      const response = await axiosInstance.get(
+        `/notebook-item/${notebookId}`
+      );
+      return  response.data;
+    }catch(err){
+      console.log('err getting word', err);
+      throw err;
+      
+    }
+  },
+  addWord: async (notebookId, data) => {
+    console.log("ditmemay", data);
+    
+    try{
+      const response = await axiosInstance.post(
+        `/notebook-item/${notebookId}`,data
+      );
+      return  response.data;
+    }catch(err){
+      console.log('err create word', err);
+      throw err;
+      
     }
   },
 };

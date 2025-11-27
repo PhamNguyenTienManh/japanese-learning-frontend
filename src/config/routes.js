@@ -1,8 +1,10 @@
+import ResetPassword from "~/pages/auth/ResetPass";
 const routes = {
   home: "/",
   login: "/login",
   register: "/signup",
   forgotPassword: "/forgot-password",
+  resetPassword: "/reset-password",
   about: "/about",
   dictionary: "/dictionary",
   notebook: "/dictionary/notebook",

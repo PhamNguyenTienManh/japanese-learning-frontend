@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import HanziWriter from "../hanzi_writer/hanzi_writer";
 import Contribution from "../contribution/contribution";
+import { faVolumeHigh } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Button from "../Button";
 
 const MainContent = ({ selectedKanji }) => {
     const [kanjiData, setKanjiData] = useState(null);
@@ -77,12 +80,22 @@ const MainContent = ({ selectedKanji }) => {
             </div>
         );
     }
+    const handlePlayAudio = (text) => {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ja-JP';
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        } else {
+            alert(`Phát âm: ${text}`);
+        }
+    };
 
     return (
         <div style={{ flex: 1, backgroundColor: '#fff', overflowY: 'auto', padding: '40px 32px' }}>
             <div style={{ maxWidth: '900px', margin: '0 auto' }}>
 
-                <div style={{display: 'flex', flexDirection: "row", justifyContent:"space-between"}}>
+                <div style={{ display: 'flex', flexDirection: "row", justifyContent: "space-between" }}>
 
                     {/* Header */}
                     <div style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '0px solid #e0e0e0' }}>
@@ -122,7 +135,7 @@ const MainContent = ({ selectedKanji }) => {
                         </div>
                     </div> */}
 
-                    <HanziWriter kanji={kanjiData.kanji}/>
+                    <HanziWriter kanji={kanjiData.kanji} />
                 </div>
 
                 {/* Meaning */}
@@ -150,11 +163,24 @@ const MainContent = ({ selectedKanji }) => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {kanjiData.examples.slice(0, 10).map((ex, index) => (
                                 <div key={index} style={{ backgroundColor: '#f5f5f5', padding: '16px', borderRadius: '8px', borderLeft: '3px solid #1976d2' }}>
-                                    <div style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>
-                                        {ex.w} {ex.p && <span style={{ color: '#999', fontSize: '14px' }}>({ex.p.trim()})</span>}
+                                    <div style={{ display: 'flex', flexDirection: "row", justifyContent: "space-between" }}>
+                                        <div>
+                                            <div style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '4px' }}>
+                                                {ex.w} {ex.p && <span style={{ color: '#999', fontSize: '14px' }}>({ex.p.trim()})</span>}
+                                            </div>
+                                            {ex.h && <div style={{ fontSize: '13px', color: '#1976d2', marginBottom: '4px' }}>{ex.h}</div>}
+                                            {ex.m && <div style={{ fontSize: '14px', color: '#666' }}>{ex.m}</div>}
+
+                                        </div>
+                                        {/* <button
+                                            className='button orange'
+                                            onClick={() => handlePlayAudio(ex.p.trim().replace(/\[[A-Za-zÀ-ỹ\s]+\]/g, '').trim())}
+                                        >
+                                            <FontAwesomeIcon icon={faVolumeHigh} />
+                                        </button> */}
+                                        <Button className="orange" onClick={() => handlePlayAudio(ex.p.trim().replace(/\[[A-Za-zÀ-ỹ\s]+\]/g, '').trim())} rightIcon={<FontAwesomeIcon icon={faVolumeHigh} />}/>
                                     </div>
-                                    {ex.h && <div style={{ fontSize: '13px', color: '#1976d2', marginBottom: '4px' }}>{ex.h}</div>}
-                                    {ex.m && <div style={{ fontSize: '14px', color: '#666' }}>{ex.m}</div>}
+
                                 </div>
                             ))}
                         </div>
@@ -163,7 +189,7 @@ const MainContent = ({ selectedKanji }) => {
             </div>
             <Contribution kanjiId={kanjiData.mobileId} kanjiChar={kanjiData.kanji} />
         </div>
-        
+
     );
 };
 export default MainContent;
