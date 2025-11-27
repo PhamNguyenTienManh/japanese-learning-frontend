@@ -145,7 +145,6 @@ function Notebook() {
     }
   };
 
-  // Thêm từ mới
   const handleAddWord = async () => {
     if (!newWord.name.trim() || !selectedNotebook) return;
 

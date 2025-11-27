@@ -8,7 +8,7 @@ const SearchInput = ({ value,onSearch, placeholder = "日本、nihon, Nhật B�
   console.log("value", value);
   useEffect(() => {
     if(value) setSearchQuery(value)
-  })
+  },[value])
   useEffect(() => {
     if (!showHandwriting) return;
 
