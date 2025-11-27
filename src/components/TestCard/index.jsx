@@ -58,10 +58,6 @@ export default function TestCard({
         // Lưu examResultId vào localStorage
         localStorage.setItem("currentExamResultId", examResultId);
 
-        // Lưu thêm thông tin khác
-        localStorage.setItem("currentExamId", id);
-        localStorage.setItem("examStartTime", response.data.start_time);
-
         console.log("Đã lưu examResultId:", examResultId);
 
         // Chuyển hướng đến trang làm bài
