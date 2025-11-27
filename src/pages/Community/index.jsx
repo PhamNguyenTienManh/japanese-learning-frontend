@@ -412,17 +412,6 @@ function Community() {
               </div>
             </Card>
 
-            <Card className={cx("stat-card")}>
-              <div className={cx("stat-inner")}>
-                <div className={cx("stat-icon-wrap")}>
-                  <FontAwesomeIcon icon={faEye} className={cx("stat-icon")} />
-                </div>
-                <div>
-                  <p className={cx("stat-value")}>{stats.totalViews}</p>
-                  <p className={cx("stat-label")}>Lượt xem</p>
-                </div>
-              </div>
-            </Card>
           </div>
 
           <div className={cx("content")}>

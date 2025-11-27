@@ -11,7 +11,7 @@ const axiosInstance = axios.create({
 // Interceptor để thêm token vào mọi request
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token'); 
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -23,8 +23,7 @@ axiosInstance.interceptors.request.use(
 );
 
 const postService = {
-    
-  // Lấy danh sách bài viết với phân trang
+
   getPosts: async (page = 1, limit = 5, sort = 'popular') => {
     try {
       const response = await axios.get(`${API_BASE_URL}/posts`, {
@@ -41,7 +40,7 @@ const postService = {
   getPostById: async (id) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/posts/post/${id}`);
-      
+
       return response.data;
     } catch (error) {
       console.error('Error fetching post:', error);
@@ -143,18 +142,55 @@ const postService = {
     }
   },
 
-  // Reply to comment (nếu backend có support)
-  replyToComment: async (commentId, content) => {
+  // // Reply to comment 
+  // replyToComment: async (commentId, content) => {
+  //   try {
+  //     const response = await axios.post(`${API_BASE_URL}/comments/${commentId}/replies`, {
+  //       content
+  //     });
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error('Error replying to comment:', error);
+  //     throw error;
+  //   }
+  // },
+
+  createPost: async (postData) =>  {
+    console.log(postData);
+    
     try {
-      const response = await axios.post(`${API_BASE_URL}/comments/${commentId}/replies`, {
-        content
-      });
+      const response = await axiosInstance.post(`${API_BASE_URL}/posts`, 
+        postData
+      );
+      console.log("response", response.data);
+      
       return response.data;
     } catch (error) {
-      console.error('Error replying to comment:', error);
+      console.error('Error adding comment:', error);
       throw error;
     }
   },
+
+  async updatePost(id, postData) {
+    try {
+      const response = await axiosInstance.put(`${API_BASE_URL}/posts/${id}`, postData);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating post:", error);
+      throw error;
+    }
+  },
+
+  // Delete post
+  async deletePost(id) {
+    try {
+      const response = await axiosInstance.delete(`${API_BASE_URL}/posts/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      throw error;
+    }
+  }
 
 };
 
