@@ -1,17 +1,14 @@
-// aiChatApi.js
 const BASE_URL = "http://localhost:9090/api";
 
-// Token tạm thời để thử
-let TOKEN =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTI1ODhiMzVlMmZiMWMxYjJlYjI4MzYiLCJlbWFpbCI6InZpcnR1ZTEzMDdAZ21haWwuY29tIiwicm9sZSI6InN0dWRlbnQiLCJpYXQiOjE3NjQwNjc1MjAsImV4cCI6MTc2NDA3NDcyMCwianRpIjoiMzk1MWEwMzItYzAxMS00NmVlLWFhMTItYTkyYTFhMjQ0ZGM0In0.U2o5nYMBKG_Cb00-dnqqUEMQ4zN5qvn7UmqSky-0FfY";
-// Hàm set token từ code nếu cần
-export function setToken(token) {
-  TOKEN = token;
+// Lấy token từ localStorage
+function getToken() {
+  return localStorage.getItem("token") || "";
 }
 
-// Lấy header Authorization
-export function getAuthHeaders() {
-  return TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {};
+// Hàm lấy headers Authorization
+function getAuthHeaders() {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 // Tạo session mới hoặc lấy session cuối cùng

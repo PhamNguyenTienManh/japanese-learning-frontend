@@ -1,0 +1,423 @@
+// ExamReview.module.scss
+.wrapper {
+  min-height: 100vh;
+  background: #f5f5f5;
+  padding: 24px 16px 64px;
+}
+
+.main {
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 1120px;
+}
+
+.breadcrumb {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.section-tabs {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  margin-bottom: 20px;
+}
+
+.section-tab {
+  border: none;
+  background: transparent;
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: #1f2933;
+  }
+
+  &.active {
+    background: #fb923c;
+    color: #ffffff;
+  }
+}
+
+/* Layout */
+.layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.left {
+  flex: 1;
+}
+
+.right {
+  width: 280px;
+}
+
+/* Question card */
+.question-card {
+  padding: 20px 22px;
+  background: #ffffff;
+}
+
+.question-header {
+  margin-bottom: 18px;
+}
+
+.badge-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 26px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badge-main {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.badge-correct {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.badge-wrong {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.question-text {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: pre-line;
+  line-height: 1.6;
+  color: #1f2937;
+}
+
+/* Content Section */
+.content-section {
+  margin-bottom: 18px;
+}
+
+/* Options */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.option {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+  background: #ffffff;
+  transition: all 0.15s ease;
+}
+
+.option-user-wrong {
+  border-color: #ef4444;
+  background: #fee2e2;
+}
+
+.option-correct {
+  border-color: #10b981;
+  background: #d1fae5;
+}
+
+.option-user-correct {
+  border-color: #10b981;
+  background: #d1fae5;
+}
+
+.option-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.option-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+
+  &.icon-wrong {
+    color: #ef4444;
+  }
+
+  &.icon-correct {
+    color: #10b981;
+  }
+}
+
+.option-label {
+  font-size: 14px;
+  color: #1f2937;
+  flex: 1;
+  line-height: 1.5;
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+/* Explanation box */
+.explain-box {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 12px;
+
+  &.explain-box-detail {
+    margin-top: 8px;
+    background: #dbeafe;
+    border-color: #93c5fd;
+
+    .explain-title,
+    .explain-text {
+      color: #1e40af;
+    }
+  }
+}
+
+.explain-title {
+  font-weight: 600;
+  color: #78350f;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.explain-text {
+  color: #78350f;
+  line-height: 1.7;
+  font-size: 14px;
+  margin: 0;
+  white-space: pre-line;
+}
+
+/* Navigation row */
+.nav-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.nav-icon {
+  font-size: 14px;
+}
+
+.next-btn {
+  margin-left: auto;
+}
+
+/* Sidebar: summary card */
+.summary-card {
+  padding: 16px 18px;
+  background: #ffffff;
+  margin-bottom: 14px;
+}
+
+.summary-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #1f2937;
+
+  svg {
+    margin-right: 6px;
+  }
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.summary-label {
+  color: #6b7280;
+}
+
+.summary-value {
+  font-weight: 600;
+  color: #1f2937;
+
+  &.status-passed {
+    color: #10b981;
+  }
+
+  &.status-failed {
+    color: #ef4444;
+  }
+
+  svg {
+    margin-right: 4px;
+  }
+}
+
+.summary-score {
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 12px;
+
+  &.score-passed {
+    color: #10b981;
+  }
+
+  &.score-failed {
+    color: #ef4444;
+  }
+}
+
+/* Sidebar: actions */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.action-btn {
+  width: 100%;
+  padding: 12px 10px;
+  font-size: 15px;
+  font-weight: 600;
+  justify-content: center;
+}
+
+/* Sidebar: list card */
+.list-card {
+  padding: 16px 18px;
+  background: #ffffff;
+}
+
+.list-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #1f2937;
+}
+
+.list-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.list-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.list-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.list-item {
+  height: 32px;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #4b5563;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  &.list-item-correct {
+    border-color: #10b981;
+    background: #d1fae5;
+    color: #10b981;
+  }
+
+  &.list-item-wrong {
+    border-color: #ef4444;
+    background: #fee2e2;
+    color: #ef4444;
+  }
+
+  &.list-item-current {
+    border-color: #fb923c;
+    background: #ffedd5;
+    color: #c2410c;
+  }
+}
+
+/* Loading and Error states */
+.loading,
+.error {
+  text-align: center;
+  padding: 40px;
+}
+
+.loading p {
+  font-size: 16px;
+  color: #6b7280;
+}
+
+.error-text {
+  font-size: 16px;
+  color: #ef4444;
+  margin-bottom: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .right {
+    width: 100%;
+  }
+
+  .section-tabs {
+    overflow-x: auto;
+    width: 100%;
+  }
+
+  .list-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

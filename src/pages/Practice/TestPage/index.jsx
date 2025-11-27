@@ -17,7 +17,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import Button from "~/components/Button";
 
-import { getExamsByLevel } from "~/services/examService";
+import { checkExamStatus, getExamsByLevel } from "~/services/examService";
 
 const cx = classNames.bind(styles);
 
@@ -81,7 +81,7 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
         };
 
         // Map API
-        const mappedTests = apiTests.map((t) => {
+        let mappedTests = apiTests.map((t) => {
           const defaults = levelDefaults[t.level] || {};
           return {
             id: t._id,
@@ -96,6 +96,29 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
             ],
           };
         });
+
+        // --- GỌI API CHECK STATUS CHO TỪNG ĐỀ ---
+        const statusPromises = mappedTests.map(async (test) => {
+          try {
+            const statusRes = await checkExamStatus(test.id);
+            console.log("status:", statusRes);
+
+            // statusRes.data.status là 'completed' | 'saving' | 'not_started'
+            const completed = statusRes?.data?.status === "completed";
+
+            return {
+              ...test,
+              completed,
+              score: test.score || null, // tạm thời chưa có score từ API này
+            };
+          } catch (e) {
+            console.error(e);
+            return test;
+          }
+        });
+
+
+        mappedTests = await Promise.all(statusPromises);
 
         setTests(mappedTests);
       } catch (err) {
@@ -179,9 +202,9 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
                   <p className={cx("stat-value")}>
                     {testList.length
                       ? Math.round(
-                          testList.reduce((s, t) => s + (t.duration || 0), 0) /
-                            testList.length
-                        )
+                        testList.reduce((s, t) => s + (t.duration || 0), 0) /
+                        testList.length
+                      )
                       : 0}
                     ’
                   </p>

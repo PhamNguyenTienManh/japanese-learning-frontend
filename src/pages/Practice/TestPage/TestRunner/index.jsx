@@ -1,6 +1,6 @@
 // TestRunner.jsx
 import { useState, useRef, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./TestRunner.module.scss";
 import Card from "~/components/Card";
@@ -14,6 +14,7 @@ import {
   faPause,
 } from "@fortawesome/free-solid-svg-icons";
 import { getExamDetail } from "~/services/examService";
+import { saveAnswers, submitExam } from "~/services/examService"; // Import API functions
 
 const cx = classNames.bind(styles);
 
@@ -90,6 +91,7 @@ function AudioPlayer({ src }) {
 
 function TestRunner() {
   const { testId, level } = useParams();
+  const navigate = useNavigate();
   const [examData, setExamData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -97,6 +99,19 @@ function TestRunner() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [timeRemaining, setTimeRemaining] = useState(5400);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [examResultId, setExamResultId] = useState(null);
+
+  // Lấy examResultId từ localStorage khi component mount
+  useEffect(() => {
+    const savedExamResultId = localStorage.getItem("currentExamResultId");
+    if (savedExamResultId) {
+      setExamResultId(savedExamResultId);
+    } else {
+      setError("Không tìm thấy phiên làm bài. Vui lòng bắt đầu lại.");
+    }
+  }, []);
 
   // Fetch exam data
   useEffect(() => {
@@ -135,19 +150,111 @@ function TestRunner() {
     if (loading || examData.length === 0) return;
 
     const timer = setInterval(() => {
-      setTimeRemaining((prev) => (prev > 0 ? prev - 1 : 0));
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          handleSubmit(); // Auto submit when time's up
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => clearInterval(timer);
   }, [loading, examData]);
 
-  const handleAnswer = (contentIndex, optionIndex) => {
+  // Hàm chuyển đổi answers sang format API
+  const convertAnswersToAPIFormat = () => {
+    const answersByPart = {};
+
+    // Group answers by part
+    Object.keys(answers).forEach((key) => {
+      const [questionId, contentIndex] = key.split("-");
+
+      // Find which part this question belongs to
+      examData.forEach((part) => {
+        const question = part.questions.find((q) => q._id === questionId);
+        if (question) {
+          if (!answersByPart[part.partId]) {
+            answersByPart[part.partId] = {};
+          }
+          if (!answersByPart[part.partId][questionId]) {
+            answersByPart[part.partId][questionId] = [];
+          }
+          answersByPart[part.partId][questionId].push({
+            subQuestionIndex: parseInt(contentIndex),
+            selectedAnswer: answers[key],
+          });
+        }
+      });
+    });
+
+    // Convert to API format
+    return Object.keys(answersByPart).map((partId) => ({
+      examResultId,
+      partId,
+      answers: Object.keys(answersByPart[partId]).map((questionId) => ({
+        questionId,
+        subAnswers: answersByPart[partId][questionId],
+      })),
+    }));
+  };
+
+  const handleAnswer = async (contentIndex, optionIndex) => {
     const currentQuestion =
       examData[currentPartIndex]?.questions[currentQuestionIndex];
     if (!currentQuestion) return;
 
     const answerKey = `${currentQuestion._id}-${contentIndex}`;
-    setAnswers({ ...answers, [answerKey]: optionIndex });
+    const newAnswers = { ...answers, [answerKey]: optionIndex };
+    setAnswers(newAnswers);
+
+    // Auto-save answer to API
+    try {
+      const currentPart = examData[currentPartIndex];
+
+      // Gom TẤT CẢ các câu hỏi đã trả lời trong part hiện tại
+      const answersInPart = [];
+
+      currentPart.questions.forEach((question) => {
+        const subAnswers = [];
+
+        question.content.forEach((_, idx) => {
+          const key = `${question._id}-${idx}`;
+          const selectedAnswer = newAnswers[key];
+
+          if (selectedAnswer !== undefined) {
+            subAnswers.push({
+              subQuestionIndex: idx,
+              selectedAnswer: selectedAnswer,
+            });
+          }
+        });
+
+        // Chỉ thêm vào nếu câu hỏi này có ít nhất 1 subAnswer
+        if (subAnswers.length > 0) {
+          answersInPart.push({
+            questionId: question._id,
+            subAnswers: subAnswers,
+          });
+        }
+      });
+
+      // Chỉ gọi API nếu có ít nhất 1 câu trả lời trong part
+      if (answersInPart.length > 0) {
+        const apiData = {
+          examResultId,
+          partId: currentPart.partId,
+          answers: answersInPart,
+        };
+
+        console.log("Đang lưu đáp án (toàn bộ part):", apiData);
+        await saveAnswers(apiData);
+        console.log("Đã lưu đáp án tự động");
+      }
+    } catch (error) {
+      console.error("Lỗi khi lưu đáp án:", error);
+      // Không hiển thị lỗi cho user để không làm gián đoạn trải nghiệm
+    }
   };
 
   const handleNext = () => {
@@ -178,23 +285,69 @@ function TestRunner() {
     setCurrentQuestionIndex(0);
   };
 
-  const handleSubmit = () => {
-    let correctCount = 0;
-    let totalCount = 0;
+  // Hàm lưu bài (manual save)
+  const handleSave = async () => {
+    if (!examResultId) {
+      alert("Không tìm thấy phiên làm bài!");
+      return;
+    }
 
-    examData.forEach((part) => {
-      part.questions.forEach((question) => {
-        question.content.forEach((content, idx) => {
-          totalCount++;
-          const key = `${question._id}-${idx}`;
-          if (answers[key] === content.correctAnswer) {
-            correctCount++;
-          }
-        });
-      });
-    });
+    try {
+      setIsSaving(true);
+      const apiDataArray = convertAnswersToAPIFormat();
 
-    alert(`Bạn đã làm đúng ${correctCount}/${totalCount} câu!`);
+      // Save all parts
+      for (const apiData of apiDataArray) {
+        await saveAnswers(apiData);
+      }
+
+      alert("Đã lưu bài thành công!");
+    } catch (error) {
+      console.error("Lỗi khi lưu bài:", error);
+      alert("Có lỗi xảy ra khi lưu bài. Vui lòng thử lại!");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Hàm nộp bài
+  const handleSubmit = async () => {
+    if (!examResultId) {
+      alert("Không tìm thấy phiên làm bài!");
+      return;
+    }
+
+    const confirmSubmit = window.confirm(
+      "Bạn có chắc chắn muốn nộp bài? Sau khi nộp bạn không thể thay đổi câu trả lời."
+    );
+
+    if (!confirmSubmit) return;
+
+    try {
+      setIsSubmitting(true);
+
+      // Submit exam
+      const response = await submitExam(examResultId);
+
+      if (response.success) {
+        alert("Nộp bài thành công!");
+
+        // Clear localStorage
+        localStorage.removeItem("currentExamResultId");
+        localStorage.removeItem("currentExamId");
+        localStorage.removeItem("examStartTime");
+
+        // Navigate to results page
+        navigate(`/practice/${level}/results/${testId}`);
+      } else {
+        throw new Error("Không thể nộp bài");
+      }
+    } catch (error) {
+      console.error("Lỗi khi nộp bài:", error);
+      alert("Có lỗi xảy ra khi nộp bài. Vui lòng thử lại!");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const formatTime = (seconds) => {
@@ -486,11 +639,17 @@ function TestRunner() {
                   primary
                   className={cx("submit-btn")}
                   onClick={handleSubmit}
+                  disabled={isSubmitting}
                 >
-                  Nộp bài
+                  {isSubmitting ? "Đang nộp..." : "Nộp bài"}
                 </Button>
-                <Button outline className={cx("save-btn")}>
-                  Lưu bài
+                <Button
+                  outline
+                  className={cx("save-btn")}
+                  onClick={handleSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Đang lưu..." : "Lưu bài"}
                 </Button>
               </div>
 
