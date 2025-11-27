@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import classNames from "classnames/bind";
 import styles from "./NewPost.module.scss";
 
@@ -7,24 +7,74 @@ import Button from "~/components/Button";
 import Input from "~/components/Input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faXmark } from "@fortawesome/free-solid-svg-icons";
+import postService from "~/services/postService";
+import CategorySelector from "~/components/CategorySelection";
 
 const cx = classNames.bind(styles);
 
-const categories = [
-  "Ngữ pháp",
-  "Từ vựng",
-  "Kanji",
-  "Tài liệu",
-  "Kinh nghiệm",
-  "Hỏi đáp",
+// Fallback categories nếu API lỗi
+const DEFAULT_CATEGORIES = [
+  { _id: "1", name: "Ngữ pháp" },
+  { _id: "2", name: "Từ vựng" },
+  { _id: "3", name: "Kanji" },
+  { _id: "4", name: "Tài liệu" },
+  { _id: "5", name: "Kinh nghiệm" },
+  { _id: "6", name: "Hỏi đáp" },
 ];
 
 function NewPost() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [category, setCategory] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+  const [postId, setPostId] = useState(null);
+
+  useEffect(() => {
+    fetchCategories();
+    checkEditMode();
+  }, []);
+
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const data = await postService.getCategories();
+      setCategories(data);
+    } catch (error) {
+      console.error("Failed to load categories, using defaults");
+      setCategories(DEFAULT_CATEGORIES);
+    }
+  };
+
+  // Check if editing mode
+  const checkEditMode = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const editPostId = urlParams.get("edit");
+    if (editPostId) {
+      setIsEdit(true);
+      setPostId(editPostId);
+      fetchPostData(editPostId);
+    }
+  };
+
+  // Fetch post data for editing
+  const fetchPostData = async (id) => {
+    try {
+      setLoading(true);
+      const data = await postService.getPostById(id);
+      setTitle(data.title || "");
+      setContent(data.content || "");
+      setCategoryId(data.category_id || "");
+      setTags(data.tags || []);
+    } catch (error) {
+      alert("Không thể tải dữ liệu bài viết!");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddTag = () => {
     const value = tagInput.trim();
@@ -38,15 +88,40 @@ function NewPost() {
     setTags((prev) => prev.filter((tag) => tag !== tagToRemove));
   };
 
-  const handleSubmit = () => {
-    if (!title.trim() || !content.trim() || !category) {
+  const handleSubmit = async () => {
+    // Validation
+    if (!title.trim() || !content.trim() || !categoryId) {
       alert("Vui lòng điền đầy đủ thông tin!");
       return;
     }
 
-    console.log("Creating post:", { title, content, category, tags });
-    alert("Bài viết đã được tạo thành công!");
-    window.location.href = "/community";
+    const postData = {
+      title: title.trim(),
+      content: content.trim(),
+      category_id: categoryId,
+    };
+
+    if (tags.length > 0) {
+      postData.tags = tags;
+    }
+
+    try {
+      setLoading(true);
+
+      if (isEdit) {
+        await postService.updatePost(postId, postData);
+        alert("Bài viết đã được cập nhật thành công!");
+      } else {
+        await postService.createPost(postData);
+        alert("Bài viết đã được tạo thành công!");
+      }
+
+      window.location.href = "/community";
+    } catch (error) {
+      alert(`Lỗi: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBack = () => {
@@ -59,6 +134,22 @@ function NewPost() {
       handleAddTag();
     }
   };
+
+  if (loading && isEdit) {
+    return (
+      <div className={cx("wrapper")}>
+        <main className={cx("main")}>
+          <div className={cx("container")}>
+            <Card className={cx("form-card")}>
+              <p style={{ textAlign: "center", padding: "40px" }}>
+                Đang tải dữ liệu...
+              </p>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={cx("wrapper")}>
@@ -74,7 +165,9 @@ function NewPost() {
               <FontAwesomeIcon icon={faArrowLeft} className={cx("back-icon")} />
               <span>Quay lại cộng đồng</span>
             </button>
-            <h1 className={cx("title")}>Tạo bài viết mới</h1>
+            <h1 className={cx("title")}>
+              {isEdit ? "Chỉnh sửa bài viết" : "Tạo bài viết mới"}
+            </h1>
             <p className={cx("subtitle")}>
               Chia sẻ kiến thức và kinh nghiệm của bạn
             </p>
@@ -94,29 +187,19 @@ function NewPost() {
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Nhập tiêu đề bài viết..."
                   className={"newpost-input"}
+                  disabled={loading}
                 />
               </div>
 
               {/* Category */}
-              <div className={cx("field")}>
-                <span className={cx("label")}>
-                  Danh mục <span className={cx("required")}>*</span>
-                </span>
-                <div className={cx("category-list")}>
-                  {categories.map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setCategory(cat)}
-                      className={cx("category-item", {
-                        active: category === cat,
-                      })}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
+
+              <CategorySelector
+                categories={categories}
+                value={categoryId}
+                onChange={setCategoryId}
+                disabled={loading}
+              />
+
 
               {/* Content */}
               <div className={cx("field")}>
@@ -129,12 +212,13 @@ function NewPost() {
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="Viết nội dung bài viết của bạn..."
                   className={cx("textarea")}
+                  disabled={loading}
                 />
                 <p className={cx("helper")}>{content.length} ký tự</p>
               </div>
 
               {/* Tags */}
-              <div className={cx("field")}>
+              {/* <div className={cx("field")}>
                 <label htmlFor="tags" className={cx("label")}>
                   Thẻ (Tags)
                 </label>
@@ -146,11 +230,13 @@ function NewPost() {
                     onKeyDown={handleTagKeyDown}
                     placeholder="Nhập thẻ và nhấn Enter..."
                     className={"newpost-input"}
+                    disabled={loading}
                   />
                   <Button
                     outline
                     className={cx("tag-add-btn")}
                     onClick={handleAddTag}
+                    disabled={loading}
                   >
                     Thêm
                   </Button>
@@ -165,6 +251,7 @@ function NewPost() {
                           type="button"
                           className={cx("tag-remove")}
                           onClick={() => handleRemoveTag(tag)}
+                          disabled={loading}
                         >
                           <FontAwesomeIcon
                             icon={faXmark}
@@ -175,7 +262,7 @@ function NewPost() {
                     ))}
                   </div>
                 )}
-              </div>
+              </div> */}
 
               {/* Actions */}
               <div className={cx("actions")}>
@@ -183,10 +270,20 @@ function NewPost() {
                   primary
                   className={cx("action-btn")}
                   onClick={handleSubmit}
+                  disabled={loading}
                 >
-                  Đăng bài
+                  {loading
+                    ? "Đang xử lý..."
+                    : isEdit
+                      ? "Cập nhật"
+                      : "Đăng bài"}
                 </Button>
-                <Button outline className={cx("action-btn")} href="/community">
+                <Button
+                  outline
+                  className={cx("action-btn")}
+                  href="/community"
+                  disabled={loading}
+                >
                   Hủy
                 </Button>
               </div>
