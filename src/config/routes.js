@@ -16,7 +16,7 @@ const routes = {
   resultDetail: "/practice/:level/results/detail/:testId",
   chatAI: "/chat-ai",
   community: "/community",
-  postDetail: "/community/:post",
+  postDetail: "/community/:id",
   newPost: "/community/new",
   dashboard: "/dashboard",
   achievements: "/dashboard/achievements",
