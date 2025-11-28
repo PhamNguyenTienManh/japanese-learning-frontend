@@ -24,19 +24,13 @@ const routes = {
   kanjiLookup: "/kanji",
   jlpt: "/jlpt",
   reading: "/reading",
+  jlptFlashcard: "jlpt/flashcards",
   admin: "/admin",
   user: "/admin/users",
   dictionaryAdmin: "/admin/dictionary",
   adminTest: "/admin/tests",
   createTest: "/admin/tests/create",
   adminPosts: "/admin/posts"
-
-
-
-
-
-
-
 };
 
 export default routes;

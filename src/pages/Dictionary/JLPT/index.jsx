@@ -22,33 +22,9 @@ import { getJlptWords, getJlptKanji, getJlptGrammar } from "~/services/jlptServi
 
 const cx = classNames.bind(styles);
 
-const jlptFeatures = [
-    {
-        icon: faBookOpen,
-        label: "FlashCard",
-        href: "/flashcards",
-    },
-    {
-        icon: faBolt,
-        label: "Quizz",
-        href: "/quizz",
-    },
-    {
-        icon: faUsers,
-        label: "Luyện nói, viết",
-        href: "/speaking",
-    },
-    {
-        icon: faFileLines,
-        label: "Mini Test",
-        href: "/mini-test",
-    },
-];
-
 const vocabularyTypes = ["Từ vựng", "Ngữ pháp", "Hán tự"];
 const jlptLevels = ["N5", "N4", "N3", "N2", "N1"];
 
-// Display options cho từng loại
 const initialDisplayOptions = {
     "Từ vựng": [
         { label: "Từ vựng", checked: true },
@@ -77,7 +53,36 @@ function JLPT() {
 
     const itemsPerPage = 9;
 
-    // Fetch data khi thay đổi type, level, hoặc page
+    // Tạo link flashcard động với type và level hiện tại
+    const getFlashcardLink = () => {
+        const typeParam = selectedType === "Từ vựng" ? "word" :
+            selectedType === "Ngữ pháp" ? "grammar" : "kanji";
+        return `flashcards?type=${typeParam}&level=${selectedLevel}&source=jlpt`;
+    };
+
+    const jlptFeatures = [
+        {
+            icon: faBookOpen,
+            label: "FlashCard",
+            href: getFlashcardLink(),
+        },
+        {
+            icon: faBolt,
+            label: "Quizz",
+            href: "/quizz",
+        },
+        {
+            icon: faUsers,
+            label: "Luyện nói, viết",
+            href: "/speaking",
+        },
+        {
+            icon: faFileLines,
+            label: "Mini Test",
+            href: "/mini-test",
+        },
+    ];
+
     useEffect(() => {
         fetchData();
     }, [selectedType, selectedLevel, currentPage]);
@@ -174,7 +179,6 @@ function JLPT() {
         return pages;
     };
 
-    // Render card theo loại
     const renderCard = (item, index) => {
         if (selectedType === "Từ vựng") {
             return (
@@ -243,9 +247,11 @@ function JLPT() {
     return (
         <div className={cx("wrapper")}>
             <div className={cx("inner")}>
-                {/* Header */}
                 <div className={cx("header")}>
                     <h1 className={cx("title")}>JLPT</h1>
+                    <p className={cx("subtitle")}>
+                        Đang xem: {selectedType} - Cấp độ {selectedLevel}
+                    </p>
                 </div>
 
                 <div className={cx("features")}>
@@ -267,10 +273,8 @@ function JLPT() {
                 </div>
 
                 <div className={cx("layout")}>
-                    {/* Sidebar */}
                     <aside className={cx("sidebar")}>
                         <Card>
-                            {/* Loại từ */}
                             <div className={cx("filter-block")}>
                                 <h3 className={cx("filter-title")}>Chọn loại từ</h3>
                                 <div className={cx("filter-options")}>
@@ -295,7 +299,6 @@ function JLPT() {
                                 </div>
                             </div>
 
-                            {/* Cấp độ */}
                             <div className={cx("filter-block")}>
                                 <h3 className={cx("filter-title")}>Chọn cấp độ</h3>
                                 <div className={cx("filter-options")}>
@@ -322,9 +325,7 @@ function JLPT() {
                         </Card>
                     </aside>
 
-                    {/* Content */}
                     <div className={cx("content")}>
-                        {/* Display settings + actions */}
                         <Card className={cx("display-card")}>
                             <div className={cx("display-row")}>
                                 <div className={cx("display-options")}>
@@ -368,17 +369,14 @@ function JLPT() {
                             </div>
                         </Card>
 
-                        {/* Loading state */}
                         {loading && (
                             <div className={cx("loading")}>Đang tải dữ liệu...</div>
                         )}
 
-                        {/* Error state */}
                         {error && (
                             <div className={cx("error")}>Lỗi: {error}</div>
                         )}
 
-                        {/* Grid */}
                         {!loading && !error && (
                             <div className={cx("vocab-grid", {
                                 "kanji-grid": selectedType === "Hán tự"
@@ -391,7 +389,6 @@ function JLPT() {
                             </div>
                         )}
 
-                        {/* Pagination */}
                         {!loading && !error && totalPages > 1 && (
                             <div className={cx("pagination")}>
                                 <button
