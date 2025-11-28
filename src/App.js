@@ -4,9 +4,12 @@ import { DefaultLayout } from "~/layouts";
 import { Fragment } from "react/jsx-runtime";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
+import { useStudyTimeTracker } from "./hooks/useStudyTimeTracker";
 
 function AnimatedRoutes() {
   const location = useLocation();
+
+  useStudyTimeTracker();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

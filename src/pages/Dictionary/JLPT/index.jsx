@@ -19,6 +19,8 @@ import Button from "~/components/Button";
 import styles from "./JLPT.module.scss";
 import Card from "~/components/Card";
 import { getJlptWords, getJlptKanji, getJlptGrammar } from "~/services/jlptService";
+import notebookService from "~/services/notebookService";
+import formatDateVN from "~/services/formatDate";
 
 const cx = classNames.bind(styles);
 
@@ -41,6 +43,15 @@ const initialDisplayOptions = {
     ],
 };
 
+const fakeNotebooks = [
+    { id: 1, name: "Sổ tay tiếng nhật 1", createdAt: "2025-11-28" },
+    { id: 2, name: "Sổ tay tiếng nhật 2", createdAt: "2025-10-05" },
+    { id: 3, name: "Sổ tay tiếng nhật 3", createdAt: "2025-11-28" },
+    { id: 4, name: "Sổ tay tiếng nhật 4", createdAt: "2025-11-28" },
+    { id: 5, name: "Sổ tay tiếng nhật 5", createdAt: "2025-11-28" },
+];
+
+
 function JLPT() {
     const [selectedType, setSelectedType] = useState("Từ vựng");
     const [selectedLevel, setSelectedLevel] = useState("N5");
@@ -50,6 +61,38 @@ function JLPT() {
     const [totalPages, setTotalPages] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [notebooks, setNotebooks] = useState([]);
+
+    // Thêm từ vựng, ngữ pháp vào Notebook
+    const [showModal, setShowModal] = useState(false);
+    const [selectedWord, setSelectedWord] = useState(null);
+
+    useEffect(() => {
+        fetchNotebooks();
+    }, []);
+
+    // Fetch danh sách notebooks
+    const fetchNotebooks = async () => {
+        try {
+            const data = await notebookService.getNotebooks();
+            setNotebooks(data);
+        } catch (err) {
+            console.log('Không thể tải danh sách sổ tay');
+        }
+    };
+
+    useEffect(() => {
+        if (showModal) {
+            document.body.style.overflow = "hidden"; // khóa scroll
+        } else {
+            document.body.style.overflow = "auto"; // mở lại
+        }
+
+        return () => {
+            document.body.style.overflow = "auto"; // cleanup
+        };
+    }, [showModal]);
+
 
     const itemsPerPage = 9;
 
@@ -199,6 +242,10 @@ function JLPT() {
                                 outline
                                 className={"no-margin"}
                                 leftIcon={<FontAwesomeIcon icon={faPlus} />}
+                                onClick={() => {
+                                    setSelectedWord(item);
+                                    setShowModal(true);
+                                }}
                             ></Button>
                         </div>
                         {isShown("Phiên âm") && (
@@ -227,6 +274,10 @@ function JLPT() {
                         outline
                         className={"no-margin"}
                         leftIcon={<FontAwesomeIcon icon={faPlus} />}
+                        onClick={() => {
+                            setSelectedWord(item);
+                            setShowModal(true);
+                        }}
                     ></Button>
                 </div>
             );
@@ -435,6 +486,39 @@ function JLPT() {
                         )}
                     </div>
                 </div>
+
+
+                {/* Hiển thị show modal */}
+                {showModal && (
+                    <div className={cx("modal-overlay")} onClick={() => setShowModal(false)}>
+                        <div
+                            className={cx("modal-container")}
+                            onClick={(e) => e.stopPropagation()} // ngăn tắt modal khi click bên trong
+                        >
+                            <div className={cx("modal-header")}>
+                                <h3>Thêm từ vào sổ tay</h3>
+                                <button className={cx("close-btn")} onClick={() => setShowModal(false)}>×</button>
+                            </div>
+
+                            <div className={cx("notebook-list")}>
+                                {notebooks.map((note) => (
+                                    <div
+                                        key={note.id}
+                                        className={cx("notebook-item")}
+                                        onClick={() => {
+                                            console.log("Đã chọn:", selectedWord, "👉 đưa vào:", note);
+                                            setShowModal(false);
+                                        }}
+                                    >
+                                        <h4>{note.name}</h4>
+                                        <p>Ngày tạo: {new Date(note.createdAt).toLocaleDateString("vi-VN")}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
             </div>
         </div>
     );

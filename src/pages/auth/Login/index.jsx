@@ -13,6 +13,8 @@ import Button from "~/components/Button";
 import Input from "~/components/Input";
 import Card from "~/components/Card";
 import authService from "~/services/authService";
+import { updateUserStreak } from "~/services/streakService"; // Import API streak
+import { studyTimeTracker } from "~/utils/studyTimeTracker";
 
 const cx = classNames.bind(styles);
 
@@ -22,12 +24,22 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       const data = await authService.login(email, password);
 
       if (data.data.access_token) {
         authService.saveToken(data.data.access_token);
+
+        studyTimeTracker.startTracking();
+
+        // Gọi API update streak sau khi đăng nhập thành công
+        try {
+          await updateUserStreak();
+        } catch (streakError) {
+          console.error("Failed to update streak:", streakError);
+        }
+
         window.location.href = "/";
       } else {
         alert(data.message || "Đăng nhập thất bại");
@@ -45,7 +57,16 @@ function LoginPage() {
     // Xử lý callback từ Google OAuth
     const token = authService.handleGoogleCallback();
     if (token) {
-      window.location.href = "/";
+      // Gọi API update streak sau khi đăng nhập Google thành công
+      updateUserStreak()
+        .then(() => {
+          window.location.href = "/";
+        })
+        .catch((error) => {
+          console.error("Failed to update streak:", error);
+          // Vẫn chuyển hướng về trang chủ dù update streak thất bại
+          window.location.href = "/";
+        });
     }
   }, []);
 

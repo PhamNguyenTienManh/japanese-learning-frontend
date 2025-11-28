@@ -15,25 +15,14 @@ import {
   faFire,
   faStar,
 } from "@fortawesome/free-solid-svg-icons";
+import { useEffect, useState } from "react";
+import { getUserStatistics } from "~/services/statistic";
+import { getTodayStudyTime, getWeekStudyMinutes } from "~/services/userStudy";
+import { studyTimeTracker } from "~/utils/studyTimeTracker";
 
 const cx = classNames.bind(styles);
 
 const mockUserData = {
-  name: "Nguyễn Văn A",
-  email: "nguyenvana@example.com",
-  avatar: "/current-user.jpg",
-  level: "N5",
-  joinedDate: "3 tháng trước",
-  stats: {
-    studyDays: 45,
-    currentStreak: 7,
-    longestStreak: 15,
-    totalStudyTime: 2340, // minutes
-    wordsLearned: 234,
-    kanjiLearned: 89,
-    testsCompleted: 12,
-    averageScore: 85,
-  },
   recentActivity: [
     {
       type: "test",
@@ -93,15 +82,6 @@ const mockUserData = {
       unlocked: false,
     },
   ],
-  weeklyProgress: [
-    { day: "T2", minutes: 45 },
-    { day: "T3", minutes: 60 },
-    { day: "T4", minutes: 30 },
-    { day: "T5", minutes: 75 },
-    { day: "T6", minutes: 50 },
-    { day: "T7", minutes: 0 },
-    { day: "CN", minutes: 40 },
-  ],
   goals: [
     {
       id: 1,
@@ -122,12 +102,81 @@ const mockUserData = {
 };
 
 function Dashboard() {
-  const totalMinutes = mockUserData.stats.totalStudyTime;
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
+  const [userData, setUserData] = useState(null);
+  const [studyTimeToday, setStudyTimeToday] = useState(0); // Thời gian đã lưu
+  const [currentSessionMinutes, setCurrentSessionMinutes] = useState(0); // Session hiện tại
+  const [loading, setLoading] = useState(true);
+  const [weeklyProgress, setWeeklyProgress] = useState([]);
+
+  const loadStudyTime = async () => {
+    try {
+      const data = await getTodayStudyTime();
+      setStudyTimeToday(data?.data?.duration_minutes || 0);
+    } catch (error) {
+      console.error('Failed to load study time:', error);
+      setStudyTimeToday(0);
+    }
+  };
+
+  useEffect(() => {
+    async function fetchUserData() {
+      try {
+        setLoading(true);
+
+        // Load user statistics
+        const userResponse = await getUserStatistics();
+        if (userResponse.success) {
+          const user = userResponse.data;
+          setUserData({
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+            level: "N5",
+            joinedDate: new Date(user.joinedDate).toLocaleDateString("vi-VN"),
+            stats: user.stats,
+          });
+        }
+
+        // Load weekly progress
+        const weekResponse = await getWeekStudyMinutes();
+        if (weekResponse.success) {
+          const days = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+          const progress = weekResponse.data.map((minutes, index) => ({
+            day: days[index],
+            minutes,
+          }));
+          setWeeklyProgress(progress);
+        }
+
+        // Load today's study time
+        await loadStudyTime();
+      } catch (err) {
+        console.error("Failed to load dashboard data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchUserData();
+
+    // Update session time mỗi giây
+    const interval = setInterval(() => {
+      const sessionMinutes = studyTimeTracker.getCurrentMinutes();
+      setCurrentSessionMinutes(sessionMinutes);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!userData) return <div>Loading...</div>;
+
+  // Tính tổng thời gian học hôm nay (đã lưu + session hiện tại)
+  const totalMinutesToday = studyTimeToday + currentSessionMinutes;
+  const hours = Math.floor(totalMinutesToday / 60);
+  const minutes = totalMinutesToday % 60;
 
   const maxMinutes = Math.max(
-    ...mockUserData.weeklyProgress.map((d) => d.minutes),
+    ...weeklyProgress.map((d) => d.minutes),
     1
   );
 
@@ -139,18 +188,18 @@ function Dashboard() {
           <div className={cx("header")}>
             <div className={cx("header-left")}>
               <img
-                src={mockUserData.avatar || "/placeholder.svg"}
-                alt={mockUserData.name}
+                src={userData.avatar || "/placeholder.svg"}
+                alt={userData.name}
                 className={cx("avatar")}
               />
               <div>
-                <h1 className={cx("title")}>{mockUserData.name}</h1>
+                <h1 className={cx("title")}>{userData.name}</h1>
                 <div className={cx("meta-row")}>
                   <span className={cx("badge", "badge-level")}>
-                    {mockUserData.level}
+                    {userData.level}
                   </span>
                   <span className={cx("joined")}>
-                    Tham gia {mockUserData.joinedDate}
+                    Tham gia {userData.joinedDate}
                   </span>
                 </div>
               </div>
@@ -172,7 +221,7 @@ function Dashboard() {
                 </div>
                 <div>
                   <p className={cx("stat-value")}>
-                    {mockUserData.stats.studyDays}
+                    {userData.stats.studyDays}
                   </p>
                   <p className={cx("stat-label")}>Ngày học</p>
                 </div>
@@ -186,7 +235,7 @@ function Dashboard() {
                 </div>
                 <div>
                   <p className={cx("stat-value")}>
-                    {mockUserData.stats.currentStreak}
+                    {userData.stats.currentStreak}
                   </p>
                   <p className={cx("stat-label")}>Chuỗi ngày</p>
                 </div>
@@ -200,9 +249,9 @@ function Dashboard() {
                 </div>
                 <div>
                   <p className={cx("stat-value")}>
-                    {hours}h {minutes}m
+                    {hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`}
                   </p>
-                  <p className={cx("stat-label")}>Thời gian học</p>
+                  <p className={cx("stat-label")}>Thời gian học hôm nay</p>
                 </div>
               </div>
             </Card>
@@ -217,9 +266,9 @@ function Dashboard() {
                 </div>
                 <div>
                   <p className={cx("stat-value")}>
-                    {mockUserData.stats.averageScore}%
+                    {userData.stats.averageScore.toFixed(2)}
                   </p>
-                  <p className={cx("stat-label")}>Điểm TB</p>
+                  <p className={cx("stat-label")}>Điểm thi JLPT TB</p>
                 </div>
               </div>
             </Card>
@@ -242,7 +291,7 @@ function Dashboard() {
                 </div>
 
                 <div className={cx("weekly-chart")}>
-                  {mockUserData.weeklyProgress.map((day) => {
+                  {weeklyProgress.map((day) => {
                     const height = (day.minutes / maxMinutes) * 100;
                     return (
                       <div key={day.day} className={cx("weekly-item")}>
@@ -379,7 +428,7 @@ function Dashboard() {
                       <span>Từ vựng</span>
                     </div>
                     <span className={cx("side-stat-value")}>
-                      {mockUserData.stats.wordsLearned}
+                      {userData.stats.wordsLearned}
                     </span>
                   </div>
 
@@ -392,7 +441,7 @@ function Dashboard() {
                       <span>Kanji</span>
                     </div>
                     <span className={cx("side-stat-value")}>
-                      {mockUserData.stats.kanjiLearned}
+                      {userData.stats.kanjiLearned}
                     </span>
                   </div>
 
@@ -405,7 +454,7 @@ function Dashboard() {
                       <span>Đề thi</span>
                     </div>
                     <span className={cx("side-stat-value")}>
-                      {mockUserData.stats.testsCompleted}
+                      {userData.stats.testsCompleted}
                     </span>
                   </div>
 
@@ -418,7 +467,7 @@ function Dashboard() {
                       <span>Chuỗi dài nhất</span>
                     </div>
                     <span className={cx("side-stat-value")}>
-                      {mockUserData.stats.longestStreak} ngày
+                      {userData.stats.longestStreak} ngày
                     </span>
                   </div>
                 </div>

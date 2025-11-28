@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-    faHeart,
     faVolumeHigh,
     faPlus,
     faPlay,
@@ -11,51 +10,10 @@ import {
 
 import Button from "~/components/Button";
 import Card from "~/components/Card";
+import { getProfile } from "~/services/newsService";
 import styles from "./Reading.module.scss";
 
 const cx = classNames.bind(styles);
-
-const readingArticles = [
-    {
-        id: "1",
-        title: "日本の秋祭り",
-        hiragana: "にほんのあきまつり",
-        content:
-            "日本の秋祭りは、色とりどりの紅葉とともに行われます。屋台や神輿など、にぎやかな雰囲気が楽しめます。",
-        image:
-            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/attachments/gen-images/public/japanese-seafood-shells-nIV9KBSzmKHcyhXtcEfalFhFx4LzFb.jpg",
-        difficulty: "easy",
-        date: "2025-11-25 03:01:17Z",
-        read: true,
-        audioDuration: 95, // giây
-    },
-    {
-        id: "2",
-        title: "日本の朝ごはん",
-        hiragana: "にほんのあさごはん",
-        content:
-            "日本の朝ごはんには、ごはん、みそしる、さかな、たまごやさいなど、バランスのよい料理がならびます。",
-        image:
-            "https://images.pexels.com/photos/1580466/pexels-photo-1580466.jpeg?auto=compress&cs=tinysrgb&w=1200",
-        difficulty: "easy",
-        date: "2025-11-25 03:01:12Z",
-        read: false,
-        audioDuration: 120,
-    },
-    {
-        id: "3",
-        title: "世界のニュースを読む",
-        hiragana: "せかいのにゅーすをよむ",
-        content:
-            "インターネットを使えば、世界中のニュースを日本語で読むことができます。語彙力アップにも役立ちます。",
-        image:
-            "https://images.pexels.com/photos/261949/pexels-photo-261949.jpeg?auto=compress&cs=tinysrgb&w=1200",
-        difficulty: "hard",
-        date: "2025-11-25 03:00:00Z",
-        read: false,
-        audioDuration: 150,
-    },
-];
 
 const difficultyOptions = [
     { value: "all", label: "Tất cả" },
@@ -70,46 +28,122 @@ function formatTime(seconds) {
 }
 
 export default function Reading() {
-    const [selectedArticle, setSelectedArticle] = useState(readingArticles[0]);
+    const [readingArticles, setReadingArticles] = useState([]);
+    const [selectedArticle, setSelectedArticle] = useState(null);
     const [difficulty, setDifficulty] = useState("all");
-    const [showFurigana, setShowFurigana] = useState(true);
     const [likedIds, setLikedIds] = useState([]);
+    const [loading, setLoading] = useState(true);
 
+    const [audioElement, setAudioElement] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+
+    const progressBarRef = useRef(null);
+
+    // Fetch data từ API
+    useEffect(() => {
+        const fetchArticles = async () => {
+            try {
+                setLoading(true);
+                const response = await getProfile();
+
+                if (response.success && response.data) {
+                    // Transform API data to component format
+                    const transformedArticles = response.data.map(item => ({
+                        id: item._id,
+                        title: item.title.split('').filter(char =>
+                            !['ほ', 'け', 'ん', 'が', 'い', 'し', 'ゃ', 'に', 'せ', 'い', 'め', 'こ', 'じ', 'ょ', 'う', 'だ', 'む'].includes(char) ||
+                            char.match(/[一-龯]/)
+                        ).join(''),
+                        content: item.content.textbody.replace(/[ぁ-ゔ]/g, ''),
+                        image: item.content.image,
+                        audioUrl: item.content.audio,
+                        difficulty: item.type,
+                        date: new Date(item.dateField).toLocaleDateString('vi-VN'),
+                        read: false,
+                    }));
+
+                    setReadingArticles(transformedArticles);
+                    if (transformedArticles.length > 0) {
+                        setSelectedArticle(transformedArticles[0]);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching articles:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchArticles();
+    }, []);
 
     const filteredArticles = readingArticles.filter(
         (article) =>
             difficulty === "all" || article.difficulty === difficulty
     );
 
-    const currentDuration = selectedArticle.audioDuration || 0;
-    const progressPercent = currentDuration
-        ? (currentTime / currentDuration) * 100
-        : 0;
+    const progressPercent = duration ? (currentTime / duration) * 100 : 0;
 
-    // fake nghe chạy
+    // Tạo audio element khi component mount hoặc khi đổi bài
     useEffect(() => {
-        if (!isPlaying) return;
+        if (!selectedArticle) return;
 
-        const interval = setInterval(() => {
-            setCurrentTime((prev) => {
-                if (prev >= currentDuration) {
-                    setIsPlaying(false);
-                    return currentDuration;
-                }
-                return prev + 1;
-            });
-        }, 1000);
+        // Dọn dẹp audio cũ
+        if (audioElement) {
+            audioElement.pause();
+            audioElement.src = "";
+        }
 
-        return () => clearInterval(interval);
-    }, [isPlaying, currentDuration]);
+        // Tạo audio mới
+        const audio = new Audio(selectedArticle.audioUrl);
 
-    // reset khi đổi bài
-    useEffect(() => {
-        setCurrentTime(0);
+        // Event listeners
+        audio.addEventListener("loadedmetadata", () => {
+            setDuration(audio.duration);
+        });
+
+        audio.addEventListener("timeupdate", () => {
+            if (!isDragging) {
+                setCurrentTime(audio.currentTime);
+            }
+        });
+
+        audio.addEventListener("ended", () => {
+            setIsPlaying(false);
+            setCurrentTime(0);
+        });
+
+        audio.addEventListener("error", (e) => {
+            console.error("Audio error:", e);
+        });
+
+        setAudioElement(audio);
         setIsPlaying(false);
-    }, [selectedArticle.id]);
+        setCurrentTime(0);
+
+        // Cleanup
+        return () => {
+            audio.pause();
+            audio.src = "";
+        };
+    }, [selectedArticle?.id]);
+
+    // Xử lý play/pause
+    useEffect(() => {
+        if (!audioElement) return;
+
+        if (isPlaying) {
+            audioElement.play().catch((e) => {
+                console.error("Play error:", e);
+                setIsPlaying(false);
+            });
+        } else {
+            audioElement.pause();
+        }
+    }, [isPlaying, audioElement]);
 
     const handleToggleLike = (id) => {
         setLikedIds((prev) =>
@@ -119,18 +153,103 @@ export default function Reading() {
         );
     };
 
-    const handleSeek = (e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = e.clientX - rect.left;
+    const calculateTimeFromPosition = (clientX) => {
+        if (!progressBarRef.current || !duration) return 0;
+
+        const rect = progressBarRef.current.getBoundingClientRect();
+        const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
         const ratio = x / rect.width;
-        const newTime = Math.max(
-            0,
-            Math.min(currentDuration * ratio, currentDuration)
-        );
+        return Math.max(0, Math.min(duration * ratio, duration));
+    };
+
+    const handleProgressMouseDown = (e) => {
+        if (!audioElement || !duration) return;
+
+        setIsDragging(true);
+        const newTime = calculateTimeFromPosition(e.clientX);
         setCurrentTime(newTime);
     };
 
-    const isLiked = likedIds.includes(selectedArticle.id);
+    const handleProgressMouseMove = (e) => {
+        if (!isDragging) return;
+
+        const newTime = calculateTimeFromPosition(e.clientX);
+        setCurrentTime(newTime);
+    };
+
+    const handleProgressMouseUp = (e) => {
+        if (!isDragging || !audioElement) return;
+
+        const newTime = calculateTimeFromPosition(e.clientX);
+        audioElement.currentTime = newTime;
+        setCurrentTime(newTime);
+        setIsDragging(false);
+    };
+
+    // Global mouse events for dragging
+    useEffect(() => {
+        const handleGlobalMouseMove = (e) => {
+            if (isDragging) {
+                handleProgressMouseMove(e);
+            }
+        };
+
+        const handleGlobalMouseUp = (e) => {
+            if (isDragging) {
+                handleProgressMouseUp(e);
+            }
+        };
+
+        if (isDragging) {
+            document.addEventListener("mousemove", handleGlobalMouseMove);
+            document.addEventListener("mouseup", handleGlobalMouseUp);
+        }
+
+        return () => {
+            document.removeEventListener("mousemove", handleGlobalMouseMove);
+            document.removeEventListener("mouseup", handleGlobalMouseUp);
+        };
+    }, [isDragging, duration, audioElement]);
+
+    const handleRestart = () => {
+        if (!audioElement) return;
+
+        audioElement.currentTime = 0;
+        setCurrentTime(0);
+        setIsPlaying(true);
+    };
+
+    const isLiked = selectedArticle ? likedIds.includes(selectedArticle.id) : false;
+
+    if (loading) {
+        return (
+            <div className={cx("wrapper")}>
+                <div className={cx("inner")}>
+                    <div className={cx("header")}>
+                        <h1 className={cx("title")}>Luyện đọc</h1>
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '40px' }}>
+                        <p>Đang tải bài viết...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!selectedArticle) {
+        return (
+            <div className={cx("wrapper")}>
+                <div className={cx("inner")}>
+                    <div className={cx("header")}>
+                        <h1 className={cx("title")}>Luyện đọc</h1>
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '40px' }}>
+                        <p>Không có bài viết nào</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={cx("wrapper")}>
@@ -159,96 +278,49 @@ export default function Reading() {
                             </Button>
                         ))}
                     </div>
-
-                    <label className={cx("furiganaToggle")}>
-                        <input
-                            type="checkbox"
-                            checked={showFurigana}
-                            onChange={(e) =>
-                                setShowFurigana(e.target.checked)
-                            }
-                            className={cx("checkbox")}
-                        />
-                        <span className={cx("furiganaLabel")}>
-                            Hiển thị Furigana
-                        </span>
-                    </label>
                 </div>
 
-                {/* layout 2 cột */}
                 <div className={cx("layout")}>
-                    {/* sidebar list */}
+                    {/* sidebar list*/}
                     <aside className={cx("sidebar")}>
-                        {filteredArticles.map((article) => (
-                            <Card
-                                key={article.id}
-                                className={{ active: selectedArticle.id === article.id, }}
-                                onClick={() =>
-                                    setSelectedArticle(article)
-                                }
-                            >
-                                <div className={cx("articleItemInner")}>
-                                    <div className={cx("thumb")}>
-                                        <img
-                                            src={
-                                                article.image ||
-                                                "/placeholder.svg"
-                                            }
-                                            alt={article.title}
-                                            className={cx("thumbImage")}
-                                        />
-                                    </div>
-
-                                    <div className={cx("articleInfo")}>
-                                        <h3
-                                            className={cx(
-                                                "articleTitle"
-                                            )}
-                                        >
-                                            {article.title}
-                                        </h3>
-                                        {showFurigana && (
-                                            <p
-                                                className={cx(
-                                                    "articleHiragana"
-                                                )}
-                                            >
-                                                {article.hiragana}
-                                            </p>
-                                        )}
-
-                                        <div
-                                            className={cx(
-                                                "articleMeta"
-                                            )}
-                                        >
-                                            <span
-                                                className={cx(
-                                                    "articleDate"
-                                                )}
-                                            >
-                                                {article.date}
-                                            </span>
-                                            {article.read && (
-                                                <span
-                                                    className={cx(
-                                                        "readDot"
-                                                    )}
-                                                />
-                                            )}
+                        <div className={cx("sidebarScroll")}>
+                            {filteredArticles.map((article) => (
+                                <Card
+                                    key={article.id}
+                                    className={{ active: selectedArticle.id === article.id }}
+                                    onClick={() => setSelectedArticle(article)}
+                                >
+                                    <div className={cx("articleItemInner")}>
+                                        <div className={cx("thumb")}>
+                                            <img
+                                                src={article.image || "/placeholder.svg"}
+                                                alt={article.title}
+                                                className={cx("thumbImage")}
+                                            />
                                         </div>
 
-                                        <span
-                                            className={cx(
-                                                "moreLink"
-                                            )}
-                                        >
-                                            Xem thêm →
-                                        </span>
+                                        <div className={cx("articleInfo")}>
+                                            <h3 className={cx("articleTitle")}>
+                                                {article.title}
+                                            </h3>
+
+                                            <div className={cx("articleMeta")}>
+                                                <span className={cx("articleDate")}>
+                                                    {article.date}
+                                                </span>
+                                                {article.read && (
+                                                    <span className={cx("readDot")} />
+                                                )}
+                                            </div>
+
+                                            <span className={cx("moreLink")}>
+                                                Xem thêm →
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                            </Card>
-                        ))}
+                                </Card>
+                            ))}
+                        </div>
                     </aside>
 
                     {/* nội dung bài */}
@@ -256,53 +328,22 @@ export default function Reading() {
                         <Card className={cx("articleCard")}>
                             {/* header bài */}
                             <div className={cx("articleHeader")}>
-                                <div
-                                    className={cx(
-                                        "articleHeaderMain"
-                                    )}
-                                >
-                                    <h2
-                                        className={cx(
-                                            "articleMainTitle"
-                                        )}
-                                    >
+                                <div className={cx("articleHeaderMain")}>
+                                    <h2 className={cx("articleMainTitle")}>
                                         {selectedArticle.title}
                                     </h2>
-                                    {showFurigana && (
-                                        <p
-                                            className={cx(
-                                                "articleMainHiragana"
-                                            )}
-                                        >
-                                            {selectedArticle.hiragana}
-                                        </p>
-                                    )}
-                                    <p
-                                        className={cx(
-                                            "articleMainDate"
-                                        )}
-                                    >
+                                    <p className={cx("articleMainDate")}>
                                         {selectedArticle.date}
                                     </p>
                                 </div>
 
                                 <Button
                                     iconOnly
-                                    className={cx(
-                                        "likeButton",
-                                        {
-                                            liked: isLiked,
-                                        }
-                                    )}
+                                    className={cx("likeButton", {
+                                        liked: isLiked,
+                                    })}
                                     onClick={() =>
-                                        handleToggleLike(
-                                            selectedArticle.id
-                                        )
-                                    }
-                                    leftIcon={
-                                        <FontAwesomeIcon
-                                            icon={faHeart}
-                                        />
+                                        handleToggleLike(selectedArticle.id)
                                     }
                                 />
                             </div>
@@ -319,27 +360,17 @@ export default function Reading() {
                                 />
                             </div>
 
-                            {/* thanh nghe */}
+                            {/* thanh nghe - CÓ DRAG */}
                             <div className={cx("audioPlayer")}>
-                                <div
-                                    className={cx(
-                                        "audioControlsRow"
-                                    )}
-                                >
+                                <div className={cx("audioControlsRow")}>
                                     <Button
                                         outline
                                         iconOnly
-                                        className={cx(
-                                            "audioPlayButton",
-                                        )}
+                                        className={cx("audioPlayButton")}
                                         onClick={() => {
-                                            if (
-                                                currentDuration === 0
-                                            )
+                                            if (!audioElement || duration === 0)
                                                 return;
-                                            setIsPlaying(
-                                                (prev) => !prev
-                                            );
+                                            setIsPlaying((prev) => !prev);
                                         }}
                                         leftIcon={
                                             <FontAwesomeIcon
@@ -351,47 +382,33 @@ export default function Reading() {
                                             />
                                         }
                                     />
-                                    <div
-                                        className={cx(
-                                            "audioInfo"
-                                        )}
-                                    >
+                                    <div className={cx("audioInfo")}>
                                         <FontAwesomeIcon
                                             icon={faVolumeHigh}
-                                            className={cx(
-                                                "audioIcon"
-                                            )}
+                                            className={cx("audioIcon")}
                                         />
-                                        <span
-                                            className={cx(
-                                                "audioTime"
-                                            )}
-                                        >
-                                            {formatTime(
-                                                currentTime
-                                            )}
-                                            /
-                                            {formatTime(
-                                                currentDuration
-                                            )}
+                                        <span className={cx("audioTime")}>
+                                            {formatTime(currentTime)} /{" "}
+                                            {formatTime(duration)}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div
-                                    className={cx(
-                                        "audioProgressBar"
-                                    )}
-                                    onClick={handleSeek}
+                                    ref={progressBarRef}
+                                    className={cx("audioProgressBar", {
+                                        dragging: isDragging,
+                                    })}
+                                    onMouseDown={handleProgressMouseDown}
                                 >
                                     <div
-                                        className={cx(
-                                            "audioProgress"
-                                        )}
+                                        className={cx("audioProgress")}
                                         style={{
                                             width: `${progressPercent}%`,
                                         }}
-                                    />
+                                    >
+                                        <div className={cx("audioProgressThumb")} />
+                                    </div>
                                 </div>
                             </div>
 
@@ -406,6 +423,7 @@ export default function Reading() {
                                         "toolButton",
                                         "no-margin"
                                     )}
+                                    onClick={handleRestart}
                                     leftIcon={
                                         <FontAwesomeIcon
                                             icon={faVolumeHigh}
@@ -413,20 +431,6 @@ export default function Reading() {
                                     }
                                 >
                                     Nghe lại từ đầu
-                                </Button>
-                                <Button
-                                    outline
-                                    className={cx(
-                                        "toolButton",
-                                        "no-margin"
-                                    )}
-                                    leftIcon={
-                                        <FontAwesomeIcon
-                                            icon={faPlus}
-                                        />
-                                    }
-                                >
-                                    Thêm vào sổ tay
                                 </Button>
                             </div>
                         </Card>

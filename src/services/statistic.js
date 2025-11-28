@@ -1,0 +1,27 @@
+const BASE_URL = "http://localhost:9090/api";
+
+// Lấy token JWT từ localStorage
+function getToken() {
+    return localStorage.getItem("token") || "";
+}
+
+// Lấy headers Authorization
+function getAuthHeaders() {
+    const token = getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/**
+ * Lấy thống kê user
+ */
+export async function getUserStatistics() {
+    const response = await fetch(`${BASE_URL}/statistic/user`, {
+        headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to get user statistics: ${response.statusText}`);
+    }
+
+    return response.json();
+}
