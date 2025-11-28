@@ -56,7 +56,6 @@ const ContributionService = {
                 // if (!Array.isArray(data.result)) data.result = [];
                 data.result.push(...mappedComments);
             }
-            console.log(("ccccc", data));
             
             return data;
         } catch (error) {

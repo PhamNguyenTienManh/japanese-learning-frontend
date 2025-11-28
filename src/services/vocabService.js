@@ -27,7 +27,6 @@ const vocabService = {
 
   // Lấy chi tiết từ vựng
   getWordDetail: async (slug, getRelate = 0) => {
-    console.log("slug",slug);
     
     try {
       const response = await axios.get(

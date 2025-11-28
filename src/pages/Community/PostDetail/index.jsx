@@ -46,16 +46,22 @@ function PostDetail() {
   const [saving, setSaving] = useState(false);
   const [categoryId, setCategoryId] = useState("");
   const [categories, setCategories] = useState([]);
+  const [countComment, setCountComment] = useState(0);
 
   const getLoggedInUserId = () => {
-    const token = localStorage.getItem("token")
+    const token = localStorage.getItem("token");
 
-    if (token) {
-      const decoded = decodeToken(token);
+    if (!token) return null;
 
-      return decoded?.sub
+    const decoded = decodeToken(token);
+    const isExpired = decoded?.exp ? decoded.exp * 1000 < Date.now() : false;
+
+    if (isExpired) {
+      localStorage.removeItem("token");
+      return null;
     }
-    return null;
+
+    return decoded?.sub || null;
   };
 
   const currentUserId = getLoggedInUserId();
@@ -67,10 +73,7 @@ function PostDetail() {
       setError(null);
       try {
         const response = await postService.getPostById(id);
-
-        // Xử lý response
-        const postData = response.post || response.data || response;
-        console.log("data", postData);
+        const postData = response.data.data;
 
         // Thêm isLiked vào postData
         const likedArray = Array.isArray(postData.liked) ? postData.liked : [];
@@ -78,14 +81,15 @@ function PostDetail() {
           ...postData,
           isLiked: likedArray.includes(currentUserId)
         };
-
         setPost(enrichedPost);
-
+        
+        setCountComment( response.data.countComment);
+        
+        
         const postOwnerId = postData.profile_id.userId;
 
         setIsOwner(currentUserId === postOwnerId);
 
-        // Fetch comments
         await fetchComments();
       } catch (err) {
         setError("Không thể tải bài viết. Vui lòng thử lại sau.");
@@ -174,25 +178,20 @@ function PostDetail() {
     }
   };
 
-  // Handle comment submit
   const handleComment = async () => {
     if (!comment.trim()) return;
 
     setSubmitting(true);
     try {
       const response = await postService.addComment(id, comment);
-      console.log("Add comment response:", response);
 
-      // Refresh comments
       await fetchComments();
 
-      // Update post comment count
       setPost((prev) => ({
         ...prev,
         comments: prev.comments + 1
       }));
 
-      // Clear input
       setComment("");
     } catch (err) {
       console.error("Add comment error:", err);
@@ -202,17 +201,14 @@ function PostDetail() {
     }
   };
 
-  // Handle comment like
   const handleCommentLike = async (commentId) => {
     try {
       const response = await postService.toggleCommentLike(commentId);
 
-      // Update comments state với dữ liệu mới từ response
       setComments((prev) =>
         prev.map((c) => {
           const cId = c._id || c.id || c.commentId;
           if (cId === commentId) {
-            // Nếu response trả về liked array, dùng nó
             if (response?.data?.liked) {
               return {
                 ...c,
@@ -221,7 +217,6 @@ function PostDetail() {
                 isLiked: response.data.liked.includes(currentUserId)
               };
             }
-            // Fallback: toggle manually
             return {
               ...c,
               isLiked: !c.isLiked,
@@ -405,9 +400,9 @@ function PostDetail() {
                 </div>
               </div>
               <div className={cx("post-header-actions")}>
-                {(post.category || post.categoryName) && (
+                {(post.category_id) && (
                   <span className={cx("badge", "badge-category")}>
-                    {post.category || post.categoryName}
+                    {post.category_id.name ||"Từ vựng"}
                   </span>
                 )}
                 {isOwner && !isEditing && (
@@ -519,7 +514,7 @@ function PostDetail() {
                       className={cx("stat-icon")}
                     />
                     <span>
-                      {post.comments || post.commentCount || 0} bình luận
+                      {countComment|| 0} bình luận
                     </span>
                   </div>
                 </div>
