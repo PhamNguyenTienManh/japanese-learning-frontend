@@ -24,6 +24,7 @@ import ResetPassword from "~/pages/auth/ResetPass";
 import JLPT from "~/pages/Dictionary/JLPT";
 import Reading from "~/pages/Reading";
 import ExamReview from "~/pages/ExamReview/ExamReview";
+import JLPTFlashcard from "~/pages/Dictionary/JLPT/Flashcards";
 
 export const publicRouter = [
   { path: config.routes.home, component: Home },
@@ -51,7 +52,7 @@ export const publicRouter = [
   { path: config.routes.jlpt, component: JLPT },
   { path: config.routes.reading, component: Reading },
   { path: config.routes.resultDetail, component: ExamReview },
-
+  { path: config.routes.jlptFlashcard, component: JLPTFlashcard },
 ];
 
 export const privateRoutes = [];

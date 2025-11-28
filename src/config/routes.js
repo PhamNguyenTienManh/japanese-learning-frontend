@@ -24,8 +24,8 @@ const routes = {
   setting: "/dashboard/settings",
   kanjiLookup: "/kanji",
   jlpt: "/jlpt",
-  reading: "/reading"
-
+  reading: "/reading",
+  jlptFlashcard: "jlpt/flashcards",
 
 };
 

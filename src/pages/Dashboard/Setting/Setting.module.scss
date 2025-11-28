@@ -72,6 +72,7 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 12px;
+  position: relative;
 }
 
 .icon-box {
@@ -92,6 +93,28 @@
 .card-title {
   font-size: 18px;
   font-weight: 700;
+  flex: 1;
+}
+
+.edit-btn {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(79, 70, 229, 0.08);
+  color: #4f46e5;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.edit-btn:hover {
+  background: rgba(79, 70, 229, 0.15);
+  transform: scale(1.05);
 }
 
 .card-body {
@@ -132,6 +155,121 @@
 .textarea:focus {
   border-color: #4f46e5;
   background: #ffffff;
+}
+
+/* Avatar Upload */
+
+.avatar-upload {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 6px;
+}
+
+.avatar-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-icon {
+  font-size: 32px;
+  color: #9ca3af;
+}
+
+.avatar-actions {
+  flex: 1;
+}
+
+.avatar-input {
+  display: none;
+}
+
+.upload-btn {
+  display: inline-block;
+  padding: 8px 16px;
+  background: #4f46e5;
+  color: white;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.upload-btn:hover {
+  background: #4338ca;
+}
+
+.upload-btn.disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  pointer-events: none;
+  color: #9ca3af;
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+/* Gender Radio */
+
+.gender-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 6px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.radio-label input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #4f46e5;
+}
+
+.radio-label.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.radio-label.disabled input[type="radio"] {
+  cursor: not-allowed;
+}
+
+/* Action Buttons */
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
 }
 
 /* Buttons */
