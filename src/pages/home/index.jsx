@@ -7,11 +7,17 @@ import {
   faEye,
   faHeart,
   faComments,
+  faHistory,
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import WordCard from "~/components/WordCard";
 import styles from "./Home.module.scss";
 import Card from "~/components/Card";
 import SearchInput from "~/components/searchInput/searchInput";
+import searchHistoryService from "~/services/searchHistoryService";
+import decodeToken from "~/services/pairToken";
+import trendingWordsService from "~/services/homeService";
+import handlePlayAudio from "~/services/handlePlayAudio";
 
 const mockWords = [
   {
@@ -58,30 +64,6 @@ const mockWords = [
   },
 ];
 
-const trendingWords = [
-  {
-    id: 1,
-    kanji: "頑張る",
-    hiragana: "がんばる",
-    meaning: "cố gắng",
-    views: 1250,
-  },
-  {
-    id: 2,
-    kanji: "素晴らしい",
-    hiragana: "すばらしい",
-    meaning: "tuyệt vời",
-    views: 980,
-  },
-  {
-    id: 3,
-    kanji: "楽しい",
-    hiragana: "たのしい",
-    meaning: "vui vẻ",
-    views: 850,
-  },
-];
-
 const communityPosts = [
   {
     id: 1,
@@ -112,6 +94,39 @@ function Home() {
   const [savedWords, setSavedWords] = useState([]);
   const [showHandwriting, setShowHandwriting] = useState(false);
   const [recognizedResults, setRecognizedResults] = useState([]);
+  const [searchHistory, setSearchHistory] = useState([]);
+  const [trendingWords, setTrendingWords] = useState([]);
+  const [isLoadingTrending, setIsLoadingTrending] = useState(true);
+  const userId = decodeToken(localStorage.getItem("token"));
+
+  // Load search history và trending words khi component mount
+  useEffect(() => {
+    fetchSearchHistory();
+    fetchTrendingWords();
+  }, []);
+
+  const fetchSearchHistory = async () => {
+    const result = await searchHistoryService.getSearchHistory(userId);
+
+    if (result.success) {
+      setSearchHistory(result.history);
+    }
+  };
+
+  const fetchTrendingWords = async () => {
+    setIsLoadingTrending(true);
+    const result = await trendingWordsService.getTrendingWords(5);
+
+    if (result.success) {
+      setTrendingWords(result.data);
+    }
+    setIsLoadingTrending(false);
+  };
+
+  const addToSearchHistory = async (keyword) => {
+    await searchHistoryService.addSearchHistory(userId, keyword.trim());
+    fetchSearchHistory();
+  };
 
   const handleSearch = (keyword) => {
     const q = keyword.trim();
@@ -120,13 +135,28 @@ function Home() {
       return;
     }
 
-    // Navigate to KanjiLookup page with search query
-    navigate('/kanji', {
+    addToSearchHistory(q);
+
+    navigate("/kanji", {
       state: {
         searchQuery: q,
-        tab: 'vocab'
-      }
+        tab: "vocab",
+      },
     });
+  };
+
+  const removeHistoryItem = async (query) => {
+    await searchHistoryService.removeSearchHistory(userId, query);
+    fetchSearchHistory();
+  };
+
+  const clearAllHistory = async () => {
+    await searchHistoryService.clearAllHistory(userId);
+    setSearchHistory([]);
+  };
+
+  const searchFromHistory = (keyword) => {
+    handleSearch(keyword);
   };
 
   const toggleSaveWord = (id) => {
@@ -187,7 +217,7 @@ function Home() {
 
     const stopDrawing = () => {
       isDrawing = false;
-    }
+    };
 
     canvas.addEventListener("mousedown", startDrawing);
     canvas.addEventListener("mousemove", draw);
@@ -232,11 +262,11 @@ function Home() {
 
   const handleSelectKanji = (kanji) => {
     // Navigate to KanjiLookup with selected kanji
-    navigate('/kanji-lookup', {
+    navigate("/kanji-lookup", {
       state: {
         searchQuery: kanji,
-        tab: 'kanji'
-      }
+        tab: "kanji",
+      },
     });
   };
 
@@ -251,21 +281,40 @@ function Home() {
                 <p>Hôm nay bạn muốn học gì?</p>
               </div>
             </div>
+
             <div className={cx("section")}>
               <h4>
                 <FontAwesomeIcon icon={faFire} /> TỪ NỔI BẬT
               </h4>
-              {trendingWords.map((w, i) => (
-                <Card key={w.id}>
-                  <div className={cx("trend-header")}>
-                    <span className={cx("rank")}>{i + 1}</span>
-                    <h5>{w.kanji}</h5>
-                  </div>
-                  <p>{w.hiragana}</p>
-                  <p>{w.meaning}</p>
-                  <small>{w.views.toLocaleString()} lượt xem</small>
+              {isLoadingTrending ? (
+                <Card>
+                  <p style={{ textAlign: "center", color: "#888" }}>
+                    Đang tải...
+                  </p>
                 </Card>
-              ))}
+              ) : trendingWords.length === 0 ? (
+                <Card>
+                  <p style={{ textAlign: "center", color: "#888" }}>
+                    Không có dữ liệu
+                  </p>
+                </Card>
+              ) : (
+                trendingWords.map((w, i) => (
+                  <Card 
+                    key={w.id}
+                    onClick={() => handleSearch(w.kanji)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div className={cx("trend-header")}>
+                      <span className={cx("rank")}>{i + 1}</span>
+                      <h5>{w.kanji}</h5>
+                    </div>
+                    {w.hiragana && <p>{w.hiragana}</p>}
+                    <p>{w.meaning}</p>
+                    <small>{w.views.toLocaleString()} lượt xem</small>
+                  </Card>
+                ))
+              )}
             </div>
 
             <div className={cx("section")}>
@@ -290,13 +339,81 @@ function Home() {
                 </Card>
               ))}
             </div>
-
           </aside>
           <div className={cx("main")}>
             <div style={{ width: "70vw" }}>
               <SearchInput onSearch={handleSearch} />
             </div>
-
+            <div className={cx("section")}>
+              <div style={{ display: "flex" }}>
+                <h4>
+                  <FontAwesomeIcon icon={faHistory} /> LỊCH SỬ TÌM KIẾM
+                </h4>
+              </div>
+              <div>
+                {searchHistory.length === 0 ? (
+                  <Card>
+                    <p
+                      style={{
+                        textAlign: "center",
+                        color: "#888",
+                        fontSize: "14px",
+                      }}
+                    >
+                      Chưa có lịch sử tìm kiếm
+                    </p>
+                  </Card>
+                ) : (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(10,1fr)",
+                      columnGap: "4px",
+                      rowGap: "0px",
+                    }}
+                  >
+                    {searchHistory.slice(0, 10).map((query, index) => (
+                      <Card
+                        key={`${query}-${index}`}
+                        className={cx("history-card")}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <div
+                            onClick={() => searchFromHistory(query)}
+                            style={{ flex: 1, cursor: "pointer" }}
+                          >
+                            <h5 style={{ margin: "0", fontSize: "12px" }}>
+                              {query}
+                            </h5>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeHistoryItem(query);
+                            }}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#999",
+                              cursor: "pointer",
+                              fontSize: "14px",
+                            }}
+                            title="Xóa"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
             <section className={cx("results")}>
               {searchResults.length === 0 ? (
                 <Card className={cx("empty")}>
@@ -311,13 +428,12 @@ function Home() {
                     word={word}
                     saved={savedWords.includes(word.id)}
                     onToggleSave={toggleSaveWord}
-                    onPlay={playAudio}
+                    onPlay={handlePlayAudio}
                   />
                 ))
               )}
             </section>
           </div>
-
         </div>
       </div>
     </div>

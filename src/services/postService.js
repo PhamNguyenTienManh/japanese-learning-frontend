@@ -147,13 +147,13 @@ const postService = {
   //   }
   // },
 
-  createPost: async (postData) =>  {
-    
+  createPost: async (postData) => {
+
     try {
-      const response = await axiosInstance.post(`${API_BASE_URL}/posts`, 
+      const response = await axiosInstance.post(`${API_BASE_URL}/posts`,
         postData
       );
-      
+
       return response.data;
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -171,7 +171,6 @@ const postService = {
     }
   },
 
-  // Delete post
   async deletePost(id) {
     try {
       const response = await axiosInstance.delete(`${API_BASE_URL}/posts/${id}`);
@@ -180,7 +179,25 @@ const postService = {
       console.error("Error deleting post:", error);
       throw error;
     }
-  }
+  },
+  async updateComment(id, postData) {
+    try {
+      const response = await axiosInstance.put(`${API_BASE_URL}/comments/${id}`, postData);
+      return response.data;
+    } catch (error) {
+      console.error("Error updating post:", error);
+      throw error;
+    }
+  },
+  async deleteComment(id) {
+    try {
+      const response = await axiosInstance.delete(`${API_BASE_URL}/comments/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      throw error;
+    }
+  },
 
 };
 

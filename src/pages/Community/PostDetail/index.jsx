@@ -18,6 +18,7 @@ import {
   faTrash,
   faTimes,
   faSave,
+  faEllipsisV,
 } from "@fortawesome/free-solid-svg-icons";
 import formatDateVN from "~/services/formatDate";
 import postService from "~/services/postService";
@@ -25,6 +26,7 @@ import { faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
 import decodeToken from "~/services/pairToken";
 import CategorySelector from "~/components/CategorySelection";
+import ActionBtn from "~/components/ActionBtnInCommunity";
 
 const cx = classNames.bind(styles);
 
@@ -47,6 +49,11 @@ function PostDetail() {
   const [categoryId, setCategoryId] = useState("");
   const [categories, setCategories] = useState([]);
   const [countComment, setCountComment] = useState(0);
+  
+  // States cho chỉnh sửa comment
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editedCommentContent, setEditedCommentContent] = useState("");
+  const [savingComment, setSavingComment] = useState(false);
 
   const getLoggedInUserId = () => {
     const token = localStorage.getItem("token");
@@ -63,8 +70,15 @@ function PostDetail() {
 
     return decoded?.sub || null;
   };
-
+  
   const currentUserId = getLoggedInUserId();
+
+  // Kiểm tra user có phải chủ của comment không
+  const isCommentOwner = (comment) => {
+    if (!currentUserId) return false;
+    const commentOwnerId = comment.profileId?.userId || comment.userId;
+    return currentUserId === commentOwnerId;
+  };
 
   // Fetch post detail
   useEffect(() => {
@@ -75,19 +89,16 @@ function PostDetail() {
         const response = await postService.getPostById(id);
         const postData = response.data.data;
 
-        // Thêm isLiked vào postData
         const likedArray = Array.isArray(postData.liked) ? postData.liked : [];
         const enrichedPost = {
           ...postData,
           isLiked: likedArray.includes(currentUserId)
         };
         setPost(enrichedPost);
-        
-        setCountComment( response.data.countComment);
-        
-        
-        const postOwnerId = postData.profile_id.userId;
 
+        setCountComment(response.data.countComment);
+
+        const postOwnerId = postData.profile_id.userId;
         setIsOwner(currentUserId === postOwnerId);
 
         await fetchComments();
@@ -110,7 +121,6 @@ function PostDetail() {
     try {
       const response = await postService.getComments(id);
 
-      // Xử lý response
       let commentsData = [];
       if (Array.isArray(response)) {
         commentsData = response;
@@ -120,16 +130,13 @@ function PostDetail() {
         commentsData = response.data;
       }
 
-      // Map comments với thông tin like
       const mappedComments = commentsData.map(c => {
         const likedArray = Array.isArray(c.liked) ? c.liked : [];
         const isUserLiked = likedArray.includes(currentUserId);
 
         return {
           ...c,
-          // Đếm số lượng like từ mảng liked
           likeCount: likedArray.length || (c.likes || c.likeCount || 0),
-          // Kiểm tra user hiện tại đã like chưa
           isLiked: isUserLiked
         };
       });
@@ -137,7 +144,6 @@ function PostDetail() {
       setComments(mappedComments);
     } catch (err) {
       console.error("Fetch comments error:", err);
-      // Không set error, chỉ log để comments section vẫn hiển thị
     } finally {
       setCommentsLoading(false);
     }
@@ -230,6 +236,90 @@ function PostDetail() {
       console.error("Toggle comment like error:", err);
     }
   };
+
+  // Bắt đầu chỉnh sửa comment
+  const handleEditComment = (comment) => {
+    
+    const commentId = comment._id;
+    setEditingCommentId(commentId);
+    setEditedCommentContent(comment.content || "");
+  };
+
+  // Hủy chỉnh sửa comment
+  const handleCancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditedCommentContent("");
+  };
+
+  // Lưu comment đã chỉnh sửa
+  const handleSaveEditComment = async (commentId) => {
+    if (!editedCommentContent.trim()) {
+      alert("Nội dung bình luận không được để trống!");
+      return;
+    }
+
+    setSavingComment(true);
+    try {
+      await postService.updateComment(commentId, {
+        content: editedCommentContent
+      });
+
+      // Cập nhật comment trong state
+      setComments((prev) =>
+        prev.map((c) => {
+          const cId = c._id || c.id || c.commentId;
+          if (cId === commentId) {
+            return {
+              ...c,
+              content: editedCommentContent
+            };
+          }
+          return c;
+        })
+      );
+
+      setEditingCommentId(null);
+      setEditedCommentContent("");
+    } catch (err) {
+      console.error("Update comment error:", err);
+      alert("Không thể cập nhật bình luận. Vui lòng thử lại.");
+    } finally {
+      setSavingComment(false);
+    }
+  };
+
+  // Xóa comment
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa bình luận này?")) {
+      return;
+    }
+
+    try {
+      await postService.deleteComment(commentId);
+
+      // Xóa comment khỏi state
+      setComments((prev) =>
+        prev.filter((c) => {
+          const cId = c._id || c.id || c.commentId;
+          return cId !== commentId;
+        })
+      );
+
+      // Giảm số lượng comment
+      setPost((prev) => ({
+        ...prev,
+        comments: prev.comments - 1
+      }));
+
+      setCountComment((prev) => prev - 1);
+
+      alert("Đã xóa bình luận thành công!");
+    } catch (err) {
+      console.error("Delete comment error:", err);
+      alert("Không thể xóa bình luận. Vui lòng thử lại.");
+    }
+  };
+
   const fetchCategories = async () => {
     try {
       const data = await postService.getCategories();
@@ -238,6 +328,7 @@ function PostDetail() {
       console.error("Failed to load categories, using defaults");
     }
   };
+
   // Handle start editing
   const handleEdit = () => {
     setEditedTitle(post.title);
@@ -268,7 +359,6 @@ function PostDetail() {
         category_id: categoryId
       });
 
-      // Cập nhật post state với dữ liệu mới
       setPost((prev) => ({
         ...prev,
         title: editedTitle,
@@ -316,7 +406,6 @@ function PostDetail() {
         url: url,
       });
     } else {
-      // Fallback: copy to clipboard
       navigator.clipboard.writeText(url);
       alert("Link đã được sao chép!");
     }
@@ -400,30 +489,13 @@ function PostDetail() {
                 </div>
               </div>
               <div className={cx("post-header-actions")}>
-                {(post.category_id) && (
+                {post.category_id && (
                   <span className={cx("badge", "badge-category")}>
-                    {post.category_id.name ||"Từ vựng"}
+                    {post.category_id.name || "Từ vựng"}
                   </span>
                 )}
                 {isOwner && !isEditing && (
-                  <div className={cx("owner-actions")}>
-                    <button
-                      type="button"
-                      onClick={handleEdit}
-                      className={cx("action-btn", "edit-btn")}
-                      title="Chỉnh sửa"
-                    >
-                      <FontAwesomeIcon icon={faEdit} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDelete}
-                      className={cx("action-btn", "delete-btn")}
-                      title="Xóa"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </div>
+                  <ActionBtn onEdit={handleEdit} onDelete={handleDelete} />
                 )}
               </div>
             </div>
@@ -514,7 +586,7 @@ function PostDetail() {
                       className={cx("stat-icon")}
                     />
                     <span>
-                      {countComment|| 0} bình luận
+                      {countComment || 0} bình luận
                     </span>
                   </div>
                 </div>
@@ -594,55 +666,121 @@ function PostDetail() {
                       Chưa có bình luận nào. Hãy là người đầu tiên bình luận!
                     </p>
                   ) : (
-                    comments.map((c) => (
-                      <div key={c._id || c.id || c.commentId} className={cx("comment-item")}>
-                        <img
-                          src={
-                            c.profileId?.image_url || "https://img.tripi.vn/cdn-cgi/image/width=700,height=700/https://gcs.tripi.vn/public-tripi/tripi-feed/img/482752AXp/anh-mo-ta.png"
-                          }
-                          alt={c.profileId?.name}
-                          className={cx("comment-avatar")}
-                        />
-                        <div className={cx("comment-body")}>
-                          <div className={cx("comment-bubble")}>
-                            <div className={cx("comment-header")}>
-                              <span className={cx("comment-author")}>
-                                {c.profileId?.name || "Anonymous"}
-                              </span>
-                              <span className={cx("comment-time")}>
-                                • {formatDateVN(c.createdAt)}
-                              </span>
-                            </div>
-                            <p className={cx("comment-text")}>
-                              {(c.content || "").split("\n").map((line, i) => (
-                                <span key={i}>
-                                  {line}
-                                  {i < (c.content || "").split("\n").length - 1 && <br />}
-                                </span>
-                              ))}
-                            </p>
-                          </div>
+                    comments.map((c) => {
+                      const commentId = c._id || c.id || c.commentId;
+                      const isEditing = editingCommentId === commentId;
+                      const isOwner = isCommentOwner(c);
 
-                          <div className={cx("comment-actions")}>
-                            <button
-                              type="button"
-                              className={cx("comment-like-btn", {
-                                liked: c.isLiked,
-                              })}
-                              onClick={() =>
-                                handleCommentLike(c._id || c.id || c.commentId)
-                              }
-                            >
-                              <FontAwesomeIcon
-                                icon={c.isLiked ? faHeartSolid : faHeartRegular}
-                                className={cx("comment-like-icon")}
-                              />
-                              <span>{c.likeCount}</span>
-                            </button>
+                      return (
+                        <div key={commentId} className={cx("comment-item")}>
+                          <img
+                            src={
+                              c.profileId?.image_url || "https://img.tripi.vn/cdn-cgi/image/width=700,height=700/https://gcs.tripi.vn/public-tripi/tripi-feed/img/482752AXp/anh-mo-ta.png"
+                            }
+                            alt={c.profileId?.name}
+                            className={cx("comment-avatar")}
+                          />
+                          <div className={cx("comment-body")}>
+                            {isEditing ? (
+                              // Chế độ chỉnh sửa comment
+                              <div className={cx("comment-edit-form")}>
+                                <textarea
+                                  value={editedCommentContent}
+                                  onChange={(e) => setEditedCommentContent(e.target.value)}
+                                  className={cx("comment-edit-input")}
+                                  rows={3}
+                                />
+                                <div className={cx("comment-edit-actions")}>
+                                  <Button
+                                    primary
+                                    small
+                                    onClick={() => handleSaveEditComment(commentId)}
+                                    disabled={savingComment || !editedCommentContent.trim()}
+                                    leftIcon={
+                                      savingComment ? (
+                                        <FontAwesomeIcon icon={faSpinner} spin />
+                                      ) : (
+                                        <FontAwesomeIcon icon={faSave} />
+                                      )
+                                    }
+                                  >
+                                    {savingComment ? "Đang lưu..." : "Lưu"}
+                                  </Button>
+                                  <Button
+                                    outline
+                                    small
+                                    onClick={handleCancelEditComment}
+                                    disabled={savingComment}
+                                    leftIcon={<FontAwesomeIcon icon={faTimes} />}
+                                  >
+                                    Hủy
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              // Chế độ xem comment
+                              <>
+                                <div className={cx("comment-bubble")}>
+                                  <div className={cx("comment-header")}>
+                                    <span className={cx("comment-author")}>
+                                      {c.profileId?.name || "Anonymous"}
+                                    </span>
+                                    <span className={cx("comment-time")}>
+                                      • {formatDateVN(c.createdAt)}
+                                    </span>
+                                    {/* Nút action cho chủ comment */}
+                                    {isOwner && (
+                                      <div className={cx("comment-owner-actions")}>
+                                        <button
+                                          type="button"
+                                          className={cx("comment-action-btn")}
+                                          onClick={() => handleEditComment(c)}
+                                          title="Chỉnh sửa"
+                                        >
+                                          <FontAwesomeIcon icon={faEdit} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className={cx("comment-action-btn", "delete")}
+                                          onClick={() => handleDeleteComment(commentId)}
+                                          title="Xóa"
+                                        >
+                                          <FontAwesomeIcon icon={faTrash} />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <p className={cx("comment-text")}>
+                                    {(c.content || "").split("\n").map((line, i) => (
+                                      <span key={i}>
+                                        {line}
+                                        {i < (c.content || "").split("\n").length - 1 && <br />}
+                                      </span>
+                                    ))}
+                                  </p>
+                                </div>
+
+                                <div className={cx("comment-actions")}>
+                                  <button
+                                    type="button"
+                                    className={cx("comment-like-btn", {
+                                      liked: c.isLiked,
+                                    })}
+                                    onClick={() => handleCommentLike(commentId)}
+                                  >
+                                    <FontAwesomeIcon
+                                      icon={c.isLiked ? faHeartSolid : faHeartRegular}
+                                      className={cx("comment-like-icon")}
+                                    />
+                                    <span>{c.likeCount}</span>
+                                  </button>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               )}
