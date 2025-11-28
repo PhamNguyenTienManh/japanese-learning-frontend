@@ -105,7 +105,7 @@ export default function JLPTFlashcard() {
     }, [sourceType, sourceLevel]);
 
 
-    // ⭐ FILTER CATEGORY (áp dụng cho Flashcard Notebook)
+    // FILTER CATEGORY (áp dụng cho Flashcard Notebook)
     useEffect(() => {
         if (!allCards.length) return;
 

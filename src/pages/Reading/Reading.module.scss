@@ -9,12 +9,12 @@
 }
 
 .header {
-  margin-bottom: 24px;
+  margin-bottom: 8px;
 }
 
 .title {
-  font-size: 2.4rem;
-  font-weight: 700;
+  font-size: 1.2rem;
+  font-weight: 600;
 }
 
 .controlsRow {
@@ -22,7 +22,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   flex-wrap: wrap;
 }
 
@@ -74,12 +74,6 @@
   @media (max-width: 992px) {
     grid-template-columns: 1fr;
   }
-}
-
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
 
 .articleItem {
@@ -253,13 +247,6 @@
   cursor: pointer;
 }
 
-.audioProgress {
-  height: 100%;
-  border-radius: 999px;
-  background-color: var(--primary-color);
-  transition: width 0.15s linear;
-}
-
 .articleText {
   font-size: 1.4rem;
   line-height: 1.6;
@@ -279,4 +266,101 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+//----------------------------------------------------------------//
+// Sidebar có scroll
+.sidebar {
+  position: relative;
+  height: 100%;
+
+  .sidebarScroll {
+    max-height: calc(100vh - 250px); // Điều chỉnh tùy layout
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+
+    // Custom scrollbar - minimal & elegant
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.3);
+      }
+    }
+
+    // Firefox
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+}
+
+// Audio progress bar có thể kéo
+.audioProgressBar {
+  position: relative;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: height 0.2s ease;
+
+  &:hover {
+    height: 10px;
+
+    .audioProgressThumb {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  &.dragging {
+    height: 10px;
+
+    .audioProgressThumb {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+  }
+}
+
+.audioProgress {
+  position: relative;
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  transition: width 0.1s linear;
+}
+
+.audioProgressThumb {
+  position: absolute;
+  right: -6px;
+  transform: translateY(-50%) scale(0);
+  width: 12px;
+  height: 12px;
+  background: white;
+  border: 2px solid #667eea;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: all 0.2s ease;
+  cursor: grab;
+}
+
+// Card article item
+.articleItemInner {
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
 }
