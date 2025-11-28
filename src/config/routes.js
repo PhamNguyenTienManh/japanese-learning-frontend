@@ -1,4 +1,3 @@
-import ResetPassword from "~/pages/auth/ResetPass";
 const routes = {
   home: "/",
   login: "/login",
@@ -16,7 +15,7 @@ const routes = {
   resultDetail: "/practice/:level/results/detail/:testId",
   chatAI: "/chat-ai",
   community: "/community",
-  postDetail: "/community/:post",
+  postDetail: "/community/:id",
   newPost: "/community/new",
   dashboard: "/dashboard",
   achievements: "/dashboard/achievements",
@@ -26,7 +25,12 @@ const routes = {
   jlpt: "/jlpt",
   reading: "/reading",
   jlptFlashcard: "jlpt/flashcards",
-
+  admin: "/admin",
+  user: "/admin/users",
+  dictionaryAdmin: "/admin/dictionary",
+  adminTest: "/admin/tests",
+  createTest: "/admin/tests/create",
+  adminPosts: "/admin/posts"
 };
 
 export default routes;

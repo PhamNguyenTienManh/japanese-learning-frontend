@@ -1,0 +1,39 @@
+.field {
+  margin-bottom: 16px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.required {
+  color: red;
+}
+
+.category-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.category-item {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+  background: #ffffff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.category-item:hover {
+  border-color: #a855f7;
+}
+
+.category-item.active {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.06);
+  color: #7c3aed;
+}

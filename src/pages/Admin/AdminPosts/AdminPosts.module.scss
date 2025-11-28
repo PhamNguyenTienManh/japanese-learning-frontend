@@ -1,0 +1,214 @@
+/* AdminPostsPage.module.scss */
+
+.wrapper {
+  min-height: 100vh;
+  background: #f5f5f7;
+}
+
+.main {
+  padding: 96px 16px 64px;
+}
+
+.inner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+/* Header */
+
+.header {
+  margin-bottom: 32px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 16px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: #111827;
+  }
+}
+
+.backIcon {
+  font-size: 14px;
+}
+
+.headerMain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: #6b7280;
+}
+
+/* Filters */
+
+.filterCard {
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.filterRow {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.searchWrapper {
+  position: relative;
+  flex: 1;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.searchInput {
+  padding-left: 32px;
+}
+
+.selectGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 14px;
+  outline: none;
+  min-width: 150px;
+
+  &:focus {
+    border-color: #2563eb;
+  }
+}
+
+/* List */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.postCard {
+  padding: 24px;
+  border: 2px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.postCardReported {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.postInner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.postContent {
+  flex: 1;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.postTitle {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #e5e7eb;
+}
+
+.badgeReported {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.badgeIcon {
+  font-size: 11px;
+}
+
+.meta {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.statsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Actions */
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dangerBtn {
+  color: #ef4444;
+}
+
+/* Empty */
+
+.emptyCard {
+  padding: 24px;
+}
+
+.emptyText {
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+}
