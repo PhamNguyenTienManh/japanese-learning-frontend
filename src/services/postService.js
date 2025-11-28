@@ -8,7 +8,6 @@ const axiosInstance = axios.create({
   },
 });
 
-// Interceptor để thêm token vào mọi request
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -24,7 +23,7 @@ axiosInstance.interceptors.request.use(
 
 const postService = {
 
-  getPosts: async (page = 1, limit = 5, sort = 'popular') => {
+  getPosts: async (page = 1, limit = 10, sort = 'popular') => {
     try {
       const response = await axios.get(`${API_BASE_URL}/posts`, {
         params: { page, limit, sort }
@@ -36,7 +35,6 @@ const postService = {
     }
   },
 
-  // Lấy chi tiết một bài viết
   getPostById: async (id) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/posts/post/${id}`);
@@ -48,7 +46,6 @@ const postService = {
     }
   },
 
-  // Tìm kiếm bài viết
   searchPosts: async (query, page = 1, limit = 5) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/posts/search`, {
@@ -61,10 +58,9 @@ const postService = {
     }
   },
 
-  // Lấy bài viết theo danh mục
   getPostsByCategory: async (category, page = 1, limit = 5) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/posts`, {
+      const response = await axios.get(`${API_BASE_URL}/posts/category`, {
         params: { category, page, limit }
       });
       return response.data;
@@ -75,7 +71,6 @@ const postService = {
   },
 
 
-  // Lấy thống kê cộng đồng
   getCommunityStats: async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/posts/stats`);
@@ -86,7 +81,6 @@ const postService = {
     }
   },
 
-  // Lấy danh sách categories
   getCategories: async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/post-categories`);
@@ -131,7 +125,6 @@ const postService = {
     }
   },
 
-  // Like/Unlike comment
   toggleCommentLike: async (commentId) => {
     try {
       const response = await axiosInstance.put(`${API_BASE_URL}/comments/liked/${commentId}`);
@@ -142,7 +135,6 @@ const postService = {
     }
   },
 
-  // // Reply to comment 
   // replyToComment: async (commentId, content) => {
   //   try {
   //     const response = await axios.post(`${API_BASE_URL}/comments/${commentId}/replies`, {
@@ -156,13 +148,11 @@ const postService = {
   // },
 
   createPost: async (postData) =>  {
-    console.log(postData);
     
     try {
       const response = await axiosInstance.post(`${API_BASE_URL}/posts`, 
         postData
       );
-      console.log("response", response.data);
       
       return response.data;
     } catch (error) {

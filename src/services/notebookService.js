@@ -94,7 +94,6 @@ const notebookService = {
     }
   },
   addWord: async (notebookId, data) => {
-    console.log("ditmemay", data);
     
     try{
       const response = await axiosInstance.post(

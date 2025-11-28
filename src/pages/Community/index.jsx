@@ -62,36 +62,27 @@ function Community() {
 
   // Lấy userId từ token trong localStorage
   const getLoggedInUserId = () => {
-    const token = localStorage.getItem("token") || 
-                  localStorage.getItem("accessToken") || 
-                  localStorage.getItem("authToken");
+    const token = localStorage.getItem("token")
     
     if (token) {
       const decoded = decodeToken(token);
-      console.log("Decoded token:", decoded);
-      
-      return decoded?.userId || 
-             decoded?.id || 
-             decoded?._id || 
-             decoded?.profileId || 
-             decoded?.user_id ||
-             decoded?.sub ||
-             null;
+      return decoded?.sub;
     }
     return null;
   };
   
   const currentUserId = getLoggedInUserId();
-  console.log("Current User ID:", currentUserId);
 
   // Fetch posts
-  const fetchPosts = async (page = 1, sort = "popular", category = null) => {
+  const fetchPosts = async (page, sort = "popular", category = null) => {
+    
     setLoading(true);
     setError(null);
     try {
       let data;
       if (category && category !== "Tất cả") {
         data = await postService.getPostsByCategory(category, page, 5);
+        
       } else {
         data = await postService.getPosts(page, 5, sort);
       }
@@ -112,9 +103,8 @@ function Community() {
         }) || []
       };
       
-      console.log("Mapped posts:", mappedPosts);
       setPosts(mappedPosts);
-      setTotalPages(data.totalPages || 1);
+      setTotalPages(data.data.totalPage || 1);
       setCurrentPage(page);
     } catch (err) {
       setError("Không thể tải bài viết. Vui lòng thử lại sau.");
@@ -162,7 +152,6 @@ function Community() {
     }
   };
 
-  // Initial load
   useEffect(() => {
     fetchPosts(1, "popular");
     fetchStats();
@@ -207,7 +196,7 @@ function Community() {
       };
       
       setPosts(mappedPosts);
-      setTotalPages(data.totalPages || 1);
+      setTotalPages(data.data.totalPage || 1);
       setCurrentPage(1);
     } catch (err) {
       setError("Không thể tìm kiếm. Vui lòng thử lại sau.");
@@ -230,12 +219,94 @@ function Community() {
     }
   };
 
-  // Handle load more
-  const handleLoadMore = () => {
-    if (currentPage < totalPages) {
+  // Handle pagination
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
       const sort = activeTab === "all" ? "popular" : "recent";
-      fetchPosts(currentPage + 1, sort, selectedCategory);
+      fetchPosts(page, sort, selectedCategory);
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  // Render pagination
+  const renderPagination = () => {
+    // Debug: Xem totalPages và currentPage
+    console.log('Pagination debug:', { totalPages, currentPage, postsCount: posts.data?.length });
+    
+    if (totalPages <= 1) return null;
+
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+    
+    if (endPage - startPage < maxPagesToShow - 1) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
+    return (
+      <div className={cx("pagination")}>
+        <Button
+          outline
+          className={cx("pagination-btn")}
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          ← Trước
+        </Button>
+
+        <div className={cx("pagination-numbers")}>
+          {startPage > 1 && (
+            <>
+              <button
+                className={cx("pagination-number")}
+                onClick={() => handlePageChange(1)}
+              >
+                1
+              </button>
+              {startPage > 2 && <span className={cx("pagination-dots")}>...</span>}
+            </>
+          )}
+
+          {pageNumbers.map((page) => (
+            <button
+              key={page}
+              className={cx("pagination-number", { active: page === currentPage })}
+              onClick={() => handlePageChange(page)}
+            >
+              {page}
+            </button>
+          ))}
+
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && <span className={cx("pagination-dots")}>...</span>}
+              <button
+                className={cx("pagination-number")}
+                onClick={() => handlePageChange(totalPages)}
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+        </div>
+
+        <Button
+          outline
+          className={cx("pagination-btn")}
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Sau →
+        </Button>
+      </div>
+    );
   };
 
   // Render posts
@@ -256,7 +327,7 @@ function Community() {
           <Button
             outline
             onClick={() =>
-              fetchPosts(1, activeTab === "all" ? "popular" : "recent", selectedCategory)
+              fetchPosts(null, activeTab === "all" ? "popular" : "recent", selectedCategory)
             }
           >
             Thử lại
@@ -286,26 +357,24 @@ function Community() {
                     alt={post.profile_id?.name || "User"}
                     className={cx("avatar")}
                   />
+                  <div>
+                    
+                  </div>
                   <div className={cx("post-header-info")}>
                     <div className={cx("post-author-row")}>
                       <span className={cx("post-author")}>
                         {post.profile_id?.name || "Anonymous"}
                       </span>
-                      {post.author?.level && (
-                        <span className={cx("post-level-badge")}>
-                          {post.author.level}
-                        </span>
-                      )}
                       <span className={cx("post-time")}>
-                        • {formatDateVN(post.created_at) || "Vừa xong"}
+                        {formatDateVN(post.created_at) || "Vừa xong"}
                       </span>
                     </div>
-                    {post.category && (
+                  </div>
+                    {post.category_id && (
                       <span className={cx("post-category")}>
-                        {post.category}
+                        {post.category_id.name}
                       </span>
                     )}
-                  </div>
                 </div>
 
                 {/* Content */}
@@ -330,7 +399,7 @@ function Community() {
                       icon={faMessage}
                       className={cx("post-stat-icon")}
                     />
-                    <span>{post.comments || 0}</span>
+                    <span>{posts.countComment.find(x => x._id === post._id)?.totalComment || 0}</span>
                   </div>
                 </div>
               </div>
@@ -338,15 +407,7 @@ function Community() {
           </Card>
         ))}
 
-        {currentPage < totalPages && (
-          <Button
-            outline
-            className={cx("load-more-btn")}
-            onClick={handleLoadMore}
-          >
-            Xem thêm
-          </Button>
-        )}
+        {renderPagination()}
       </>
     );
   };
@@ -449,7 +510,7 @@ function Community() {
                 value={activeTab}
                 onValueChange={handleTabChange}
               >
-                <TabsList className={cx("tabs-list")}>
+                {/* <TabsList className={cx("tabs-list")}>
                   <TabsTrigger value="all">
                     <FontAwesomeIcon
                       icon={faArrowTrendUp}
@@ -464,7 +525,7 @@ function Community() {
                     />
                     Mới nhất
                   </TabsTrigger>
-                </TabsList>
+                </TabsList> */}
 
                 <TabsContent value="all" className={cx("tabs-content")}>
                   {renderPosts()}
@@ -489,7 +550,7 @@ function Community() {
                       className={cx("category-item", {
                         active: selectedCategory === category.name,
                       })}
-                      onClick={() => handleCategoryClick(category.name)}
+                      onClick={() => handleCategoryClick(category._id)}
                     >
                       <span className={cx("category-name")}>
                         {category.name}
