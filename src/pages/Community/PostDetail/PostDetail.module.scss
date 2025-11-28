@@ -180,7 +180,7 @@
 }
 
 .like-icon.filled {
-  /* nếu muốn fill riêng thì có thể custom thêm */
+  color: white;
 }
 
 /* Comments card */
@@ -355,7 +355,7 @@
   border-radius: 8px;
   font-size: 16px;
   transition: border-color 0.2s;
-  
+
   &:focus {
     outline: none;
     border-color: #ff6b35;
@@ -372,7 +372,7 @@
   font-family: inherit;
   line-height: 1.6;
   transition: border-color 0.2s;
-  
+
   &:focus {
     outline: none;
     border-color: #ff6b35;
@@ -405,7 +405,7 @@
   cursor: pointer;
   transition: all 0.2s;
   background: transparent;
-  
+
   &:hover {
     background: rgba(0, 0, 0, 0.05);
   }
@@ -413,7 +413,7 @@
 
 .edit-btn {
   color: #1890ff;
-  
+
   &:hover {
     color: #096dd9;
   }
@@ -421,11 +421,12 @@
 
 .delete-btn {
   color: #ff4d4f;
-  
+
   &:hover {
     color: #cf1322;
   }
 }
+
 .form-select {
   padding: 12px;
   border: 1px solid #ddd;
@@ -434,13 +435,63 @@
   cursor: pointer;
   transition: border-color 0.2s;
   background-color: white;
-  
+
   &:focus {
     outline: none;
     border-color: #ff6b35;
   }
-  
+
   option {
     padding: 8px;
+  }
+}
+
+.comment-owner-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.comment-action-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f0f0f0;
+    color: #333;
+  }
+
+  &.delete:hover {
+    background: #fee;
+    color: #d00;
+  }
+}
+
+.comment-edit-form {
+  width: 100%;
+  
+  .comment-edit-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    resize: vertical;
+    font-family: inherit;
+    margin-bottom: 12px;
+
+    &:focus {
+      outline: none;
+      border-color: #ff6b35;
+    }
+  }
+
+  .comment-edit-actions {
+    display: flex;
+    gap: 8px;
   }
 }
