@@ -24,6 +24,12 @@ import ResetPassword from "~/pages/auth/ResetPass";
 import JLPT from "~/pages/Dictionary/JLPT";
 import Reading from "~/pages/Reading";
 import ExamReview from "~/pages/ExamReview/ExamReview";
+import Admin from "~/pages/Admin";
+import User from "~/pages/Admin/User";
+import DictionaryAdmin from "~/pages/Admin/Dictionary";
+import AdminTest from "~/pages/Admin/AdminTest";
+import CreateTest from "~/pages/Admin/AdminTest/CreateTest";
+import AdminPosts from "~/pages/Admin/AdminPosts";
 
 export const publicRouter = [
   { path: config.routes.home, component: Home },
@@ -51,6 +57,18 @@ export const publicRouter = [
   { path: config.routes.jlpt, component: JLPT },
   { path: config.routes.reading, component: Reading },
   { path: config.routes.resultDetail, component: ExamReview },
+  { path: config.routes.admin, component: Admin },
+  { path: config.routes.user, component: User },
+  { path: config.routes.dictionaryAdmin, component: DictionaryAdmin },
+  { path: config.routes.adminTest, component: AdminTest },
+  { path: config.routes.createTest, component: CreateTest },
+  { path: config.routes.adminPosts, component: AdminPosts },
+
+
+
+
+
+
 
 ];
 

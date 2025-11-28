@@ -9,7 +9,6 @@ import {
   faComments,
 } from "@fortawesome/free-solid-svg-icons";
 import WordCard from "~/components/WordCard";
-import Button from "~/components/Button";
 import styles from "./Home.module.scss";
 import Card from "~/components/Card";
 import SearchInput from "~/components/searchInput/searchInput";
