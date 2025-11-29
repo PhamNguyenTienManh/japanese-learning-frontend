@@ -3,12 +3,31 @@
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:9090/api/search-history";
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 const searchHistoryService = {
   getSearchHistory: async (userId) => {
     try {
-      const result = await axios.get(`${API_BASE_URL}/user/${userId}`);
-      
+      const result = await axiosInstance.get(`${API_BASE_URL}/user/${userId}`);
+
+
       if (result) {
         return {
           success: true,
@@ -17,7 +36,7 @@ const searchHistoryService = {
           message: result.data.message
         };
       }
-      
+
       return {
         success: false,
         history: [],
@@ -37,14 +56,11 @@ const searchHistoryService = {
 
   addSearchHistory: async (userId, query) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/user/${userId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ query }),
+      const response = await axiosInstance.post(`${API_BASE_URL}/user/${userId}`, {
+        query
+
       });
-      
+
       const result = await response.json();
       return result;
     } catch (error) {
@@ -56,19 +72,13 @@ const searchHistoryService = {
     }
   },
 
-  // Xóa một từ khóa khỏi lịch sử
-  removeSearchHistory: async (userId, query) => {
+  removeSearchHistory: async (userId, term) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/user/${userId}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ query }),
-      });
-      
-      const result = await response.json();
-      return result;
+      const response = await axiosInstance.delete(
+        `${API_BASE_URL}/user/${userId}`,
+        { params: { term } } 
+      );
+      return response;
     } catch (error) {
       console.error("Error removing search history:", error);
       return {
@@ -78,23 +88,6 @@ const searchHistoryService = {
     }
   },
 
-  // Xóa toàn bộ lịch sử
-  clearAllHistory: async (userId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/user/${userId}/clear`, {
-        method: "DELETE",
-      });
-      
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error("Error clearing search history:", error);
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-  },
 };
 
 export default searchHistoryService;
