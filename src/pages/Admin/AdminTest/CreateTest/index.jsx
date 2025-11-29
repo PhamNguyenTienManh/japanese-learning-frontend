@@ -16,49 +16,154 @@ import styles from "./CreateTest.module.scss";
 
 const cx = classNames.bind(styles);
 
+// Tạo câu con
+function createSubQuestion(id) {
+    return {
+        id,
+        question: "",
+        options: ["", "", "", ""],
+        correctAnswer: 0,
+        explanation: "",
+    };
+}
 
+// Tạo câu cha
+function createParentQuestion(id) {
+    return {
+        id,
+        type: "vocab", // vocab / grammar / reading / listening
+        question: "",
+        audioFile: null, // chỉ dùng cho listening
+        audioPreview: "",
+        subQuestions: [createSubQuestion(id * 10 + 1)],
+    };
+}
 
 function CreateTest() {
     const [testTitle, setTestTitle] = useState("");
     const [testLevel, setTestLevel] = useState("N5");
     const [duration, setDuration] = useState(105);
-    const [questions, setQuestions] = useState([
-        {
-            id: 1,
-            type: "vocab",
-            question: "",
-            options: ["", "", "", ""],
-            correctAnswer: 0,
-            explanation: "",
-        },
-    ]);
+    const [questions, setQuestions] = useState([createParentQuestion(1)]);
+
+    // ====== CÂU CHA ======
 
     const addQuestion = () => {
-        const nextId = Math.max(...questions.map((q) => q.id), 0) + 1;
-        const newQuestion = {
-            id: nextId,
-            type: "vocab",
-            question: "",
-            options: ["", "", "", ""],
-            correctAnswer: 0,
-            explanation: "",
-        };
-        setQuestions([...questions, newQuestion]);
+        const nextId = questions.length
+            ? Math.max(...questions.map((q) => q.id)) + 1
+            : 1;
+        setQuestions((prev) => [...prev, createParentQuestion(nextId)]);
     };
 
     const removeQuestion = (id) => {
-        setQuestions(questions.filter((q) => q.id !== id));
+        setQuestions((prev) => prev.filter((q) => q.id !== id));
     };
 
     const updateQuestion = (id, field, value) => {
-        setQuestions(
-            questions.map((q) => (q.id === id ? { ...q, [field]: value } : q))
+        setQuestions((prev) =>
+            prev.map((q) => (q.id === id ? { ...q, [field]: value } : q))
         );
+    };
+
+    const handleAudioChange = (questionId, event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const previewUrl = URL.createObjectURL(file);
+
+        setQuestions((prev) =>
+            prev.map((q) =>
+                q.id === questionId
+                    ? { ...q, audioFile: file, audioPreview: previewUrl }
+                    : q
+            )
+        );
+    };
+
+    // ====== CÂU CON ======
+
+    const addSubQuestion = (parentId) => {
+        setQuestions((prev) =>
+            prev.map((parent) => {
+                if (parent.id !== parentId) return parent;
+
+                const nextSubId =
+                    parent.subQuestions.length > 0
+                        ? Math.max(...parent.subQuestions.map((sq) => sq.id)) + 1
+                        : parent.id * 10 + 1;
+
+                return {
+                    ...parent,
+                    subQuestions: [...parent.subQuestions, createSubQuestion(nextSubId)],
+                };
+            })
+        );
+    };
+
+    const removeSubQuestion = (parentId, subId) => {
+        setQuestions((prev) =>
+            prev.map((parent) => {
+                if (parent.id !== parentId) return parent;
+                const newSubs = parent.subQuestions.filter((sq) => sq.id !== subId);
+                // giữ lại ít nhất 1 câu con
+                if (newSubs.length === 0) return parent;
+                return { ...parent, subQuestions: newSubs };
+            })
+        );
+    };
+
+    const updateSubQuestion = (parentId, subId, field, value) => {
+        setQuestions((prev) =>
+            prev.map((parent) => {
+                if (parent.id !== parentId) return parent;
+                return {
+                    ...parent,
+                    subQuestions: parent.subQuestions.map((sq) =>
+                        sq.id === subId ? { ...sq, [field]: value } : sq
+                    ),
+                };
+            })
+        );
+    };
+
+    const handleChangeOption = (parentId, subId, optionIndex, value) => {
+        setQuestions((prev) =>
+            prev.map((parent) => {
+                if (parent.id !== parentId) return parent;
+                return {
+                    ...parent,
+                    subQuestions: parent.subQuestions.map((sq) => {
+                        if (sq.id !== subId) return sq;
+                        const newOptions = [...sq.options];
+                        newOptions[optionIndex] = value;
+                        return { ...sq, options: newOptions };
+                    }),
+                };
+            })
+        );
+    };
+
+    // ====== RENDER ======
+
+    const handleSaveDraft = () => {
+        console.log("Lưu bản nháp:", {
+            testTitle,
+            testLevel,
+            duration,
+            questions,
+        });
+    };
+
+    const handlePublish = () => {
+        console.log("Xuất bản đề thi:", {
+            testTitle,
+            testLevel,
+            duration,
+            questions,
+        });
     };
 
     return (
         <div className={cx("wrapper")}>
-
             <main className={cx("main")}>
                 <div className={cx("inner")}>
                     {/* Header */}
@@ -69,7 +174,8 @@ function CreateTest() {
                         </Link>
                         <h1 className={cx("title")}>Tạo đề thi mới</h1>
                         <p className={cx("subtitle")}>
-                            Thiết lập thông tin đề thi và thêm câu hỏi
+                            Thiết lập thông tin đề thi và thêm câu hỏi (hỗ trợ câu 1.1, 1.2…
+                            & thi nghe)
                         </p>
                     </div>
 
@@ -117,20 +223,21 @@ function CreateTest() {
                     {/* Questions */}
                     <div className={cx("questionsHeader")}>
                         <h2 className={cx("sectionTitle")}>
-                            Câu hỏi ({questions.length})
+                            Câu hỏi ({questions.length} phần)
                         </h2>
                         <Button
                             primary
                             leftIcon={<FontAwesomeIcon icon={faPlus} />}
                             onClick={addQuestion}
                         >
-                            Thêm câu hỏi
+                            Thêm câu (Câu 2, Câu 3…)
                         </Button>
                     </div>
 
                     <div className={cx("questionsList")}>
                         {questions.map((question, index) => (
                             <Card key={question.id} className={cx("questionCard")}>
+                                {/* Header câu cha */}
                                 <div className={cx("questionHeader")}>
                                     <div className={cx("questionHeaderLeft")}>
                                         <span className={cx("questionIndex")}>
@@ -144,8 +251,7 @@ function CreateTest() {
                                             className={cx("select", "selectType")}
                                         >
                                             <option value="vocab">Từ vựng</option>
-                                            <option value="grammar">Ngữ pháp</option>
-                                            <option value="reading">Đọc hiểu</option>
+                                            <option value="grammar">Ngữ pháp, Đọc hiểu</option>
                                             <option value="listening">Thi nghe</option>
                                         </select>
                                     </div>
@@ -159,80 +265,180 @@ function CreateTest() {
                                 </div>
 
                                 <div className={cx("questionBody")}>
+                                    {/* Nội dung chung / hướng dẫn */}
                                     <div className={cx("field")}>
-                                        <label className={cx("label")}>Nội dung câu hỏi</label>
+                                        <label className={cx("label")}>
+                                            {question.type === "listening"
+                                                ? "Hướng dẫn / nội dung phần nghe"
+                                                : "Nội dung chung (đoạn văn / phần mô tả)"}
+                                        </label>
                                         <textarea
-                                            placeholder="Nhập câu hỏi..."
+                                            placeholder={
+                                                question.type === "listening"
+                                                    ? "Ví dụ: もんだい１では、はじめに しつもんを きいてください..."
+                                                    : "Nhập đoạn văn / nội dung chung cho nhóm câu hỏi này..."
+                                            }
                                             value={question.question}
                                             onChange={(e) =>
-                                                updateQuestion(
-                                                    question.id,
-                                                    "question",
-                                                    e.target.value
-                                                )
+                                                updateQuestion(question.id, "question", e.target.value)
                                             }
                                             className={cx("textarea")}
                                             rows={3}
                                         />
                                     </div>
 
-                                    <div className={cx("optionsGrid")}>
-                                        {question.options.map((option, optionIndex) => (
-                                            <div key={optionIndex} className={cx("field")}>
-                                                <label className={cx("optionLabel")}>
-                                                    <input
-                                                        type="radio"
-                                                        name={`answer-${question.id}`}
-                                                        checked={question.correctAnswer === optionIndex}
-                                                        onChange={() =>
-                                                            updateQuestion(
-                                                                question.id,
-                                                                "correctAnswer",
-                                                                optionIndex
-                                                            )
-                                                        }
-                                                        className={cx("radio")}
-                                                    />
-                                                    <span>
-                                                        Tùy chọn {optionIndex + 1}{" "}
-                                                        {question.correctAnswer === optionIndex && (
-                                                            <span
-                                                                className={cx("badge", "badgeAnswer")}
-                                                            >
-                                                                Đáp án
-                                                            </span>
-                                                        )}
-                                                    </span>
-                                                </label>
-                                                <Input
-                                                    placeholder={`Nhập tùy chọn ${optionIndex + 1}`}
-                                                    value={option}
-                                                    onChange={(e) => {
-                                                        const newOptions = [...question.options];
-                                                        newOptions[optionIndex] = e.target.value;
-                                                        updateQuestion(question.id, "options", newOptions);
-                                                    }}
-                                                    className={cx("input")}
+                                    {/* Audio cho Thi nghe */}
+                                    {question.type === "listening" && (
+                                        <div className={cx("field")}>
+                                            <label className={cx("label")}>File audio</label>
+                                            <input
+                                                type="file"
+                                                accept="audio/*"
+                                                onChange={(e) => handleAudioChange(question.id, e)}
+                                                className={cx("fileInput")}
+                                            />
+                                            {question.audioPreview && (
+                                                <audio
+                                                    controls
+                                                    src={question.audioPreview}
+                                                    className={cx("audio")}
                                                 />
-                                            </div>
-                                        ))}
-                                    </div>
+                                            )}
+                                        </div>
+                                    )}
 
-                                    <div className={cx("field")}>
-                                        <label className={cx("label")}>Giải thích đáp án</label>
-                                        <textarea
-                                            placeholder="Nhập giải thích..."
-                                            value={question.explanation}
-                                            onChange={(e) =>
-                                                updateQuestion(
-                                                    question.id,
-                                                    "explanation",
-                                                    e.target.value
-                                                )
-                                            }
-                                            className={cx("textarea")}
-                                            rows={2}
-                                        />
+                                    {/* Câu con */}
+                                    <div className={cx("subQuestionsWrapper")}>
+                                        <div className={cx("subHeaderRow")}>
+                                            <h3 className={cx("subTitle")}>
+                                                Câu hỏi con (Câu {index + 1}.1, {index + 1}.2…)
+                                            </h3>
+                                            <Button
+                                                outline
+                                                leftIcon={<FontAwesomeIcon icon={faPlus} />}
+                                                onClick={() => addSubQuestion(question.id)}
+                                            >
+                                                Thêm câu con
+                                            </Button>
+                                        </div>
+
+                                        <div className={cx("subList")}>
+                                            {question.subQuestions.map((sub, subIndex) => (
+                                                <div key={sub.id} className={cx("subCard")}>
+                                                    <div className={cx("subHeader")}>
+                                                        <span className={cx("subIndex")}>
+                                                            Câu {index + 1}.{subIndex + 1}
+                                                        </span>
+                                                        {question.subQuestions.length > 1 && (
+                                                            <button
+                                                                type="button"
+                                                                className={cx("subRemove")}
+                                                                onClick={() =>
+                                                                    removeSubQuestion(question.id, sub.id)
+                                                                }
+                                                            >
+                                                                <FontAwesomeIcon icon={faXmark} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    <div className={cx("field")}>
+                                                        <label className={cx("label")}>
+                                                            Nội dung câu hỏi con
+                                                        </label>
+                                                        <textarea
+                                                            placeholder="Nhập nội dung câu hỏi con..."
+                                                            value={sub.question}
+                                                            onChange={(e) =>
+                                                                updateSubQuestion(
+                                                                    question.id,
+                                                                    sub.id,
+                                                                    "question",
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            className={cx("textarea")}
+                                                            rows={2}
+                                                        />
+                                                    </div>
+
+                                                    {/* Lựa chọn */}
+                                                    <div className={cx("optionsGrid")}>
+                                                        {sub.options.map((option, optionIndex) => (
+                                                            <div key={optionIndex} className={cx("field")}>
+                                                                <label className={cx("optionLabel")}>
+                                                                    <input
+                                                                        type="radio"
+                                                                        name={`answer-${question.id}-${sub.id}`}
+                                                                        checked={
+                                                                            sub.correctAnswer === optionIndex
+                                                                        }
+                                                                        onChange={() =>
+                                                                            updateSubQuestion(
+                                                                                question.id,
+                                                                                sub.id,
+                                                                                "correctAnswer",
+                                                                                optionIndex
+                                                                            )
+                                                                        }
+                                                                        className={cx("radio")}
+                                                                    />
+                                                                    <span>
+                                                                        Đáp án{" "}
+                                                                        {String.fromCharCode(65 + optionIndex)}
+                                                                        {sub.correctAnswer === optionIndex && (
+                                                                            <span
+                                                                                className={cx(
+                                                                                    "badge",
+                                                                                    "badgeAnswer"
+                                                                                )}
+                                                                            >
+                                                                                Đáp án
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
+                                                                </label>
+                                                                <Input
+                                                                    placeholder={`Nhập đáp án ${String.fromCharCode(
+                                                                        65 + optionIndex
+                                                                    )}`}
+                                                                    value={option}
+                                                                    onChange={(e) =>
+                                                                        handleChangeOption(
+                                                                            question.id,
+                                                                            sub.id,
+                                                                            optionIndex,
+                                                                            e.target.value
+                                                                        )
+                                                                    }
+                                                                    className={cx("input")}
+                                                                />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    <div className={cx("field")}>
+                                                        <label className={cx("label")}>
+                                                            Giải thích đáp án
+                                                        </label>
+                                                        <textarea
+                                                            placeholder="Nhập giải thích..."
+                                                            value={sub.explanation}
+                                                            onChange={(e) =>
+                                                                updateSubQuestion(
+                                                                    question.id,
+                                                                    sub.id,
+                                                                    "explanation",
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            className={cx("textarea")}
+                                                            rows={2}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </Card>
@@ -244,8 +450,12 @@ function CreateTest() {
                         <Link to="/admin/tests">
                             <Button outline>Hủy</Button>
                         </Link>
-                        <Button primary>Лưu bản nháp</Button>
-                        <Button className={cx("publishBtn")}>Xuất bản đề thi</Button>
+                        <Button primary onClick={handleSaveDraft}>
+                            Lưu bản nháp
+                        </Button>
+                        <Button className={cx("publishBtn")} onClick={handlePublish}>
+                            Xuất bản đề thi
+                        </Button>
                     </div>
                 </div>
             </main>
