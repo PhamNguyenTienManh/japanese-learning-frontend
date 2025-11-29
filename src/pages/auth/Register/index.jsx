@@ -15,10 +15,12 @@ import Input from "~/components/Input";
 import Card from "~/components/Card";
 import OTPModal from "~/components/OTPModal";
 import authService from "~/services/authService";
+import { useToast } from "~/context/ToastContext";
 
 const cx = classNames.bind(styles);
 
 function Register() {
+  const { addToast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -35,34 +37,33 @@ function Register() {
 
     // Validation
     if (formData.password !== formData.confirmPassword) {
-      alert("Mật khẩu không khớp!");
+      addToast("Mật khẩu không khớp!", "error");
       return;
     }
 
     if (formData.password.length < 8) {
-      alert("Mật khẩu phải có ít nhất 8 ký tự!");
+      addToast("Mật khẩu phải có ít nhất 8 ký tự!", "error");
       return;
     }
 
     if (!formData.agreeToTerms) {
-      alert("Vui lòng đồng ý với điều khoản sử dụng");
+      addToast("Vui lòng đồng ý với điều khoản sử dụng", "error");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Gọi API đăng ký
       await authService.register(
         formData.email,
         formData.name,
         formData.password
       );
 
-      // Hiển thị modal OTP
+      addToast("Đăng ký thành công! Vui lòng xác thực OTP", "success");
       setShowOTPModal(true);
     } catch (error) {
-      alert(error.message || "Đăng ký thất bại. Vui lòng thử lại!");
+      addToast(error.message || "Đăng ký thất bại. Vui lòng thử lại!", "error");
     } finally {
       setIsLoading(false);
     }
@@ -72,18 +73,17 @@ function Register() {
     try {
       const data = await authService.verifyRegister(formData.email, otpCode);
 
-      // Nếu backend trả về token sau khi verify
       if (data.data?.access_token) {
         authService.saveToken(data.data.access_token);
       }
 
-      alert("Đăng ký thành công!");
+      addToast("Đăng ký thành công!", "success");
       setShowOTPModal(false);
-      
-      // Chuyển hướng đến trang đăng nhập hoặc trang chủ
+
+      // Chuyển hướng đến trang đăng nhập
       window.location.href = "/login";
     } catch (error) {
-      throw error; // Throw để OTPModal hiển thị lỗi
+      throw error; // OTPModal sẽ hiển thị lỗi
     }
   };
 
@@ -169,7 +169,6 @@ function Register() {
               />
             </div>
 
-            {/* Checkbox điều khoản */}
             <div className={cx("terms")}>
               <input
                 id="terms"

@@ -4,8 +4,13 @@
   background: var(--bg);
 }
 
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 .container {
-  max-width: 48rem;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -58,7 +63,8 @@
 /* Card */
 .card {
   width: 100%;
-  min-height: 18.75rem; /* 300px */
+  min-height: 18.75rem;
+  /* 300px */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -91,6 +97,11 @@
   font-size: 4rem;
   font-weight: 700;
   line-height: 1;
+}
+
+.meta-hira {
+  margin-top: 16px;
+
 }
 
 .audio-btn {

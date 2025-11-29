@@ -20,6 +20,8 @@ import styles from "./JLPT.module.scss";
 import Card from "~/components/Card";
 import { getJlptWords, getJlptKanji, getJlptGrammar } from "~/services/jlptService";
 import notebookService from "~/services/notebookService";
+import { useAuth } from '~/context/AuthContext';
+
 
 const cx = classNames.bind(styles);
 
@@ -53,7 +55,7 @@ function JLPT() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [notebooks, setNotebooks] = useState([]);
-
+    const { isLoggedIn } = useAuth();
     // Thêm từ vựng, ngữ pháp vào Notebook
     const [showModal, setShowModal] = useState(false);
     const [selectedWord, setSelectedWord] = useState(null);
@@ -559,7 +561,6 @@ function JLPT() {
                 </div>
 
 
-                {/* Hiển thị show modal */}
                 {showModal && (
                     <div className={cx("modal-overlay")} onClick={() => setShowModal(false)}>
                         <div
@@ -571,22 +572,28 @@ function JLPT() {
                                 <button className={cx("close-btn")} onClick={() => setShowModal(false)}>×</button>
                             </div>
 
-                            <div className={cx("notebook-list")}>
-                                {notebooks.map((note) => (
-                                    <div
-                                        key={note._id}
-                                        className={cx("notebook-item")}
-                                        onClick={() => {
-                                            console.log("Đã chọn:", selectedWord, selectedType, "👉 đưa vào:", note);
-                                            handleAddWord(selectedWord, selectedType, note);
-                                            setShowModal(false);
-                                        }}
-                                    >
-                                        <h4>{note.name}</h4>
-                                        <p>Ngày tạo: {new Date(note.createdAt).toLocaleDateString("vi-VN")}</p>
-                                    </div>
-                                ))}
-                            </div>
+                            {isLoggedIn ? (
+                                <div className={cx("notebook-list")}>
+                                    {notebooks.map((note) => (
+                                        <div
+                                            key={note._id}
+                                            className={cx("notebook-item")}
+                                            onClick={() => {
+                                                console.log("Đã chọn:", selectedWord, selectedType, "👉 đưa vào:", note);
+                                                handleAddWord(selectedWord, selectedType, note);
+                                                setShowModal(false);
+                                            }}
+                                        >
+                                            <h4>{note.name}</h4>
+                                            <p>Ngày tạo: {new Date(note.createdAt).toLocaleDateString("vi-VN")}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p style={{ padding: "16px", textAlign: "center", color: "#e74c3c" }}>
+                                    ⚠️ Bạn cần đăng nhập để thêm từ vào sổ tay
+                                </p>
+                            )}
                         </div>
                     </div>
                 )}

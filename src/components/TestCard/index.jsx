@@ -15,7 +15,7 @@ import {
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { startExam } from "~/services/examService";
-
+import { useAuth } from "~/context/AuthContext";
 const cx = classNames.bind(styles);
 
 export default function TestCard({
@@ -35,7 +35,7 @@ export default function TestCard({
 
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-
+  const { isLoggedIn } = useAuth();
   console.log("test: ", test);
 
   const resultsLink = `${basePath}/results/${id}`;
@@ -125,25 +125,30 @@ export default function TestCard({
         </div>
 
         <div className={cx("actions")}>
-          <Button
-            onClick={handleStartExam}
-            full
-            primary
-            disabled={isLoading}
-            leftIcon={
-              <FontAwesomeIcon
-                icon={isLoading ? faSpinner : faPlay}
-                spin={isLoading}
-              />
-            }
-          >
-            {isLoading
-              ? "Đang tải..."
-              : completed
-                ? "Làm lại"
-                : "Bắt đầu"
-            }
-          </Button>
+          {!isLoggedIn ?
+            <Button primary disabled>
+              Bạn cần đăng nhập để thực hiện bài thi
+            </Button>
+            :
+            <Button
+              onClick={handleStartExam}
+              full
+              primary
+              disabled={isLoading}
+              leftIcon={
+                <FontAwesomeIcon
+                  icon={isLoading ? faSpinner : faPlay}
+                  spin={isLoading}
+                />
+              }
+            >
+              {isLoading
+                ? "Đang tải..."
+                : completed
+                  ? "Làm lại"
+                  : "Bắt đầu"
+              }
+            </Button>}
 
           {completed && (
             <Button to={resultsLink} outline className={"orange"}>

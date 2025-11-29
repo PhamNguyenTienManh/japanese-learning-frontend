@@ -182,99 +182,103 @@ export default function JLPTFlashcard() {
 
     return (
         <div className={cx("root")}>
-            <div className={cx("container")}>
-                <ErrorMessage />
+            <div className={cx("inner")}>
+                <div className={cx("container")}>
+                    <ErrorMessage />
 
-                <div className={cx("header")}>
-                    <Button
-                        onClick={handleBack}
-                        back
-                        leftIcon={<FontAwesomeIcon icon={faArrowLeft} />}
-                    >
-                        Quay lại
-                    </Button>
+                    <div className={cx("header")}>
+                        <Button
+                            onClick={handleBack}
+                            back
+                            leftIcon={<FontAwesomeIcon icon={faArrowLeft} />}
+                        >
+                            Quay lại
+                        </Button>
 
-                    <h1 className={cx("title")}>{getDisplayTitle()}</h1>
-                    <p className={cx("subtitle")}>
-                        {total > 0 ? `Thẻ ${currentIndex + 1} / ${total}` : "Không có thẻ nào"}
-                    </p>
-                </div>
-            </div>
-
-            {loading && (
-                <div className={cx("loading")}>
-                    <p>Đang tải...</p>
-                </div>
-            )}
-
-            {!loading && (
-                <>
-                    {total > 0 && (
-                        <div className={cx("progress-wrap")}>
-                            <Progress value={progress} className={cx("progress")} />
-                        </div>
-                    )}
-
-                    <div className={cx("flashcard-area")}>
-                        {currentCard ? (
-                            <>
-                                <Card
-                                    className={cx("card", { flipped: isFlipped })}
-                                    onClick={() => setIsFlipped(f => !f)}
-                                >
-                                    {!isFlipped ? (
-                                        <div className={cx("front")}>
-                                            <h2 className={cx("kanji")}>{currentCard.name}</h2>
-
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    playAudio(currentCard.phonetic || currentCard.mean);
-                                                }}
-                                                className={cx("audio-btn")}
-                                            >
-                                                <FontAwesomeIcon icon={faVolumeUp} />
-                                            </Button>
-                                            <p className={cx("hint")}>Nhấn để xem nghĩa</p>
-                                        </div>
-                                    ) : (
-                                        <div className={cx("back")}>
-                                            <p className={cx("meaning")}>{currentCard.mean}</p>
-                                            <p className={cx("meta-hira")}>{currentCard.phonetic}</p>
-                                            {currentCard.notes && (
-                                                <p className={cx("note")}><strong>Ví dụ:</strong> {currentCard.notes}</p>
-                                            )}
-                                            <p className={cx("hint")}>Nhấn để quay lại</p>
-                                        </div>
-                                    )}
-                                </Card>
-
-                                <div className={cx("actions")}>
-                                    <Button outline onClick={handleReset} className={"orange"}>
-                                        <FontAwesomeIcon icon={faRotate} />
-                                        Bắt đầu lại
-                                    </Button>
-
-                                    <Button
-                                        onClick={handleNext}
-                                        disabled={currentIndex >= total - 1}
-                                        className={"green"}
-                                    >
-                                        Tiếp theo
-                                        <FontAwesomeIcon icon={faChevronRight} />
-                                    </Button>
-                                </div>
-                            </>
-                        ) : (
-                            <Card className={cx("empty")}>
-                                <h2>{total === 0 ? "Chưa có thẻ nào" : "Hoàn thành!"}</h2>
-                            </Card>
-                        )}
+                        <h1 className={cx("title")}>{getDisplayTitle()}</h1>
+                        <p className={cx("subtitle")}>
+                            {total > 0 ? `Thẻ ${currentIndex + 1} / ${total}` : "Không có thẻ nào"}
+                        </p>
                     </div>
-                </>
-            )}
+                </div>
+
+                {loading && (
+                    <div className={cx("loading")}>
+                        <p>Đang tải...</p>
+                    </div>
+                )}
+
+                {!loading && (
+                    <>
+                        {total > 0 && (
+                            <div className={cx("progress-wrap")}>
+                                <Progress value={progress} className={cx("progress")} />
+                            </div>
+                        )}
+
+                        <div className={cx("flashcard-area")}>
+                            {currentCard ? (
+                                <>
+                                    <Card
+                                        className={cx("card", { flipped: isFlipped })}
+                                        onClick={() => setIsFlipped(f => !f)}
+                                    >
+                                        {!isFlipped ? (
+                                            <div className={cx("front")}>
+                                                <h2 className={cx("kanji")}>{currentCard.name}</h2>
+                                                <p className={cx("meta-hira")}>{currentCard.phonetic}</p>
+
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        playAudio(currentCard.phonetic || currentCard.mean);
+                                                    }}
+                                                    className={cx("audio-btn")}
+                                                >
+                                                    <FontAwesomeIcon icon={faVolumeUp} />
+                                                </Button>
+                                                <p className={cx("hint")}>Nhấn để xem nghĩa</p>
+                                            </div>
+                                        ) : (
+                                            <div className={cx("back")}>
+                                                <p className={cx("meaning")}>{currentCard.mean}</p>
+                                                {currentCard.notes && (
+                                                    <p className={cx("note")}><strong>Ví dụ:</strong> {currentCard.notes}</p>
+                                                )}
+                                                <p className={cx("hint")}>Nhấn để quay lại</p>
+                                            </div>
+                                        )}
+                                    </Card>
+
+                                    <div className={cx("actions")}>
+                                        <Button outline onClick={handleReset} className={"orange"}
+                                            leftIcon={<FontAwesomeIcon icon={faRotate} />}
+                                        >
+                                            Bắt đầu lại
+                                        </Button>
+
+                                        <Button
+                                            onClick={handleNext}
+                                            disabled={currentIndex >= total - 1}
+                                            primary
+                                            rightIcon={<FontAwesomeIcon icon={faChevronRight} />}
+                                        >
+                                            Tiếp theo
+
+                                        </Button>
+                                    </div>
+                                </>
+                            ) : (
+                                <Card className={cx("empty")}>
+                                    <h2>{total === 0 ? "Chưa có thẻ nào" : "Hoàn thành!"}</h2>
+                                </Card>
+                            )}
+                        </div>
+                    </>
+                )}
+            </div>
         </div>
     );
 }

@@ -107,7 +107,7 @@ function Home() {
 
   const fetchSearchHistory = async () => {
     const result = await searchHistoryService.getSearchHistory(userId);
-    
+
 
     if (result.success) {
       setSearchHistory(result.history);
@@ -300,7 +300,7 @@ function Home() {
                 </Card>
               ) : (
                 trendingWords.map((w, i) => (
-                  <Card 
+                  <Card
                     key={w.id}
                     onClick={() => handleSearch(w.kanji)}
                     style={{ cursor: "pointer" }}
@@ -341,7 +341,7 @@ function Home() {
             </div>
           </aside>
           <div className={cx("main")}>
-            <div style={{ width: "70vw" }}>
+            <div >
               <SearchInput onSearch={handleSearch} />
             </div>
             <div className={cx("section")}>

@@ -67,10 +67,10 @@ export const publicRouter = [
   { path: config.routes.createTest, component: CreateTest },
   { path: config.routes.adminPosts, component: AdminPosts },
   { path: config.routes.adminReading, component: AdminReading },
-
-
-
-
 ];
+export const requireAuthRouter = [];
 
-export const privateRoutes = [];
+
+
+
+export const privateRouter = [];

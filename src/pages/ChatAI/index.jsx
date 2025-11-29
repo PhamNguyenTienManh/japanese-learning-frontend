@@ -22,6 +22,7 @@ import {
   getUserLastSession,
   createSession,
 } from "~/services/aiService";
+import { useAuth } from "~/context/AuthContext";
 
 const cx = classNames.bind(styles);
 
@@ -38,6 +39,8 @@ function ChatAI() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const { isLoggedIn } = useAuth();
+
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -69,7 +72,19 @@ function ChatAI() {
   const initializeSession = async () => {
     try {
       setIsInitializing(true);
-
+      if (!isLoggedIn) {
+        setMessages([
+          {
+            id: "login-required",
+            role: "assistant",
+            content:
+              "⚠️ Bạn cần đăng nhập để sử dụng tính năng chat với AI.\nVui lòng đăng nhập để tiếp tục.",
+            timestamp: new Date(),
+          },
+        ]);
+        setIsInitializing(false); // Kết thúc trạng thái loading
+        return; // Không init session nếu chưa login
+      }
       // Gọi API để lấy session cuối cùng của user
       console.log("Fetching user's last session...");
       const sessionResponse = await getUserLastSession();
@@ -361,7 +376,7 @@ function ChatAI() {
                                 {line}
                                 {i <
                                   (message.content || "").split("\n").length -
-                                    1 && <br />}
+                                  1 && <br />}
                               </span>
                             ))}
                         </p>

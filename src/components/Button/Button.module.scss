@@ -57,8 +57,17 @@
   }
 }
 
+.white {
+  background-color: var(--white);
+  color: var(--primary);
+
+  &:hover {
+    background-color: var(--primary-low);
+  }
+}
+
 .user {
-  color: white;
+  color: var(--white);
 
   .icon {
     font-size: 14px;
@@ -85,6 +94,7 @@
   text-decoration: none;
   margin-bottom: 20px;
   transition: color 0.2s ease;
+
   &:hover {
     color: var(--primary) !important;
   }
@@ -97,6 +107,7 @@
 
 .chat {
   background-color: var(--primary);
+
   .icon {
     margin-right: 0;
   }

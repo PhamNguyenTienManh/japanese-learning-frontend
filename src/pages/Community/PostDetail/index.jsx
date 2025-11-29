@@ -27,7 +27,7 @@ import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
 import decodeToken from "~/services/pairToken";
 import CategorySelector from "~/components/CategorySelection";
 import ActionBtn from "~/components/ActionBtnInCommunity";
-
+import { useAuth } from "~/context/AuthContext";
 const cx = classNames.bind(styles);
 
 function PostDetail() {
@@ -49,7 +49,7 @@ function PostDetail() {
   const [categoryId, setCategoryId] = useState("");
   const [categories, setCategories] = useState([]);
   const [countComment, setCountComment] = useState(0);
-  
+  const { isLoggedIn } = useAuth();
   // States cho chỉnh sửa comment
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedCommentContent, setEditedCommentContent] = useState("");
@@ -70,7 +70,7 @@ function PostDetail() {
 
     return decoded?.sub || null;
   };
-  
+
   const currentUserId = getLoggedInUserId();
 
   // Kiểm tra user có phải chủ của comment không
@@ -239,7 +239,7 @@ function PostDetail() {
 
   // Bắt đầu chỉnh sửa comment
   const handleEditComment = (comment) => {
-    
+
     const commentId = comment._id;
     setEditingCommentId(commentId);
     setEditedCommentContent(comment.content || "");
@@ -596,7 +596,15 @@ function PostDetail() {
                     className={"orange"}
                     primary={post.isLiked}
                     outline={!post.isLiked}
-                    onClick={handleLike}
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        // ⚠️ Chưa login → báo cho người dùng
+                        alert("Bạn cần đăng nhập để thực hiện thao tác này.");
+                        return;
+                      }
+
+                      handleLike(); // ✔ Đã login → cho phép like
+                    }}
                     leftIcon={
                       <FontAwesomeIcon
                         icon={faHeart}
