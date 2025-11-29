@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -12,6 +12,8 @@ import {
     faVolumeHigh,
     faXmark,
     faImage,
+    faLink,
+    faMagic,
 } from "@fortawesome/free-solid-svg-icons";
 
 import Card from "~/components/Card";
@@ -19,94 +21,79 @@ import Button from "~/components/Button";
 import Input from "~/components/Input";
 
 import styles from "./AdminReading.module.scss";
+import { getNews, createNews } from "~/services/newsService";
+import { uploadVoice } from "~/services/textToSpeechService";
 
 const cx = classNames.bind(styles);
-
-// mock data: dùng imagePreview là URL sẵn (sau này backend trả về)
-const initialArticles = [
-    {
-        id: "1",
-        title: "日本の秋祭り",
-        hiragana: "にほんのあきまつり",
-        content:
-            "日本の秋祭りは、色とりどりの紅葉とともに行われます。屋台や神輿など、にぎやかな雰囲気が楽しめます。",
-        difficulty: "easy",
-        date: "2025-11-25 03:01:17Z",
-        read: true,
-        audioDuration: 95,
-        imageFile: null,
-        imagePreview:
-            "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/attachments/gen-images/public/japanese-seafood-shells-nIV9KBSzmKHcyhXtcEfalFhFx4LzFb.jpg",
-        audioFile: null,
-        audioPreview: "",
-    },
-    {
-        id: "2",
-        title: "日本の朝ごはん",
-        hiragana: "にほんのあさごはん",
-        content:
-            "日本の朝ごはんには、ごはん、みそしる、さかな、たまごやさいなど、バランスのよい料理がならびます。",
-        difficulty: "easy",
-        date: "2025-11-25 03:01:12Z",
-        read: false,
-        audioDuration: 120,
-        imageFile: null,
-        imagePreview:
-            "https://images.pexels.com/photos/1580466/pexels-photo-1580466.jpeg?auto=compress&cs=tinysrgb&w=1200",
-        audioFile: null,
-        audioPreview: "",
-    },
-    {
-        id: "3",
-        title: "世界のニュースを読む",
-        hiragana: "せかいのにゅーすをよむ",
-        content:
-            "インターネットを使えば、世界中のニュースを日本語で読むことができます。語彙力アップにも役立ちます。",
-        difficulty: "hard",
-        date: "2025-11-25 03:00:00Z",
-        read: false,
-        audioDuration: 150,
-        imageFile: null,
-        imagePreview:
-            "https://images.pexels.com/photos/261949/pexels-photo-261949.jpeg?auto=compress&cs=tinysrgb&w=1200",
-        audioFile: null,
-        audioPreview: "",
-    },
-];
 
 const difficultyOptions = [
     { value: "easy", label: "Dễ" },
     { value: "hard", label: "Khó" },
 ];
 
+const levelOptions = [
+    { value: 1, label: "N5" },
+    { value: 2, label: "N4" },
+    { value: 3, label: "N3" },
+    { value: 4, label: "N2" },
+    { value: 5, label: "N1" },
+];
+
 function formatTime(seconds) {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(
-        2,
-        "0"
-    )}`;
+    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 function AdminReading() {
-    const [articles, setArticles] = useState(initialArticles);
+    const [articles, setArticles] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [difficultyFilter, setDifficultyFilter] = useState("all");
 
     // form state
-    const [editingArticle, setEditingArticle] = useState(null); // null = ẩn form
-    const [mode, setMode] = useState("create"); // "create" | "edit"
+    const [editingArticle, setEditingArticle] = useState(null);
+    const [mode, setMode] = useState("create");
+    const [audioInputType, setAudioInputType] = useState("link");
+    const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
 
     // ref cho input file
     const imageInputRef = useRef(null);
     const audioInputRef = useRef(null);
+
+    useEffect(() => {
+        const fetchArticles = async () => {
+            try {
+                const response = await getNews();
+                if (response.success && response.data) {
+                    const transformedArticles = response.data.map(item => ({
+                        id: item._id,
+                        title: item.title,
+                        link: item.link || "",
+                        content: item.content.textbody,
+                        imagePreview: item.content.image,
+                        audioFile: item.content.audio,
+                        audioLink: item.content.audio,
+                        difficulty: item.type,
+                        level: item.level || 1,
+                        date: new Date(item.dateField).toLocaleDateString('vi-VN'),
+                        read: item.publish || false,
+                    }));
+
+                    setArticles(transformedArticles);
+                }
+            } catch (error) {
+                console.error("Error fetching articles:", error);
+            }
+        };
+
+        fetchArticles();
+    }, []);
 
     const filteredArticles = articles.filter((a) => {
         const q = searchQuery.trim().toLowerCase();
         const matchSearch =
             !q ||
             a.title.toLowerCase().includes(q) ||
-            a.hiragana.toLowerCase().includes(q) ||
             a.content.toLowerCase().includes(q);
 
         const matchDiff =
@@ -119,29 +106,47 @@ function AdminReading() {
 
     const handleStartCreate = () => {
         setMode("create");
+        setAudioInputType("link");
         setEditingArticle({
             id: "",
             title: "",
-            hiragana: "",
+            link: "",
             content: "",
             difficulty: "easy",
-            date: new Date().toISOString(),
+            level: 1,
             read: false,
             audioDuration: 0,
             imageFile: null,
             imagePreview: "",
             audioFile: null,
             audioPreview: "",
+            audioLink: "",
         });
     };
 
     const handleStartEdit = (article) => {
         setMode("edit");
-        setEditingArticle({ ...article });
+        if (article.audioPreview || article.audioLink) {
+            setAudioInputType("link");
+        } else {
+            setAudioInputType("link");
+        }
+        setEditingArticle({
+            ...article,
+            link: article.link || "",
+            audioPreview: article.audioLink || article.audioFile || "",
+            audioLink: article.audioLink || article.audioFile || "",
+        });
+
+        window.scrollTo({
+            top: 340,
+            behavior: 'smooth'
+        });
     };
 
     const handleCancelEdit = () => {
         setEditingArticle(null);
+        setAudioInputType("link");
     };
 
     const handleChangeField = (field, value) => {
@@ -154,25 +159,69 @@ function AdminReading() {
         );
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!editingArticle) return;
         if (!editingArticle.title.trim()) {
             alert("Tiêu đề không được để trống");
             return;
         }
-
-        if (mode === "create") {
-            const newId = Date.now().toString();
-            const newArticle = { ...editingArticle, id: newId };
-            setArticles((prev) => [newArticle, ...prev]);
-        } else {
-            setArticles((prev) =>
-                prev.map((a) => (a.id === editingArticle.id ? editingArticle : a))
-            );
+        if (!editingArticle.content.trim()) {
+            alert("Nội dung không được để trống");
+            return;
         }
 
-        // TODO: ở đây bạn có thể gọi API, upload imageFile / audioFile lên cloud
-        setEditingArticle(null);
+        try {
+            if (mode === "create") {
+                // Tạo DTO theo format backend
+                const newsDto = {
+                    title: editingArticle.title,
+                    link: editingArticle.link || "",
+                    type: editingArticle.difficulty,
+                    content: {
+                        audio: editingArticle.audioLink || "",
+                        image: editingArticle.imagePreview || "",
+                        textbody: editingArticle.content,
+                    },
+                    level: editingArticle.level,
+                    publish: editingArticle.read,
+                };
+
+                // Gọi API tạo news
+                const response = await createNews(newsDto);
+
+                if (response) {
+                    // Thêm vào danh sách local
+                    const newArticle = {
+                        id: response._id || Date.now().toString(),
+                        title: editingArticle.title,
+                        content: editingArticle.content,
+                        imagePreview: editingArticle.imagePreview,
+                        audioFile: editingArticle.audioLink,
+                        audioLink: editingArticle.audioLink,
+                        difficulty: editingArticle.difficulty,
+                        level: editingArticle.level,
+                        date: new Date().toLocaleDateString('vi-VN'),
+                        read: editingArticle.read,
+                    };
+                    setArticles((prev) => [newArticle, ...prev]);
+                    alert("Thêm bài đọc thành công!");
+                }
+            } else {
+                // Chế độ edit - có thể thêm API update ở đây
+                setArticles((prev) =>
+                    prev.map((a) => (a.id === editingArticle.id ? {
+                        ...editingArticle,
+                        audioFile: editingArticle.audioLink,
+                    } : a))
+                );
+                alert("Cập nhật bài đọc thành công!");
+            }
+
+            setEditingArticle(null);
+        } catch (error) {
+            console.error("Error saving article:", error);
+            alert("Có lỗi xảy ra khi lưu bài đọc. Vui lòng thử lại.");
+        }
     };
 
     const handleDelete = (id) => {
@@ -203,31 +252,78 @@ function AdminReading() {
         );
     };
 
-    const handlePickAudio = () => {
-        if (audioInputRef.current) {
-            audioInputRef.current.click();
-        }
-    };
-
-    const handleAudioChange = (event) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        const preview = URL.createObjectURL(file);
+    const handleAudioLinkChange = (link) => {
+        const trimmedLink = link.trim();
         setEditingArticle((prev) =>
             prev
                 ? {
                     ...prev,
-                    audioFile: file,
-                    audioPreview: preview,
+                    audioLink: link, // Lưu link gốc (có thể có khoảng trắng)
+                    // Set audioPreview ngay lập tức nếu link hợp lệ
+                    audioPreview: trimmedLink && (trimmedLink.startsWith('http://') || trimmedLink.startsWith('https://'))
+                        ? trimmedLink
+                        : '',
                 }
                 : prev
         );
+    };
+
+    const handleGenerateAudio = async () => {
+        if (!editingArticle?.content.trim()) {
+            alert("Vui lòng nhập nội dung trước khi tạo audio");
+            return;
+        }
+
+        setIsGeneratingAudio(true);
+
+        try {
+            // Gọi API text-to-speech
+            const response = await uploadVoice(editingArticle.content, 6);
+
+            // API trả về { success: true, data: { audioUrl: "..." } }
+            const audioUrl = response?.data?.audioUrl || response?.audioUrl || response;
+
+            if (audioUrl) {
+                setEditingArticle((prev) =>
+                    prev
+                        ? {
+                            ...prev,
+                            audioLink: audioUrl,
+                            audioPreview: audioUrl,
+                        }
+                        : prev
+                );
+                alert("Tạo audio thành công!");
+            } else {
+                throw new Error("Không nhận được URL audio");
+            }
+        } catch (error) {
+            console.error("Error generating audio:", error);
+            alert("Có lỗi xảy ra khi tạo audio. Vui lòng thử lại.");
+        } finally {
+            setIsGeneratingAudio(false);
+        }
     };
 
     const handleAudioLoaded = (e) => {
         const duration = e.currentTarget.duration || 0;
         setEditingArticle((prev) =>
             prev ? { ...prev, audioDuration: Math.round(duration) } : prev
+        );
+    };
+
+    const handleAudioInputTypeChange = (type) => {
+        setAudioInputType(type);
+        // Clear audio data when switching type
+        setEditingArticle((prev) =>
+            prev
+                ? {
+                    ...prev,
+                    audioPreview: "",
+                    audioLink: "",
+                    audioDuration: 0,
+                }
+                : prev
         );
     };
 
@@ -269,7 +365,7 @@ function AdminReading() {
                                     className={cx("searchIcon")}
                                 />
                                 <Input
-                                    placeholder="Tìm theo tiêu đề, hiragana hoặc nội dung..."
+                                    placeholder="Tìm theo tiêu đề, hoặc nội dung..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className={cx("searchInput")}
@@ -324,14 +420,14 @@ function AdminReading() {
                                 </div>
 
                                 <div className={cx("field")}>
-                                    <label className={cx("label")}>Hiragana</label>
+                                    <label className={cx("label")}>Link bài viết gốc</label>
                                     <Input
-                                        value={editingArticle.hiragana}
+                                        value={editingArticle.link || ""}
                                         onChange={(e) =>
-                                            handleChangeField("hiragana", e.target.value)
+                                            handleChangeField("link", e.target.value)
                                         }
                                         className={cx("input")}
-                                        placeholder="にほんのあきまつり"
+                                        placeholder="https://example.com/article"
                                     />
                                 </div>
 
@@ -350,26 +446,15 @@ function AdminReading() {
 
                                 {/* Ảnh minh họa */}
                                 <div className={cx("field")}>
-                                    <label className={cx("label")}>Ảnh minh họa</label>
-                                    <div className={cx("fileRow")}>
-                                        <Button
-                                            outline
-                                            leftIcon={<FontAwesomeIcon icon={faImage} />}
-                                            onClick={handlePickImage}
-                                        >
-                                            Chọn ảnh
-                                        </Button>
-                                        <input
-                                            ref={imageInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleImageChange}
-                                            className={cx("fileInput")}
-                                        />
-                                        {editingArticle.imagePreview && (
-                                            <span className={cx("fileHint")}>Đã chọn ảnh</span>
-                                        )}
-                                    </div>
+                                    <label className={cx("label")}>Ảnh minh họa (URL)</label>
+                                    <Input
+                                        value={editingArticle.imagePreview || ""}
+                                        onChange={(e) =>
+                                            handleChangeField("imagePreview", e.target.value)
+                                        }
+                                        className={cx("input")}
+                                        placeholder="https://example.com/image.jpg"
+                                    />
                                     {editingArticle.imagePreview && (
                                         <div className={cx("imagePreviewWrap")}>
                                             <img
@@ -382,40 +467,83 @@ function AdminReading() {
                                 </div>
 
                                 {/* Audio */}
-                                <div className={cx("field")}>
+                                <div className={cx("field", "fieldFull")}>
                                     <label className={cx("label")}>Audio</label>
-                                    <div className={cx("fileRow")}>
-                                        <Button
-                                            outline
-                                            leftIcon={<FontAwesomeIcon icon={faVolumeHigh} />}
-                                            onClick={handlePickAudio}
-                                        >
-                                            Chọn file audio
-                                        </Button>
-                                        <input
-                                            ref={audioInputRef}
-                                            type="file"
-                                            accept="audio/*"
-                                            onChange={handleAudioChange}
-                                            className={cx("fileInput")}
-                                        />
-                                        {editingArticle.audioPreview && (
-                                            <span className={cx("fileHint")}>Đã chọn audio</span>
-                                        )}
+
+                                    {/* Radio buttons cho loại input */}
+                                    <div className={cx("audioTypeSelector")}>
+                                        <label className={cx("radioLabel")}>
+                                            <input
+                                                type="radio"
+                                                name="audioType"
+                                                value="link"
+                                                checked={audioInputType === "link"}
+                                                onChange={() => handleAudioInputTypeChange("link")}
+                                                className={cx("radio")}
+                                            />
+                                            <FontAwesomeIcon icon={faLink} className={cx("radioIcon")} />
+                                            <span>Gắn link audio</span>
+                                        </label>
+                                        <label className={cx("radioLabel")}>
+                                            <input
+                                                type="radio"
+                                                name="audioType"
+                                                value="generate"
+                                                checked={audioInputType === "generate"}
+                                                onChange={() => handleAudioInputTypeChange("generate")}
+                                                className={cx("radio")}
+                                            />
+                                            <FontAwesomeIcon icon={faMagic} className={cx("radioIcon")} />
+                                            <span>Tạo audio tự động</span>
+                                        </label>
                                     </div>
-                                    {editingArticle.audioPreview && (
-                                        <audio
-                                            controls
-                                            src={editingArticle.audioPreview}
-                                            className={cx("audioPreview")}
-                                            onLoadedMetadata={handleAudioLoaded}
-                                        />
+
+                                    {/* Input theo loại được chọn */}
+                                    {audioInputType === "link" ? (
+                                        <div className={cx("audioLinkInput")}>
+                                            <Input
+                                                value={editingArticle.audioLink || ""}
+                                                onChange={(e) => handleAudioLinkChange(e.target.value)}
+                                                className={cx("input")}
+                                                placeholder="Nhập URL của file audio (ví dụ: https://example.com/audio.mp3)"
+                                            />
+                                            {editingArticle.audioLink && !editingArticle.audioPreview && (
+                                                <p className={cx("linkHint")}>
+                                                    Link chưa hợp lệ. Vui lòng nhập URL đầy đủ (bắt đầu bằng http:// hoặc https://)
+                                                </p>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className={cx("generateAudioSection")}>
+                                            <p className={cx("generateHint")}>
+                                                Audio sẽ được tạo từ nội dung bài đọc bằng công nghệ text-to-speech
+                                            </p>
+                                            <Button
+                                                primary
+                                                leftIcon={<FontAwesomeIcon icon={faMagic} />}
+                                                onClick={handleGenerateAudio}
+                                                disabled={isGeneratingAudio || !editingArticle.content.trim()}
+                                            >
+                                                {isGeneratingAudio ? "Đang tạo audio..." : "Tạo audio"}
+                                            </Button>
+                                        </div>
                                     )}
-                                    {editingArticle.audioDuration > 0 && (
-                                        <span className={cx("hint")}>
-                                            Thời lượng:{" "}
-                                            {formatTime(editingArticle.audioDuration)}
-                                        </span>
+
+                                    {/* Audio Preview */}
+                                    {editingArticle.audioPreview && (
+                                        <div className={cx("audioPreviewWrap")}>
+                                            <audio
+                                                controls
+                                                src={editingArticle.audioPreview}
+                                                className={cx("audioPreview")}
+                                                onLoadedMetadata={handleAudioLoaded}
+                                            />
+                                            {editingArticle.audioDuration > 0 && (
+                                                <span className={cx("audioDuration")}>
+                                                    Thời lượng: {formatTime(editingArticle.audioDuration)}
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
 
@@ -437,14 +565,20 @@ function AdminReading() {
                                 </div>
 
                                 <div className={cx("field")}>
-                                    <label className={cx("label")}>Ngày tạo</label>
-                                    <Input
-                                        value={editingArticle.date}
+                                    <label className={cx("label")}>Level (N5-N1)</label>
+                                    <select
+                                        value={editingArticle.level || 1}
                                         onChange={(e) =>
-                                            handleChangeField("date", e.target.value)
+                                            handleChangeField("level", parseInt(e.target.value))
                                         }
-                                        className={cx("input")}
-                                    />
+                                        className={cx("select")}
+                                    >
+                                        {levelOptions.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div className={cx("field")}>
@@ -480,9 +614,7 @@ function AdminReading() {
                                     {/* thumb */}
                                     <div className={cx("thumb")}>
                                         <img
-                                            src={
-                                                article.imagePreview || "/placeholder.svg"
-                                            }
+                                            src={article.imagePreview || "/placeholder.svg"}
                                             alt={article.title}
                                             className={cx("thumbImage")}
                                         />
@@ -495,9 +627,6 @@ function AdminReading() {
                                                 <h3 className={cx("articleTitle")}>
                                                     {article.title}
                                                 </h3>
-                                                <p className={cx("articleHiragana")}>
-                                                    {article.hiragana}
-                                                </p>
                                             </div>
                                             <span
                                                 className={cx(
@@ -517,25 +646,17 @@ function AdminReading() {
 
                                         <div className={cx("metaRow")}>
                                             <span className={cx("metaItem")}>
+                                                Level:{" "}
+                                                <span className={cx("metaValue")}>
+                                                    {levelOptions.find(l => l.value === article.level)?.label || 'N/A'}
+                                                </span>
+                                            </span>
+                                            <span className={cx("metaItem")}>
                                                 Ngày tạo:{" "}
                                                 <span className={cx("metaValue")}>
                                                     {article.date}
                                                 </span>
                                             </span>
-                                            <span className={cx("metaItem")}>
-                                                <FontAwesomeIcon
-                                                    icon={faVolumeHigh}
-                                                    className={cx("metaIcon")}
-                                                />{" "}
-                                                <span className={cx("metaValue")}>
-                                                    {formatTime(article.audioDuration || 0)}
-                                                </span>
-                                            </span>
-                                            {article.read && (
-                                                <span className={cx("metaItem")}>
-                                                    Đã xuất bản
-                                                </span>
-                                            )}
                                         </div>
                                     </div>
 
@@ -549,9 +670,7 @@ function AdminReading() {
                                         <Button
                                             outline
                                             rounded
-                                            leftIcon={
-                                                <FontAwesomeIcon icon={faPenToSquare} />
-                                            }
+                                            leftIcon={<FontAwesomeIcon icon={faPenToSquare} />}
                                             onClick={() => handleStartEdit(article)}
                                         />
                                         <Button
