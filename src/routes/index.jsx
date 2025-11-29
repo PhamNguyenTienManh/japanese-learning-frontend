@@ -31,6 +31,7 @@ import DictionaryAdmin from "~/pages/Admin/Dictionary";
 import AdminTest from "~/pages/Admin/AdminTest";
 import CreateTest from "~/pages/Admin/AdminTest/CreateTest";
 import AdminPosts from "~/pages/Admin/AdminPosts";
+import AdminReading from "~/pages/Admin/AdminReading";
 
 export const publicRouter = [
   { path: config.routes.home, component: Home },
@@ -65,6 +66,9 @@ export const publicRouter = [
   { path: config.routes.adminTest, component: AdminTest },
   { path: config.routes.createTest, component: CreateTest },
   { path: config.routes.adminPosts, component: AdminPosts },
+  { path: config.routes.adminReading, component: AdminReading },
+
+
 
 
 ];

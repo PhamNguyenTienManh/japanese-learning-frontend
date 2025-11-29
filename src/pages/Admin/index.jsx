@@ -8,6 +8,7 @@ import {
     faComments,
     faChartLine,
     faTriangleExclamation,
+    faBookReader,
 } from "@fortawesome/free-solid-svg-icons";
 
 import Card from "~/components/Card";
@@ -92,6 +93,21 @@ function Admin() {
                                     </div>
                                 </div>
                                 <p className={cx("cardSub")}>Trong từ điển</p>
+                            </Card>
+                        </Link>
+
+                        <Link to="/admin/reading" className={cx("link")}>
+                            <Card className={cx("statCard")}>
+                                <div className={cx("cardHeader")}>
+                                    <div className={cx("iconBox", "iconBoxGreen")}>
+                                        <FontAwesomeIcon icon={faBookReader} />
+                                    </div>
+                                    <div>
+                                        <p className={cx("cardValue")}>12</p>
+                                        <p className={cx("cardLabel")}>Luyện đọc</p>
+                                    </div>
+                                </div>
+                                <p className={cx("cardSub")}>Quản lý luyện đọc</p>
                             </Card>
                         </Link>
 

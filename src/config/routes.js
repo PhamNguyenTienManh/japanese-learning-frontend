@@ -30,7 +30,8 @@ const routes = {
   dictionaryAdmin: "/admin/dictionary",
   adminTest: "/admin/tests",
   createTest: "/admin/tests/create",
-  adminPosts: "/admin/posts"
+  adminPosts: "/admin/posts",
+  adminReading: "/admin/reading"
 };
 
 export default routes;
