@@ -10,7 +10,7 @@ import {
 
 import Button from "~/components/Button";
 import Card from "~/components/Card";
-import { getProfile } from "~/services/newsService";
+import { getNews } from "~/services/newsService";
 import styles from "./Reading.module.scss";
 
 const cx = classNames.bind(styles);
@@ -47,17 +47,14 @@ export default function Reading() {
         const fetchArticles = async () => {
             try {
                 setLoading(true);
-                const response = await getProfile();
+                const response = await getNews();
 
                 if (response.success && response.data) {
                     // Transform API data to component format
                     const transformedArticles = response.data.map(item => ({
                         id: item._id,
-                        title: item.title.split('').filter(char =>
-                            !['ほ', 'け', 'ん', 'が', 'い', 'し', 'ゃ', 'に', 'せ', 'い', 'め', 'こ', 'じ', 'ょ', 'う', 'だ', 'む'].includes(char) ||
-                            char.match(/[一-龯]/)
-                        ).join(''),
-                        content: item.content.textbody.replace(/[ぁ-ゔ]/g, ''),
+                        title: item.title,
+                        content: item.content.textbody,
                         image: item.content.image,
                         audioUrl: item.content.audio,
                         difficulty: item.type,

@@ -23,6 +23,7 @@ import notebookService from "~/services/notebookService";
 import AuthRequiredModal from "~/components/AuthRequiredModal";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "~/context/AuthContext";
+import handlePlayAudio from "~/services/handlePlayAudio";
 
 
 const cx = classNames.bind(styles);
@@ -319,6 +320,7 @@ function JLPT() {
                                     outline
                                     className={"no-margin"}
                                     leftIcon={<FontAwesomeIcon icon={faVolumeHigh} />}
+                                    onClick={() => handlePlayAudio(item.phonetic)}
                                 ></Button>
                                 {isShown("Từ vựng") && (
                                     <span className={cx("kanji")}>{item.word}</span>

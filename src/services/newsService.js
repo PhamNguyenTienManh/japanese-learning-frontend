@@ -12,7 +12,7 @@ function getAuthHeaders() {
 }
 
 // Tạo session mới hoặc lấy session cuối cùng
-export async function getProfile() {
+export async function getNews() {
     const response = await fetch(`${BASE_URL}/news`, {
         method: "GET",
         headers: {
@@ -26,4 +26,20 @@ export async function getProfile() {
     }
 
     return response.json();
+}
+
+export async function createNews(dto) {
+    const response = await fetch(`${BASE_URL}/news`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dto),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to create news: ${response.statusText}`);
+    }
+
+    return response.json(); // trả về News object từ backend
 }
