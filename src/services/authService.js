@@ -40,6 +40,7 @@ class AuthService {
   // Xóa token (logout)
   removeToken() {
     localStorage.removeItem("token");
+    localStorage.removeItem("study_login_time");
   }
 
   // Kiểm tra đã đăng nhập chưa

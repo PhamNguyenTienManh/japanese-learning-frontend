@@ -15,7 +15,7 @@ const routes = {
   resultDetail: "/practice/:level/results/detail/:testId",
   chatAI: "/chat-ai",
   community: "/community",
-  postDetail: "/community/:post",
+  postDetail: "/community/:id",
   newPost: "/community/new",
   dashboard: "/dashboard",
   achievements: "/dashboard/achievements",
@@ -24,6 +24,7 @@ const routes = {
   kanjiLookup: "/kanji",
   jlpt: "/jlpt",
   reading: "/reading",
+  jlptFlashcard: "jlpt/flashcards",
   admin: "/admin",
   user: "/admin/users",
   dictionaryAdmin: "/admin/dictionary",
@@ -31,14 +32,6 @@ const routes = {
   createTest: "/admin/tests/create",
   adminPosts: "/admin/posts",
   adminReading: "/admin/reading"
-
-
-
-
-
-
-
-
 };
 
 export default routes;
