@@ -22,3 +22,10 @@
   width: 100%;
   max-width: 450px;
 }
+
+
+.flex-colum {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

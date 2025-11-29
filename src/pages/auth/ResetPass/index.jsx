@@ -4,17 +4,19 @@ import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faLock } from "@fortawesome/free-solid-svg-icons";
 
-import styles from "./resetPass.module.scss"; 
+import styles from "./resetPass.module.scss";
 import Button from "~/components/Button";
 import Input from "~/components/Input";
 import Card from "~/components/Card";
 import authService from "~/services/authService";
+import { useToast } from "~/context/ToastContext";
 
 const cx = classNames.bind(styles);
 
 function ResetPassword() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { addToast } = useToast();
 
     const [email, setEmail] = useState("");
     const [otp, setOtp] = useState("");
@@ -23,30 +25,29 @@ function ResetPassword() {
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        // Lấy email và OTP từ URL params
         const emailParam = searchParams.get("email");
         const otpParam = searchParams.get("otp");
 
         if (!emailParam || !otpParam) {
-            alert("Link không hợp lệ!");
+            addToast("Link không hợp lệ!", "error");
             navigate("/forgot-password");
             return;
         }
 
         setEmail(emailParam);
         setOtp(otpParam);
-    }, [searchParams, navigate]);
+    }, [searchParams, navigate, addToast]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (newPassword !== confirmPassword) {
-            alert("Mật khẩu không khớp");
+            addToast("Mật khẩu không khớp", "error");
             return;
         }
 
         if (newPassword.length < 8) {
-            alert("Mật khẩu phải có ít nhất 8 ký tự!");
+            addToast("Mật khẩu phải có ít nhất 8 ký tự!", "error");
             return;
         }
 
@@ -55,10 +56,10 @@ function ResetPassword() {
         try {
             await authService.verifyResetPassword(email, otp, newPassword);
 
-            alert("Đặt lại mật khẩu thành công!");
+            addToast("Đặt lại mật khẩu thành công!", "success");
             navigate("/login");
         } catch (error) {
-            alert(error.message || "Đặt lại mật khẩu thất bại. Vui lòng thử lại!");
+            addToast(error.message || "Đặt lại mật khẩu thất bại. Vui lòng thử lại!", "error");
         } finally {
             setIsLoading(false);
         }
@@ -111,13 +112,12 @@ function ResetPassword() {
                             disabled={isLoading}
                         />
                     </div>
-                    <div style={{display: "flex", flexDirection: "row", justifyContent: "center"}}>
-                    <Button primary type="submit" disabled={isLoading}>
-                        {isLoading ? "Đang xử lý..." : "Đặt lại mật khẩu"}
-                    </Button>
 
+                    <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
+                        <Button primary type="submit" disabled={isLoading}>
+                            {isLoading ? "Đang xử lý..." : "Đặt lại mật khẩu"}
+                        </Button>
                     </div>
-
                 </form>
             </Card>
         </div>

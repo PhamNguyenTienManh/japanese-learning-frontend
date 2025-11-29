@@ -15,37 +15,39 @@ import Card from "~/components/Card";
 import authService from "~/services/authService";
 import { updateUserStreak } from "~/services/streakService"; // Import API streak
 import { studyTimeTracker } from "~/utils/studyTimeTracker";
+import { useToast } from "~/context/ToastContext";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "~/context/AuthContext";
 
 const cx = classNames.bind(styles);
 
 function LoginPage() {
+  const { addToast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { refreshAuth } = useAuth();
+  const navigate = useNavigate();
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const data = await authService.login(email, password);
 
       if (data.data.access_token) {
         authService.saveToken(data.data.access_token);
 
+        // 🔹 cập nhật auth context
+        refreshAuth();
+
         studyTimeTracker.startTracking();
+        await updateUserStreak();
 
-        // Gọi API update streak sau khi đăng nhập thành công
-        try {
-          await updateUserStreak();
-        } catch (streakError) {
-          console.error("Failed to update streak:", streakError);
-        }
-
-        window.location.href = "/";
-      } else {
-        alert(data.message || "Đăng nhập thất bại");
+        addToast("Đăng nhập thành công!", "success");
+        setTimeout(() => navigate("/"), 500);
       }
     } catch (error) {
-      alert(error.message || "Không thể kết nối server!");
+      addToast(error.message, "error");
     }
   };
 
@@ -54,17 +56,14 @@ function LoginPage() {
   };
 
   useEffect(() => {
-    // Xử lý callback từ Google OAuth
     const token = authService.handleGoogleCallback();
     if (token) {
-      // Gọi API update streak sau khi đăng nhập Google thành công
       updateUserStreak()
         .then(() => {
           window.location.href = "/";
         })
         .catch((error) => {
           console.error("Failed to update streak:", error);
-          // Vẫn chuyển hướng về trang chủ dù update streak thất bại
           window.location.href = "/";
         });
     }

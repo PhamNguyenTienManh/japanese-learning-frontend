@@ -157,6 +157,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -214,7 +215,7 @@
 .canvas-container {
   margin-bottom: 16px;
   flex: 19;
-  
+
   canvas {
     border: 2px solid #e0e0e0;
     border-radius: 8px;
@@ -293,7 +294,7 @@
   font-weight: 500;
 }
 
-.history-card{
+.history-card {
   margin: 0;
   padding: 8px;
 }

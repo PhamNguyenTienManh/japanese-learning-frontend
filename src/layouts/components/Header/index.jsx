@@ -6,13 +6,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Button from "~/components/Button";
 import styles from "./Header.module.scss";
 import Logo from "~/components/Logo";
-
+import { useAuth } from "~/context/AuthContext";
 const cx = classNames.bind(styles);
 
 function Header() {
-  const [login, isLogin] = useState(true);
   const [openMenu, setOpenMenu] = useState(null);
-
+  const { logout, isAdmin, userId, role, isLoggedIn } = useAuth();
   const toggleMenu = (menuName) => {
     setOpenMenu(openMenu === menuName ? null : menuName);
   };
@@ -65,6 +64,9 @@ function Header() {
               <Button to="/practice/n5" text>
                 Thi Thử N5
               </Button>
+              <Button to="/reading" text>
+                Luyện đọc
+              </Button>
             </div>
           </div>
 
@@ -104,10 +106,16 @@ function Header() {
 
         {/* Actions */}
         <div className={cx("actions")}>
-          {!login ? (
-            <Button to="/signup" primary className={"register"}>
-              Đăng ký
-            </Button>
+          {!isLoggedIn ? (
+            <div>
+              <Button to="/login" primary>
+                Đăng nhập
+              </Button>
+              {"    "}
+              <Button to="/signup" primary className={"white"}>
+                Đăng ký
+              </Button>
+            </div>
           ) : (
             <div
               className={cx("nav-dropdown", { open: openMenu === "account" })}
@@ -115,13 +123,18 @@ function Header() {
               onMouseLeave={() => toggleMenu(null)}
             >
               <Button
-                text
+                primary
                 leftIcon={<FontAwesomeIcon icon={faUser} />}
                 className={"user"}
               >
                 Tài khoản
               </Button>
               <div className={cx("dropdown-menu", "right")}>
+                {isAdmin() && (
+                  <Button to="/admin" text>
+                    Quản trị
+                  </Button>
+                )}
                 <Button to="/dashboard" text>
                   Bảng điều khiển
                 </Button>
@@ -134,9 +147,11 @@ function Header() {
                 <Button to="/dashboard/settings" text>
                   Cài đặt
                 </Button>
-                <Button to="/admin" text>
-                  Quản trị
+
+                <Button text onClick={logout}>
+                  Đăng xuất
                 </Button>
+
               </div>
             </div>
           )}

@@ -16,7 +16,7 @@ import {
   faCheck,
   faTimes,
 } from "@fortawesome/free-solid-svg-icons";
-
+import { useAuth } from '~/context/AuthContext';
 const cx = classNames.bind(styles);
 
 const wordCategories = ["word", "kanji", "grammar", "other"];
@@ -31,6 +31,7 @@ function Notebook() {
   const [error, setError] = useState(null);
   const [editingNotebookId, setEditingNotebookId] = useState(null);
   const [editingName, setEditingName] = useState("");
+  const { isLoggedIn } = useAuth();
   const [newWord, setNewWord] = useState({
     name: "",
     phonetic: "",
@@ -40,8 +41,13 @@ function Notebook() {
   });
 
   useEffect(() => {
-    fetchNotebooks();
-  }, []);
+    if (isLoggedIn) {
+      fetchNotebooks();
+    } else {
+      setNotebooks([]);
+      setError('⚠️ Bạn cần đăng nhập để xem danh sách sổ tay');
+    }
+  }, [isLoggedIn]);
 
   // Fetch danh sách notebooks
   const fetchNotebooks = async () => {
@@ -79,16 +85,16 @@ function Notebook() {
       const newNotebook = await notebookService.createNotebook(
         newNotebookName.trim()
       );
-      
+
       await fetchNotebooks();
       setNewNotebookName("");
       setShowCreateNotebook(false);
-      
+
       // Set selected notebook to the new one
       if (newNotebook && newNotebook._id) {
         setSelectedNotebook(newNotebook._id);
       }
-      
+
       setError(null);
     } catch (err) {
       console.error('Failed to create notebook:', err);
@@ -115,7 +121,7 @@ function Notebook() {
   // Cập nhật tên notebook
   const handleUpdateNotebook = async (notebookId, e) => {
     e.stopPropagation();
-    
+
     if (!editingName.trim()) {
       setError('Tên sổ tay không được để trống');
       return;
@@ -164,8 +170,6 @@ function Notebook() {
       );
 
       const updatedWords = await fetchWords(selectedNotebook);
-      
-      
       setNotebooks((prev) =>
         prev.map((notebook) => {
           if (notebook._id === selectedNotebook) {
@@ -219,7 +223,7 @@ function Notebook() {
           return notebook;
         })
       );
-      
+
       setError(null);
     } catch (err) {
       console.error('Failed to delete word:', err);
@@ -238,11 +242,11 @@ function Notebook() {
       await notebookService.deleteNotebook(notebookId);
 
       setNotebooks((prev) => prev.filter((n) => n._id !== notebookId));
-      
+
       if (selectedNotebook === notebookId) {
         setSelectedNotebook(null);
       }
-      
+
       setError(null);
     } catch (err) {
       console.error('Failed to delete notebook:', err);
@@ -255,12 +259,12 @@ function Notebook() {
   // Load words khi chọn notebook
   const handleSelectNotebook = async (notebookId) => {
     setSelectedNotebook(notebookId);
-    
+
     try {
       setLoading(true);
       const words = await fetchWords(notebookId);
-      
-      
+
+
       // Update notebook with words
       setNotebooks((prev) =>
         prev.map((notebook) => {
@@ -310,7 +314,7 @@ function Notebook() {
         <main className={cx("main")}>
           <div className={cx("container")}>
             <ErrorMessage />
-            
+
             <div className={cx("header")}>
               <h1 className={cx("title")}>Sổ tay từ vựng</h1>
             </div>
@@ -420,7 +424,7 @@ function Notebook() {
                           <>
                             <h3 className={cx("notebook-name")}>{notebook.name}</h3>
                             <div className={cx("notebook-meta")}>
-                              
+
                               <span>
                                 Ngày tạo: {notebook.createdAt ? new Date(notebook.createdAt).toLocaleDateString('vi-VN') : ''}
                               </span>
@@ -428,7 +432,7 @@ function Notebook() {
                           </>
                         )}
                       </div>
-                      
+
                       {editingNotebookId !== notebook._id && (
                         <div className={cx("notebook-actions")}>
                           <Button
@@ -467,7 +471,7 @@ function Notebook() {
       <main className={cx("main")}>
         <div className={cx("container")}>
           <ErrorMessage />
-          
+
           <div className={cx("header")}>
             <button
               type="button"
@@ -478,7 +482,7 @@ function Notebook() {
               <FontAwesomeIcon icon={faArrowLeft} className={cx("back-icon")} />
               <span>Quay lại</span>
             </button>
-            
+
             {editingNotebookId === currentNotebook?._id ? (
               <div className={cx("title-edit-mode")}>
                 <Input
@@ -521,7 +525,7 @@ function Notebook() {
                 />
               </div>
             )}
-            
+
             <p className={cx("subtitle")}>
               {currentNotebook?.wordCount || 0} từ đã lưu
             </p>
@@ -631,8 +635,8 @@ function Notebook() {
                 </div>
 
                 <div className={cx("form-actions")}>
-                  <Button 
-                    primary 
+                  <Button
+                    primary
                     onClick={handleAddWord}
                     disabled={!newWord.name.trim()}
                   >
@@ -661,7 +665,7 @@ function Notebook() {
 
           <div className={cx("words-list")}>
             {loading && <p>Đang tải từ...</p>}
-            
+
             {!loading && (!currentNotebook?.words || currentNotebook.words.length === 0) && (
               <Card className={cx("empty-card")}>
                 <p className={cx("empty-text")}>
@@ -681,12 +685,12 @@ function Notebook() {
                         className={cx("icon-btn")}
                         onClick={() => handlePlayAudio(word.phonetic || word.phonetic)}
                         disabled={loading}
-                        // leftIcon={
-                        //   <FontAwesomeIcon
-                        //     icon={faVolumeHigh}
-                        //     className={cx("volume-icon")}
-                        //   />
-                        // }
+                      // leftIcon={
+                      //   <FontAwesomeIcon
+                      //     icon={faVolumeHigh}
+                      //     className={cx("volume-icon")}
+                      //   />
+                      // }
                       />
                     </div>
                     <div className={cx("word-sub")}>
