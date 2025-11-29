@@ -534,7 +534,7 @@ function Dashboard() {
 
                   <Button
                     outline
-                    href="/chat"
+                    href="/chat-ai"
                     className={cx("quick-btn")}
                     leftIcon={
                       <FontAwesomeIcon

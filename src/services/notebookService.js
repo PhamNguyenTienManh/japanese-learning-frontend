@@ -13,7 +13,7 @@ const axiosInstance = axios.create({
 // Interceptor để thêm token vào mọi request
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token'); 
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -40,7 +40,7 @@ const notebookService = {
     try {
       const response = await axiosInstance.get('/notebook/my_notebook');
       return response.data.data;
-      
+
     } catch (error) {
       console.error('Error fetching notebooks:', error);
       throw error;
@@ -66,7 +66,7 @@ const notebookService = {
     }
   },
 
-  
+
 
   // Xóa từ khỏi notebook
   deleteWord: async (notebookId, wordId) => {
@@ -82,28 +82,35 @@ const notebookService = {
   },
 
   getWord: async (notebookId) => {
-    try{
+    try {
       const response = await axiosInstance.get(
         `/notebook-item/${notebookId}`
       );
-      return  response.data;
-    }catch(err){
+      return response.data;
+    } catch (err) {
       console.log('err getting word', err);
       throw err;
-      
+
     }
   },
   addWord: async (notebookId, data) => {
-    
-    try{
+    try {
       const response = await axiosInstance.post(
-        `/notebook-item/${notebookId}`,data
+        `/notebook-item/${notebookId}`,
+        data
       );
-      return  response.data;
-    }catch(err){
+      return response.data;
+    } catch (err) {
       console.log('err create word', err);
-      throw err;
-      
+
+      if (err.response) {
+        // Server trả về error response (400, 404, 500...)
+        throw new Error(err.response.data.message || 'Có lỗi xảy ra');
+      } else if (err.request) {
+        throw new Error('Không thể kết nối đến server');
+      } else {
+        throw new Error(err.message);
+      }
     }
   },
 };

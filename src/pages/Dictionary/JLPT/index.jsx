@@ -20,7 +20,6 @@ import styles from "./JLPT.module.scss";
 import Card from "~/components/Card";
 import { getJlptWords, getJlptKanji, getJlptGrammar } from "~/services/jlptService";
 import notebookService from "~/services/notebookService";
-import formatDateVN from "~/services/formatDate";
 
 const cx = classNames.bind(styles);
 
@@ -43,14 +42,6 @@ const initialDisplayOptions = {
     ],
 };
 
-const fakeNotebooks = [
-    { id: 1, name: "Sổ tay tiếng nhật 1", createdAt: "2025-11-28" },
-    { id: 2, name: "Sổ tay tiếng nhật 2", createdAt: "2025-10-05" },
-    { id: 3, name: "Sổ tay tiếng nhật 3", createdAt: "2025-11-28" },
-    { id: 4, name: "Sổ tay tiếng nhật 4", createdAt: "2025-11-28" },
-    { id: 5, name: "Sổ tay tiếng nhật 5", createdAt: "2025-11-28" },
-];
-
 
 function JLPT() {
     const [selectedType, setSelectedType] = useState("Từ vựng");
@@ -66,6 +57,7 @@ function JLPT() {
     // Thêm từ vựng, ngữ pháp vào Notebook
     const [showModal, setShowModal] = useState(false);
     const [selectedWord, setSelectedWord] = useState(null);
+    const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
     useEffect(() => {
         fetchNotebooks();
@@ -93,6 +85,16 @@ function JLPT() {
         };
     }, [showModal]);
 
+    // Auto hide toast after 3 seconds
+    useEffect(() => {
+        if (toast.show) {
+            const timer = setTimeout(() => {
+                setToast({ show: false, message: '', type: '' });
+            }, 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast.show]);
+
 
     const itemsPerPage = 9;
 
@@ -101,6 +103,68 @@ function JLPT() {
         const typeParam = selectedType === "Từ vựng" ? "word" :
             selectedType === "Ngữ pháp" ? "grammar" : "kanji";
         return `flashcards?type=${typeParam}&level=${selectedLevel}&source=jlpt`;
+    };
+
+    const handleAddWord = async (newWord, type, selectedNotebook) => {
+        try {
+            setLoading(true);
+            let wordData;
+            if (type === "Từ vựng") {
+                wordData = {
+                    name: newWord.word,
+                    phonetic: newWord.phonetic,
+                    mean: newWord.meanings,
+                    notes: "",
+                    type: "word",
+                };
+            }
+            else if (type === "Ngữ pháp") {
+                wordData = {
+                    name: newWord.title,
+                    mean: newWord.mean,
+                    notes: "",
+                    type: "grammar",
+                }
+            } else {
+                wordData = {
+                    name: newWord.kanji,
+                    phonetic: newWord.reading,
+                    mean: newWord.mean,
+                    notes: "",
+                    type: "kanji",
+                }
+            }
+
+            const response = await notebookService.addWord(
+                selectedNotebook._id,
+                wordData
+            );
+            if (response.success === true) {
+                setToast({
+                    show: true,
+                    message: 'Đã thêm vào sổ tay thành công!',
+                    type: 'success'
+                });
+            } else {
+                setToast({
+                    show: true,
+                    message: response.message,
+                    type: 'error'
+                });
+            }
+
+            // Show success toast
+        } catch (err) {
+            console.error('Failed to add word:', err);
+            // Show error toast
+            setToast({
+                show: true,
+                message: err.message || 'Không thể thêm từ. Vui lòng thử lại.',
+                type: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     const jlptFeatures = [
@@ -283,7 +347,14 @@ function JLPT() {
             );
         } else if (selectedType === "Hán tự") {
             return (
-                <div key={item._id} className={cx("kanji-item")}>
+                <div
+                    key={item._id}
+                    className={cx("kanji-item")}
+                    onClick={() => {
+                        setSelectedWord(item);
+                        setShowModal(true);
+                    }}
+                >
                     {isShown("Từ vựng") && (
                         <div className={cx("kanji-char")}>{item.kanji}</div>
                     )}
@@ -503,10 +574,11 @@ function JLPT() {
                             <div className={cx("notebook-list")}>
                                 {notebooks.map((note) => (
                                     <div
-                                        key={note.id}
+                                        key={note._id}
                                         className={cx("notebook-item")}
                                         onClick={() => {
-                                            console.log("Đã chọn:", selectedWord, "👉 đưa vào:", note);
+                                            console.log("Đã chọn:", selectedWord, selectedType, "👉 đưa vào:", note);
+                                            handleAddWord(selectedWord, selectedType, note);
                                             setShowModal(false);
                                         }}
                                     >
@@ -516,6 +588,24 @@ function JLPT() {
                                 ))}
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* Toast Notification */}
+                {toast.show && (
+                    <div className={cx("toast", toast.type)}>
+                        <div className={cx("toast-content")}>
+                            <span className={cx("toast-icon")}>
+                                {toast.type === 'success' ? '✓' : '⚠'}
+                            </span>
+                            <span className={cx("toast-message")}>{toast.message}</span>
+                        </div>
+                        <button
+                            className={cx("toast-close")}
+                            onClick={() => setToast({ show: false, message: '', type: '' })}
+                        >
+                            ×
+                        </button>
                     </div>
                 )}
 
