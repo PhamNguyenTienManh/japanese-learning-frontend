@@ -97,9 +97,9 @@ function Home() {
   const [searchHistory, setSearchHistory] = useState([]);
   const [trendingWords, setTrendingWords] = useState([]);
   const [isLoadingTrending, setIsLoadingTrending] = useState(true);
-  const userId = decodeToken(localStorage.getItem("token"));
+  const payload = decodeToken(localStorage.getItem("token"));
+  const userId = payload?.sub;
 
-  // Load search history và trending words khi component mount
   useEffect(() => {
     fetchSearchHistory();
     fetchTrendingWords();
@@ -107,6 +107,7 @@ function Home() {
 
   const fetchSearchHistory = async () => {
     const result = await searchHistoryService.getSearchHistory(userId);
+    
 
     if (result.success) {
       setSearchHistory(result.history);
@@ -165,7 +166,6 @@ function Home() {
     );
   };
 
-  const playAudio = (text) => alert(`Phát âm: ${text}`);
 
   useEffect(() => {
     if (!showHandwriting) return;

@@ -5,7 +5,6 @@ const SearchInput = ({ value,onSearch, placeholder = "日本、nihon, Nhật B�
   const [isFocused, setIsFocused] = useState(false);
   const [showHandwriting, setShowHandwriting] = useState(false);
   const [recognizedResults, setRecognizedResults] = useState([]);
-  console.log("value", value);
   useEffect(() => {
     if(value) setSearchQuery(value)
   },[value])
