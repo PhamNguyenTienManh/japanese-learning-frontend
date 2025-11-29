@@ -5,13 +5,14 @@ import reportWebVitals from "./reportWebVitals";
 
 import GlobalStyle from "./Styles/GlobalStyle";
 import AppProviders from "./context";
-
+import { ToastContainer } from "react-toastify";
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
     <AppProviders>
       <GlobalStyle />
       <App />
+      <ToastContainer />
     </AppProviders>
   </React.StrictMode>
 );
