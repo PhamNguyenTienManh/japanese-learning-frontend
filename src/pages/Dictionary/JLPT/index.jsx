@@ -20,6 +20,8 @@ import styles from "./JLPT.module.scss";
 import Card from "~/components/Card";
 import { getJlptWords, getJlptKanji, getJlptGrammar } from "~/services/jlptService";
 import notebookService from "~/services/notebookService";
+import handlePlayAudio from "~/services/handlePlayAudio";
+
 import { useAuth } from '~/context/AuthContext';
 
 
@@ -299,6 +301,7 @@ function JLPT() {
                                     outline
                                     className={"no-margin"}
                                     leftIcon={<FontAwesomeIcon icon={faVolumeHigh} />}
+                                    onClick={() => handlePlayAudio(item.phonetic)}
                                 ></Button>
                                 {isShown("Từ vựng") && (
                                     <span className={cx("kanji")}>{item.word}</span>

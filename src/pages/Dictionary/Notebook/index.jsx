@@ -169,11 +169,7 @@ function Notebook() {
         wordData
       );
 
-      // Refresh words list
       const updatedWords = await fetchWords(selectedNotebook);
-
-
-      // Update notebooks state
       setNotebooks((prev) =>
         prev.map((notebook) => {
           if (notebook._id === selectedNotebook) {
@@ -642,7 +638,7 @@ function Notebook() {
                   <Button
                     primary
                     onClick={handleAddWord}
-                    disabled={loading || !newWord.name.trim()}
+                    disabled={!newWord.name.trim()}
                   >
                     {loading ? "Đang thêm..." : "Thêm từ"}
                   </Button>
