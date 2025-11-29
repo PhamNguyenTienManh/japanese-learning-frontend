@@ -5,7 +5,7 @@ import { Fragment } from "react/jsx-runtime";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
 import { useStudyTimeTracker } from "./hooks/useStudyTimeTracker";
-import { RequireAuth, RequireAdmin } from "~/components/Auth";
+// import { RequireAuth, RequireAdmin } from "~/components/Auth";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -57,7 +57,7 @@ function AnimatedRoutes() {
             />
           );
         })}
-        {privateRouter.map((route, index) => {
+        {/* {privateRouter.map((route, index) => {
           let Layout = DefaultLayout;
           if (route.layout) {
             Layout = route.layout;
@@ -114,7 +114,7 @@ function AnimatedRoutes() {
               }
             />
           );
-        })}
+        })} */}
 
       </Routes>
     </AnimatePresence>

@@ -20,9 +20,10 @@ import styles from "./JLPT.module.scss";
 import Card from "~/components/Card";
 import { getJlptWords, getJlptKanji, getJlptGrammar } from "~/services/jlptService";
 import notebookService from "~/services/notebookService";
+import AuthRequiredModal from "~/components/AuthRequiredModal";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "~/context/AuthContext";
 import handlePlayAudio from "~/services/handlePlayAudio";
-
-import { useAuth } from '~/context/AuthContext';
 
 
 const cx = classNames.bind(styles);
@@ -57,6 +58,7 @@ function JLPT() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [notebooks, setNotebooks] = useState([]);
+    const navigate = useNavigate();
     const { isLoggedIn } = useAuth();
     // Thêm từ vựng, ngữ pháp vào Notebook
     const [showModal, setShowModal] = useState(false);
@@ -67,6 +69,22 @@ function JLPT() {
         fetchNotebooks();
     }, []);
 
+
+
+
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [pendingHref, setPendingHref] = useState("");
+
+    const handleFlashCardClick = (href) => {
+        if (!isLoggedIn) {
+            setPendingHref(href);        // lưu lại link để chuyển sau khi login
+            setShowAuthModal(true);      // mở modal yêu cầu login
+            return;
+        }
+
+        // Nếu đã login → điều hướng bằng window.location hoặc Button của bạn
+        window.location.href = "/jlpt/" + href;
+    };
     // Fetch danh sách notebooks
     const fetchNotebooks = async () => {
         try {
@@ -176,6 +194,7 @@ function JLPT() {
             icon: faBookOpen,
             label: "FlashCard",
             href: getFlashcardLink(),
+            requireLogin: true,
         },
         {
             icon: faBolt,
@@ -385,14 +404,12 @@ function JLPT() {
                     {jlptFeatures.map((feature) => (
                         <Button
                             key={feature.label}
-                            to={feature.href}
                             primary
-                            leftIcon={
-                                <FontAwesomeIcon
-                                    icon={feature.icon}
-                                    className={cx("feature-icon")}
-                                />
-                            }
+                            leftIcon={<FontAwesomeIcon icon={feature.icon} />}
+                            {...(!feature.requireLogin
+                                ? { to: feature.href }                 // 👉 Các feature bình thường vẫn dùng to
+                                : { onClick: () => handleFlashCardClick(feature.href) }  // 👉 FlashCard thì kiểm tra login
+                            )}
                         >
                             {feature.label}
                         </Button>
@@ -564,6 +581,7 @@ function JLPT() {
                 </div>
 
 
+                {/* Hiển thị show modal */}
                 {showModal && (
                     <div className={cx("modal-overlay")} onClick={() => setShowModal(false)}>
                         <div
@@ -575,28 +593,22 @@ function JLPT() {
                                 <button className={cx("close-btn")} onClick={() => setShowModal(false)}>×</button>
                             </div>
 
-                            {isLoggedIn ? (
-                                <div className={cx("notebook-list")}>
-                                    {notebooks.map((note) => (
-                                        <div
-                                            key={note._id}
-                                            className={cx("notebook-item")}
-                                            onClick={() => {
-                                                console.log("Đã chọn:", selectedWord, selectedType, "👉 đưa vào:", note);
-                                                handleAddWord(selectedWord, selectedType, note);
-                                                setShowModal(false);
-                                            }}
-                                        >
-                                            <h4>{note.name}</h4>
-                                            <p>Ngày tạo: {new Date(note.createdAt).toLocaleDateString("vi-VN")}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p style={{ padding: "16px", textAlign: "center", color: "#e74c3c" }}>
-                                    ⚠️ Bạn cần đăng nhập để thêm từ vào sổ tay
-                                </p>
-                            )}
+                            <div className={cx("notebook-list")}>
+                                {notebooks.map((note) => (
+                                    <div
+                                        key={note._id}
+                                        className={cx("notebook-item")}
+                                        onClick={() => {
+                                            console.log("Đã chọn:", selectedWord, selectedType, "👉 đưa vào:", note);
+                                            handleAddWord(selectedWord, selectedType, note);
+                                            setShowModal(false);
+                                        }}
+                                    >
+                                        <h4>{note.name}</h4>
+                                        <p>Ngày tạo: {new Date(note.createdAt).toLocaleDateString("vi-VN")}</p>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
