@@ -1,17 +1,20 @@
 import { useState } from "react";
 import classNames from "classnames/bind";
-import { faChevronDown, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faUser, faBell } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import Button from "~/components/Button";
 import styles from "./Header.module.scss";
 import Logo from "~/components/Logo";
 import { useAuth } from "~/context/AuthContext";
+import NotificationDropdown from "~/components/NotificationDropdown";
+
 const cx = classNames.bind(styles);
 
 function Header() {
   const [openMenu, setOpenMenu] = useState(null);
   const { logout, isAdmin, userId, role, isLoggedIn } = useAuth();
+  
   const toggleMenu = (menuName) => {
     setOpenMenu(openMenu === menuName ? null : menuName);
   };
@@ -60,7 +63,6 @@ function Header() {
               <Button to="/practice" text>
                 Tổng quan
               </Button>
-
               <Button to="/practice/n5" text>
                 Thi Thử N5
               </Button>
@@ -117,43 +119,51 @@ function Header() {
               </Button>
             </div>
           ) : (
-            <div
-              className={cx("nav-dropdown", { open: openMenu === "account" })}
-              onMouseEnter={() => toggleMenu("account")}
-              onMouseLeave={() => toggleMenu(null)}
-            >
-              <Button
-                primary
-                leftIcon={<FontAwesomeIcon icon={faUser} />}
-                className={"user"}
+            <>
+              {/* Notification Bell */}
+              <NotificationDropdown 
+                isOpen={openMenu === "notification"}
+                onToggle={() => toggleMenu("notification")}
+                onClose={() => setOpenMenu(null)}
+              />
+
+              {/* User Account */}
+              <div
+                className={cx("nav-dropdown", { open: openMenu === "account" })}
+                onMouseEnter={() => toggleMenu("account")}
+                onMouseLeave={() => toggleMenu(null)}
               >
-                Tài khoản
-              </Button>
-              <div className={cx("dropdown-menu", "right")}>
-                {isAdmin() && (
-                  <Button to="/admin" text>
-                    Quản trị
+                <Button
+                  primary
+                  leftIcon={<FontAwesomeIcon icon={faUser} />}
+                  className={"user"}
+                >
+                  Tài khoản
+                </Button>
+                <div className={cx("dropdown-menu", "right")}>
+                  {isAdmin() && (
+                    <Button to="/admin" text>
+                      Quản trị
+                    </Button>
+                  )}
+                  <Button to="/dashboard" text>
+                    Bảng điều khiển
                   </Button>
-                )}
-                <Button to="/dashboard" text>
-                  Bảng điều khiển
-                </Button>
-                <Button to="/dashboard/achievements" text>
-                  Thành tích
-                </Button>
-                <Button to="/dashboard/goals" text>
-                  Mục tiêu
-                </Button>
-                <Button to="/dashboard/settings" text>
-                  Cài đặt
-                </Button>
-
-                <Button text onClick={logout}>
-                  Đăng xuất
-                </Button>
-
+                  <Button to="/dashboard/achievements" text>
+                    Thành tích
+                  </Button>
+                  <Button to="/dashboard/goals" text>
+                    Mục tiêu
+                  </Button>
+                  <Button to="/dashboard/settings" text>
+                    Cài đặt
+                  </Button>
+                  <Button text onClick={logout}>
+                    Đăng xuất
+                  </Button>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>
