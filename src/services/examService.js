@@ -199,4 +199,43 @@ export async function comparisonUserAnswerWithResult(examId) {
   return await response.json();
 }
 
+// Tạo đề thi mới
+export async function createExam(data) {
+  const response = await fetch(`${BASE_URL}/exams`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Failed to create exam: ${err}`);
+  }
+
+  return response.json();
+}
+
+// Thêm câu hỏi vào part
+export async function createExamQuestion(partId, data) {
+  const response = await fetch(`${BASE_URL}/exam-questions/${partId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Failed to create exam question: ${err}`);
+  }
+
+  return response.json();
+}
+
+
 
