@@ -1,16 +1,21 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faArrowLeft,
     faPlus,
     faXmark,
+    faEye,
+    faLink,
+    faMagic,
 } from "@fortawesome/free-solid-svg-icons";
 
 import Card from "~/components/Card";
 import Button from "~/components/Button";
 import Input from "~/components/Input";
+import { createExam, createExamQuestion } from "~/services/examService";
+import { uploadVoice } from "~/services/textToSpeechService";
 
 import styles from "./CreateTest.module.scss";
 
@@ -31,19 +36,26 @@ function createSubQuestion(id) {
 function createParentQuestion(id) {
     return {
         id,
-        type: "vocab", // vocab / grammar / reading / listening
+        type: "vocab",
         question: "",
-        audioFile: null, // chỉ dùng cho listening
+        audioFile: null,
         audioPreview: "",
         subQuestions: [createSubQuestion(id * 10 + 1)],
     };
 }
 
 function CreateTest() {
+    const navigate = useNavigate();
     const [testTitle, setTestTitle] = useState("");
     const [testLevel, setTestLevel] = useState("N5");
     const [duration, setDuration] = useState(105);
     const [questions, setQuestions] = useState([createParentQuestion(1)]);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [audioInputType, setAudioInputType] = useState("link");
+    const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [createdExamId, setCreatedExamId] = useState(null);
+    const [createdParts, setCreatedParts] = useState([]);
 
     // ====== CÂU CHA ======
 
@@ -52,10 +64,15 @@ function CreateTest() {
             ? Math.max(...questions.map((q) => q.id)) + 1
             : 1;
         setQuestions((prev) => [...prev, createParentQuestion(nextId)]);
+        setCurrentQuestionIndex(questions.length);
     };
 
     const removeQuestion = (id) => {
+        const index = questions.findIndex((q) => q.id === id);
         setQuestions((prev) => prev.filter((q) => q.id !== id));
+        if (currentQuestionIndex >= questions.length - 1) {
+            setCurrentQuestionIndex(Math.max(0, questions.length - 2));
+        }
     };
 
     const updateQuestion = (id, field, value) => {
@@ -64,19 +81,59 @@ function CreateTest() {
         );
     };
 
-    const handleAudioChange = (questionId, event) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
+    const handleAudioInputTypeChange = (type) => {
+        setAudioInputType(type);
+        const currentQuestion = questions[currentQuestionIndex];
+        if (currentQuestion) {
+            updateQuestion(currentQuestion.id, "audioPreview", "");
+            updateQuestion(currentQuestion.id, "audioFile", null);
+        }
+    };
 
-        const previewUrl = URL.createObjectURL(file);
+    const handleAudioLinkChange = (link) => {
+        const currentQuestion = questions[currentQuestionIndex];
+        if (!currentQuestion) return;
 
-        setQuestions((prev) =>
-            prev.map((q) =>
-                q.id === questionId
-                    ? { ...q, audioFile: file, audioPreview: previewUrl }
-                    : q
-            )
-        );
+        const isValidLink = link.startsWith("http://") || link.startsWith("https://");
+
+        updateQuestion(currentQuestion.id, "audioPreview", isValidLink ? link : "");
+        updateQuestion(currentQuestion.id, "audioFile", isValidLink ? { type: "link", url: link } : null);
+    };
+
+    const handleGenerateAudio = async () => {
+        const currentQuestion = questions[currentQuestionIndex];
+        if (!currentQuestion || !currentQuestion.question.trim()) {
+            alert("Vui lòng nhập nội dung câu hỏi trước khi tạo audio");
+            return;
+        }
+
+        setIsGeneratingAudio(true);
+        try {
+            // Gọi API text-to-speech
+            const result = await uploadVoice(currentQuestion.question, 6);
+
+            if (result && result.success && result.data) {
+                const audioUrl = result.data.audioUrl;
+
+                updateQuestion(currentQuestion.id, "audioPreview", audioUrl);
+                updateQuestion(currentQuestion.id, "audioFile", { type: "generated", url: audioUrl });
+
+                alert("Tạo audio thành công!");
+            } else {
+                throw new Error("Không nhận được URL audio");
+            }
+        } catch (error) {
+            console.error("Error generating audio:", error);
+            alert("Có lỗi xảy ra khi tạo audio. Vui lòng thử lại!");
+        } finally {
+            setIsGeneratingAudio(false);
+        }
+    };
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
     // ====== CÂU CON ======
@@ -104,7 +161,6 @@ function CreateTest() {
             prev.map((parent) => {
                 if (parent.id !== parentId) return parent;
                 const newSubs = parent.subQuestions.filter((sq) => sq.id !== subId);
-                // giữ lại ít nhất 1 câu con
                 if (newSubs.length === 0) return parent;
                 return { ...parent, subQuestions: newSubs };
             })
@@ -142,30 +198,129 @@ function CreateTest() {
         );
     };
 
-    // ====== RENDER ======
+    // ====== ACTIONS ======
 
-    const handleSaveDraft = () => {
-        console.log("Lưu bản nháp:", {
-            testTitle,
-            testLevel,
-            duration,
-            questions,
-        });
+    // Map type to kind
+    const getQuestionKind = (type) => {
+        const kindMap = {
+            vocab: "vocabulary",
+            grammar: "grammar",
+            listening: "listening"
+        };
+        return kindMap[type] || "vocabulary";
     };
 
-    const handlePublish = () => {
-        console.log("Xuất bản đề thi:", {
-            testTitle,
-            testLevel,
-            duration,
-            questions,
-        });
+    // Get level number from string (N5 -> 5)
+    const getLevelNumber = (levelStr) => {
+        return parseInt(levelStr.replace("N", ""), 10);
     };
+
+    // Group questions by type to get partId
+    const groupQuestionsByType = () => {
+        const grouped = {
+            vocab: [],
+            grammar: [],
+            listening: []
+        };
+
+        questions.forEach((q) => {
+            if (grouped[q.type]) {
+                grouped[q.type].push(q);
+            }
+        });
+
+        return grouped;
+    };
+
+    const handleSave = async () => {
+        if (!testTitle.trim()) {
+            alert("Vui lòng nhập tiêu đề đề thi");
+            return;
+        }
+
+        const confirmSave = window.confirm(
+            "Bạn có chắc chắn muốn lưu đề thi này?"
+        );
+
+        if (!confirmSave) return;
+
+        setIsSaving(true);
+        try {
+            // Step 1: Create exam if not exists
+            let examId = createdExamId;
+            let parts = createdParts;
+
+            if (!examId) {
+                const examData = {
+                    title: testTitle,
+                    level: testLevel
+                };
+
+                const examResult = await createExam(examData);
+
+                if (examResult.success && examResult.data) {
+                    examId = examResult.data.exam._id;
+                    parts = examResult.data.parts;
+                    setCreatedExamId(examId);
+                    setCreatedParts(parts);
+                }
+            }
+
+            // Step 2: Create questions for each part
+            const groupedQuestions = groupQuestionsByType();
+
+            // Map type to part
+            const typeToPartMap = {
+                vocab: parts.find(p => p.name === "Từ vựng")?.id,
+                grammar: parts.find(p => p.name === "Ngữ pháp - Đọc hiểu")?.id,
+                listening: parts.find(p => p.name === "Thi nghe")?.id
+            };
+
+            for (const [type, questionsOfType] of Object.entries(groupedQuestions)) {
+                const partId = typeToPartMap[type];
+
+                if (!partId || questionsOfType.length === 0) continue;
+
+                for (const question of questionsOfType) {
+                    const questionData = {
+                        title: question.question || "Câu hỏi không có tiêu đề",
+                        kind: getQuestionKind(type),
+                        level: getLevelNumber(testLevel),
+                        count_question: question.subQuestions.length,
+                        general: {},
+                        content: question.subQuestions.map(sub => ({
+                            question: sub.question || "",
+                            answers: sub.options,
+                            correctAnswer: sub.correctAnswer
+                        })),
+                        correct_answers: question.subQuestions.map(sub => sub.correctAnswer)
+                    };
+
+                    // Add audio if listening type
+                    if (type === "listening" && question.audioPreview) {
+                        questionData.general.audio = question.audioPreview;
+                    }
+
+                    await createExamQuestion(partId, questionData);
+                }
+            }
+
+            alert("Lưu đề thi thành công!");
+            navigate("/admin/tests");
+        } catch (error) {
+            console.error("Error saving exam:", error);
+            alert("Có lỗi xảy ra khi lưu đề thi: " + error.message);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const currentQuestion = questions[currentQuestionIndex];
 
     return (
         <div className={cx("wrapper")}>
             <main className={cx("main")}>
-                <div className={cx("inner")}>
+                <div className={cx("container")}>
                     {/* Header */}
                     <div className={cx("header")}>
                         <Link to="/admin/tests" className={cx("backLink")}>
@@ -174,8 +329,7 @@ function CreateTest() {
                         </Link>
                         <h1 className={cx("title")}>Tạo đề thi mới</h1>
                         <p className={cx("subtitle")}>
-                            Thiết lập thông tin đề thi và thêm câu hỏi (hỗ trợ câu 1.1, 1.2…
-                            & thi nghe)
+                            Thiết lập thông tin đề thi và thêm câu hỏi
                         </p>
                     </div>
 
@@ -220,121 +374,360 @@ function CreateTest() {
                         </div>
                     </Card>
 
-                    {/* Questions */}
-                    <div className={cx("questionsHeader")}>
-                        <h2 className={cx("sectionTitle")}>
-                            Câu hỏi ({questions.length} phần)
-                        </h2>
-                        <Button
-                            primary
-                            leftIcon={<FontAwesomeIcon icon={faPlus} />}
-                            onClick={addQuestion}
-                        >
-                            Thêm câu (Câu 2, Câu 3…)
-                        </Button>
-                    </div>
+                    {/* Layout 2 cột: Preview bên trái + Editor bên phải */}
+                    <div className={cx("layout")}>
+                        {/* Left: Preview */}
+                        <div className={cx("left")}>
+                            <Card className={cx("previewCard")}>
+                                <div className={cx("previewHeader")}>
+                                    <FontAwesomeIcon icon={faEye} className={cx("previewIcon")} />
+                                    <span>Xem trước câu hỏi</span>
+                                </div>
 
-                    <div className={cx("questionsList")}>
-                        {questions.map((question, index) => (
-                            <Card key={question.id} className={cx("questionCard")}>
-                                {/* Header câu cha */}
-                                <div className={cx("questionHeader")}>
-                                    <div className={cx("questionHeaderLeft")}>
-                                        <span className={cx("questionIndex")}>
-                                            Câu {index + 1}
-                                        </span>
+                                {currentQuestion && (
+                                    <>
+                                        <div className={cx("questionHeader")}>
+                                            <div className={cx("badgeRow")}>
+                                                <span className={cx("badge", "badgeMain")}>
+                                                    Câu {currentQuestionIndex + 1}
+                                                </span>
+                                                <span className={cx("badge", "badgeType")}>
+                                                    {currentQuestion.type === "vocab"
+                                                        ? "Từ vựng"
+                                                        : currentQuestion.type === "grammar"
+                                                            ? "Ngữ pháp"
+                                                            : "Thi nghe"}
+                                                </span>
+                                            </div>
+                                            <h2 className={cx("questionText")}>
+                                                {currentQuestion.question || "Chưa có nội dung câu hỏi"}
+                                            </h2>
+                                        </div>
+
+                                        {currentQuestion.type === "listening" &&
+                                            currentQuestion.audioPreview && (
+                                                <audio
+                                                    controls
+                                                    src={currentQuestion.audioPreview}
+                                                    className={cx("audioPreview")}
+                                                />
+                                            )}
+
+                                        {currentQuestion.subQuestions.map((sub, subIndex) => (
+                                            <div key={sub.id} className={cx("contentSection")}>
+                                                <p className={cx("contentQuestion")}>
+                                                    {currentQuestionIndex + 1}.{subIndex + 1}{" "}
+                                                    {sub.question || "Chưa có nội dung câu hỏi con"}
+                                                </p>
+
+                                                <div className={cx("options")}>
+                                                    {sub.options.map((option, optionIndex) => (
+                                                        <div
+                                                            key={optionIndex}
+                                                            className={cx("option", {
+                                                                correct: sub.correctAnswer === optionIndex,
+                                                            })}
+                                                        >
+                                                            <div className={cx("optionInner")}>
+                                                                <div
+                                                                    className={cx("optionRadio", {
+                                                                        selected:
+                                                                            sub.correctAnswer === optionIndex,
+                                                                    })}
+                                                                >
+                                                                    {sub.correctAnswer === optionIndex && (
+                                                                        <div
+                                                                            className={cx("optionRadioDot")}
+                                                                        />
+                                                                    )}
+                                                                </div>
+                                                                <span className={cx("optionLabel")}>
+                                                                    {option ||
+                                                                        `Đáp án ${String.fromCharCode(
+                                                                            65 + optionIndex
+                                                                        )}`}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {sub.explanation && (
+                                                    <div className={cx("explanation")}>
+                                                        <strong>Giải thích:</strong> {sub.explanation}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </>
+                                )}
+                            </Card>
+                        </div>
+
+                        {/* Right: Editor */}
+                        <aside className={cx("right")}>
+                            {/* Question List */}
+                            <Card className={cx("listCard")}>
+                                <div className={cx("listHeader")}>
+                                    <p className={cx("listTitle")}>
+                                        Danh sách câu hỏi ({questions.length})
+                                    </p>
+                                    <Button
+                                        outline
+                                        small
+                                        leftIcon={<FontAwesomeIcon icon={faPlus} />}
+                                        onClick={addQuestion}
+                                    >
+                                        Thêm
+                                    </Button>
+                                </div>
+
+                                <div className={cx("listSections")}>
+                                    {/* Từ vựng */}
+                                    {questions.filter((q) => q.type === "vocab").length > 0 && (
+                                        <div className={cx("listSection")}>
+                                            <h4 className={cx("listSectionTitle")}>Từ vựng</h4>
+                                            <div className={cx("listGrid")}>
+                                                {questions.map((question, index) =>
+                                                    question.type === "vocab" ? (
+                                                        <button
+                                                            key={question.id}
+                                                            type="button"
+                                                            className={cx("listItem", {
+                                                                current: currentQuestionIndex === index,
+                                                            })}
+                                                            onClick={() => setCurrentQuestionIndex(index)}
+                                                        >
+                                                            {index + 1}
+                                                        </button>
+                                                    ) : null
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Ngữ pháp - Đọc hiểu */}
+                                    {questions.filter((q) => q.type === "grammar").length > 0 && (
+                                        <div className={cx("listSection")}>
+                                            <h4 className={cx("listSectionTitle")}>
+                                                Ngữ pháp, Đọc hiểu
+                                            </h4>
+                                            <div className={cx("listGrid")}>
+                                                {questions.map((question, index) =>
+                                                    question.type === "grammar" ? (
+                                                        <button
+                                                            key={question.id}
+                                                            type="button"
+                                                            className={cx("listItem", {
+                                                                current: currentQuestionIndex === index,
+                                                            })}
+                                                            onClick={() => setCurrentQuestionIndex(index)}
+                                                        >
+                                                            {index + 1}
+                                                        </button>
+                                                    ) : null
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Thi nghe */}
+                                    {questions.filter((q) => q.type === "listening").length > 0 && (
+                                        <div className={cx("listSection")}>
+                                            <h4 className={cx("listSectionTitle")}>Thi nghe</h4>
+                                            <div className={cx("listGrid")}>
+                                                {questions.map((question, index) =>
+                                                    question.type === "listening" ? (
+                                                        <button
+                                                            key={question.id}
+                                                            type="button"
+                                                            className={cx("listItem", {
+                                                                current: currentQuestionIndex === index,
+                                                            })}
+                                                            onClick={() => setCurrentQuestionIndex(index)}
+                                                        >
+                                                            {index + 1}
+                                                        </button>
+                                                    ) : null
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Empty state */}
+                                    {questions.length === 0 && (
+                                        <div className={cx("emptyState")}>
+                                            <p>Chưa có câu hỏi nào</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+
+                            {/* Editor Form */}
+                            {currentQuestion && (
+                                <Card className={cx("editorCard")}>
+                                    <div className={cx("editorHeader")}>
+                                        <h3 className={cx("editorTitle")}>
+                                            Chỉnh sửa Câu {currentQuestionIndex + 1}
+                                        </h3>
+                                        {questions.length > 1 && (
+                                            <Button
+                                                outline
+                                                small
+                                                className={cx("removeBtn")}
+                                                leftIcon={<FontAwesomeIcon icon={faXmark} />}
+                                                onClick={() => removeQuestion(currentQuestion.id)}
+                                            >
+                                                Xóa
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    <div className={cx("field")}>
+                                        <label className={cx("label")}>Loại câu hỏi</label>
                                         <select
-                                            value={question.type}
+                                            value={currentQuestion.type}
                                             onChange={(e) =>
-                                                updateQuestion(question.id, "type", e.target.value)
+                                                updateQuestion(
+                                                    currentQuestion.id,
+                                                    "type",
+                                                    e.target.value
+                                                )
                                             }
-                                            className={cx("select", "selectType")}
+                                            className={cx("select")}
                                         >
                                             <option value="vocab">Từ vựng</option>
                                             <option value="grammar">Ngữ pháp, Đọc hiểu</option>
                                             <option value="listening">Thi nghe</option>
                                         </select>
                                     </div>
-                                    <Button
-                                        outline
-                                        rounded
-                                        className={cx("removeBtn")}
-                                        leftIcon={<FontAwesomeIcon icon={faXmark} />}
-                                        onClick={() => removeQuestion(question.id)}
-                                    />
-                                </div>
 
-                                <div className={cx("questionBody")}>
-                                    {/* Nội dung chung / hướng dẫn */}
                                     <div className={cx("field")}>
                                         <label className={cx("label")}>
-                                            {question.type === "listening"
+                                            {currentQuestion.type === "listening"
                                                 ? "Hướng dẫn / nội dung phần nghe"
                                                 : "Nội dung chung (đoạn văn / phần mô tả)"}
                                         </label>
                                         <textarea
-                                            placeholder={
-                                                question.type === "listening"
-                                                    ? "Ví dụ: もんだい１では、はじめに しつもんを きいてください..."
-                                                    : "Nhập đoạn văn / nội dung chung cho nhóm câu hỏi này..."
-                                            }
-                                            value={question.question}
+                                            placeholder="Nhập nội dung câu hỏi..."
+                                            value={currentQuestion.question}
                                             onChange={(e) =>
-                                                updateQuestion(question.id, "question", e.target.value)
+                                                updateQuestion(
+                                                    currentQuestion.id,
+                                                    "question",
+                                                    e.target.value
+                                                )
                                             }
                                             className={cx("textarea")}
                                             rows={3}
                                         />
                                     </div>
 
-                                    {/* Audio cho Thi nghe */}
-                                    {question.type === "listening" && (
+                                    {currentQuestion.type === "listening" && (
                                         <div className={cx("field")}>
-                                            <label className={cx("label")}>File audio</label>
-                                            <input
-                                                type="file"
-                                                accept="audio/*"
-                                                onChange={(e) => handleAudioChange(question.id, e)}
-                                                className={cx("fileInput")}
-                                            />
-                                            {question.audioPreview && (
-                                                <audio
-                                                    controls
-                                                    src={question.audioPreview}
-                                                    className={cx("audio")}
-                                                />
+                                            <label className={cx("label")}>Audio</label>
+
+                                            {/* Radio buttons cho loại input */}
+                                            <div className={cx("audioTypeSelector")}>
+                                                <label className={cx("radioLabel")}>
+                                                    <input
+                                                        type="radio"
+                                                        name="audioType"
+                                                        value="link"
+                                                        checked={audioInputType === "link"}
+                                                        onChange={() => handleAudioInputTypeChange("link")}
+                                                        className={cx("radioInput")}
+                                                    />
+                                                    <FontAwesomeIcon icon={faLink} className={cx("radioIcon")} />
+                                                    <span>Gắn link audio</span>
+                                                </label>
+                                                <label className={cx("radioLabel")}>
+                                                    <input
+                                                        type="radio"
+                                                        name="audioType"
+                                                        value="generate"
+                                                        checked={audioInputType === "generate"}
+                                                        onChange={() => handleAudioInputTypeChange("generate")}
+                                                        className={cx("radioInput")}
+                                                    />
+                                                    <FontAwesomeIcon icon={faMagic} className={cx("radioIcon")} />
+                                                    <span>Tạo audio tự động</span>
+                                                </label>
+                                            </div>
+
+                                            {/* Input theo loại được chọn */}
+                                            {audioInputType === "link" ? (
+                                                <div className={cx("audioLinkInput")}>
+                                                    <Input
+                                                        value={
+                                                            currentQuestion.audioFile?.type === "link"
+                                                                ? currentQuestion.audioFile.url
+                                                                : ""
+                                                        }
+                                                        onChange={(e) => handleAudioLinkChange(e.target.value)}
+                                                        className={cx("input")}
+                                                        placeholder="Nhập URL của file audio (ví dụ: https://example.com/audio.mp3)"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className={cx("generateAudioSection")}>
+                                                    <p className={cx("generateHint")}>
+                                                        Audio sẽ được tạo từ nội dung bài nghe bằng công nghệ text-to-speech
+                                                    </p>
+                                                    <Button
+                                                        primary
+                                                        leftIcon={<FontAwesomeIcon icon={faMagic} />}
+                                                        onClick={handleGenerateAudio}
+                                                        disabled={isGeneratingAudio || !currentQuestion.question.trim()}
+                                                    >
+                                                        {isGeneratingAudio ? "Đang tạo audio..." : "Tạo audio"}
+                                                    </Button>
+                                                </div>
+                                            )}
+
+                                            {/* Audio Preview */}
+                                            {currentQuestion.audioPreview && (
+                                                <div className={cx("audioPreviewWrap")}>
+                                                    <audio
+                                                        controls
+                                                        src={currentQuestion.audioPreview}
+                                                        className={cx("audioPreview")}
+                                                    />
+                                                </div>
                                             )}
                                         </div>
                                     )}
 
-                                    {/* Câu con */}
-                                    <div className={cx("subQuestionsWrapper")}>
+                                    {/* Sub Questions */}
+                                    <div className={cx("subSection")}>
                                         <div className={cx("subHeaderRow")}>
-                                            <h3 className={cx("subTitle")}>
-                                                Câu hỏi con (Câu {index + 1}.1, {index + 1}.2…)
-                                            </h3>
+                                            <h4 className={cx("subTitle")}>Câu hỏi con</h4>
                                             <Button
                                                 outline
+                                                small
                                                 leftIcon={<FontAwesomeIcon icon={faPlus} />}
-                                                onClick={() => addSubQuestion(question.id)}
+                                                onClick={() => addSubQuestion(currentQuestion.id)}
                                             >
-                                                Thêm câu con
+                                                Thêm
                                             </Button>
                                         </div>
 
                                         <div className={cx("subList")}>
-                                            {question.subQuestions.map((sub, subIndex) => (
+                                            {currentQuestion.subQuestions.map((sub, subIndex) => (
                                                 <div key={sub.id} className={cx("subCard")}>
                                                     <div className={cx("subHeader")}>
                                                         <span className={cx("subIndex")}>
-                                                            Câu {index + 1}.{subIndex + 1}
+                                                            {currentQuestionIndex + 1}.{subIndex + 1}
                                                         </span>
-                                                        {question.subQuestions.length > 1 && (
+                                                        {currentQuestion.subQuestions.length > 1 && (
                                                             <button
                                                                 type="button"
                                                                 className={cx("subRemove")}
                                                                 onClick={() =>
-                                                                    removeSubQuestion(question.id, sub.id)
+                                                                    removeSubQuestion(
+                                                                        currentQuestion.id,
+                                                                        sub.id
+                                                                    )
                                                                 }
                                                             >
                                                                 <FontAwesomeIcon icon={faXmark} />
@@ -343,15 +736,13 @@ function CreateTest() {
                                                     </div>
 
                                                     <div className={cx("field")}>
-                                                        <label className={cx("label")}>
-                                                            Nội dung câu hỏi con
-                                                        </label>
+                                                        <label className={cx("label")}>Câu hỏi</label>
                                                         <textarea
                                                             placeholder="Nhập nội dung câu hỏi con..."
                                                             value={sub.question}
                                                             onChange={(e) =>
                                                                 updateSubQuestion(
-                                                                    question.id,
+                                                                    currentQuestion.id,
                                                                     sub.id,
                                                                     "question",
                                                                     e.target.value
@@ -362,20 +753,23 @@ function CreateTest() {
                                                         />
                                                     </div>
 
-                                                    {/* Lựa chọn */}
-                                                    <div className={cx("optionsGrid")}>
+                                                    <div className={cx("optionsEdit")}>
                                                         {sub.options.map((option, optionIndex) => (
-                                                            <div key={optionIndex} className={cx("field")}>
-                                                                <label className={cx("optionLabel")}>
+                                                            <div
+                                                                key={optionIndex}
+                                                                className={cx("optionEdit")}
+                                                            >
+                                                                <label className={cx("optionEditLabel")}>
                                                                     <input
                                                                         type="radio"
-                                                                        name={`answer-${question.id}-${sub.id}`}
+                                                                        name={`answer-${currentQuestion.id}-${sub.id}`}
                                                                         checked={
-                                                                            sub.correctAnswer === optionIndex
+                                                                            sub.correctAnswer ===
+                                                                            optionIndex
                                                                         }
                                                                         onChange={() =>
                                                                             updateSubQuestion(
-                                                                                question.id,
+                                                                                currentQuestion.id,
                                                                                 sub.id,
                                                                                 "correctAnswer",
                                                                                 optionIndex
@@ -384,28 +778,19 @@ function CreateTest() {
                                                                         className={cx("radio")}
                                                                     />
                                                                     <span>
-                                                                        Đáp án{" "}
-                                                                        {String.fromCharCode(65 + optionIndex)}
-                                                                        {sub.correctAnswer === optionIndex && (
-                                                                            <span
-                                                                                className={cx(
-                                                                                    "badge",
-                                                                                    "badgeAnswer"
-                                                                                )}
-                                                                            >
-                                                                                Đáp án
-                                                                            </span>
+                                                                        {String.fromCharCode(
+                                                                            65 + optionIndex
                                                                         )}
                                                                     </span>
                                                                 </label>
                                                                 <Input
-                                                                    placeholder={`Nhập đáp án ${String.fromCharCode(
+                                                                    placeholder={`Đáp án ${String.fromCharCode(
                                                                         65 + optionIndex
                                                                     )}`}
                                                                     value={option}
                                                                     onChange={(e) =>
                                                                         handleChangeOption(
-                                                                            question.id,
+                                                                            currentQuestion.id,
                                                                             sub.id,
                                                                             optionIndex,
                                                                             e.target.value
@@ -419,14 +804,14 @@ function CreateTest() {
 
                                                     <div className={cx("field")}>
                                                         <label className={cx("label")}>
-                                                            Giải thích đáp án
+                                                            Giải thích
                                                         </label>
                                                         <textarea
                                                             placeholder="Nhập giải thích..."
                                                             value={sub.explanation}
                                                             onChange={(e) =>
                                                                 updateSubQuestion(
-                                                                    question.id,
+                                                                    currentQuestion.id,
                                                                     sub.id,
                                                                     "explanation",
                                                                     e.target.value
@@ -440,22 +825,23 @@ function CreateTest() {
                                             ))}
                                         </div>
                                     </div>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
+                                </Card>
+                            )}
 
-                    {/* Actions */}
-                    <div className={cx("actions")}>
-                        <Link to="/admin/tests">
-                            <Button outline>Hủy</Button>
-                        </Link>
-                        <Button primary onClick={handleSaveDraft}>
-                            Lưu bản nháp
-                        </Button>
-                        <Button className={cx("publishBtn")} onClick={handlePublish}>
-                            Xuất bản đề thi
-                        </Button>
+                            {/* Actions */}
+                            <div className={cx("actions")}>
+                                <Link to="/admin/tests">
+                                    <Button outline>Hủy</Button>
+                                </Link>
+                                <Button
+                                    primary
+                                    onClick={handleSave}
+                                    disabled={isSaving}
+                                >
+                                    {isSaving ? "Đang lưu..." : "Lưu"}
+                                </Button>
+                            </div>
+                        </aside>
                     </div>
                 </div>
             </main>
