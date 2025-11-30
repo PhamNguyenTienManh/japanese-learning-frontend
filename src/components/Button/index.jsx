@@ -15,7 +15,6 @@ function Button({
   back = false,
   disabled = false,
   full = false,
-  iconOnly = false,
   leftIcon,
   rightIcon,
   children,
@@ -23,10 +22,7 @@ function Button({
   ...passProps
 }) {
   let Comp = "button";
-  const props = {
-    onClick,
-    ...passProps,
-  };
+  const props = { onClick, ...passProps };
 
   if (to) {
     props.to = to;
@@ -36,6 +32,9 @@ function Button({
     Comp = "a";
   }
 
+  //⭐ Auto detect button chỉ có icon
+  const isIconOnly = (leftIcon || rightIcon) && !children;
+
   const classes = cx("wrapper", {
     [className]: className,
     primary,
@@ -44,16 +43,14 @@ function Button({
     link,
     back,
     full,
-    iconOnly,
-    leftIcon,
-    rightIcon,
     disabled,
+    iconOnly: isIconOnly,
   });
 
   return (
     <Comp className={classes} {...props}>
       {leftIcon && <span className={cx("icon")}>{leftIcon}</span>}
-      <span className={cx("title")}>{children}</span>
+      {children && <span className={cx("title")}>{children}</span>}
       {rightIcon && <span className={cx("icon")}>{rightIcon}</span>}
     </Comp>
   );

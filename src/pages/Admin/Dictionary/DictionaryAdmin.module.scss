@@ -270,3 +270,91 @@
   color: #6b7280;
   text-align: center;
 }
+
+/* --- Additional styles for tabs / small UI tweaks --- */
+
+.tabs {
+  display: inline-flex;
+  gap: 8px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.tabBtn {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #374151;
+  font-weight: 600;
+  transition: all 0.12s ease;
+  outline: none;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #111827;
+  }
+
+  &.active,
+  &.active:hover {
+    background: #eef2ff;
+    border-color: rgba(37, 99, 235, 0.12);
+    color: #2563eb;
+  }
+}
+
+/* make sure card paddings look good when actions column is narrow */
+.wordCard {
+  padding: 20px;
+
+  @media (min-width: 768px) {
+    padding: 24px;
+  }
+}
+
+/* small icon-only buttons */
+.actions button,
+.actions .btn {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* stronger danger badge/button */
+.dangerBtn {
+  color: #dc2626;
+  border-color: transparent;
+
+  &:hover {
+    background: rgba(220, 38, 38, 0.06);
+  }
+}
+
+/* ensure badges don't overflow */
+.badge {
+  white-space: nowrap;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* slightly tighter form grid on small screens */
+@media (max-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .headerMain {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
