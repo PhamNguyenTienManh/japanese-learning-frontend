@@ -122,7 +122,9 @@ function PostDetail() {
 
         const postOwnerId = postData.profile_id.userId;
         setIsOwner(currentUserId === postOwnerId);
-        const me = await getMe(currentUserId);
+        if(localStorage.getItem("token")){
+          const me = await getMe(currentUserId);
+        }
 
 
         await fetchComments();
@@ -179,8 +181,6 @@ function PostDetail() {
       const liked = response.data.liked;
       const currentLiked = Array.isArray(liked) ? liked : [];
       const isCurrentlyLiked = currentLiked.includes(currentUserId);
-      console.log("like", isCurrentlyLiked, response.data.profile_id?.userId);
-      
       if (isCurrentlyLiked) {
         const postOwnerUserId = post.profile_id.userId;
         pushNotification(

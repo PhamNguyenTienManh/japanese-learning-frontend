@@ -195,7 +195,7 @@ function Notebook() {
       setError(null);
     } catch (err) {
       console.error('Failed to add word:', err);
-      setError('Không thể thêm từ. Vui lòng thử lại.');
+      setError('Từ này đã có trong sổ tay');
     } finally {
       setLoading(false);
     }
