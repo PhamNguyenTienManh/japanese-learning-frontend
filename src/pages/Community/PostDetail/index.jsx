@@ -22,12 +22,15 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import formatDateVN from "~/services/formatDate";
 import postService from "~/services/postService";
+import notificationService from "~/services/notificationService";
 import { faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
 import decodeToken from "~/services/pairToken";
 import CategorySelector from "~/components/CategorySelection";
 import ActionBtn from "~/components/ActionBtnInCommunity";
 import { useAuth } from "~/context/AuthContext";
+import { getProfile } from "~/services/profileService";
+
 const cx = classNames.bind(styles);
 
 function PostDetail() {
@@ -49,11 +52,13 @@ function PostDetail() {
   const [categoryId, setCategoryId] = useState("");
   const [categories, setCategories] = useState([]);
   const [countComment, setCountComment] = useState(0);
-  const { isLoggedIn } = useAuth();
-  // States cho chỉnh sửa comment
+  const { isLoggedIn, userId: currentUserId, profileId } = useAuth();
+
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedCommentContent, setEditedCommentContent] = useState("");
   const [savingComment, setSavingComment] = useState(false);
+  const [profile, setProfile] = useState({})
+
 
   const getLoggedInUserId = () => {
     const token = localStorage.getItem("token");
@@ -70,17 +75,34 @@ function PostDetail() {
 
     return decoded?.sub || null;
   };
+  const getMe = async (id) => {
+    const response = await getProfile(id)
+    setProfile(response.data)
+    return response.data;
 
-  const currentUserId = getLoggedInUserId();
+  }
+  const pushNotification = async (targetUserId, targetId, title, message) => {
 
-  // Kiểm tra user có phải chủ của comment không
+    if (currentUserId === targetUserId) return;
+
+    try {
+      await notificationService.pushNotification({
+        userId: targetUserId,
+        targetId: targetId,
+        title: title,
+        message: message,
+      });
+    } catch (error) {
+      console.error("Error pushing notification:", error);
+    }
+  };
+
   const isCommentOwner = (comment) => {
     if (!currentUserId) return false;
     const commentOwnerId = comment.profileId?.userId || comment.userId;
     return currentUserId === commentOwnerId;
   };
 
-  // Fetch post detail
   useEffect(() => {
     const fetchPostDetail = async () => {
       setLoading(true);
@@ -100,6 +122,8 @@ function PostDetail() {
 
         const postOwnerId = postData.profile_id.userId;
         setIsOwner(currentUserId === postOwnerId);
+        const me = await getMe(currentUserId);
+
 
         await fetchComments();
       } catch (err) {
@@ -149,14 +173,25 @@ function PostDetail() {
     }
   };
 
-  // Handle like post
   const handleLike = async () => {
     try {
       const response = await postService.toggleLike(id);
+      const liked = response.data.liked;
+      const currentLiked = Array.isArray(liked) ? liked : [];
+      const isCurrentlyLiked = currentLiked.includes(currentUserId);
+      console.log("like", isCurrentlyLiked, response.data.profile_id?.userId);
+      
+      if (isCurrentlyLiked) {
+        const postOwnerUserId = post.profile_id.userId;
+        pushNotification(
+          postOwnerUserId,
+          id,
+          "Bạn có lượt thích mới",
+          `${profile.name || "Ai đó"} đã thích bài viết của bạn.`
+        );
+      }
 
       setPost((prev) => {
-        const currentLiked = Array.isArray(prev.liked) ? prev.liked : [];
-        const isCurrentlyLiked = currentLiked.includes(currentUserId);
 
         if (response?.data?.liked && Array.isArray(response.data.liked)) {
           return {
@@ -185,6 +220,7 @@ function PostDetail() {
   };
 
   const handleComment = async () => {
+
     if (!comment.trim()) return;
 
     setSubmitting(true);
@@ -193,11 +229,23 @@ function PostDetail() {
 
       await fetchComments();
 
-      setPost((prev) => ({
-        ...prev,
-        comments: prev.comments + 1
-      }));
+      setPost((prev) => {
 
+
+        return {
+          ...prev,
+          comments: prev.comments + 1
+        };
+      });
+      if (post.profile_id?.userId) {
+        const postOwnerUserId = post.profile_id.userId;
+        pushNotification(
+          postOwnerUserId,
+          id,
+          "Bạn có bình luận mới",
+          `${profile.name || "Ai đó"} đã bình luận bài viết của bạn.`
+        );
+      }
       setComment("");
     } catch (err) {
       console.error("Add comment error:", err);
@@ -239,7 +287,6 @@ function PostDetail() {
 
   // Bắt đầu chỉnh sửa comment
   const handleEditComment = (comment) => {
-
     const commentId = comment._id;
     setEditingCommentId(commentId);
     setEditedCommentContent(comment.content || "");
@@ -264,7 +311,6 @@ function PostDetail() {
         content: editedCommentContent
       });
 
-      // Cập nhật comment trong state
       setComments((prev) =>
         prev.map((c) => {
           const cId = c._id || c.id || c.commentId;
@@ -297,7 +343,6 @@ function PostDetail() {
     try {
       await postService.deleteComment(commentId);
 
-      // Xóa comment khỏi state
       setComments((prev) =>
         prev.filter((c) => {
           const cId = c._id || c.id || c.commentId;
@@ -305,7 +350,6 @@ function PostDetail() {
         })
       );
 
-      // Giảm số lượng comment
       setPost((prev) => ({
         ...prev,
         comments: prev.comments - 1
@@ -598,12 +642,10 @@ function PostDetail() {
                     outline={!post.isLiked}
                     onClick={() => {
                       if (!isLoggedIn) {
-                        // ⚠️ Chưa login → báo cho người dùng
                         alert("Bạn cần đăng nhập để thực hiện thao tác này.");
                         return;
                       }
-
-                      handleLike(); // ✔ Đã login → cho phép like
+                      handleLike();
                     }}
                     leftIcon={
                       <FontAwesomeIcon
@@ -690,7 +732,6 @@ function PostDetail() {
                           />
                           <div className={cx("comment-body")}>
                             {isEditing ? (
-                              // Chế độ chỉnh sửa comment
                               <div className={cx("comment-edit-form")}>
                                 <textarea
                                   value={editedCommentContent}
@@ -726,7 +767,6 @@ function PostDetail() {
                                 </div>
                               </div>
                             ) : (
-                              // Chế độ xem comment
                               <>
                                 <div className={cx("comment-bubble")}>
                                   <div className={cx("comment-header")}>
@@ -736,7 +776,6 @@ function PostDetail() {
                                     <span className={cx("comment-time")}>
                                       • {formatDateVN(c.createdAt)}
                                     </span>
-                                    {/* Nút action cho chủ comment */}
                                     {isOwner && (
                                       <div className={cx("comment-owner-actions")}>
                                         <button
