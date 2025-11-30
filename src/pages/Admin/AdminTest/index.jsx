@@ -1,14 +1,10 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faArrowLeft,
-    faMagnifyingGlass,
-    faPlus,
     faPenToSquare,
-    faTrash,
-    faEye,
 } from "@fortawesome/free-solid-svg-icons";
 
 import Card from "~/components/Card";
@@ -28,7 +24,9 @@ function AdminTest() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // Hàm fetch dữ liệu theo level
+    const navigate = useNavigate();
+
+    // Fetch dữ liệu theo level
     const fetchExams = async (level) => {
         try {
             setLoading(true);
@@ -44,7 +42,6 @@ function AdminTest() {
         }
     };
 
-    // Fetch khi mount và khi levelFilter thay đổi
     useEffect(() => {
         fetchExams(levelFilter);
     }, [levelFilter]);
@@ -58,10 +55,23 @@ function AdminTest() {
         const matchStatus =
             statusFilter === "all" ||
             (statusFilter === "published" && exam.status === "published") ||
-            (statusFilter === "draft" && exam.status === "draft");
+            (statusFilter === "draft" && exam.status === "draft") ||
+            (statusFilter === "hidden" && exam.status === "hidden");
 
         return matchSearch && matchStatus;
     });
+
+    // Xử lý thay đổi trạng thái
+    const handleChangeStatus = (id, newStatus) => {
+        setExams((prev) =>
+            prev.map((exam) =>
+                exam._id === id ? { ...exam, status: newStatus } : exam
+            )
+        );
+
+        // TODO: Gọi API để cập nhật server
+        // updateExamStatus(id, newStatus).catch(err => console.error(err));
+    };
 
     return (
         <div className={cx("wrapper")}>
@@ -84,7 +94,7 @@ function AdminTest() {
                                 </p>
                             </div>
                             <Link to="/admin/tests/create">
-                                <Button primary leftIcon={<FontAwesomeIcon icon={faPlus} />}>
+                                <Button primary>
                                     Tạo đề thi mới
                                 </Button>
                             </Link>
@@ -95,7 +105,6 @@ function AdminTest() {
                     <Card className={cx("filterCard")}>
                         <div className={cx("filterRow")}>
                             <div className={cx("searchWrapper")}>
-                                <FontAwesomeIcon icon={faMagnifyingGlass} className={cx("searchIcon")} />
                                 <Input
                                     placeholder="Tìm kiếm đề thi..."
                                     value={searchQuery}
@@ -122,8 +131,9 @@ function AdminTest() {
                                     onChange={(e) => setStatusFilter(e.target.value)}
                                 >
                                     <option value="all">Tất cả trạng thái</option>
-                                    <option value="published">Đã xuất bản</option>
+                                    <option value="published">Công khai</option>
                                     <option value="draft">Bản nháp</option>
+                                    <option value="hidden">Ẩn</option>
                                 </select>
                             </div>
                         </div>
@@ -144,11 +154,6 @@ function AdminTest() {
                                                 <div className={cx("titleRow")}>
                                                     <h3 className={cx("testTitle")}>JLPT {exam.level} - {exam.title}</h3>
                                                     <span className={cx("badge", "badgeLevel")}>{exam.level}</span>
-                                                    {exam.status === "published" ? (
-                                                        <span className={cx("badge", "badgePublished")}>Đã xuất bản</span>
-                                                    ) : (
-                                                        <span className={cx("badge")}>Bản nháp</span>
-                                                    )}
                                                 </div>
 
                                                 <div className={cx("statsGrid")}>
@@ -167,10 +172,23 @@ function AdminTest() {
                                                 </p>
                                             </div>
 
+                                            {/* Actions: chỉ còn nút Sửa và dropdown trạng thái */}
                                             <div className={cx("actions")}>
-                                                <Button outline rounded leftIcon={<FontAwesomeIcon icon={faEye} />} />
-                                                <Button outline rounded leftIcon={<FontAwesomeIcon icon={faPenToSquare} />} />
-                                                <Button outline rounded className={cx("dangerBtn")} leftIcon={<FontAwesomeIcon icon={faTrash} />} />
+                                                <Button
+                                                    outline
+                                                    rounded
+                                                    leftIcon={<FontAwesomeIcon icon={faPenToSquare} />}
+                                                    onClick={() => navigate(`/admin/tests/update/${exam._id}`)}
+                                                />
+                                                <select
+                                                    className={cx("statusSelect")}
+                                                    value={exam.status}
+                                                    onChange={(e) => handleChangeStatus(exam._id, e.target.value)}
+                                                >
+                                                    <option value="draft">Bản nháp</option>
+                                                    <option value="published">Công khai</option>
+                                                    <option value="hidden">Ẩn</option>
+                                                </select>
                                             </div>
                                         </div>
                                     </Card>

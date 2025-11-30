@@ -218,6 +218,25 @@ export async function createExam(data) {
   return response.json();
 }
 
+export async function updateExam(id, data) {
+  const response = await fetch(`${BASE_URL}/exams/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Failed to update exam: ${err}`);
+  }
+
+  return response.json();
+}
+
+
 // Thêm câu hỏi vào part
 export async function createExamQuestion(partId, data) {
   const response = await fetch(`${BASE_URL}/exam-questions/${partId}`, {
@@ -237,5 +256,40 @@ export async function createExamQuestion(partId, data) {
   return response.json();
 }
 
+// Update exam question
+export async function updateExamQuestion(questionId, data) {
+  const response = await fetch(`${BASE_URL}/exam-questions/update/${questionId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Failed to update exam question: ${err}`);
+  }
+
+  return response.json();
+}
+
+// Delete exam question
+export async function deleteExamQuestion(questionId) {
+  const response = await fetch(`${BASE_URL}/exam-questions/${questionId}`, {
+    method: "DELETE",
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Failed to delete exam question: ${err}`);
+  }
+
+  return response.json();
+}
 
 
