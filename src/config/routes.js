@@ -30,6 +30,7 @@ const routes = {
   dictionaryAdmin: "/admin/dictionary",
   adminTest: "/admin/tests",
   createTest: "/admin/tests/create",
+  updateTest: "/admin/tests/update/:id",
   adminPosts: "/admin/posts",
   adminReading: "/admin/reading"
 };

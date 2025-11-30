@@ -119,12 +119,13 @@ function TestRunner() {
       try {
         setLoading(true);
         const response = await getExamDetail(testId);
+        console.log("vvvvv", response)
 
         if (response.success && response.data) {
-          setExamData(response.data);
+          setExamData(response.data.parts);
 
           // Calculate total time from all parts
-          const totalTime = response.data.reduce(
+          const totalTime = response.data.parts.reduce(
             (sum, part) => sum + part.time * 60,
             0
           );
