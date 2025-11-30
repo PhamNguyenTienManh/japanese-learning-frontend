@@ -50,7 +50,7 @@ function NotificationDropdown({ isOpen, onToggle, onClose }) {
     try {
       setLoading(true);
       const response = await notificationService.getNotifications(userId);
-      
+
       if (response.success) {
         setNotifications(response.data);
       }
@@ -77,7 +77,7 @@ function NotificationDropdown({ isOpen, onToggle, onClose }) {
 
   const handleMarkAsRead = async (notificationId, e) => {
     e.stopPropagation();
-    
+
     // Cập nhật state ngay lập tức
     setNotifications(prevNotifications =>
       prevNotifications.map(notif =>
@@ -99,7 +99,7 @@ function NotificationDropdown({ isOpen, onToggle, onClose }) {
 
   const handleDeleteNotification = async (notificationId, e) => {
     e.stopPropagation();
-    
+
     setNotifications(prevNotifications =>
       prevNotifications.filter(notif => notif._id !== notificationId)
     );
@@ -121,7 +121,7 @@ function NotificationDropdown({ isOpen, onToggle, onClose }) {
             : notif
         )
       );
-      
+
       notificationService.markAsRead(notification._id).catch(error => {
         console.error("Lỗi khi đánh dấu đã đọc:", error);
       });
@@ -143,18 +143,18 @@ function NotificationDropdown({ isOpen, onToggle, onClose }) {
     if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
     if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
     if (diff < 604800) return `${Math.floor(diff / 86400)} ngày trước`;
-    
+
     return date.toLocaleDateString("vi-VN");
   };
 
   return (
     <div className={cx("notification-wrapper")} ref={dropdownRef}>
-      <button className={cx("bell-button")} onClick={onToggle}>
+      <Button className={"notification"} onClick={onToggle}>
         <FontAwesomeIcon icon={faBell} />
         {unreadCount > 0 && (
           <span className={cx("badge")}>{unreadCount > 99 ? "99+" : unreadCount}</span>
         )}
-      </button>
+      </Button>
 
       {isOpen && (
         <div className={cx("dropdown")}>

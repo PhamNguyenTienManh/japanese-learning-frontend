@@ -313,37 +313,39 @@ function JLPT() {
         if (selectedType === "Từ vựng") {
             return (
                 <Card key={index}>
-                    <div className={cx("vocab-inner")}>
-                        <div className={cx("vocab-header")}>
-                            <div className={cx("vocab-main")}>
-                                <Button
-                                    outline
-                                    className={"no-margin"}
-                                    leftIcon={<FontAwesomeIcon icon={faVolumeHigh} />}
-                                    onClick={() => handlePlayAudio(item.phonetic)}
-                                ></Button>
-                                {isShown("Từ vựng") && (
-                                    <span className={cx("kanji")}>{item.word}</span>
-                                )}
+                    <div className={cx("vocab-container")}>
+                        <Button
+                            className={"orange"}
+                            leftIcon={<FontAwesomeIcon icon={faVolumeHigh} />}
+                            onClick={() => handlePlayAudio(item.phonetic)}
+                        ></Button>
+                        <div className={cx("vocab-inner")}>
+                            <div className={cx("vocab-header")}>
+                                <div className={cx("vocab-main")}>
+
+                                    {isShown("Từ vựng") && (
+                                        <span className={cx("kanji")}>{item.word}</span>
+                                    )}
+                                </div>
+
                             </div>
-                            <Button
-                                outline
-                                className={"no-margin"}
-                                leftIcon={<FontAwesomeIcon icon={faPlus} />}
-                                onClick={() => {
-                                    setSelectedWord(item);
-                                    setShowModal(true);
-                                }}
-                            ></Button>
+                            {isShown("Phiên âm") && (
+                                <div className={cx("hiragana")}>{item.phonetic}</div>
+                            )}
+                            {isShown("Nghĩa") && (
+                                <div className={cx("meaning-block")}>
+                                    <p className={cx("meaning")}>{item.meanings}</p>
+                                </div>
+                            )}
                         </div>
-                        {isShown("Phiên âm") && (
-                            <div className={cx("hiragana")}>{item.phonetic}</div>
-                        )}
-                        {isShown("Nghĩa") && (
-                            <div className={cx("meaning-block")}>
-                                <p className={cx("meaning")}>{item.meanings}</p>
-                            </div>
-                        )}
+                        <Button
+                            className={"orange"}
+                            leftIcon={<FontAwesomeIcon icon={faPlus} />}
+                            onClick={() => {
+                                setSelectedWord(item);
+                                setShowModal(true);
+                            }}
+                        ></Button>
                     </div>
                 </Card>
             );

@@ -4,6 +4,17 @@
   background: var(--background);
 }
 
+.vocab-container {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+}
+
+.vocab-inner {
+  flex: 1; // kéo phần giữa giãn ra bên trái
+  text-align: left;
+}
+
 .inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -168,6 +179,7 @@
   }
 
   .vocab-inner {
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 10px;

@@ -89,7 +89,7 @@ function Admin() {
                                     </div>
                                     <div>
                                         <p className={cx("cardValue")}>{stats.totalWords}</p>
-                                        <p className={cx("cardLabel")}>Từ vựng</p>
+                                        <p className={cx("cardLabel")}>Từ vựng JLPT </p>
                                     </div>
                                 </div>
                                 <p className={cx("cardSub")}>Trong từ điển</p>

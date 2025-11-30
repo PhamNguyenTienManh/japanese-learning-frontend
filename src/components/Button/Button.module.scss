@@ -100,6 +100,16 @@
   }
 }
 
+.delete {
+  color: var(--red);
+
+  &:hover {
+    background-color: var(--red);
+    color: var(--white);
+  }
+}
+
+
 .full {
   width: 100%;
   justify-content: center;
@@ -142,5 +152,21 @@
 .iconOnly {
   .icon {
     margin: 0;
+  }
+}
+
+.notification {
+  position: relative;
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  color: var(--white);
+  cursor: pointer;
+  padding: 8px 0px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: var(--primary-low);
+    transform: scale(1.2);
   }
 }
