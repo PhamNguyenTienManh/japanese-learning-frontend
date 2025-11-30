@@ -42,7 +42,7 @@ const Sidebar = ({ keyword, onSelectKanji, selectedKanji }) => {
           hanviet: item.hanviet
         }));
         setKanjiList(simplifiedList);
-        
+
         if (simplifiedList.length > 0 && onSelectKanji) {
           onSelectKanji(simplifiedList[0].kanji);
         }
@@ -62,7 +62,6 @@ const Sidebar = ({ keyword, onSelectKanji, selectedKanji }) => {
       width: '280px',
       backgroundColor: '#fff',
       borderRight: '1px solid #e0e0e0',
-      height: '100vh',
       overflowY: 'auto',
       padding: '20px 16px'
     }}>
