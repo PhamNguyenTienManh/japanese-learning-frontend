@@ -27,9 +27,8 @@ export default function TestCard({
     id,
     name,
     duration = 0,
-    questions = 0,
     completed = false,
-    score,
+    pass_score = 80,
     sections = [],
   } = test || {};
 
@@ -96,14 +95,8 @@ export default function TestCard({
             </div>
 
             <div className={cx("meta-item")}>
-              <span>Điểm đạt: {questions} điểm</span>
+              <span>Điểm đạt: {pass_score} điểm</span>
             </div>
-
-            {completed && typeof score === "number" && (
-              <div className={cx("meta-item", "score")}>
-                <span className={cx("score-text")}>Điểm: {score}%</span>
-              </div>
-            )}
           </div>
 
           <div className={cx("sections")}>

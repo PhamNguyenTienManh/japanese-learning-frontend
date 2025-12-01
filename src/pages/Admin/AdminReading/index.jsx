@@ -9,9 +9,7 @@ import {
     faTrash,
     faEye,
     faPlus,
-    faVolumeHigh,
     faXmark,
-    faImage,
     faLink,
     faMagic,
 } from "@fortawesome/free-solid-svg-icons";
@@ -21,7 +19,7 @@ import Button from "~/components/Button";
 import Input from "~/components/Input";
 
 import styles from "./AdminReading.module.scss";
-import { getNews, createNews } from "~/services/newsService";
+import { getNews, createNews, updateNews } from "~/services/newsService";
 import { uploadVoice } from "~/services/textToSpeechService";
 
 const cx = classNames.bind(styles);
@@ -55,10 +53,28 @@ function AdminReading() {
     const [mode, setMode] = useState("create");
     const [audioInputType, setAudioInputType] = useState("link");
     const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+    const [errors, setErrors] = useState({});
+    const [toast, setToast] = useState(false);
+
+    const titleRef = useRef(null);
+    const contentRef = useRef(null);
+    const linkRef = useRef(null);
+    const imageUrlRef = useRef(null);
+    const audioLinkRef = useRef(null);
 
     // ref cho input file
     const imageInputRef = useRef(null);
     const audioInputRef = useRef(null);
+
+    // Auto hide toast after 3 seconds
+    useEffect(() => {
+        if (toast.show) {
+            const timer = setTimeout(() => {
+                setToast({ show: false, message: '', type: '' });
+            }, 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast.show]);
 
     useEffect(() => {
         const fetchArticles = async () => {
@@ -161,14 +177,62 @@ function AdminReading() {
 
     const handleSave = async () => {
         if (!editingArticle) return;
+
+        let newErrors = {};
         if (!editingArticle.title.trim()) {
-            alert("Tiêu đề không được để trống");
-            return;
+            newErrors.title = "Tiêu đề không được để trống";
+            titleRef.current?.focus();
         }
+
+        if (!editingArticle.link.trim()) {
+            newErrors.link = "Link bài viết gốc không được để trống";
+            // chỉ focus content nếu title hợp lệ
+            if (!newErrors.title) linkRef.current?.focus();
+        }
+
         if (!editingArticle.content.trim()) {
-            alert("Nội dung không được để trống");
+            newErrors.content = "Nội dung không được để trống";
+            if (!newErrors.link) contentRef.current?.focus();
+        }
+
+        if (!editingArticle.imagePreview.trim()) {
+            newErrors.imageUrl = "Link hình ảnh không được để trống";
+            if (!newErrors.content) imageUrlRef.current?.focus();
+        }
+
+        if (audioInputType === "link") {
+            if (!editingArticle.audioLink.trim() && !isGeneratingAudio) {
+                newErrors.audioLink = "Link audio không được để trống";
+                if (!newErrors.imageUrl) audioLinkRef.current?.focus();
+            }
+        }
+
+
+        if (audioInputType === "link") {
+            if (editingArticle.audioLink && !editingArticle.audioPreview) {
+                newErrors.audioLink = "Link chưa hợp lệ. Vui lòng nhập URL đầy đủ (bắt đầu bằng http:// hoặc https://)";
+                if (!newErrors.imageUrl) audioLinkRef.current?.focus();
+            }
+        }
+
+
+        if (audioInputType !== "link") {
+            if (!editingArticle.audioLink || !editingArticle.audioPreview) {
+                newErrors.audioLink = "Bạn chưa tạo file audio";
+            }
+        }
+
+
+
+        // Nếu có lỗi → không save
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
+
+        // Không có lỗi → tiếp tục save
+        setErrors({})
+
 
         try {
             if (mode === "create") {
@@ -192,8 +256,9 @@ function AdminReading() {
                 if (response) {
                     // Thêm vào danh sách local
                     const newArticle = {
-                        id: response._id || Date.now().toString(),
+                        id: response.data._id || Date.now().toString(),
                         title: editingArticle.title,
+                        link: editingArticle.link || "",
                         content: editingArticle.content,
                         imagePreview: editingArticle.imagePreview,
                         audioFile: editingArticle.audioLink,
@@ -203,24 +268,55 @@ function AdminReading() {
                         date: new Date().toLocaleDateString('vi-VN'),
                         read: editingArticle.read,
                     };
+                    console.log("ehehe", newArticle)
                     setArticles((prev) => [newArticle, ...prev]);
-                    alert("Thêm bài đọc thành công!");
+                    //alert("Thêm bài đọc thành công!");
+                    setToast({
+                        show: true,
+                        message: 'Thêm bài đọc thành công!',
+                        type: 'success'
+                    });
                 }
             } else {
-                // Chế độ edit - có thể thêm API update ở đây
-                setArticles((prev) =>
-                    prev.map((a) => (a.id === editingArticle.id ? {
-                        ...editingArticle,
-                        audioFile: editingArticle.audioLink,
-                    } : a))
-                );
-                alert("Cập nhật bài đọc thành công!");
+                const newsDto = {
+                    title: editingArticle.title,
+                    link: editingArticle.link || "",
+                    type: editingArticle.difficulty,
+                    content: {
+                        audio: editingArticle.audioLink || "",
+                        image: editingArticle.imagePreview || "",
+                        textbody: editingArticle.content || "",
+                    },
+                    level: editingArticle.level,
+                    publish: editingArticle.read,
+                };
+                const response = await updateNews(editingArticle.id, newsDto);
+
+                if (response) {
+                    setArticles((prev) =>
+                        prev.map((a) => (a.id === editingArticle.id ? {
+                            ...editingArticle,
+                            audioFile: editingArticle.audioLink,
+                        } : a))
+                    );
+                    //alert("Cập nhật bài đọc thành công!");
+                    setToast({
+                        show: true,
+                        message: 'Cập nhật bài đọc thành công!',
+                        type: 'success'
+                    });
+                }
             }
 
             setEditingArticle(null);
         } catch (error) {
             console.error("Error saving article:", error);
-            alert("Có lỗi xảy ra khi lưu bài đọc. Vui lòng thử lại.");
+            // alert("Có lỗi xảy ra khi lưu bài đọc. Vui lòng thử lại.");
+            setToast({
+                show: true,
+                message: 'Có lỗi xảy ra khi lưu bài đọc. Vui lòng thử lại.',
+                type: 'error'
+            });
         }
     };
 
@@ -293,13 +389,23 @@ function AdminReading() {
                         }
                         : prev
                 );
-                alert("Tạo audio thành công!");
+                //alert("Tạo audio thành công!");
+                setToast({
+                    show: true,
+                    message: 'Tạo audio thành công!',
+                    type: 'success'
+                });
             } else {
                 throw new Error("Không nhận được URL audio");
             }
         } catch (error) {
             console.error("Error generating audio:", error);
-            alert("Có lỗi xảy ra khi tạo audio. Vui lòng thử lại.");
+            //alert("Có lỗi xảy ra khi tạo audio. Vui lòng thử lại.");
+            setToast({
+                show: true,
+                message: 'Có lỗi xảy ra khi tạo audio. Vui lòng thử lại.',
+                type: 'error'
+            });
         } finally {
             setIsGeneratingAudio(false);
         }
@@ -408,8 +514,12 @@ function AdminReading() {
 
                             <div className={cx("formGrid")}>
                                 <div className={cx("field")}>
-                                    <label className={cx("label")}>Tiêu đề</label>
+                                    <div className={cx("labelWrapper")}>
+                                        <label className={cx("label")}>Tiêu đề</label>
+                                        <span className={cx("requiredStar")}>*</span>
+                                    </div>
                                     <Input
+                                        ref={titleRef}
                                         value={editingArticle.title}
                                         onChange={(e) =>
                                             handleChangeField("title", e.target.value)
@@ -417,11 +527,16 @@ function AdminReading() {
                                         className={cx("input")}
                                         placeholder="Nhập tiêu đề bài đọc"
                                     />
+                                    {errors.title && <p className={cx("errorText")}>{errors.title}</p>}
                                 </div>
 
                                 <div className={cx("field")}>
-                                    <label className={cx("label")}>Link bài viết gốc</label>
+                                    <div className={cx("labelWrapper")}>
+                                        <label className={cx("label")}>Link bài viết gốc</label>
+                                        <span className={cx("requiredStar")}>*</span>
+                                    </div>
                                     <Input
+                                        ref={linkRef}
                                         value={editingArticle.link || ""}
                                         onChange={(e) =>
                                             handleChangeField("link", e.target.value)
@@ -429,11 +544,16 @@ function AdminReading() {
                                         className={cx("input")}
                                         placeholder="https://example.com/article"
                                     />
+                                    {errors.link && <p className={cx("errorText")}>{errors.link}</p>}
                                 </div>
 
                                 <div className={cx("field", "fieldFull")}>
-                                    <label className={cx("label")}>Nội dung</label>
+                                    <div className={cx("labelWrapper")}>
+                                        <label className={cx("label")}>Nội dung</label>
+                                        <span className={cx("requiredStar")}>*</span>
+                                    </div>
                                     <textarea
+                                        ref={contentRef}
                                         value={editingArticle.content}
                                         onChange={(e) =>
                                             handleChangeField("content", e.target.value)
@@ -442,12 +562,17 @@ function AdminReading() {
                                         rows={4}
                                         placeholder="Nhập đoạn văn tiếng Nhật..."
                                     />
+                                    {errors.content && <p className={cx("errorText")}>{errors.content}</p>}
                                 </div>
 
                                 {/* Ảnh minh họa */}
                                 <div className={cx("field")}>
-                                    <label className={cx("label")}>Ảnh minh họa (URL)</label>
+                                    <div className={cx("labelWrapper")}>
+                                        <label className={cx("label")}>Ảnh minh họa (URL)</label>
+                                        <span className={cx("requiredStar")}>*</span>
+                                    </div>
                                     <Input
+                                        ref={imageUrlRef}
                                         value={editingArticle.imagePreview || ""}
                                         onChange={(e) =>
                                             handleChangeField("imagePreview", e.target.value)
@@ -455,6 +580,7 @@ function AdminReading() {
                                         className={cx("input")}
                                         placeholder="https://example.com/image.jpg"
                                     />
+                                    {errors.imageUrl && <p className={cx("errorText")}>{errors.imageUrl}</p>}
                                     {editingArticle.imagePreview && (
                                         <div className={cx("imagePreviewWrap")}>
                                             <img
@@ -468,7 +594,10 @@ function AdminReading() {
 
                                 {/* Audio */}
                                 <div className={cx("field", "fieldFull")}>
-                                    <label className={cx("label")}>Audio</label>
+                                    <div className={cx("labelWrapper")}>
+                                        <label className={cx("label")}>Audio</label>
+                                        <span className={cx("requiredStar")}>*</span>
+                                    </div>
 
                                     {/* Radio buttons cho loại input */}
                                     <div className={cx("audioTypeSelector")}>
@@ -502,22 +631,20 @@ function AdminReading() {
                                     {audioInputType === "link" ? (
                                         <div className={cx("audioLinkInput")}>
                                             <Input
+                                                ref={audioLinkRef}
                                                 value={editingArticle.audioLink || ""}
                                                 onChange={(e) => handleAudioLinkChange(e.target.value)}
                                                 className={cx("input")}
                                                 placeholder="Nhập URL của file audio (ví dụ: https://example.com/audio.mp3)"
                                             />
-                                            {editingArticle.audioLink && !editingArticle.audioPreview && (
-                                                <p className={cx("linkHint")}>
-                                                    Link chưa hợp lệ. Vui lòng nhập URL đầy đủ (bắt đầu bằng http:// hoặc https://)
-                                                </p>
-                                            )}
+                                            {errors.audioLink && <p className={cx("errorText")}>{errors.audioLink}</p>}
                                         </div>
                                     ) : (
                                         <div className={cx("generateAudioSection")}>
                                             <p className={cx("generateHint")}>
                                                 Audio sẽ được tạo từ nội dung bài đọc bằng công nghệ text-to-speech
                                             </p>
+                                            {errors.audioLink && <p className={cx("errorText")}>{errors.audioLink}</p>}
                                             <Button
                                                 primary
                                                 leftIcon={<FontAwesomeIcon icon={faMagic} />}
@@ -695,6 +822,25 @@ function AdminReading() {
                     </div>
                 </div>
             </main>
+
+
+            {/* Toast Notification */}
+            {toast.show && (
+                <div className={cx("toast", toast.type)}>
+                    <div className={cx("toast-content")}>
+                        <span className={cx("toast-icon")}>
+                            {toast.type === 'success' ? '✓' : '⚠'}
+                        </span>
+                        <span className={cx("toast-message")}>{toast.message}</span>
+                    </div>
+                    <button
+                        className={cx("toast-close")}
+                        onClick={() => setToast({ show: false, message: '', type: '' })}
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

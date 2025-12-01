@@ -29,6 +29,7 @@ function createSubQuestion(id) {
         options: ["", "", "", ""],
         correctAnswer: 0,
         explanation: "",
+        score: 1,
     };
 }
 
@@ -291,7 +292,8 @@ function CreateTest() {
                         content: question.subQuestions.map(sub => ({
                             question: sub.question || "",
                             answers: sub.options,
-                            correctAnswer: sub.correctAnswer
+                            correctAnswer: sub.correctAnswer,
+                            score: sub.score
                         })),
                         correct_answers: question.subQuestions.map(sub => sub.correctAnswer)
                     };
@@ -821,6 +823,28 @@ function CreateTest() {
                                                             rows={2}
                                                         />
                                                     </div>
+
+                                                    <div className={cx("field")} style={{ marginTop: "12px" }}  >
+                                                        <label className={cx("label")}>
+                                                            Điểm cho câu hỏi
+                                                        </label>
+
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Nhập điểm..."
+                                                            value={sub.score}
+                                                            onChange={(e) =>
+                                                                updateSubQuestion(
+                                                                    currentQuestion.id,
+                                                                    sub.id,
+                                                                    "score",
+                                                                    Number(e.target.value)
+                                                                )
+                                                            }
+                                                            className={cx("input")}
+                                                        />
+                                                    </div>
+
                                                 </div>
                                             ))}
                                         </div>

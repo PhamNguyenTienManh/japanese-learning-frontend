@@ -41,5 +41,24 @@ export async function createNews(dto) {
         throw new Error(`Failed to create news: ${response.statusText}`);
     }
 
-    return response.json(); // trả về News object từ backend
+    return response.json();
 }
+
+
+export async function updateNews(id, dto) {
+    const response = await fetch(`${BASE_URL}/news/${id}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dto),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to update news: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+

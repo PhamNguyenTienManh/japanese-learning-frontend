@@ -15,6 +15,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { getExamDetail } from "~/services/examService";
 import { saveAnswers, submitExam } from "~/services/examService"; // Import API functions
+import PopupModal from "~/components/Popup";
 
 const cx = classNames.bind(styles);
 
@@ -102,6 +103,55 @@ function TestRunner() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [examResultId, setExamResultId] = useState(null);
+
+  // Hiển thị PopupModal
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  // Hiển thị popup xác nhận thoát
+  const [showConfirmExit, setShowConfirmExit] = useState(false);
+
+  // Chặn reload + đóng tab
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  // Chặn nút Back
+  useEffect(() => {
+    const handlePopState = () => {
+      setShowConfirmExit(true); // mở popup
+      setShowConfirm(false);
+      window.history.pushState(null, "", window.location.href); // giữ lại trang
+    };
+
+    window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  // Khi người dùng nhấn "OK" ở popup → out về trang chủ
+  const confirmExit = () => {
+    setShowConfirmExit(false);
+    navigate(`/practice/${level}`);
+  };
+
+  // Khi nhấn hủy → đóng popup
+  const cancelExit = () => {
+    setShowConfirmExit(false);
+  };
+
+
 
   // Lấy examResultId từ localStorage khi component mount
   useEffect(() => {
@@ -311,6 +361,10 @@ function TestRunner() {
     }
   };
 
+  const handleConfirmSubmit = () => {
+    setShowConfirm(true);
+  };
+
   // Hàm nộp bài
   const handleSubmit = async () => {
     if (!examResultId) {
@@ -318,20 +372,21 @@ function TestRunner() {
       return;
     }
 
-    const confirmSubmit = window.confirm(
-      "Bạn có chắc chắn muốn nộp bài? Sau khi nộp bạn không thể thay đổi câu trả lời."
-    );
+    // const confirmSubmit = window.confirm(
+    //   "Bạn có chắc chắn muốn nộp bài? Sau khi nộp bạn không thể thay đổi câu trả lời."
+    // );
 
-    if (!confirmSubmit) return;
+    // if (!confirmSubmit) return;
 
     try {
       setIsSubmitting(true);
+      setShowConfirm(false);
 
       // Submit exam
       const response = await submitExam(examResultId);
 
       if (response.success) {
-        alert("Nộp bài thành công!");
+        //alert("Nộp bài thành công!");
 
         // Clear localStorage
         localStorage.removeItem("currentExamResultId");
@@ -350,6 +405,11 @@ function TestRunner() {
       setIsSubmitting(false);
     }
   };
+
+  const handleCancel = () => {
+    setShowConfirm(false);
+  };
+
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -449,6 +509,25 @@ function TestRunner() {
             </div>
           </div>
         </main>
+
+        <PopupModal
+          visible={showConfirm}
+          onConfirm={handleSubmit}
+          onCancel={handleCancel}
+          title="Xác nhận nộp bài"
+          message="Bạn có chắc chắn muốn nộp bài? Sau khi nộp bạn không thể thay đổi câu trả lời."
+          confirmText="Nộp bài"
+        />
+
+        <PopupModal
+          visible={showConfirmExit}
+          onConfirm={confirmExit}
+          onCancel={cancelExit}
+          title="Xác nhận thoát"
+          message="Bạn có chắc chắn muốn rời khỏi bài thi không? Tất cả tiến trình sẽ bị mất."
+          confirmText="Thoát"
+        />
+
       </div>
     );
   }
@@ -639,7 +718,7 @@ function TestRunner() {
                 <Button
                   primary
                   className={cx("submit-btn")}
-                  onClick={handleSubmit}
+                  onClick={handleConfirmSubmit}
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? "Đang nộp..." : "Nộp bài"}
@@ -703,6 +782,25 @@ function TestRunner() {
           </div>
         </div>
       </main>
+
+      <PopupModal
+        visible={showConfirm}
+        onConfirm={handleSubmit}
+        onCancel={handleCancel}
+        title="Xác nhận nộp bài"
+        message="Bạn có chắc chắn muốn nộp bài? Sau khi nộp bạn không thể thay đổi câu trả lời."
+        confirmText="Nộp bài"
+      />
+
+      <PopupModal
+        visible={showConfirmExit}
+        onConfirm={confirmExit}
+        onCancel={cancelExit}
+        title="Xác nhận thoát"
+        message="Bạn có chắc chắn muốn rời khỏi bài thi không? Tất cả tiến trình sẽ bị mất."
+        confirmText="Thoát"
+      />
+
     </div>
   );
 }
