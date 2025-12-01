@@ -80,8 +80,8 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
           },
         };
 
-        // Map API
-        let mappedTests = apiTests.map((t) => {
+        // Map API những đề thi có status published
+        let mappedTests = apiTests.filter((t) => t.status === "published").map((t) => {
           const defaults = levelDefaults[t.level] || {};
           return {
             id: t._id,
@@ -97,7 +97,7 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
           };
         });
 
-        // --- GỌI API CHECK STATUS CHO TỪNG ĐỀ ---
+        // CHECK trạng thái làm bài của user với từng đề
         const statusPromises = mappedTests.map(async (test) => {
           try {
             const statusRes = await checkExamStatus(test.id);
@@ -109,7 +109,6 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
             return {
               ...test,
               completed,
-              score: test.score || null, // tạm thời chưa có score từ API này
             };
           } catch (e) {
             console.error(e);
@@ -123,7 +122,7 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
         setTests(mappedTests);
       } catch (err) {
         console.error("Lỗi khi tải đề thi:", err);
-        setTests([]); // nếu lỗi thì trả về rỗng
+        setTests([]);
       }
     }
 

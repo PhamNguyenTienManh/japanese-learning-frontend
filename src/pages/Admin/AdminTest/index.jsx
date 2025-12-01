@@ -12,7 +12,7 @@ import Button from "~/components/Button";
 import Input from "~/components/Input";
 
 import styles from "./AdminTest.module.scss";
-import { getExamsByLevel } from "~/services/examService";
+import { getExamsByLevel, updateExam } from "~/services/examService";
 
 const cx = classNames.bind(styles);
 
@@ -69,8 +69,7 @@ function AdminTest() {
             )
         );
 
-        // TODO: Gọi API để cập nhật server
-        // updateExamStatus(id, newStatus).catch(err => console.error(err));
+        updateExam(id, { "status": newStatus });
     };
 
     return (
