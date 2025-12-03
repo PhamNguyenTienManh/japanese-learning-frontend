@@ -214,10 +214,35 @@
   box-sizing: border-box;
 }
 
+// .statusSelect {
+//   padding: 8.5px 10px;
+//   border-radius: 6px;
+//   border: 1px solid #ccc;
+//   cursor: pointer;
+//   margin-left: 0;
+// }
+
 .statusSelect {
-  padding: 8.5px 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  padding: 8.5px 12px;
+  border-radius: 8px;
+  border: 1px solid #bfbfbf;
+  background: #fafafa;
   cursor: pointer;
-  margin-left: 0; // bỏ lệch
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.statusSelect:hover {
+  border-color: #888;
+}
+
+.statusSelect:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  outline: none;
+}
+
+.statusSelect option {
+  padding: 12px;
+  font-size: 14px;
 }

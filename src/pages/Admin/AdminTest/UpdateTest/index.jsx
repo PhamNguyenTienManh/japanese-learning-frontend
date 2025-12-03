@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -19,6 +19,7 @@ import { uploadVoice } from "~/services/textToSpeechService";
 
 import styles from "./UpdateTest.module.scss";
 import { createExamQuestion, deleteExamQuestion, getExamDetail, updateExam, updateExamQuestion } from "~/services/examService";
+import PopupModal from "~/components/Popup";
 
 const cx = classNames.bind(styles);
 
@@ -40,6 +41,7 @@ function createParentQuestion(id) {
         id,
         type: "vocab",
         question: "",
+        listeningContent: "",
         audioFile: null,
         audioPreview: "",
         subQuestions: [createSubQuestion(id * 10 + 1)],
@@ -61,6 +63,25 @@ function EditTest() {
     const [isLoading, setIsLoading] = useState(true);
     const [examId, setExamId] = useState(null);
     const [parts, setParts] = useState([]);
+    const [toast, setToast] = useState(false);
+    const [errors, setErrors] = useState({});
+
+    const titleRef = useRef(null);
+    const questionContentRef = useRef(null);
+    const subQuestionContentRef = useRef(null);
+
+    // Hiển thị PopupModal
+    const [showConfirm, setShowConfirm] = useState(false);
+
+    const handleCancel = () => {
+        setShowConfirm(false);
+    };
+
+    const handleConfirmSave = () => {
+        setShowConfirm(true);
+    };
+
+
 
     // Map kind to type
     const getQuestionType = (kind) => {
@@ -84,6 +105,16 @@ function EditTest() {
     const getLevelNumber = (levelStr) => {
         return parseInt(levelStr.replace("N", ""), 10);
     };
+
+    // Auto hide toast after 3 seconds
+    useEffect(() => {
+        if (toast.show) {
+            const timer = setTimeout(() => {
+                setToast({ show: false, message: '', type: '' });
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast.show]);
 
     // Load data từ API
     useEffect(() => {
@@ -125,6 +156,7 @@ function EditTest() {
                                 partId: partData.partId,
                                 type: questionType,
                                 question: q.title || "",
+                                listeningContent: q.general?.txt_read || "",
                                 audioFile: q.general?.audio ? { type: "link", url: q.general.audio } : null,
                                 audioPreview: q.general?.audio || "",
                                 subQuestions: q.content.map((subQ, subIndex) => ({
@@ -151,7 +183,12 @@ function EditTest() {
                 }
             } catch (error) {
                 console.error("Error loading exam:", error);
-                alert("Có lỗi xảy ra khi tải đề thi: " + error.message);
+                //alert("Có lỗi xảy ra khi tải đề thi: " + error.message);
+                setToast({
+                    show: true,
+                    message: 'Có lỗi xảy ra khi tải đề thi: ' + error.message,
+                    type: 'error'
+                });
             } finally {
                 setIsLoading(false);
             }
@@ -182,7 +219,12 @@ function EditTest() {
                 console.log("Delete exam question", question._id)
             } catch (error) {
                 console.error("Error deleting question:", error);
-                alert("Có lỗi xảy ra khi xóa câu hỏi");
+                //alert("Có lỗi xảy ra khi xóa câu hỏi");
+                setToast({
+                    show: true,
+                    message: 'Có lỗi xảy ra khi xóa câu hỏi',
+                    type: 'error'
+                });
                 return;
             }
         }
@@ -209,26 +251,48 @@ function EditTest() {
         }
     };
 
+    // const handleAudioLinkChange = (link) => {
+    //     const currentQuestion = questions[currentQuestionIndex];
+    //     if (!currentQuestion) return;
+
+    //     const isValidLink = link.startsWith("http://") || link.startsWith("https://");
+
+    //     updateQuestion(currentQuestion.id, "audioPreview", isValidLink ? link : "");
+    //     updateQuestion(currentQuestion.id, "audioFile", isValidLink ? { type: "link", url: link } : null);
+    // };
+
     const handleAudioLinkChange = (link) => {
         const currentQuestion = questions[currentQuestionIndex];
         if (!currentQuestion) return;
 
+        // luôn cập nhật raw input vào audioPreview
+        updateQuestion(currentQuestion.id, "audioPreview", link);
+
         const isValidLink = link.startsWith("http://") || link.startsWith("https://");
 
-        updateQuestion(currentQuestion.id, "audioPreview", isValidLink ? link : "");
-        updateQuestion(currentQuestion.id, "audioFile", isValidLink ? { type: "link", url: link } : null);
+        // chỉ set audioFile khi hợp lệ
+        updateQuestion(
+            currentQuestion.id,
+            "audioFile",
+            isValidLink ? { type: "link", url: link } : null
+        );
     };
 
     const handleGenerateAudio = async () => {
         const currentQuestion = questions[currentQuestionIndex];
         if (!currentQuestion || !currentQuestion.question.trim()) {
-            alert("Vui lòng nhập nội dung câu hỏi trước khi tạo audio");
+            //alert("Vui lòng nhập nội dung câu hỏi trước khi tạo audio");
+            setToast({
+                show: true,
+                message: 'Vui lòng nhập nội dung câu hỏi trước khi tạo audio',
+                type: 'error'
+            });
             return;
         }
 
         setIsGeneratingAudio(true);
         try {
-            const result = await uploadVoice(currentQuestion.question, 6);
+            const result = await uploadVoice(currentQuestion.listeningContent, 6);
 
             if (result && result.success && result.data) {
                 const audioUrl = result.data.audioUrl;
@@ -236,13 +300,23 @@ function EditTest() {
                 updateQuestion(currentQuestion.id, "audioPreview", audioUrl);
                 updateQuestion(currentQuestion.id, "audioFile", { type: "generated", url: audioUrl });
 
-                alert("Tạo audio thành công!");
+                //alert("Tạo audio thành công!");
+                setToast({
+                    show: true,
+                    message: 'Tạo audio thành công!',
+                    type: 'success'
+                });
             } else {
                 throw new Error("Không nhận được URL audio");
             }
         } catch (error) {
             console.error("Error generating audio:", error);
-            alert("Có lỗi xảy ra khi tạo audio. Vui lòng thử lại!");
+            //alert("Có lỗi xảy ra khi tạo audio. Vui lòng thử lại!");
+            setToast({
+                show: true,
+                message: 'Có lỗi xảy ra khi tạo audio. Vui lòng thử lại!',
+                type: 'error'
+            });
         } finally {
             setIsGeneratingAudio(false);
         }
@@ -329,18 +403,41 @@ function EditTest() {
     };
 
     const handleSave = async () => {
+        let newErrors = {};
         if (!testTitle.trim()) {
-            alert("Vui lòng nhập tiêu đề đề thi");
+            newErrors.title = "Tiêu đề không được để trống";
+            titleRef.current?.focus();
+        }
+
+        questions.forEach((q, qIndex) => {
+            // Kiểm tra câu hỏi cha rỗng
+            if (!q.question.trim()) {
+                setCurrentQuestionIndex(qIndex);
+                newErrors.questContent = "Nội dung câu hỏi không được để trống";
+                questionContentRef.current?.focus();
+            }
+
+            // Kiểm tra từng sub-question
+            q.subQuestions.forEach((sub) => {
+                if (!sub.question.trim()) {
+                    setCurrentQuestionIndex(qIndex);
+                    newErrors.subQuestionContent = "Câu hỏi con không được để trống";
+                    subQuestionContentRef.current?.focus();
+                }
+            });
+        });
+
+        setErrors({})
+        setIsSaving(true);
+        setShowConfirm(false);
+
+        // Nếu có lỗi → không save
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            setIsSaving(false);
             return;
         }
 
-        const confirmSave = window.confirm(
-            "Bạn có chắc chắn muốn lưu các thay đổi?"
-        );
-
-        if (!confirmSave) return;
-
-        setIsSaving(true);
         try {
             const examData = {
                 title: testTitle,
@@ -382,6 +479,7 @@ function EditTest() {
 
                     if (type === "listening" && question.audioPreview) {
                         questionData.general.audio = question.audioPreview;
+                        questionData.general.txt_read = question.listeningContent;
                     }
 
                     if (question._id) {
@@ -398,11 +496,23 @@ function EditTest() {
                 }
             }
 
-            alert("Cập nhật đề thi thành công!");
-            navigate("/admin/tests");
+            //alert("Cập nhật đề thi thành công!");
+            setToast({
+                show: true,
+                message: 'Cập nhật đề thi thành công!',
+                type: 'success'
+            });
+            setTimeout(() => {
+                navigate("/admin/tests");
+            }, 1000);
         } catch (error) {
             console.error("Error updating exam:", error);
-            alert("Có lỗi xảy ra khi cập nhật đề thi: " + error.message);
+            //alert("Có lỗi xảy ra khi cập nhật đề thi: " + error.message);
+            setToast({
+                show: true,
+                message: 'Có lỗi xảy ra khi cập nhật đề thi: ' + error.message,
+                type: 'error'
+            });
         } finally {
             setIsSaving(false);
         }
@@ -447,13 +557,18 @@ function EditTest() {
                         <h2 className={cx("sectionTitle")}>Thông tin đề thi</h2>
                         <div className={cx("infoGrid")}>
                             <div className={cx("field")}>
-                                <label className={cx("label")}>Tiêu đề đề thi</label>
+                                <div className={cx("labelWrapper")}>
+                                    <label className={cx("label")}>Tiêu đề đề thi</label>
+                                    <span className={cx("requiredStar")}>*</span>
+                                </div>
                                 <Input
+                                    ref={titleRef}
                                     placeholder="VD: JLPT N5 - Đề số 1"
                                     value={testTitle}
                                     onChange={(e) => setTestTitle(e.target.value)}
                                     className={cx("input")}
                                 />
+                                {errors.title && <p className={cx("errorText")}>{errors.title}</p>}
                             </div>
                             <div className={cx("field")}>
                                 <label className={cx("label")}>Cấp độ</label>
@@ -712,12 +827,16 @@ function EditTest() {
                                     </div>
 
                                     <div className={cx("field")}>
-                                        <label className={cx("label")}>
-                                            {currentQuestion.type === "listening"
-                                                ? "Hướng dẫn / nội dung phần nghe"
-                                                : "Nội dung chung (đoạn văn / phần mô tả)"}
-                                        </label>
+                                        <div className={cx("labelWrapper")}>
+                                            <label className={cx("label")}>
+                                                "Nội dung chung (đoạn văn / phần mô tả)"
+                                            </label>
+                                            <span className={cx("requiredStar")}>*</span>
+                                        </div>
+
+                                        {/* Ô nhập nội dung chung */}
                                         <textarea
+                                            ref={questionContentRef}
                                             placeholder="Nhập nội dung câu hỏi..."
                                             value={currentQuestion.question}
                                             onChange={(e) =>
@@ -730,7 +849,32 @@ function EditTest() {
                                             className={cx("textarea")}
                                             rows={3}
                                         />
+                                        {errors.questContent && <p className={cx("errorText")}>{errors.questContent}</p>}
+
+                                        {/* Nếu là phần nghe thì hiện thêm textarea cho nd thi nghe */}
+                                        {currentQuestion.type === "listening" && (
+                                            <div>
+                                                <label className={cx("label")}>
+                                                    "Nội dung phần nghe"
+                                                </label>
+                                                <textarea
+                                                    placeholder="Nhập nội dung phần nghe..."
+                                                    value={currentQuestion.listeningContent || ""}
+                                                    onChange={(e) =>
+                                                        updateQuestion(
+                                                            currentQuestion.id,
+                                                            "listeningContent",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className={cx("textarea")}
+                                                    rows={3}
+                                                    style={{ marginTop: "10px" }}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
+
 
                                     {currentQuestion.type === "listening" && (
                                         <div className={cx("field")}>
@@ -766,11 +910,12 @@ function EditTest() {
                                             {audioInputType === "link" ? (
                                                 <div className={cx("audioLinkInput")}>
                                                     <Input
-                                                        value={
-                                                            currentQuestion.audioFile?.type === "link"
-                                                                ? currentQuestion.audioFile.url
-                                                                : ""
-                                                        }
+                                                        // value={
+                                                        //     currentQuestion.audioFile?.type === "link"
+                                                        //         ? currentQuestion.audioFile.url
+                                                        //         : ""
+                                                        // }
+                                                        value={currentQuestion.audioPreview || ""}
                                                         onChange={(e) => handleAudioLinkChange(e.target.value)}
                                                         className={cx("input")}
                                                         placeholder="Nhập URL của file audio (ví dụ: https://example.com/audio.mp3)"
@@ -785,7 +930,7 @@ function EditTest() {
                                                         primary
                                                         leftIcon={<FontAwesomeIcon icon={faMagic} />}
                                                         onClick={handleGenerateAudio}
-                                                        disabled={isGeneratingAudio || !currentQuestion.question.trim()}
+                                                        disabled={isGeneratingAudio || !currentQuestion.listeningContent.trim()}
                                                     >
                                                         {isGeneratingAudio ? "Đang tạo audio..." : "Tạo audio"}
                                                     </Button>
@@ -842,8 +987,12 @@ function EditTest() {
                                                     </div>
 
                                                     <div className={cx("field")}>
-                                                        <label className={cx("label")}>Câu hỏi</label>
+                                                        <div className={cx("labelWrapper")}>
+                                                            <label className={cx("label")}>Câu hỏi</label>
+                                                            <span className={cx("requiredStar")}>*</span>
+                                                        </div>
                                                         <textarea
+                                                            ref={subQuestionContentRef}
                                                             placeholder="Nhập nội dung câu hỏi con..."
                                                             value={sub.question}
                                                             onChange={(e) =>
@@ -857,6 +1006,7 @@ function EditTest() {
                                                             className={cx("textarea")}
                                                             rows={2}
                                                         />
+                                                        {errors.subQuestionContent && <p className={cx("errorText")}>{errors.subQuestionContent}</p>}
                                                     </div>
 
                                                     <div className={cx("optionsEdit")}>
@@ -963,7 +1113,7 @@ function EditTest() {
                                 </Link>
                                 <Button
                                     primary
-                                    onClick={handleSave}
+                                    onClick={handleConfirmSave}
                                     disabled={isSaving}
                                 >
                                     {isSaving ? "Đang lưu..." : "Cập nhật"}
@@ -973,6 +1123,33 @@ function EditTest() {
                     </div>
                 </div>
             </main>
+
+            {/* Toast Notification */}
+            {toast.show && (
+                <div className={cx("toast", toast.type)}>
+                    <div className={cx("toast-content")}>
+                        <span className={cx("toast-icon")}>
+                            {toast.type === 'success' ? '✓' : '⚠'}
+                        </span>
+                        <span className={cx("toast-message")}>{toast.message}</span>
+                    </div>
+                    <button
+                        className={cx("toast-close")}
+                        onClick={() => setToast({ show: false, message: '', type: '' })}
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
+
+            <PopupModal
+                visible={showConfirm}
+                onConfirm={handleSave}
+                onCancel={handleCancel}
+                title="Xác nhận cập nhật đề thi"
+                message="Bạn có chắc chắn muốn lưu các thay đổi?"
+                confirmText="Xác nhận"
+            />
         </div>
     );
 }
