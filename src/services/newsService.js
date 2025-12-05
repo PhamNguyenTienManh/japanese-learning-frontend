@@ -33,6 +33,7 @@ export async function createNews(dto) {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
+            ...getAuthHeaders(),
         },
         body: JSON.stringify(dto),
     });
@@ -50,6 +51,7 @@ export async function updateNews(id, dto) {
         method: "PATCH",
         headers: {
             "Content-Type": "application/json",
+            ...getAuthHeaders(),
         },
         body: JSON.stringify(dto),
     });
