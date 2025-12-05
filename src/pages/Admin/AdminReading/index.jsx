@@ -71,7 +71,7 @@ function AdminReading() {
         if (toast.show) {
             const timer = setTimeout(() => {
                 setToast({ show: false, message: '', type: '' });
-            }, 4000);
+            }, 3000);
             return () => clearTimeout(timer);
         }
     }, [toast.show]);
@@ -92,7 +92,7 @@ function AdminReading() {
                         difficulty: item.type,
                         level: item.level || 1,
                         date: new Date(item.dateField).toLocaleDateString('vi-VN'),
-                        read: item.publish || false,
+                        published: item.published || false,
                     }));
 
                     setArticles(transformedArticles);
@@ -130,7 +130,7 @@ function AdminReading() {
             content: "",
             difficulty: "easy",
             level: 1,
-            read: false,
+            published: false,
             audioDuration: 0,
             imageFile: null,
             imagePreview: "",
@@ -171,7 +171,7 @@ function AdminReading() {
 
     const handleToggleRead = () => {
         setEditingArticle((prev) =>
-            prev ? { ...prev, read: !prev.read } : prev
+            prev ? { ...prev, published: !prev.published } : prev
         );
     };
 
@@ -247,7 +247,7 @@ function AdminReading() {
                         textbody: editingArticle.content,
                     },
                     level: editingArticle.level,
-                    publish: editingArticle.read,
+                    published: editingArticle.published,
                 };
 
                 // Gọi API tạo news
@@ -266,7 +266,7 @@ function AdminReading() {
                         difficulty: editingArticle.difficulty,
                         level: editingArticle.level,
                         date: new Date().toLocaleDateString('vi-VN'),
-                        read: editingArticle.read,
+                        published: editingArticle.published,
                     };
                     console.log("ehehe", newArticle)
                     setArticles((prev) => [newArticle, ...prev]);
@@ -288,7 +288,7 @@ function AdminReading() {
                         textbody: editingArticle.content || "",
                     },
                     level: editingArticle.level,
-                    publish: editingArticle.read,
+                    published: editingArticle.published,
                 };
                 const response = await updateNews(editingArticle.id, newsDto);
 
@@ -319,6 +319,42 @@ function AdminReading() {
             });
         }
     };
+
+    const handleChangeStatus = async (articleId, value) => {
+        try {
+            let published = false
+            if (value === 'published')
+                published = true
+
+            const updateDto = {
+                published: published,
+            };
+            const response = await updateNews(articleId, updateDto);
+
+            if (response.success) {
+                setToast({
+                    show: true,
+                    message: 'Cập nhật trạng thái thành công',
+                    type: 'success'
+                });
+            }
+
+            setArticles(prev =>
+                prev.map(a =>
+                    a.id === articleId ? { ...a, published: published } : a
+                )
+            );
+        } catch (err) {
+            setToast({
+                show: true,
+                message: 'Cập nhật trạng thái thất bại: ' + err,
+                type: 'error'
+            });
+
+        }
+
+    }
+
 
     const handleDelete = (id) => {
         if (!window.confirm("Bạn có chắc muốn xóa bài đọc này?")) return;
@@ -713,7 +749,7 @@ function AdminReading() {
                                     <label className={cx("checkboxRow")}>
                                         <input
                                             type="checkbox"
-                                            checked={editingArticle.read}
+                                            checked={editingArticle.published}
                                             onChange={handleToggleRead}
                                             className={cx("checkbox")}
                                         />
@@ -792,21 +828,25 @@ function AdminReading() {
                                         <Button
                                             outline
                                             rounded
-                                            leftIcon={<FontAwesomeIcon icon={faEye} />}
-                                        />
-                                        <Button
-                                            outline
-                                            rounded
                                             leftIcon={<FontAwesomeIcon icon={faPenToSquare} />}
                                             onClick={() => handleStartEdit(article)}
                                         />
-                                        <Button
+                                        <select
+                                            className={cx("statusSelect")}
+                                            value={article.published ? "published" : "hidden"}
+                                            onChange={(e) => handleChangeStatus(article.id, e.target.value)}
+                                        >
+                                            <option value="published">Công khai</option>
+                                            <option value="hidden">Ẩn</option>
+                                        </select>
+
+                                        {/* <Button
                                             outline
                                             rounded
                                             className={cx("dangerBtn")}
                                             leftIcon={<FontAwesomeIcon icon={faTrash} />}
                                             onClick={() => handleDelete(article.id)}
-                                        />
+                                        /> */}
                                     </div>
                                 </div>
                             </Card>
@@ -833,12 +873,16 @@ function AdminReading() {
                         </span>
                         <span className={cx("toast-message")}>{toast.message}</span>
                     </div>
+
                     <button
                         className={cx("toast-close")}
                         onClick={() => setToast({ show: false, message: '', type: '' })}
                     >
                         ×
                     </button>
+
+                    {/* Progress bar */}
+                    <div className={cx("toast-progress")}></div>
                 </div>
             )}
         </div>

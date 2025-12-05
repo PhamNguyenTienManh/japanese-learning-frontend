@@ -23,6 +23,7 @@ function AdminTest() {
     const [exams, setExams] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [toast, setToast] = useState(false);
 
     const navigate = useNavigate();
 
@@ -41,6 +42,15 @@ function AdminTest() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (toast.show) {
+            const timer = setTimeout(() => {
+                setToast({ show: false, message: '', type: '' });
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast.show]);
 
     useEffect(() => {
         fetchExams(levelFilter);
@@ -62,14 +72,33 @@ function AdminTest() {
     });
 
     // Xử lý thay đổi trạng thái
-    const handleChangeStatus = (id, newStatus) => {
-        setExams((prev) =>
-            prev.map((exam) =>
-                exam._id === id ? { ...exam, status: newStatus } : exam
-            )
-        );
+    const handleChangeStatus = async (id, newStatus) => {
+        try {
 
-        updateExam(id, { "status": newStatus });
+            const response = await updateExam(id, { "status": newStatus });
+            console.log("vv", response)
+            if (response.success) {
+                setToast({
+                    show: true,
+                    message: 'Cập nhật trạng thái thành công',
+                    type: 'success'
+                });
+            }
+
+            setExams((prev) =>
+                prev.map((exam) =>
+                    exam._id === id ? { ...exam, status: newStatus } : exam
+                )
+            );
+
+        } catch (err) {
+            setToast({
+                show: true,
+                message: 'Cập nhật trạng thái thất bại: ' + err,
+                type: 'error'
+            });
+
+        }
     };
 
     return (
@@ -201,6 +230,28 @@ function AdminTest() {
                     )}
                 </div>
             </main>
+
+            {/* Toast Notification */}
+            {toast.show && (
+                <div className={cx("toast", toast.type)}>
+                    <div className={cx("toast-content")}>
+                        <span className={cx("toast-icon")}>
+                            {toast.type === 'success' ? '✓' : '⚠'}
+                        </span>
+                        <span className={cx("toast-message")}>{toast.message}</span>
+                    </div>
+
+                    <button
+                        className={cx("toast-close")}
+                        onClick={() => setToast({ show: false, message: '', type: '' })}
+                    >
+                        ×
+                    </button>
+
+                    {/* Progress bar */}
+                    <div className={cx("toast-progress")}></div>
+                </div>
+            )}
         </div>
     );
 }

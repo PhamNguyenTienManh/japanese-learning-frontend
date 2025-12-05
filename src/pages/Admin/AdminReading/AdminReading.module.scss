@@ -483,6 +483,31 @@
   color: red;
 }
 
+.statusSelect {
+  padding: 8.5px 12px;
+  border-radius: 8px;
+  border: 1px solid #bfbfbf;
+  background: #fafafa;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.statusSelect:hover {
+  border-color: #888;
+}
+
+.statusSelect:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  outline: none;
+}
+
+.statusSelect option {
+  padding: 12px;
+  font-size: 14px;
+}
+
 
 // ----------------------------Toast Notification-------------------------
 .toast {
@@ -500,6 +525,17 @@
   justify-content: space-between;
   z-index: 10000;
   animation: slideIn 0.3s ease-out;
+  overflow: hidden;
+
+  .toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    width: 100%;
+    transform-origin: right; // chạy từ phải → trái
+    animation: progress 3s linear forwards;
+  }
 
   &.success {
     border-left: 4px solid #10b981;
@@ -507,6 +543,10 @@
     .toast-icon {
       color: #10b981;
       background: #d1fae5;
+    }
+
+    .toast-progress {
+      background: #10b981;
     }
   }
 
@@ -517,8 +557,24 @@
       color: #ef4444;
       background: #fee2e2;
     }
+
+    .toast-progress {
+      background: #ef4444;
+    }
   }
 }
+
+
+@keyframes progress {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
 
 .toast-content {
   display: flex;

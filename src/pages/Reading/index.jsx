@@ -51,16 +51,18 @@ export default function Reading() {
 
                 if (response.success && response.data) {
                     // Transform API data to component format
-                    const transformedArticles = response.data.map(item => ({
-                        id: item._id,
-                        title: item.title,
-                        content: item.content.textbody,
-                        image: item.content.image,
-                        audioUrl: item.content.audio,
-                        difficulty: item.type,
-                        date: new Date(item.dateField).toLocaleDateString('vi-VN'),
-                        read: false,
-                    }));
+                    const transformedArticles = response.data
+                        .filter(item => item.published === true)
+                        .map(item => ({
+                            id: item._id,
+                            title: item.title,
+                            content: item.content.textbody,
+                            image: item.content.image,
+                            audioUrl: item.content.audio,
+                            difficulty: item.type,
+                            date: new Date(item.dateField).toLocaleDateString('vi-VN'),
+                            read: false,
+                        }));
 
                     setReadingArticles(transformedArticles);
                     if (transformedArticles.length > 0) {
@@ -310,9 +312,9 @@ export default function Reading() {
                                                 )}
                                             </div>
 
-                                            <span className={cx("moreLink")}>
+                                            {/* <span className={cx("moreLink")}>
                                                 Xem thêm →
-                                            </span>
+                                            </span> */}
                                         </div>
                                     </div>
                                 </Card>
