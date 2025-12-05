@@ -26,7 +26,7 @@ export default function Flashcards() {
   const [filteredCards, setFilteredCards] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
   const [showFilter, setShowFilter] = useState(false);
-  
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [completed, setCompleted] = useState(0);
@@ -65,12 +65,12 @@ export default function Flashcards() {
       setLoading(true);
       const data = await notebookService.getNotebooks();
       setNotebooks(data);
-      
+
       // Auto select first notebook if available
       if (data && data.length > 0) {
         setSelectedNotebook(data[0]._id);
       }
-      
+
       setError(null);
     } catch (err) {
       console.error("Failed to fetch notebooks:", err);
@@ -298,7 +298,7 @@ export default function Flashcards() {
                     ) : (
                       <div className={cx("back")}>
                         <p className={cx("meaning")}>{currentCard.mean}</p>
-                        
+
                         <div className={cx("meta")}>
                           <p className={cx("meta-hira")}>{currentCard.phonetic}</p>
                         </div>
@@ -323,9 +323,9 @@ export default function Flashcards() {
                     </Button>
 
                     <Button
+                      primary
                       onClick={handleNext}
                       disabled={currentIndex >= total - 1}
-                      className={"green"}
                     >
                       Tiếp theo
                       <FontAwesomeIcon

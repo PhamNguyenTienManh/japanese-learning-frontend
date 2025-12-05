@@ -19,11 +19,9 @@ import {
     getJlptWordsAdmin,
     updateJlptWord,
     deleteJlptWord,
-
     getJlptKanjiAdmin,
     updateJlptKanji,
     deleteJlptKanji,
-
     getJlptGrammarAdmin,
     updateJlptGrammar,
     deleteJlptGrammar,
@@ -33,6 +31,19 @@ import styles from "./DictionaryAdmin.module.scss";
 const BASE_URL = "http://localhost:9090/api";
 
 const cx = classNames.bind(styles);
+
+const TYPE_OPTIONS = [
+    "Danh từ",
+    "Động từ",
+    "Tính từ -i",
+    "Tính từ -na",
+    "Trạng từ",
+    "Trợ từ",
+    "Trợ động từ",
+    "Định từ",
+    "Liên từ",
+    "Thán từ",
+];
 
 function DictionaryAdmin() {
     const [activeTab, setActiveTab] = useState("words");
@@ -53,7 +64,7 @@ function DictionaryAdmin() {
             setFormState({
                 word: "",
                 phonetic: "",
-                type: "",
+                type: TYPE_OPTIONS[0],
                 meanings: "",
                 level: "N5",
                 isJlpt: true,
@@ -81,34 +92,93 @@ function DictionaryAdmin() {
 
     useEffect(() => {
         async function load() {
-            if (activeTab === "words") {
-                const res = await getJlptWordsAdmin(1, 9999, "", "");
-                setWords(res.data.data || []);
-            } else if (activeTab === "grammar") {
-                const res = await getJlptGrammarAdmin(1, 9999, "", "");
-                setGrammar(res.data.data || []);
-            } else {
-                const res = await getJlptKanjiAdmin(1, 9999, "", "");
-                setKanji(res.data.data || []);
+            try {
+                if (activeTab === "words") {
+                    const res = await getJlptWordsAdmin(1, 9999, "", "");
+                    setWords(res?.data?.data || res?.data || []);
+                } else if (activeTab === "grammar") {
+                    const res = await getJlptGrammarAdmin(1, 9999, "", "");
+                    setGrammar(res?.data?.data || res?.data || []);
+                } else {
+                    const res = await getJlptKanjiAdmin(1, 9999, "", "");
+                    setKanji(res?.data?.data || res?.data || []);
+                }
+            } catch (err) {
+                console.error("Load error:", err);
             }
         }
         load();
     }, [activeTab]);
 
-    // FILTER
+    const unwrapResp = (resJson) => {
+        if (!resJson) return null;
+        return resJson?.data?.data || resJson?.data || resJson || null;
+    };
+
+    // POST helpers (return created item or error)
+    async function createWord(payload) {
+        try {
+            const resp = await fetch(`${BASE_URL}/jlpt-word`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            const body = await resp.json().catch(() => null);
+            if (!resp.ok) return { ok: false, error: body || { status: resp.status } };
+            const newItem = unwrapResp(body);
+            if (!newItem) return { ok: false, error: body };
+            return { ok: true, item: newItem };
+        } catch (err) {
+            return { ok: false, error: err };
+        }
+    }
+
+    async function createGrammar(payload) {
+        try {
+            const resp = await fetch(`${BASE_URL}/jlpt-grammar`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            const body = await resp.json().catch(() => null);
+            if (!resp.ok) return { ok: false, error: body || { status: resp.status } };
+            const newItem = unwrapResp(body);
+            if (!newItem) return { ok: false, error: body };
+            return { ok: true, item: newItem };
+        } catch (err) {
+            return { ok: false, error: err };
+        }
+    }
+
+    async function createKanji(payload) {
+        try {
+            const resp = await fetch(`${BASE_URL}/jlpt-kanji`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            const body = await resp.json().catch(() => null);
+            if (!resp.ok) return { ok: false, error: body || { status: resp.status } };
+            const newItem = unwrapResp(body);
+            if (!newItem) return { ok: false, error: body };
+            return { ok: true, item: newItem };
+        } catch (err) {
+            return { ok: false, error: err };
+        }
+    }
+
     const filteredItems = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
 
         if (activeTab === "words") {
             return words.filter((w) => {
-                if (!w) return false;
-                if (w.isDeleted) return false;
+                if (!w || w.isDeleted) return false;
                 const matchLevel = levelFilter === "all" || w.level === levelFilter;
-                const meaningsTxt = (w.meanings || []).map(m => m.meaning).join(" ");
+                const meaningsTxt = (w.meanings || []).map((m) => m.meaning || "").join(" ");
                 const phoneticTxt = (w.phonetic || []).join(" ");
                 const matchSearch =
                     !q ||
-                    w.word.toLowerCase().includes(q) ||
+                    (w.word || "").toLowerCase().includes(q) ||
                     meaningsTxt.toLowerCase().includes(q) ||
                     phoneticTxt.toLowerCase().includes(q) ||
                     (w.type || "").toLowerCase().includes(q);
@@ -119,24 +189,24 @@ function DictionaryAdmin() {
 
         if (activeTab === "grammar") {
             return grammar.filter((g) => {
-                if (g.isDeleted) return false;
+                if (!g || g.isDeleted) return false;
                 const matchLevel = levelFilter === "all" || g.level === levelFilter;
                 const matchSearch =
                     !q ||
-                    g.title.toLowerCase().includes(q) ||
-                    g.mean.toLowerCase().includes(q);
+                    (g.title || "").toLowerCase().includes(q) ||
+                    (g.mean || "").toLowerCase().includes(q);
 
                 return matchLevel && matchSearch;
             });
         }
 
         return kanji.filter((k) => {
-            if (k.isDeleted) return false;
+            if (!k || k.isDeleted) return false;
             const matchLevel = levelFilter === "all" || k.level === levelFilter;
             const matchSearch =
                 !q ||
-                k.kanji.toLowerCase().includes(q) ||
-                k.mean.toLowerCase().includes(q) ||
+                (k.kanji || "").toLowerCase().includes(q) ||
+                (k.mean || "").toLowerCase().includes(q) ||
                 (k.kun || "").toLowerCase().includes(q) ||
                 (k.on || "").toLowerCase().includes(q);
 
@@ -156,65 +226,80 @@ function DictionaryAdmin() {
 
         if (editingItem) return handleUpdateItem();
 
-        // ADD NEW
         if (activeTab === "words") {
+            if (!formState.word || !formState.level || !formState.type) {
+                alert("Vui lòng điền đầy đủ: Từ, Loại từ, Level");
+                return;
+            }
+
             const payload = {
                 word: formState.word,
-                phonetic: formState.phonetic.split(",").map(s => s.trim()),
+                phonetic: formState.phonetic ? formState.phonetic.split(",").map((s) => s.trim()) : [],
                 type: formState.type,
-                meanings: formState.meanings.split(",").map(m => ({ meaning: m.trim() })),
+                meanings: formState.meanings
+                    ? formState.meanings.split(",").map((m) => ({ meaning: m.trim() }))
+                    : [],
                 level: formState.level,
-                isJlpt: true,
+                isJlpt: !!formState.isJlpt,
             };
 
-            const res = await fetch(`${BASE_URL}/jlpt-word`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            }).then(r => r.json());
+            const { ok, item, error } = await createWord(payload);
+            if (ok) {
+                setWords((prev) => [item, ...prev]);
+                setShowAddForm(false);
+            } else {
+                const msg = error?.message || error?.errors || "Thêm thất bại";
+                alert(Array.isArray(msg) ? msg.join(", ") : JSON.stringify(msg));
+            }
+        } else if (activeTab === "grammar") {
+            if (!formState.title || !formState.mean || !formState.level) {
+                alert("Vui lòng điền đầy đủ: Tiêu đề, Ý nghĩa, Level");
+                return;
+            }
 
-            setWords(prev => [res.data, ...prev]);
-        }
-
-        else if (activeTab === "grammar") {
+            // usages optional now. send empty array to be safe.
             const payload = {
                 title: formState.title,
                 mean: formState.mean,
                 level: formState.level,
-                isJlpt: true,
+                usages: [], // optional, backend accepts empty
+                isJlpt: !!formState.isJlpt,
             };
 
-            const res = await fetch(`${BASE_URL}/jlpt-grammar`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            }).then(r => r.json());
+            const { ok, item, error } = await createGrammar(payload);
+            if (ok) {
+                setGrammar((prev) => [item, ...prev]);
+                setShowAddForm(false);
+            } else {
+                const msg = error?.message || error?.errors || "Thêm thất bại";
+                alert(Array.isArray(msg) ? msg.join(", ") : JSON.stringify(msg));
+            }
+        } else {
+            if (!formState.kanji || !formState.mean || !formState.level) {
+                alert("Vui lòng điền đầy đủ: Kanji, Nghĩa, Level");
+                return;
+            }
 
-            setGrammar(prev => [res.data, ...prev]);
-        }
-
-        else {
             const payload = {
                 kanji: formState.kanji,
                 mean: formState.mean,
-                detail: formState.detail,
-                kun: formState.kun,
-                on: formState.on,
-                stroke_count: formState.stroke_count,
+                detail: formState.detail || "",
+                kun: formState.kun || "",
+                on: formState.on || "",
+                stroke_count: formState.stroke_count || "",
                 level: formState.level,
-                isJlpt: true,
+                isJlpt: !!formState.isJlpt,
             };
 
-            const res = await fetch(`${BASE_URL}/jlpt-kanji`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            }).then(r => r.json());
-
-            setKanji(prev => [res.data, ...prev]);
+            const { ok, item, error } = await createKanji(payload);
+            if (ok) {
+                setKanji((prev) => [item, ...prev]);
+                setShowAddForm(false);
+            } else {
+                const msg = error?.message || error?.errors || "Thêm thất bại";
+                alert(Array.isArray(msg) ? msg.join(", ") : JSON.stringify(msg));
+            }
         }
-
-        setShowAddForm(false);
     }
 
     async function handleUpdateItem() {
@@ -223,34 +308,27 @@ function DictionaryAdmin() {
         if (activeTab === "words") {
             const payload = {
                 word: formState.word,
-                phonetic: formState.phonetic.split(",").map(s => s.trim()),
+                phonetic: formState.phonetic ? formState.phonetic.split(",").map((s) => s.trim()) : [],
                 type: formState.type,
-                meanings: formState.meanings.split(",").map(m => ({ meaning: m.trim() })),
+                meanings: formState.meanings
+                    ? formState.meanings.split(",").map((m) => ({ meaning: m.trim() }))
+                    : [],
                 level: formState.level,
             };
 
             const updated = await updateJlptWord(editingItem._id, payload);
-
-            setWords(prev =>
-                prev.map(w => w._id === editingItem._id ? updated.data : w)
-            );
-        }
-
-        else if (activeTab === "grammar") {
+            setWords((prev) => prev.map((w) => (w._id === editingItem._id ? updated.data : w)));
+        } else if (activeTab === "grammar") {
             const payload = {
                 title: formState.title,
                 mean: formState.mean,
                 level: formState.level,
+                usages: editingItem?.usages || [], // keep existing usages if any, otherwise empty
             };
 
             const updated = await updateJlptGrammar(editingItem._id, payload);
-
-            setGrammar(prev =>
-                prev.map(g => g._id === editingItem._id ? updated.data : g)
-            );
-        }
-
-        else {
+            setGrammar((prev) => prev.map((g) => (g._id === editingItem._id ? updated.data : g)));
+        } else {
             const payload = {
                 kanji: formState.kanji,
                 mean: formState.mean,
@@ -262,31 +340,26 @@ function DictionaryAdmin() {
             };
 
             const updated = await updateJlptKanji(editingItem._id, payload);
-
-            setKanji(prev =>
-                prev.map(k => k._id === editingItem._id ? updated.data : k)
-            );
+            setKanji((prev) => prev.map((k) => (k._id === editingItem._id ? updated.data : k)));
         }
 
         setEditingItem(null);
         setShowAddForm(false);
     }
 
-    // DELETE
     async function handleDelete(id) {
         if (activeTab === "words") {
             await deleteJlptWord(id);
-            setWords(prev => prev.filter(w => w._id !== id));
+            setWords((prev) => prev.filter((w) => w._id !== id));
         } else if (activeTab === "grammar") {
             await deleteJlptGrammar(id);
-            setGrammar(prev => prev.filter(g => g._id !== id));
+            setGrammar((prev) => prev.filter((g) => g._id !== id));
         } else {
             await deleteJlptKanji(id);
-            setKanji(prev => prev.filter(k => k._id !== id));
+            setKanji((prev) => prev.filter((k) => k._id !== id));
         }
     }
 
-    // OPEN EDIT FORM
     function openEditForm(item) {
         setEditingItem(item);
         setShowAddForm(true);
@@ -295,23 +368,19 @@ function DictionaryAdmin() {
             setFormState({
                 word: item.word,
                 phonetic: (item.phonetic || []).join(", "),
-                type: item.type,
-                meanings: (item.meanings || []).map(m => m.meaning).join(", "),
+                type: item.type || TYPE_OPTIONS[0],
+                meanings: (item.meanings || []).map((m) => m.meaning).join(", "),
                 level: item.level,
                 isJlpt: item.isJlpt,
             });
-        }
-
-        else if (activeTab === "grammar") {
+        } else if (activeTab === "grammar") {
             setFormState({
                 title: item.title,
                 mean: item.mean,
                 level: item.level,
                 isJlpt: item.isJlpt,
             });
-        }
-
-        else {
+        } else {
             setFormState({
                 kanji: item.kanji,
                 mean: item.mean,
@@ -349,21 +418,33 @@ function DictionaryAdmin() {
                                 <div className={cx("tabs")}>
                                     <button
                                         className={cx("tabBtn", { active: activeTab === "words" })}
-                                        onClick={() => setActiveTab("words")}
+                                        onClick={() => {
+                                            setActiveTab("words");
+                                            setEditingItem(null);
+                                            setShowAddForm(false);
+                                        }}
                                     >
                                         Từ vựng
                                     </button>
 
                                     <button
                                         className={cx("tabBtn", { active: activeTab === "grammar" })}
-                                        onClick={() => setActiveTab("grammar")}
+                                        onClick={() => {
+                                            setActiveTab("grammar");
+                                            setEditingItem(null);
+                                            setShowAddForm(false);
+                                        }}
                                     >
                                         Ngữ pháp
                                     </button>
 
                                     <button
                                         className={cx("tabBtn", { active: activeTab === "kanji" })}
-                                        onClick={() => setActiveTab("kanji")}
+                                        onClick={() => {
+                                            setActiveTab("kanji");
+                                            setEditingItem(null);
+                                            setShowAddForm(false);
+                                        }}
                                     >
                                         Kanji
                                     </button>
@@ -393,7 +474,6 @@ function DictionaryAdmin() {
 
                             <form onSubmit={handleSubmitAdd}>
                                 <div className={cx("formGrid")}>
-
                                     {/* WORD FORM */}
                                     {activeTab === "words" && (
                                         <>
@@ -401,31 +481,39 @@ function DictionaryAdmin() {
                                                 <label className={cx("label")}>Từ</label>
                                                 <Input
                                                     value={formState.word}
-                                                    onChange={(e) => setFormState(s => ({ ...s, word: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, word: e.target.value }))}
                                                 />
                                             </div>
 
                                             <div className={cx("formField")}>
-                                                <label className={cx("label")}>Phonetic</label>
+                                                <label className={cx("label")}>Phonetic (phân tách bằng , )</label>
                                                 <Input
                                                     value={formState.phonetic}
-                                                    onChange={(e) => setFormState(s => ({ ...s, phonetic: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, phonetic: e.target.value }))}
                                                 />
                                             </div>
 
                                             <div className={cx("formField")}>
                                                 <label className={cx("label")}>Loại từ</label>
-                                                <Input
+                                                <select
+                                                    className={cx("select")}
                                                     value={formState.type}
-                                                    onChange={(e) => setFormState(s => ({ ...s, type: e.target.value }))}
-                                                />
+                                                    onChange={(e) => setFormState((s) => ({ ...s, type: e.target.value }))}
+                                                >
+                                                    <option value="">-- Chọn loại từ --</option>
+                                                    {TYPE_OPTIONS.map((t) => (
+                                                        <option key={t} value={t}>
+                                                            {t}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
 
                                             <div className={cx("formField")}>
-                                                <label className={cx("label")}>Nghĩa (,)</label>
+                                                <label className={cx("label")}>Nghĩa (phân tách bằng , )</label>
                                                 <Input
                                                     value={formState.meanings}
-                                                    onChange={(e) => setFormState(s => ({ ...s, meanings: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, meanings: e.target.value }))}
                                                 />
                                             </div>
 
@@ -434,7 +522,7 @@ function DictionaryAdmin() {
                                                 <select
                                                     className={cx("select")}
                                                     value={formState.level}
-                                                    onChange={(e) => setFormState(s => ({ ...s, level: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, level: e.target.value }))}
                                                 >
                                                     <option value="N5">N5</option>
                                                     <option value="N4">N4</option>
@@ -453,15 +541,15 @@ function DictionaryAdmin() {
                                                 <label className={cx("label")}>Tiêu đề</label>
                                                 <Input
                                                     value={formState.title}
-                                                    onChange={(e) => setFormState(s => ({ ...s, title: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, title: e.target.value }))}
                                                 />
                                             </div>
 
                                             <div className={cx("formField")}>
-                                                <label className={cx("label")}>Ý nghĩa</label>
+                                                <label className={cx("label")}>Ý nghĩa (tóm tắt)</label>
                                                 <Input
                                                     value={formState.mean}
-                                                    onChange={(e) => setFormState(s => ({ ...s, mean: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, mean: e.target.value }))}
                                                 />
                                             </div>
 
@@ -470,7 +558,7 @@ function DictionaryAdmin() {
                                                 <select
                                                     className={cx("select")}
                                                     value={formState.level}
-                                                    onChange={(e) => setFormState(s => ({ ...s, level: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, level: e.target.value }))}
                                                 >
                                                     <option value="N5">N5</option>
                                                     <option value="N4">N4</option>
@@ -489,7 +577,7 @@ function DictionaryAdmin() {
                                                 <label className={cx("label")}>Kanji</label>
                                                 <Input
                                                     value={formState.kanji}
-                                                    onChange={(e) => setFormState(s => ({ ...s, kanji: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, kanji: e.target.value }))}
                                                 />
                                             </div>
 
@@ -497,7 +585,7 @@ function DictionaryAdmin() {
                                                 <label className={cx("label")}>Nghĩa</label>
                                                 <Input
                                                     value={formState.mean}
-                                                    onChange={(e) => setFormState(s => ({ ...s, mean: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, mean: e.target.value }))}
                                                 />
                                             </div>
 
@@ -505,7 +593,7 @@ function DictionaryAdmin() {
                                                 <label className={cx("label")}>Detail</label>
                                                 <Input
                                                     value={formState.detail}
-                                                    onChange={(e) => setFormState(s => ({ ...s, detail: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, detail: e.target.value }))}
                                                 />
                                             </div>
 
@@ -513,7 +601,7 @@ function DictionaryAdmin() {
                                                 <label className={cx("label")}>Kun</label>
                                                 <Input
                                                     value={formState.kun}
-                                                    onChange={(e) => setFormState(s => ({ ...s, kun: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, kun: e.target.value }))}
                                                 />
                                             </div>
 
@@ -521,7 +609,7 @@ function DictionaryAdmin() {
                                                 <label className={cx("label")}>On</label>
                                                 <Input
                                                     value={formState.on}
-                                                    onChange={(e) => setFormState(s => ({ ...s, on: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, on: e.target.value }))}
                                                 />
                                             </div>
 
@@ -529,7 +617,7 @@ function DictionaryAdmin() {
                                                 <label className={cx("label")}>Stroke Count</label>
                                                 <Input
                                                     value={formState.stroke_count}
-                                                    onChange={(e) => setFormState(s => ({ ...s, stroke_count: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, stroke_count: e.target.value }))}
                                                 />
                                             </div>
 
@@ -538,7 +626,7 @@ function DictionaryAdmin() {
                                                 <select
                                                     className={cx("select")}
                                                     value={formState.level}
-                                                    onChange={(e) => setFormState(s => ({ ...s, level: e.target.value }))}
+                                                    onChange={(e) => setFormState((s) => ({ ...s, level: e.target.value }))}
                                                 >
                                                     <option value="N5">N5</option>
                                                     <option value="N4">N4</option>
@@ -549,7 +637,6 @@ function DictionaryAdmin() {
                                             </div>
                                         </>
                                     )}
-
                                 </div>
 
                                 <div className={cx("formActions")}>
@@ -575,11 +662,6 @@ function DictionaryAdmin() {
                     <Card className={cx("filterCard")}>
                         <div className={cx("filterRow")}>
                             <div className={cx("searchWrapper")}>
-                                <FontAwesomeIcon
-                                    icon={faMagnifyingGlass}
-                                    className={cx("searchIcon")}
-                                />
-
                                 <Input
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -612,7 +694,8 @@ function DictionaryAdmin() {
                     {/* LIST */}
                     <div className={cx("list")}>
                         {filteredItems.map((item) => {
-                            // WORD
+                            if (!item) return null;
+
                             if (activeTab === "words") {
                                 return (
                                     <Card key={item._id} className={cx("wordCard")}>
@@ -624,12 +707,10 @@ function DictionaryAdmin() {
                                                     <span className={cx("badge")}>{item.type}</span>
                                                 </div>
 
-                                                <p className={cx("romaji")}>
-                                                    {(item.phonetic || []).join(" ・ ")}
-                                                </p>
+                                                <p className={cx("romaji")}>{(item.phonetic || []).join(" ・ ")}</p>
 
                                                 <p className={cx("meaning")}>
-                                                    {(item.meanings || []).map(m => m.meaning).join(", ")}
+                                                    {(item.meanings || []).map((m) => m.meaning).join(", ")}
                                                 </p>
                                             </div>
 
@@ -654,7 +735,6 @@ function DictionaryAdmin() {
                                 );
                             }
 
-                            // GRAMMAR
                             if (activeTab === "grammar") {
                                 return (
                                     <Card key={item._id} className={cx("wordCard")}>
@@ -689,7 +769,6 @@ function DictionaryAdmin() {
                                 );
                             }
 
-                            // KANJI
                             return (
                                 <Card key={item._id} className={cx("wordCard")}>
                                     <div className={cx("wordHeader")}>
