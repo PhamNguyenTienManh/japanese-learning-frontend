@@ -385,6 +385,10 @@ function Community() {
                   </p>
                 </div>
 
+                <div className={cx("post-image-container")}>
+                    <img className={cx("post-image")} src={post.image_url} />
+                </div>
+
                 {/* Stats */}
                 <div className={cx("post-stats")}>
                   <div className={cx("post-stat-item", { liked: post.isLiked })}>

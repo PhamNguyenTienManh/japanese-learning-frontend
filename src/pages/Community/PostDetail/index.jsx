@@ -19,6 +19,8 @@ import {
   faTimes,
   faSave,
   faEllipsisV,
+  faImage,
+  faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import formatDateVN from "~/services/formatDate";
 import postService from "~/services/postService";
@@ -57,8 +59,15 @@ function PostDetail() {
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedCommentContent, setEditedCommentContent] = useState("");
   const [savingComment, setSavingComment] = useState(false);
-  const [profile, setProfile] = useState({})
+  const [profile, setProfile] = useState({});
 
+  // Image upload states
+  const [image, setImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageChanged, setImageChanged] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [originalImageUrl, setOriginalImageUrl] = useState(null);
+  const [originalImagePublicId, setOriginalImagePublicId] = useState(null);
 
   const getLoggedInUserId = () => {
     const token = localStorage.getItem("token");
@@ -75,14 +84,14 @@ function PostDetail() {
 
     return decoded?.sub || null;
   };
+
   const getMe = async (id) => {
-    const response = await getProfile(id)
-    setProfile(response.data)
+    const response = await getProfile(id);
+    setProfile(response.data);
     return response.data;
+  };
 
-  }
   const pushNotification = async (targetUserId, targetId, title, message) => {
-
     if (currentUserId === targetUserId) return;
 
     try {
@@ -114,18 +123,16 @@ function PostDetail() {
         const likedArray = Array.isArray(postData.liked) ? postData.liked : [];
         const enrichedPost = {
           ...postData,
-          isLiked: likedArray.includes(currentUserId)
+          isLiked: likedArray.includes(currentUserId),
         };
         setPost(enrichedPost);
-
         setCountComment(response.data.countComment);
 
         const postOwnerId = postData.profile_id.userId;
         setIsOwner(currentUserId === postOwnerId);
-        if (localStorage.getItem("token")) { 
-          const me = await getMe(currentUserId); 
+        if(localStorage.getItem("token")){
+          const me = await getMe(currentUserId);
         }
-
 
 
         await fetchComments();
@@ -157,14 +164,14 @@ function PostDetail() {
         commentsData = response.data;
       }
 
-      const mappedComments = commentsData.map(c => {
+      const mappedComments = commentsData.map((c) => {
         const likedArray = Array.isArray(c.liked) ? c.liked : [];
         const isUserLiked = likedArray.includes(currentUserId);
 
         return {
           ...c,
-          likeCount: likedArray.length || (c.likes || c.likeCount || 0),
-          isLiked: isUserLiked
+          likeCount: likedArray.length || c.likes || c.likeCount || 0,
+          isLiked: isUserLiked,
         };
       });
 
@@ -196,18 +203,17 @@ function PostDetail() {
       }
 
       setPost((prev) => {
-
         if (response?.data?.liked && Array.isArray(response.data.liked)) {
           return {
             ...prev,
             liked: response.data.liked,
-            isLiked: response.data.liked.includes(currentUserId)
+            isLiked: response.data.liked.includes(currentUserId),
           };
         }
 
         let newLiked;
         if (isCurrentlyLiked) {
-          newLiked = currentLiked.filter(uid => uid !== currentUserId);
+          newLiked = currentLiked.filter((uid) => uid !== currentUserId);
         } else {
           newLiked = [...currentLiked, currentUserId];
         }
@@ -215,7 +221,7 @@ function PostDetail() {
         return {
           ...prev,
           liked: newLiked,
-          isLiked: !isCurrentlyLiked
+          isLiked: !isCurrentlyLiked,
         };
       });
     } catch (err) {
@@ -224,7 +230,6 @@ function PostDetail() {
   };
 
   const handleComment = async () => {
-
     if (!comment.trim()) return;
 
     setSubmitting(true);
@@ -234,11 +239,9 @@ function PostDetail() {
       await fetchComments();
 
       setPost((prev) => {
-
-
         return {
           ...prev,
-          comments: prev.comments + 1
+          comments: prev.comments + 1,
         };
       });
       if (post.profile_id?.userId) {
@@ -272,7 +275,7 @@ function PostDetail() {
                 ...c,
                 liked: response.data.liked,
                 likeCount: response.data.liked.length,
-                isLiked: response.data.liked.includes(currentUserId)
+                isLiked: response.data.liked.includes(currentUserId),
               };
             }
             return {
@@ -287,6 +290,65 @@ function PostDetail() {
     } catch (err) {
       console.error("Toggle comment like error:", err);
     }
+  };
+
+  // Handle image selection
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Kích thước ảnh không được vượt quá 5MB");
+        return;
+      }
+
+      // Validate file type
+      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
+      if (!validTypes.includes(file.type)) {
+        setError("Chỉ chấp nhận file ảnh định dạng JPG, PNG hoặc GIF");
+        return;
+      }
+
+      setImage(file);
+      setImageChanged(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      setError(null);
+    }
+  };
+
+  // Remove selected image
+  const handleRemoveImage = () => {
+    setImage(null);
+    setImagePreview(null);
+    setImageChanged(true);
+    setError(null);
+  };
+
+  // Upload image to server
+  const uploadPostImage = async (file) => {
+    if (!file) throw new Error("File is required");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const token = localStorage.getItem("token") || "";
+    const response = await fetch(`http://localhost:9090/api/posts/image`, {
+      method: "POST",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to upload image: ${response.statusText}`);
+    }
+
+    return response.json();
   };
 
   // Bắt đầu chỉnh sửa comment
@@ -312,7 +374,7 @@ function PostDetail() {
     setSavingComment(true);
     try {
       await postService.updateComment(commentId, {
-        content: editedCommentContent
+        content: editedCommentContent,
       });
 
       setComments((prev) =>
@@ -321,7 +383,7 @@ function PostDetail() {
           if (cId === commentId) {
             return {
               ...c,
-              content: editedCommentContent
+              content: editedCommentContent,
             };
           }
           return c;
@@ -356,7 +418,7 @@ function PostDetail() {
 
       setPost((prev) => ({
         ...prev,
-        comments: prev.comments - 1
+        comments: prev.comments - 1,
       }));
 
       setCountComment((prev) => prev - 1);
@@ -380,8 +442,19 @@ function PostDetail() {
   // Handle start editing
   const handleEdit = () => {
     setEditedTitle(post.title);
-    fetchCategories();
     setEditedContent(post.content || post.description || "");
+    setCategoryId(post.category_id?._id || post.category_id || "");
+    
+    // Backup original image data
+    setOriginalImageUrl(post.image_url || null);
+    setOriginalImagePublicId(post.image_publicId || null);
+    
+    // Set current image as preview
+    setImagePreview(post.image_url || null);
+    setImage(null);
+    setImageChanged(false);
+    
+    fetchCategories();
     setIsEditing(true);
   };
 
@@ -390,37 +463,92 @@ function PostDetail() {
     setIsEditing(false);
     setEditedTitle("");
     setEditedContent("");
+    setCategoryId("");
+    setImage(null);
+    setImagePreview(null);
+    setImageChanged(false);
+    setOriginalImageUrl(null);
+    setOriginalImagePublicId(null);
+    setError(null);
   };
 
   // Handle save edited post
   const handleSaveEdit = async () => {
     if (!editedTitle.trim() || !editedContent.trim() || !categoryId) {
-      alert("Tiêu đề và nội dung không được để trống!");
+      alert("Tiêu đề, nội dung và danh mục không được để trống!");
       return;
     }
 
     setSaving(true);
-    try {
-      const response = await postService.updatePost(id, {
-        title: editedTitle,
-        content: editedContent,
-        category_id: categoryId
-      });
+    setError(null);
 
+    try {
+      // Step 1: Upload image if changed
+      let uploadedImageData = null;
+      if (imageChanged && image) {
+        try {
+          setIsUploadingImage(true);
+          const imageResult = await uploadPostImage(image);
+          uploadedImageData = imageResult.data.data; 
+          setIsUploadingImage(false);
+        } catch (uploadErr) {
+          setIsUploadingImage(false);
+          throw new Error("Không thể tải ảnh lên. Vui lòng thử lại.");
+        }
+      }
+
+      // Step 2: Prepare update data
+      const updateData = {
+        title: editedTitle.trim(),
+        content: editedContent.trim(),
+        category_id: categoryId,
+      };
+
+      // Add image data
+      if (uploadedImageData) {
+        // New image uploaded
+        updateData.image_url = uploadedImageData.image_url;
+        updateData.image_publicId = uploadedImageData.image_publicId;
+      } else if (imageChanged && !image && !imagePreview) {
+        // Image was removed
+        updateData.image_url = null;
+        updateData.image_publicId = null;
+      } else if (!imageChanged) {
+        // Keep original image
+        if (originalImageUrl) {
+          updateData.image_url = originalImageUrl;
+          updateData.image_publicId = originalImagePublicId;
+        }
+      }
+
+      // Step 3: Update post
+      const response = await postService.updatePost(id, updateData);
+
+      // Update local state
       setPost((prev) => ({
         ...prev,
         title: editedTitle,
         content: editedContent,
-        description: editedContent
+        description: editedContent,
+        image_url: updateData.image_url,
+        image_publicId: updateData.image_publicId,
       }));
 
       setIsEditing(false);
+      setImage(null);
+      setImagePreview(null);
+      setImageChanged(false);
+      setOriginalImageUrl(null);
+      setOriginalImagePublicId(null);
+
       alert("Đã cập nhật bài viết thành công!");
     } catch (err) {
+      setError(err.message || "Không thể cập nhật bài viết. Vui lòng thử lại.");
       console.error("Update post error:", err);
-      alert("Không thể cập nhật bài viết. Vui lòng thử lại.");
+      alert(err.message || "Không thể cập nhật bài viết. Vui lòng thử lại.");
     } finally {
       setSaving(false);
+      setIsUploadingImage(false);
     }
   };
 
@@ -476,7 +604,7 @@ function PostDetail() {
   }
 
   // Error state
-  if (error || !post) {
+  if (error && !post) {
     return (
       <div className={cx("wrapper")}>
         <main className={cx("main")}>
@@ -509,7 +637,7 @@ function PostDetail() {
           <Card className={cx("post-card")}>
             {/* Header */}
             <div className={cx("post-header")}>
-              <img
+              <img 
                 src={
                   post.profile_id?.image_url ||
                   post.authorAvatar ||
@@ -525,13 +653,13 @@ function PostDetail() {
                   </span>
                 </div>
                 <div className={cx("author-meta")}>
-                  <span>{post.created_at ? formatDateVN(post.created_at) : "Vừa xong"}</span>
+                  <span>
+                    {post.created_at ? formatDateVN(post.created_at) : "Vừa xong"}
+                  </span>
                   {(post.author?.posts || post.authorPosts) && (
                     <>
                       <span className={cx("dot")}>•</span>
-                      <span>
-                        {post.author?.posts || post.authorPosts} bài viết
-                      </span>
+                      <span>{post.author?.posts || post.authorPosts} bài viết</span>
                     </>
                   )}
                 </div>
@@ -552,22 +680,82 @@ function PostDetail() {
             {isEditing ? (
               <div className={cx("edit-mode")}>
                 <div className={cx("edit-form")}>
+                  {error && (
+                    <div className={cx("alert", "alert-error")}>
+                      {error}
+                    </div>
+                  )}
+
                   <div className={cx("form-group")}>
-                    <label className={cx("form-label")}>Tiêu đề</label>
+                    <label className={cx("form-label")}>Danh mục</label>
                     <CategorySelector
                       categories={categories}
                       value={categoryId}
                       onChange={setCategoryId}
-                      disabled={loading}
+                      disabled={saving || isUploadingImage}
                     />
+                  </div>
+
+                  <div className={cx("form-group")}>
+                    <label className={cx("form-label")}>Tiêu đề</label>
                     <input
                       type="text"
                       value={editedTitle}
                       onChange={(e) => setEditedTitle(e.target.value)}
                       className={cx("form-input")}
                       placeholder="Nhập tiêu đề bài viết"
+                      disabled={saving || isUploadingImage}
                     />
                   </div>
+
+                  {/* Image Upload */}
+                  <div className={cx("form-group")}>
+                    <label className={cx("form-label")}>Ảnh bài viết</label>
+                    <div className={cx("image-upload")}>
+                      {imagePreview ? (
+                        <div className={cx("image-preview-container")}>
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className={cx("image-preview")}
+                          />
+                          <button
+                            type="button"
+                            className={cx("image-remove-btn")}
+                            onClick={handleRemoveImage}
+                            disabled={saving || isUploadingImage}
+                          >
+                            <FontAwesomeIcon icon={faXmark} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className={cx("image-upload-placeholder")}>
+                          <input
+                            type="file"
+                            id="post-image-input-edit"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className={cx("image-input")}
+                            disabled={saving || isUploadingImage}
+                          />
+                          <label
+                            htmlFor="post-image-input-edit"
+                            className={cx("image-upload-label")}
+                          >
+                            <FontAwesomeIcon
+                              icon={faImage}
+                              className={cx("upload-icon")}
+                            />
+                            <span>Chọn ảnh</span>
+                          </label>
+                          <p className={cx("upload-hint")}>
+                            JPG, PNG hoặc GIF (tối đa 5MB)
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <div className={cx("form-group")}>
                     <label className={cx("form-label")}>Nội dung</label>
                     <textarea
@@ -576,27 +764,39 @@ function PostDetail() {
                       className={cx("form-textarea")}
                       placeholder="Nhập nội dung bài viết"
                       rows={10}
+                      disabled={saving || isUploadingImage}
                     />
                   </div>
+
                   <div className={cx("edit-actions")}>
                     <Button
                       primary
                       onClick={handleSaveEdit}
-                      disabled={saving || !editedTitle.trim() || !editedContent.trim()}
+                      disabled={
+                        saving ||
+                        isUploadingImage ||
+                        !editedTitle.trim() ||
+                        !editedContent.trim() ||
+                        !categoryId
+                      }
                       leftIcon={
-                        saving ? (
+                        isUploadingImage || saving ? (
                           <FontAwesomeIcon icon={faSpinner} spin />
                         ) : (
                           <FontAwesomeIcon icon={faSave} />
                         )
                       }
                     >
-                      {saving ? "Đang lưu..." : "Lưu thay đổi"}
+                      {isUploadingImage
+                        ? "Đang tải ảnh..."
+                        : saving
+                        ? "Đang lưu..."
+                        : "Lưu thay đổi"}
                     </Button>
                     <Button
                       outline
                       onClick={handleCancelEdit}
-                      disabled={saving}
+                      disabled={saving || isUploadingImage}
                       leftIcon={<FontAwesomeIcon icon={faTimes} />}
                     >
                       Hủy
@@ -610,15 +810,31 @@ function PostDetail() {
                 {/* Title */}
                 <h1 className={cx("title")}>{post.title}</h1>
 
+                {/* Post Image */}
+                {post.image_url && (
+                  <div className={cx("post-image-container")}>
+                    <img
+                      src={post.image_url}
+                      alt={post.title}
+                      className={cx("post-image")}
+                    />
+                  </div>
+                )}
+
                 {/* Content */}
                 <div className={cx("content")}>
                   <p className={cx("content-text")}>
-                    {(post.content || post.description || "").split("\n").map((line, i) => (
-                      <span key={i}>
-                        {line}
-                        {i < (post.content || post.description || "").split("\n").length - 1 && <br />}
-                      </span>
-                    ))}
+                    {(post.content || post.description || "")
+                      .split("\n")
+                      .map((line, i) => (
+                        <span key={i}>
+                          {line}
+                          {i <
+                            (post.content || post.description || "").split("\n")
+                              .length -
+                              1 && <br />}
+                        </span>
+                      ))}
                   </p>
                 </div>
 
@@ -633,9 +849,7 @@ function PostDetail() {
                       icon={faCommentDots}
                       className={cx("stat-icon")}
                     />
-                    <span>
-                      {countComment || 0} bình luận
-                    </span>
+                    <span>{countComment || 0} bình luận</span>
                   </div>
                 </div>
 
@@ -666,7 +880,10 @@ function PostDetail() {
                     className={"orange"}
                     onClick={handleShare}
                     leftIcon={
-                      <FontAwesomeIcon icon={faShareNodes} className={cx("icon")} />
+                      <FontAwesomeIcon
+                        icon={faShareNodes}
+                        className={cx("icon")}
+                      />
                     }
                   >
                     Chia sẻ
@@ -735,7 +952,8 @@ function PostDetail() {
                         <div key={commentId} className={cx("comment-item")}>
                           <img
                             src={
-                              c.profileId?.image_url || "https://img.tripi.vn/cdn-cgi/image/width=700,height=700/https://gcs.tripi.vn/public-tripi/tripi-feed/img/482752AXp/anh-mo-ta.png"
+                              c.profileId?.image_url ||
+                              "https://img.tripi.vn/cdn-cgi/image/width=700,height=700/https://gcs.tripi.vn/public-tripi/tripi-feed/img/482752AXp/anh-mo-ta.png"
                             }
                             alt={c.profileId?.name}
                             className={cx("comment-avatar")}
@@ -745,7 +963,9 @@ function PostDetail() {
                               <div className={cx("comment-edit-form")}>
                                 <textarea
                                   value={editedCommentContent}
-                                  onChange={(e) => setEditedCommentContent(e.target.value)}
+                                  onChange={(e) =>
+                                    setEditedCommentContent(e.target.value)
+                                  }
                                   className={cx("comment-edit-input")}
                                   rows={3}
                                 />
@@ -754,7 +974,9 @@ function PostDetail() {
                                     primary
                                     small
                                     onClick={() => handleSaveEditComment(commentId)}
-                                    disabled={savingComment || !editedCommentContent.trim()}
+                                    disabled={
+                                      savingComment || !editedCommentContent.trim()
+                                    }
                                     leftIcon={
                                       savingComment ? (
                                         <FontAwesomeIcon icon={faSpinner} spin />
@@ -798,8 +1020,13 @@ function PostDetail() {
                                         </button>
                                         <button
                                           type="button"
-                                          className={cx("comment-action-btn", "delete")}
-                                          onClick={() => handleDeleteComment(commentId)}
+                                          className={cx(
+                                            "comment-action-btn",
+                                            "delete"
+                                          )}
+                                          onClick={() =>
+                                            handleDeleteComment(commentId)
+                                          }
                                           title="Xóa"
                                         >
                                           <FontAwesomeIcon icon={faTrash} />
@@ -808,12 +1035,16 @@ function PostDetail() {
                                     )}
                                   </div>
                                   <p className={cx("comment-text")}>
-                                    {(c.content || "").split("\n").map((line, i) => (
-                                      <span key={i}>
-                                        {line}
-                                        {i < (c.content || "").split("\n").length - 1 && <br />}
-                                      </span>
-                                    ))}
+                                    {(c.content || "")
+                                      .split("\n")
+                                      .map((line, i) => (
+                                        <span key={i}>
+                                          {line}
+                                          {i <
+                                            (c.content || "").split("\n").length -
+                                              1 && <br />}
+                                        </span>
+                                      ))}
                                   </p>
                                 </div>
 
@@ -826,7 +1057,9 @@ function PostDetail() {
                                     onClick={() => handleCommentLike(commentId)}
                                   >
                                     <FontAwesomeIcon
-                                      icon={c.isLiked ? faHeartSolid : faHeartRegular}
+                                      icon={
+                                        c.isLiked ? faHeartSolid : faHeartRegular
+                                      }
                                       className={cx("comment-like-icon")}
                                     />
                                     <span>{c.likeCount}</span>

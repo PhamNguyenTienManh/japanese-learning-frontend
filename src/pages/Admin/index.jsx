@@ -17,18 +17,18 @@ import styles from "./Admin.module.scss";
 const cx = classNames.bind(styles);
 
 const stats = {
-    totalUsers: 1234,
-    activeUsers: 856,
+    totalUsers: 6,
+    activeUsers: 6,
     totalWords: 5678,
-    totalTests: 45,
-    totalPosts: 234,
+    totalTests: 5,
+    totalPosts: 11,
     pendingReports: 3,
 };
 
 const recentActivity = [
     {
         type: "user",
-        message: "Người dùng mới đăng ký: nguyenvana@example.com",
+        message: "Người dùng mới đăng ký: nguyenmanh@gmail.com",
         time: "5 phút trước",
     },
     {
@@ -156,7 +156,7 @@ function Admin() {
                             </Card>
                         </Link>
 
-                        <Link to="/admin/reports" className={cx("link")}>
+                        {/* <Link to="/admin/reports" className={cx("link")}>
                             <Card className={cx("statCard")}>
                                 <div className={cx("cardHeader")}>
                                     <div className={cx("iconBox", "iconBoxRed")}>
@@ -169,7 +169,7 @@ function Admin() {
                                 </div>
                                 <p className={cx("cardSub")}>Cần xử lý</p>
                             </Card>
-                        </Link>
+                        </Link> */}
 
 
                     </div>

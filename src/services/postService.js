@@ -148,7 +148,6 @@ const postService = {
   // },
 
   createPost: async (postData) => {
-
     try {
       const response = await axiosInstance.post(`${API_BASE_URL}/posts`,
         postData
@@ -162,6 +161,8 @@ const postService = {
   },
 
   async updatePost(id, postData) {
+    console.log("ppppppp", postData);
+    
     try {
       const response = await axiosInstance.put(`${API_BASE_URL}/posts/${id}`, postData);
       return response.data;
