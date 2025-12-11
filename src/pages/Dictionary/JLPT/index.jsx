@@ -24,6 +24,7 @@ import AuthRequiredModal from "~/components/AuthRequiredModal";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "~/context/AuthContext";
 import handlePlayAudio from "~/services/handlePlayAudio";
+import PdfModal from "~/components/PdfModal/PdfModal";
 
 
 const cx = classNames.bind(styles);
@@ -58,6 +59,12 @@ function JLPT() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [notebooks, setNotebooks] = useState([]);
+    const [showAuthModal, setShowAuthModal] = useState(false);
+    const [pendingHref, setPendingHref] = useState("");
+    const [showPdfModal, setShowPdfModal] = useState(false);
+    const [pdfUrl, setPdfUrl] = useState("");
+    const [pdfLoading, setPdfLoading] = useState(false);
+
     const navigate = useNavigate();
     const { isLoggedIn } = useAuth();
     // Thêm từ vựng, ngữ pháp vào Notebook
@@ -70,11 +77,6 @@ function JLPT() {
     }, []);
 
 
-
-
-    const [showAuthModal, setShowAuthModal] = useState(false);
-    const [pendingHref, setPendingHref] = useState("");
-
     const handleFlashCardClick = (href) => {
         if (!isLoggedIn) {
             setPendingHref(href);        // lưu lại link để chuyển sau khi login
@@ -82,9 +84,9 @@ function JLPT() {
             return;
         }
 
-        // Nếu đã login → điều hướng bằng window.location hoặc Button của bạn
         window.location.href = "/jlpt/" + href;
     };
+
     // Fetch danh sách notebooks
     const fetchNotebooks = async () => {
         try {
@@ -112,7 +114,7 @@ function JLPT() {
         if (toast.show) {
             const timer = setTimeout(() => {
                 setToast({ show: false, message: '', type: '' });
-            }, 4000);
+            }, 3000);
             return () => clearTimeout(timer);
         }
     }, [toast.show]);
@@ -186,6 +188,47 @@ function JLPT() {
             });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handlePreviewPdf = async () => {
+        // Kiểm tra nếu là Ngữ pháp thì không cho download
+        if (selectedType === "Ngữ pháp") {
+            setToast({
+                show: true,
+                message: 'Bạn không thể download file Ngữ pháp',
+                type: 'error'
+            });
+            return;
+        }
+
+        try {
+            // Bật loading và mở modal ngay
+            setPdfLoading(true);
+            setShowPdfModal(true);
+
+            const typeParam =
+                selectedType === "Từ vựng" ? "word" :
+                    selectedType === "Hán tự" ? "kanji" :
+                        "word";
+
+            const url = `http://localhost:9090/api/pdf/jlpt?page=${currentPage}&limit=9&level=${selectedLevel}&type=${typeParam}`;
+
+            const response = await fetch(url);
+            const blob = await response.blob();
+
+            const pdfPreviewUrl = URL.createObjectURL(blob);
+            setPdfUrl(pdfPreviewUrl);
+        } catch (err) {
+            console.error(err);
+            setShowPdfModal(false); // Đóng modal nếu lỗi
+            setToast({
+                show: true,
+                message: 'Không thể tải PDF. Vui lòng thử lại.',
+                type: 'error'
+            });
+        } finally {
+            setPdfLoading(false);
         }
     };
 
@@ -409,8 +452,8 @@ function JLPT() {
                             primary
                             leftIcon={<FontAwesomeIcon icon={feature.icon} />}
                             {...(!feature.requireLogin
-                                ? { to: feature.href }                 // 👉 Các feature bình thường vẫn dùng to
-                                : { onClick: () => handleFlashCardClick(feature.href) }  // 👉 FlashCard thì kiểm tra login
+                                ? { to: feature.href }
+                                : { onClick: () => handleFlashCardClick(feature.href) }
                             )}
                         >
                             {feature.label}
@@ -500,6 +543,7 @@ function JLPT() {
                                         outline
                                         className={"no-margin"}
                                         leftIcon={<FontAwesomeIcon icon={faDownload} />}
+                                        onClick={handlePreviewPdf}
                                     ></Button>
                                     <Button
                                         outline
@@ -601,7 +645,6 @@ function JLPT() {
                                         key={note._id}
                                         className={cx("notebook-item")}
                                         onClick={() => {
-                                            console.log("Đã chọn:", selectedWord, selectedType, "👉 đưa vào:", note);
                                             handleAddWord(selectedWord, selectedType, note);
                                             setShowModal(false);
                                         }}
@@ -614,6 +657,17 @@ function JLPT() {
                         </div>
                     </div>
                 )}
+
+                {/* Modal hiển thị bản xem trước file Pdf */}
+                <PdfModal
+                    show={showPdfModal}
+                    onClose={() => {
+                        setShowPdfModal(false);
+                        setPdfUrl(""); // Reset URL khi đóng
+                    }}
+                    pdfUrl={pdfUrl}
+                    loading={pdfLoading}
+                />
 
                 {/* Toast Notification */}
                 {toast.show && (
