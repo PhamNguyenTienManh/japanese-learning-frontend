@@ -33,6 +33,7 @@ import CreateTest from "~/pages/Admin/AdminTest/CreateTest";
 import AdminPosts from "~/pages/Admin/AdminPosts";
 import AdminReading from "~/pages/Admin/AdminReading";
 import EditTest from "~/pages/Admin/AdminTest/UpdateTest";
+import Translate from "~/pages/Translate";
 
 export const publicRouter = [
   { path: config.routes.home, component: Home },
@@ -69,6 +70,8 @@ export const publicRouter = [
   { path: config.routes.adminReading, component: AdminReading },
   { path: config.routes.jlptFlashcard, component: JLPTFlashcard },
   { path: config.routes.updateTest, component: EditTest },
+  { path: config.routes.translate, component: Translate },
+
 
 ];
 export const requireAuthRouter = [

@@ -32,7 +32,8 @@ const routes = {
   createTest: "/admin/tests/create",
   updateTest: "/admin/tests/update/:id",
   adminPosts: "/admin/posts",
-  adminReading: "/admin/reading"
+  adminReading: "/admin/reading",
+  translate: "/translate"
 };
 
 export default routes;
