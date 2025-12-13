@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -13,76 +13,109 @@ import {
 import Card from "~/components/Card";
 import Button from "~/components/Button";
 import Input from "~/components/Input";
+import postService from "~/services/postService";
 
 import styles from "./AdminPosts.module.scss";
 
 const cx = classNames.bind(styles);
 
-const mockPosts = [
-    {
-        id: 1,
-        title: "Cách học Kanji hiệu quả cho người mới bắt đầu",
-        author: "Nguyễn Văn A",
-        category: "Học tập",
-        views: 234,
-        comments: 12,
-        likes: 45,
-        status: "published",
-        createdDate: "2024-10-15",
-        hasReports: false,
-    },
-    {
-        id: 2,
-        title: "Chia sẻ kinh nghiệm thi JLPT N5",
-        author: "Trần Thị B",
-        category: "Kinh nghiệm",
-        views: 189,
-        comments: 8,
-        likes: 32,
-        status: "published",
-        createdDate: "2024-10-14",
-        hasReports: false,
-    },
-    {
-        id: 3,
-        title: "Bài viết vi phạm nội dung",
-        author: "Lê Văn C",
-        category: "Khác",
-        views: 45,
-        comments: 2,
-        likes: 1,
-        status: "reported",
-        createdDate: "2024-10-13",
-        hasReports: true,
-    },
-];
-
 function AdminPosts() {
+    const [posts, setPosts] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [page, setPage] = useState(1);
+    const [totalPosts, setTotalPosts] = useState(0);
+    const [countComment, setCountComment] = useState([])
 
-    const filteredPosts = mockPosts.filter((post) => {
-        const q = searchQuery.trim().toLowerCase();
-        const matchSearch =
-            !q ||
-            post.title.toLowerCase().includes(q) ||
-            post.author.toLowerCase().includes(q);
+    // Load categories
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const data = await postService.getCategories();
+                setCategories(data || []);
+            } catch (error) {
+                console.error("Error loading categories:", error);
+            }
+        };
+        fetchCategories();
+    }, []);
 
-        const matchCategory =
-            categoryFilter === "all" || post.category === categoryFilter;
+    // Load posts
+    useEffect(() => {
+        const fetchPosts = async () => {
+            setLoading(true);
+            try {
+                let data;
 
-        const matchStatus =
-            statusFilter === "all" ||
-            (statusFilter === "published" && post.status === "published") ||
-            (statusFilter === "reported" && post.status === "reported");
+                // Nếu có search query, dùng search API
+                if (searchQuery.trim()) {
+                    data = await postService.searchPosts(searchQuery, page, 50);
+                }
+                // Nếu có filter category, dùng category API
+                else if (categoryFilter !== "all") {
+                    data = await postService.getPostsByCategory(categoryFilter, page, 50);
+                }
+                // Mặc định load tất cả posts
+                else {
+                    data = await postService.getPosts(page, 50);
+                }
 
-        return matchSearch && matchCategory && matchStatus;
+                setPosts(data.data.data || []);
+                setCountComment(data.data.countComment)
+                setTotalPosts(data.pagination?.total || data.data?.length || 0);
+            } catch (error) {
+                console.error("Error loading posts:", error);
+                setPosts([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        // Debounce search
+        const timer = setTimeout(() => {
+            fetchPosts();
+        }, searchQuery ? 500 : 0);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery, categoryFilter, page]);
+
+    // Handle delete post
+    const handleDeletePost = async (postId) => {
+        if (!window.confirm("Bạn có chắc chắn muốn xóa bài viết này?")) {
+            return;
+        }
+
+        try {
+            await postService.deletePost(postId);
+            setPosts(posts.filter(post => post.id !== postId));
+            setTotalPosts(prev => prev - 1);
+            alert("Xóa bài viết thành công!");
+        } catch (error) {
+            console.error("Error deleting post:", error);
+            alert("Có lỗi xảy ra khi xóa bài viết!");
+        }
+    };
+
+    // Filter posts by status (reported/published)
+    const filteredPosts = posts.filter((post) => {
+        if (statusFilter === "all") return true;
+        if (statusFilter === "reported") return post.hasReports || post.status === 0;
+        if (statusFilter === "published") return !post.hasReports && post.status !== 0;
+        return true;
     });
+
+    // Format date
+    const formatDate = (dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        return date.toLocaleDateString('vi-VN');
+    };
 
     return (
         <div className={cx("wrapper")}>
-
             <main className={cx("main")}>
                 <div className={cx("inner")}>
                     {/* Header */}
@@ -95,9 +128,8 @@ function AdminPosts() {
                             <div>
                                 <h1 className={cx("title")}>Quản lý bài viết</h1>
                                 <p className={cx("subtitle")}>
-                                    Tổng cộng {mockPosts.length} bài viết
-                                    {filteredPosts.length !== mockPosts.length &&
-                                        ` · ${filteredPosts.length} kết quả`}
+                                    {filteredPosts.length !== totalPosts &&
+                                        `${filteredPosts.length} kết quả`}
                                 </p>
                             </div>
                         </div>
@@ -125,12 +157,13 @@ function AdminPosts() {
                                     onChange={(e) => setCategoryFilter(e.target.value)}
                                 >
                                     <option value="all">Tất cả danh mục</option>
-                                    <option value="Học tập">Học tập</option>
-                                    <option value="Kinh nghiệm">Kinh nghiệm</option>
-                                    <option value="Hỏi đáp">Hỏi đáp</option>
-                                    <option value="Khác">Khác</option>
+                                    {categories.map((cat) => (
+                                        <option key={cat.id} value={cat._id}>
+                                            {cat.name}
+                                        </option>
+                                    ))}
                                 </select>
-                                <select
+                                {/* <select
                                     className={cx("select")}
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
@@ -138,70 +171,86 @@ function AdminPosts() {
                                     <option value="all">Tất cả trạng thái</option>
                                     <option value="published">Đã xuất bản</option>
                                     <option value="reported">Bị báo cáo</option>
-                                </select>
+                                </select> */}
                             </div>
                         </div>
                     </Card>
 
-                    {/* Posts List */}
-                    <div className={cx("list")}>
-                        {filteredPosts.map((post) => (
-                            <Card
-                                key={post.id}
-                                className={cx(
-                                    "postCard",
-                                    post.hasReports && "postCardReported"
-                                )}
-                            >
-                                <div className={cx("postInner")}>
-                                    <div className={cx("postContent")}>
-                                        <div className={cx("titleRow")}>
-                                            <h3 className={cx("postTitle")}>{post.title}</h3>
-                                            {post.hasReports && (
-                                                <span className={cx("badge", "badgeReported")}>
-                                                    <FontAwesomeIcon
-                                                        icon={faFlag}
-                                                        className={cx("badgeIcon")}
-                                                    />
-                                                    <span>Bị báo cáo</span>
-                                                </span>
-                                            )}
-                                            <span className={cx("badge")}>{post.category}</span>
-                                        </div>
-                                        <p className={cx("meta")}>
-                                            Bởi {post.author} • {post.createdDate}
-                                        </p>
-                                        <div className={cx("statsRow")}>
-                                            <span>{post.views} lượt xem</span>
-                                            <span>{post.comments} bình luận</span>
-                                            <span>{post.likes} thích</span>
-                                        </div>
-                                    </div>
-                                    <div className={cx("actions")}>
-                                        <Button
-                                            outline
-                                            rounded
-                                            leftIcon={<FontAwesomeIcon icon={faEye} />}
-                                        />
-                                        <Button
-                                            outline
-                                            rounded
-                                            className={cx("dangerBtn")}
-                                            leftIcon={<FontAwesomeIcon icon={faTrash} />}
-                                        />
-                                    </div>
-                                </div>
-                            </Card>
-                        ))}
+                    {/* Loading State */}
+                    {loading && (
+                        <Card className={cx("emptyCard")}>
+                            <p className={cx("emptyText")}>Đang tải dữ liệu...</p>
+                        </Card>
+                    )}
 
-                        {filteredPosts.length === 0 && (
-                            <Card className={cx("emptyCard")}>
-                                <p className={cx("emptyText")}>
-                                    Không tìm thấy bài viết nào phù hợp
-                                </p>
-                            </Card>
-                        )}
-                    </div>
+                    {/* Posts List */}
+                    {!loading && (
+                        <div className={cx("list")}>
+                            {filteredPosts.map((post) => (
+                                <Card
+                                    key={post.id}
+                                    className={cx(
+                                        "postCard",
+                                        post.hasReports && "postCardReported"
+                                    )}
+                                >
+                                    <div className={cx("postInner")}>
+                                        <div className={cx("postContent")}>
+                                            <div className={cx("titleRow")}>
+                                                <h3 className={cx("postTitle")}>{post.title}</h3>
+                                                {post.hasReports && (
+                                                    <span className={cx("badge", "badgeReported")}>
+                                                        <FontAwesomeIcon
+                                                            icon={faFlag}
+                                                            className={cx("badgeIcon")}
+                                                        />
+                                                        <span>Bị báo cáo</span>
+                                                    </span>
+                                                )}
+                                                <span className={cx("badge")}>
+                                                    {post.category_id.name || "Khác"}
+                                                </span>
+                                            </div>
+                                            <p className={cx("meta")}>
+                                                Bởi {post.
+                                                    profile_id
+                                                    ?.name|| "Ẩn danh"} • {formatDate(post.updated_at || post.createdDate)}
+                                            </p>
+                                            <div className={cx("statsRow")}>
+                                                <span>{countComment.find(x => x._id === post._id)?.totalComment || 0} bình luận</span>
+                                                <span>{}</span>
+                                                <span>{post.liked.length || 0} thích</span>
+                                            </div>
+                                        </div>
+                                        <div className={cx("actions")}>
+                                            <Link to={`/community/${post._id}`}>
+                                                <Button
+                                                    outline
+                                                    rounded
+                                                    leftIcon={<FontAwesomeIcon icon={faEye} />}
+                                                />
+                                            </Link>
+                                            <Button
+                                                outline
+                                                rounded
+                                                className={cx("dangerBtn")}
+                                                leftIcon={<FontAwesomeIcon icon={faTrash} />}
+                                                onClick={() => handleDeletePost(post._id)}
+                                            />
+                                        </div>
+                                    </div>
+                                </Card>
+                            ))}
+
+                            {filteredPosts.length === 0 && (
+                                <Card className={cx("emptyCard")}>
+                                    <p className={cx("emptyText")}>
+                                        Không tìm thấy bài viết nào phù hợp
+                                    </p>
+                                </Card>
+                            )}
+                        </div>
+                    )}
                 </div>
             </main>
         </div>
