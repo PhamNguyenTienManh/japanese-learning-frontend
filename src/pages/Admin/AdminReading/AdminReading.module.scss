@@ -508,6 +508,69 @@
   font-size: 14px;
 }
 
+// CSS phần Paragraph
+.paragraphsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.paragraphItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.paragraphHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.paragraphLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+}
+
+.removeParagraphBtn {
+  background: transparent;
+  border: none;
+  color: #ff4d4f;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 16px;
+}
+
+.removeParagraphBtn:hover {
+  background: #fff1f0;
+  color: #ff7875;
+}
+
+.addParagraphBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f0f0f0;
+  border: 1px dashed #d9d9d9;
+  border-radius: 4px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.addParagraphBtn:hover {
+  background: #e6f7ff;
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+
 
 // ----------------------------Toast Notification-------------------------
 .toast {

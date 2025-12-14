@@ -250,6 +250,8 @@ export default function Reading() {
         );
     }
 
+    const content = selectedArticle?.content?.replace(/\/n\/n/g, "\n\n") ?? "";
+
     return (
         <div className={cx("wrapper")}>
             <div className={cx("inner")}>
@@ -412,7 +414,7 @@ export default function Reading() {
                             </div>
 
                             <div className={cx("articleText")}>
-                                <p>{selectedArticle.content}</p>
+                                <p>{content}</p>
                             </div>
 
                             <div className={cx("tools")}>
