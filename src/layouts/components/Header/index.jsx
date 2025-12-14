@@ -14,7 +14,7 @@ const cx = classNames.bind(styles);
 function Header() {
   const [openMenu, setOpenMenu] = useState(null);
   const { logout, isAdmin, userId, role, isLoggedIn } = useAuth();
-  
+
   const toggleMenu = (menuName) => {
     setOpenMenu(openMenu === menuName ? null : menuName);
   };
@@ -39,6 +39,9 @@ function Header() {
               Từ điển
             </Button>
             <div className={cx("dropdown-menu")}>
+              <Button to="/translate" text>
+                Dịch thuật
+              </Button>
               <Button to="/kanji" text>
                 Tra cứu từ điển
               </Button>
@@ -121,7 +124,7 @@ function Header() {
           ) : (
             <>
               {/* Notification Bell */}
-              <NotificationDropdown 
+              <NotificationDropdown
                 isOpen={openMenu === "notification"}
                 onToggle={() => toggleMenu("notification")}
                 onClose={() => setOpenMenu(null)}

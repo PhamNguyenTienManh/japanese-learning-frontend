@@ -13,6 +13,7 @@ import {
 import Button from "~/components/Button";
 import { useToast } from "~/context/ToastContext";
 import CustomSelect from "~/components/CustomSelect";
+import { translateText } from "~/services/traslate";
 
 const cx = classNames.bind(styles);
 
@@ -24,24 +25,6 @@ const languages = [
     { code: "zh", name: "Tiếng Trung" },
 ];
 
-const mockTranslate = (text, fromLang, toLang) => {
-    const translations = {
-        ja_vi: {
-            こんにちは: "Xin chào",
-            ありがとう: "Cảm ơn",
-            一人: "Một người",
-            水産物: "Sản phẩm thuỷ sản",
-        },
-        vi_ja: {
-            "Xin chào": "こんにちは",
-            "Cảm ơn": "ありがとう",
-            "Một người": "一人",
-        },
-    };
-    const key = `${fromLang}_${toLang}`;
-    return translations[key]?.[text] || `Dịch: ${text}`;
-};
-
 function Translate() {
     const [sourceText, setSourceText] = useState("");
     const [translatedText, setTranslatedText] = useState("");
@@ -49,15 +32,32 @@ function Translate() {
     const [targetLang, setTargetLang] = useState("vi");
     const { addToast } = useToast();
 
-    const handleTranslate = () => {
+    // ===== TRANSLATE =====
+    const handleTranslate = async () => {
         if (!sourceText.trim()) {
             addToast("Vui lòng nhập văn bản", "info");
             return;
         }
-        const result = mockTranslate(sourceText, sourceLang, targetLang);
-        setTranslatedText(result);
+
+        if (sourceLang === targetLang) {
+            addToast("Hai ngôn ngữ giống nhau", "warning");
+            return;
+        }
+
+        try {
+            const res = await translateText(
+                sourceText,
+                sourceLang,
+                targetLang
+            );
+
+            setTranslatedText(res.data.translatedText);
+        } catch (error) {
+            addToast("Lỗi dịch văn bản", "error");
+        }
     };
 
+    // ===== SWAP LANGUAGE =====
     const handleSwapLanguages = () => {
         setSourceLang(targetLang);
         setTargetLang(sourceLang);
@@ -65,25 +65,35 @@ function Translate() {
         setTranslatedText(sourceText);
     };
 
+    // ===== COPY =====
     const handleCopy = (text) => {
+        if (!text.trim()) return;
         navigator.clipboard.writeText(text);
         addToast("Đã sao chép!", "success");
     };
 
+    // ===== CLEAR =====
     const handleClear = () => {
         setSourceText("");
         setTranslatedText("");
     };
 
-    const handleSpeak = (text) => {
+    // ===== TEXT TO SPEECH (FIX ĐÚNG LANG) =====
+    const handleSpeak = (text, lang) => {
         if (!text.trim()) return;
+
         const utter = new SpeechSynthesisUtterance(text);
-        utter.lang =
-            sourceLang === "ja"
-                ? "ja-JP"
-                : sourceLang === "vi"
-                    ? "vi-VN"
-                    : "en-US";
+
+        const langMap = {
+            ja: "ja-JP",
+            vi: "vi-VN",
+            en: "en-US",
+            ko: "ko-KR",
+            zh: "zh-CN",
+        };
+
+        utter.lang = langMap[lang] || "en-US";
+        speechSynthesis.cancel(); // tránh đọc chồng
         speechSynthesis.speak(utter);
     };
 
@@ -103,11 +113,15 @@ function Translate() {
                         onChange={(v) => setSourceLang(v)}
                         options={languages.map((l) => ({
                             value: l.code,
-                            label: l.name
+                            label: l.name,
                         }))}
                     />
 
-                    <Button outline onClick={handleSwapLanguages} className={cx("swap-btn")}>
+                    <Button
+                        outline
+                        onClick={handleSwapLanguages}
+                        className={cx("swap-btn")}
+                    >
                         <FontAwesomeIcon icon={faRightLeft} />
                     </Button>
 
@@ -117,7 +131,7 @@ function Translate() {
                         onChange={(v) => setTargetLang(v)}
                         options={languages.map((l) => ({
                             value: l.code,
-                            label: l.name
+                            label: l.name,
                         }))}
                     />
                 </div>
@@ -136,7 +150,9 @@ function Translate() {
                         <div className={cx("tools")}>
                             <Button
                                 outline
-                                onClick={() => handleSpeak(sourceText)}
+                                onClick={() =>
+                                    handleSpeak(sourceText, sourceLang)
+                                }
                                 disabled={!sourceText.trim()}
                             >
                                 <FontAwesomeIcon icon={faVolumeHigh} />
@@ -151,7 +167,9 @@ function Translate() {
                             </Button>
                         </div>
 
-                        <span className={cx("length")}>{sourceText.length} ký tự</span>
+                        <span className={cx("length")}>
+                            {sourceText.length} ký tự
+                        </span>
                     </div>
 
                     {/* TARGET */}
@@ -166,7 +184,9 @@ function Translate() {
                         <div className={cx("tools")}>
                             <Button
                                 outline
-                                onClick={() => handleSpeak(translatedText)}
+                                onClick={() =>
+                                    handleSpeak(translatedText, targetLang)
+                                }
                                 disabled={!translatedText.trim()}
                             >
                                 <FontAwesomeIcon icon={faVolumeHigh} />
@@ -174,14 +194,18 @@ function Translate() {
 
                             <Button
                                 outline
-                                onClick={() => handleCopy(translatedText)}
+                                onClick={() =>
+                                    handleCopy(translatedText)
+                                }
                                 disabled={!translatedText.trim()}
                             >
                                 <FontAwesomeIcon icon={faCopy} />
                             </Button>
                         </div>
 
-                        <span className={cx("length")}>{translatedText.length} ký tự</span>
+                        <span className={cx("length")}>
+                            {translatedText.length} ký tự
+                        </span>
                     </div>
                 </div>
 
@@ -201,8 +225,6 @@ function Translate() {
                         &nbsp; Làm lại
                     </Button>
                 </div>
-
-
             </div>
         </div>
     );
