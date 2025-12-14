@@ -55,6 +55,7 @@ function AdminReading() {
     const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
     const [errors, setErrors] = useState({});
     const [toast, setToast] = useState(false);
+    const [contentParagraphs, setContentParagraphs] = useState([""]);
 
     const titleRef = useRef(null);
     const contentRef = useRef(null);
@@ -75,6 +76,47 @@ function AdminReading() {
             return () => clearTimeout(timer);
         }
     }, [toast.show]);
+
+    // Hiển thị ở content các đoạn paragraphs
+    useEffect(() => {
+        if (editingArticle) {
+            // Khi mở form edit/create, split content thành array
+            if (editingArticle.content && editingArticle.content.trim()) {
+                const paragraphs = editingArticle.content.split('/n/n').filter(p => p.trim());
+                setContentParagraphs(paragraphs.length > 0 ? paragraphs : [""]);
+            } else {
+                setContentParagraphs([""]);
+            }
+        }
+    }, [editingArticle?.id]);
+
+
+
+    const handleParagraphChange = (index, value) => {
+        const newParagraphs = [...contentParagraphs];
+        newParagraphs[index] = value;
+        setContentParagraphs(newParagraphs);
+
+        // Sync ngược lại vào editingArticle.content với /n/n
+        const joinedContent = newParagraphs.join('/n/n');
+        handleChangeField('content', joinedContent);
+    };
+
+    const handleAddParagraph = () => {
+        setContentParagraphs([...contentParagraphs, ""]);
+    };
+
+    const handleRemoveParagraph = (index) => {
+        if (contentParagraphs.length <= 1) return; // Giữ ít nhất 1 đoạn
+
+        const newParagraphs = contentParagraphs.filter((_, i) => i !== index);
+        setContentParagraphs(newParagraphs);
+
+        // Sync ngược lại vào editingArticle.content với /n/n
+        const joinedContent = newParagraphs.join('/n/n');
+        handleChangeField('content', joinedContent);
+    };
+
 
     useEffect(() => {
         const fetchArticles = async () => {
@@ -588,16 +630,44 @@ function AdminReading() {
                                         <label className={cx("label")}>Nội dung</label>
                                         <span className={cx("requiredStar")}>*</span>
                                     </div>
-                                    <textarea
-                                        ref={contentRef}
-                                        value={editingArticle.content}
-                                        onChange={(e) =>
-                                            handleChangeField("content", e.target.value)
-                                        }
-                                        className={cx("textarea")}
-                                        rows={4}
-                                        placeholder="Nhập đoạn văn tiếng Nhật..."
-                                    />
+
+                                    <div className={cx("paragraphsContainer")}>
+                                        {contentParagraphs.map((paragraph, index) => (
+                                            <div key={index} className={cx("paragraphItem")}>
+                                                <div className={cx("paragraphHeader")}>
+                                                    <span className={cx("paragraphLabel")}>Đoạn {index + 1}</span>
+                                                    {contentParagraphs.length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            className={cx("removeParagraphBtn")}
+                                                            onClick={() => handleRemoveParagraph(index)}
+                                                            title="Xóa đoạn văn này"
+                                                        >
+                                                            <FontAwesomeIcon icon={faXmark} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <textarea
+                                                    ref={index === 0 ? contentRef : null}
+                                                    value={paragraph}
+                                                    onChange={(e) => handleParagraphChange(index, e.target.value)}
+                                                    className={cx("textarea")}
+                                                    rows={4}
+                                                    placeholder={`Nhập đoạn văn ${index + 1}...`}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        className={cx("addParagraphBtn")}
+                                        onClick={handleAddParagraph}
+                                    >
+                                        <FontAwesomeIcon icon={faPlus} />
+                                        <span>Thêm đoạn văn</span>
+                                    </button>
+
                                     {errors.content && <p className={cx("errorText")}>{errors.content}</p>}
                                 </div>
 
