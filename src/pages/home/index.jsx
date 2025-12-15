@@ -317,7 +317,7 @@ function Home() {
               )}
             </div>
 
-            <div className={cx("section")}>
+            {/* <div className={cx("section")}>
               <h4>
                 <FontAwesomeIcon icon={faComments} /> HỎI & ĐÁP
               </h4>
@@ -338,7 +338,7 @@ function Home() {
                   <p>Bởi {p.author}</p>
                 </Card>
               ))}
-            </div>
+            </div> */}
           </aside>
           <div className={cx("main")}>
             <div >
