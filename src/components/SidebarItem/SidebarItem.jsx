@@ -1,4 +1,7 @@
+// src/components/Sidebar.jsx
+
 import { useState, useEffect } from "react";
+import kantanService from "../../services/kantanService";
 
 const SidebarItem = ({ kanji, hanviet, isActive, onClick }) => (
   <div
@@ -33,21 +36,29 @@ const Sidebar = ({ keyword, onSelectKanji, selectedKanji }) => {
     const fetchKanji = async () => {
       setLoading(true);
       try {
-        const res = await fetch(
-          `https://api.jdict.net/api/v1/search?keyword=${encodeURIComponent(keyword)}&keyword_position=start&page=1&type=kanji`
-        );
-        const data = await res.json();
-        const simplifiedList = data.list.map(item => ({
-          kanji: item.kanji,
-          hanviet: item.hanviet
-        }));
-        setKanjiList(simplifiedList);
+        const response = await kantanService.searchKanji({
+          keyword: keyword,
+          pageIndex: 1,
+          level: 0,
+          strokeNumber: 0
+        });
 
-        if (simplifiedList.length > 0 && onSelectKanji) {
-          onSelectKanji(simplifiedList[0].kanji);
+        if (response.success && response.data && response.data.success && response.data.data) {
+          const simplifiedList = response.data.data.map(item => ({
+            kanji: item.character,
+            hanviet: item.meaning
+          }));
+          setKanjiList(simplifiedList);
+
+          // Auto select first kanji
+          if (simplifiedList.length > 0 && onSelectKanji) {
+            onSelectKanji(simplifiedList[0].kanji);
+          }
+        } else {
+          setKanjiList([]);
         }
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching kanji:', err);
         setKanjiList([]);
       } finally {
         setLoading(false);
@@ -55,7 +66,7 @@ const Sidebar = ({ keyword, onSelectKanji, selectedKanji }) => {
     };
 
     fetchKanji();
-  }, [keyword]);
+  }, [keyword]); 
 
   return (
     <div style={{
@@ -71,6 +82,8 @@ const Sidebar = ({ keyword, onSelectKanji, selectedKanji }) => {
 
       {loading ? (
         <div style={{ padding: '10px' }}>Đang tải...</div>
+      ) : kanjiList.length === 0 ? (
+        <div style={{ padding: '10px', color: '#666' }}>Không tìm thấy kết quả</div>
       ) : (
         <div>
           {kanjiList.map((item, index) => (
@@ -87,4 +100,5 @@ const Sidebar = ({ keyword, onSelectKanji, selectedKanji }) => {
     </div>
   );
 };
+
 export default Sidebar;
