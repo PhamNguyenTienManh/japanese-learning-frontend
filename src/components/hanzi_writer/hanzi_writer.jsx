@@ -64,12 +64,16 @@ const HanziWriter = ({ kanji }) => {
 
             // Auto-animate after creation
             setTimeout(() => {
-                if (writerInstanceRef.current) {
-                    writerInstanceRef.current.animateCharacter();
+                try {
+                    if (writerInstanceRef.current && writerInstanceRef.current.animateCharacter) {
+                        writerInstanceRef.current.animateCharacter();
+                    }
+                } catch (err) {
+                    // Không hiển thị lỗi auto-animate
                 }
             }, 200);
         } catch (err) {
-            console.error('Error creating Hanzi Writer:', err);
+            // Không hiển thị lỗi khi API không trả về dữ liệu
         }
 
         return () => {

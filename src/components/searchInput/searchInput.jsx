@@ -104,7 +104,7 @@ const SearchInput = ({ value,onSearch, placeholder = "日本、nihon, Nhật B�
     const dataUrl = canvas.toDataURL('image/png');
 
     try {
-      const res = await fetch('http://127.0.0.1:5000/recognize', {
+      const res = await fetch('https://minhnguyenminj-kanjidetector.hf.space/recognize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: dataUrl }),
