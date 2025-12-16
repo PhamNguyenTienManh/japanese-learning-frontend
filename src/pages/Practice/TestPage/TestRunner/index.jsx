@@ -103,6 +103,7 @@ function TestRunner() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [examResultId, setExamResultId] = useState(null);
+  const [examTitle, setExamTitle] = useState("");
 
   // Hiển thị PopupModal
   const [showConfirm, setShowConfirm] = useState(false);
@@ -172,6 +173,7 @@ function TestRunner() {
 
         if (response.success && response.data) {
           setExamData(response.data.parts);
+          setExamTitle(response.data.exam.title);
 
           // Calculate total time from all parts
           const totalTime = response.data.parts.reduce(
@@ -297,9 +299,7 @@ function TestRunner() {
           answers: answersInPart,
         };
 
-        console.log("Đang lưu đáp án (toàn bộ part):", apiData);
         await saveAnswers(apiData);
-        console.log("Đã lưu đáp án tự động");
       }
     } catch (error) {
       console.error("Lỗi khi lưu đáp án:", error);
@@ -486,7 +486,7 @@ function TestRunner() {
       <div className={cx("wrapper")}>
         <main className={cx("main")}>
           <div className={cx("container")}>
-            <div className={cx("breadcrumb")}>Thi thử / JLPT - N5 / Test 1</div>
+            <div className={cx("breadcrumb")}>Thi thử / JLPT - N5 / {examTitle}</div>
 
             <div className={cx("section-tabs")}>
               {examData.map((part, index) => (
@@ -543,7 +543,7 @@ function TestRunner() {
       <main className={cx("main")}>
         <div className={cx("container")}>
           {/* Breadcrumb */}
-          <div className={cx("breadcrumb")}>Thi thử / JLPT - N5 / Test 1</div>
+          <div className={cx("breadcrumb")}>Thi thử / JLPT - N5 / {examTitle}</div>
 
           {/* Section Tabs */}
           <div className={cx("section-tabs")}>

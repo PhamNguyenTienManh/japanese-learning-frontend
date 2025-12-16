@@ -451,10 +451,13 @@ function AdminReading() {
         setIsGeneratingAudio(true);
 
         try {
-            // Gọi API text-to-speech
-            const response = await uploadVoice(editingArticle.content, 6);
+            const cleanText = editingArticle.content
+                .replace(/\/n\/n/g, " ")
+                .replace(/\n+/g, " ")
+                .trim();
 
-            // API trả về { success: true, data: { audioUrl: "..." } }
+            const response = await uploadVoice(cleanText, 6);
+
             const audioUrl = response?.data?.audioUrl || response?.audioUrl || response;
 
             if (audioUrl) {
@@ -467,22 +470,21 @@ function AdminReading() {
                         }
                         : prev
                 );
-                //alert("Tạo audio thành công!");
+
                 setToast({
                     show: true,
-                    message: 'Tạo audio thành công!',
-                    type: 'success'
+                    message: "Tạo audio thành công!",
+                    type: "success",
                 });
             } else {
                 throw new Error("Không nhận được URL audio");
             }
         } catch (error) {
             console.error("Error generating audio:", error);
-            //alert("Có lỗi xảy ra khi tạo audio. Vui lòng thử lại.");
             setToast({
                 show: true,
-                message: 'Có lỗi xảy ra khi tạo audio. Vui lòng thử lại.',
-                type: 'error'
+                message: "Có lỗi xảy ra khi tạo audio. Vui lòng thử lại.",
+                type: "error",
             });
         } finally {
             setIsGeneratingAudio(false);
