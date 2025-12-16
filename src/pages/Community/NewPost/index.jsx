@@ -32,7 +32,7 @@ function NewPost() {
   const [loading, setLoading] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [postId, setPostId] = useState(null);
-  
+
   // Image upload states
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -140,7 +140,7 @@ function NewPost() {
     formData.append("file", file);
 
     const token = localStorage.getItem("token") || "";
-    const response = await fetch(`http://localhost:9090/api/posts/image`, {
+    const response = await fetch(`${process.env.REACT_APP_BASE_URL_API}/posts/image`, {
       method: "POST",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
@@ -172,7 +172,7 @@ function NewPost() {
         try {
           setIsUploadingImage(true);
           const imageResult = await uploadPostImage(image);
-          uploadedImageData = imageResult.data.data; 
+          uploadedImageData = imageResult.data.data;
 
           setIsUploadingImage(false);
         } catch (uploadErr) {
@@ -196,7 +196,7 @@ function NewPost() {
 
       // Add image data if uploaded
       if (uploadedImageData) {
-        
+
         postData.image_url = uploadedImageData.image_url;
         postData.image_publicId = uploadedImageData.image_publicId;
       } else if (imageChanged && !image && isEdit) {
@@ -204,7 +204,7 @@ function NewPost() {
         postData.image_url = null;
         postData.image_publicId = null;
       }
-      
+
 
       // Step 3: Create or update post
       if (isEdit) {
@@ -312,10 +312,10 @@ function NewPost() {
                 <div className={cx("image-upload")}>
                   {imagePreview ? (
                     <div className={cx("image-preview-container")}>
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
-                        className={cx("image-preview")} 
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className={cx("image-preview")}
                       />
                       <button
                         type="button"
@@ -425,10 +425,10 @@ function NewPost() {
                   {isUploadingImage
                     ? "Đang tải ảnh..."
                     : loading
-                    ? "Đang xử lý..."
-                    : isEdit
-                    ? "Cập nhật"
-                    : "Đăng bài"}
+                      ? "Đang xử lý..."
+                      : isEdit
+                        ? "Cập nhật"
+                        : "Đăng bài"}
                 </Button>
                 <Button
                   outline

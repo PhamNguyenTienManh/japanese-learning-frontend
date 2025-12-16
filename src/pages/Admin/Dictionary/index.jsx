@@ -28,7 +28,7 @@ import {
 } from "~/services/jlptService";
 import styles from "./DictionaryAdmin.module.scss";
 
-const BASE_URL = "http://localhost:9090/api";
+const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 
 const cx = classNames.bind(styles);
 
