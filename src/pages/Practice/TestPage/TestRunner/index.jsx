@@ -169,7 +169,6 @@ function TestRunner() {
       try {
         setLoading(true);
         const response = await getExamDetail(testId);
-        console.log("vvvvv", response)
 
         if (response.success && response.data) {
           setExamData(response.data.parts);
@@ -594,7 +593,7 @@ function TestRunner() {
                 )}
 
                 {/* General Text Read */}
-                {currentQuestion.general?.txt_read && (
+                {currentPartIndex === 1 && currentQuestion.general?.txt_read && (
                   <div className={cx("text-read-box")}>
                     <p>{currentQuestion.general.txt_read}</p>
                   </div>
