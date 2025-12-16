@@ -1,7 +1,7 @@
 // src/services/kantanService.js
 
 class KantanService {
-    constructor(baseUrl = 'http://localhost:9090/api') {
+    constructor(baseUrl = 'https://japanese-learning-backend-5qez.onrender.com/api') {
         this.baseUrl = baseUrl;
     }
 
