@@ -24,7 +24,7 @@ export function useStudyTimeTracker() {
             if (minutes > 0) {
                 // Sử dụng sendBeacon để đảm bảo request được gửi
                 const token = localStorage.getItem('token');
-                const BASE_URL = 'http://localhost:9090/api';
+                const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 
                 const data = JSON.stringify({ minutes });
                 const blob = new Blob([data], { type: 'application/json' });

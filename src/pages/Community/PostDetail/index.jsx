@@ -130,7 +130,7 @@ function PostDetail() {
 
         const postOwnerId = postData.profile_id.userId;
         setIsOwner(currentUserId === postOwnerId);
-        if(localStorage.getItem("token")){
+        if (localStorage.getItem("token")) {
           const me = await getMe(currentUserId);
         }
 
@@ -336,7 +336,7 @@ function PostDetail() {
     formData.append("file", file);
 
     const token = localStorage.getItem("token") || "";
-    const response = await fetch(`http://localhost:9090/api/posts/image`, {
+    const response = await fetch(`${process.env.REACT_APP_BASE_URL_API}/posts/image`, {
       method: "POST",
       headers: {
         Authorization: token ? `Bearer ${token}` : "",
@@ -444,16 +444,16 @@ function PostDetail() {
     setEditedTitle(post.title);
     setEditedContent(post.content || post.description || "");
     setCategoryId(post.category_id?._id || post.category_id || "");
-    
+
     // Backup original image data
     setOriginalImageUrl(post.image_url || null);
     setOriginalImagePublicId(post.image_publicId || null);
-    
+
     // Set current image as preview
     setImagePreview(post.image_url || null);
     setImage(null);
     setImageChanged(false);
-    
+
     fetchCategories();
     setIsEditing(true);
   };
@@ -489,7 +489,7 @@ function PostDetail() {
         try {
           setIsUploadingImage(true);
           const imageResult = await uploadPostImage(image);
-          uploadedImageData = imageResult.data.data; 
+          uploadedImageData = imageResult.data.data;
           setIsUploadingImage(false);
         } catch (uploadErr) {
           setIsUploadingImage(false);
@@ -637,7 +637,7 @@ function PostDetail() {
           <Card className={cx("post-card")}>
             {/* Header */}
             <div className={cx("post-header")}>
-              <img 
+              <img
                 src={
                   post.profile_id?.image_url ||
                   post.authorAvatar ||
@@ -790,8 +790,8 @@ function PostDetail() {
                       {isUploadingImage
                         ? "Đang tải ảnh..."
                         : saving
-                        ? "Đang lưu..."
-                        : "Lưu thay đổi"}
+                          ? "Đang lưu..."
+                          : "Lưu thay đổi"}
                     </Button>
                     <Button
                       outline
@@ -832,7 +832,7 @@ function PostDetail() {
                           {i <
                             (post.content || post.description || "").split("\n")
                               .length -
-                              1 && <br />}
+                            1 && <br />}
                         </span>
                       ))}
                   </p>
@@ -1042,7 +1042,7 @@ function PostDetail() {
                                           {line}
                                           {i <
                                             (c.content || "").split("\n").length -
-                                              1 && <br />}
+                                            1 && <br />}
                                         </span>
                                       ))}
                                   </p>
