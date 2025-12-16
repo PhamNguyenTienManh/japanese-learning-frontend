@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:9090/api";
+const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 export async function translateText(text, source, target) {
     const response = await fetch(`${BASE_URL}/translate`, {
         method: "POST",

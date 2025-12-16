@@ -1,24 +1,24 @@
 import { useState, useEffect } from "react";
 
-const SearchInput = ({ value,onSearch, placeholder = "日本、nihon, Nhật Bản" }) => {
+const SearchInput = ({ value, onSearch, placeholder = "日本、nihon, Nhật Bản" }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [showHandwriting, setShowHandwriting] = useState(false);
   const [recognizedResults, setRecognizedResults] = useState([]);
   useEffect(() => {
-    if(value) setSearchQuery(value)
-  },[value])
+    if (value) setSearchQuery(value)
+  }, [value])
   useEffect(() => {
     if (!showHandwriting) return;
 
     const canvas = document.getElementById('handwriting-canvas');
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    
+
     ctx.lineWidth = 1;
     ctx.lineCap = 'round';
     ctx.strokeStyle = 'black';
@@ -54,7 +54,7 @@ const SearchInput = ({ value,onSearch, placeholder = "日本、nihon, Nhật B�
       ctx.stroke();
       lastX = pos.x;
       lastY = pos.y;
-      
+
       if (timeoutId) clearTimeout(timeoutId);
       timeoutId = setTimeout(handleRecognize, 500);
     };
@@ -104,7 +104,7 @@ const SearchInput = ({ value,onSearch, placeholder = "日本、nihon, Nhật B�
     const dataUrl = canvas.toDataURL('image/png');
 
     try {
-      const res = await fetch('http://127.0.0.1:5000/recognize', {
+      const res = await fetch(process.env.REACT_APP_OCR_RECOGNIZE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: dataUrl }),
@@ -175,144 +175,144 @@ const SearchInput = ({ value,onSearch, placeholder = "日本、nihon, Nhật B�
       </div>
 
       {showHandwriting && (
-  <div
-    style={{
-      backgroundColor: '#fff',
-      borderRadius: '6px',
-      padding: '10px',
-      marginTop: '6px',
-      boxShadow: '0 1px 6px rgba(0,0,0,0.1)',
-      border: '1px solid #e0e0e0'
-    }}
-  >
-    {/* Header */}
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '8px'
-      }}
-    >
-      <h3
-        style={{
-          margin: 0,
-          fontSize: '12px',
-          fontWeight: '600',
-          color: '#333'
-        }}
-      >
-      </h3>
-
-      <button
-        onClick={() => {
-          setShowHandwriting(false);
-          setRecognizedResults([]);
-        }}
-        style={{
-          background: 'none',
-          border: 'none',
-          fontSize: '16px',
-          cursor: 'pointer',
-          color: '#999',
-          padding: 0,
-          lineHeight: 1
-        }}
-      >
-        ×
-      </button>
-    </div>
-
-    {/* Canvas + Xóa */}
-    <div
-      style={{
-        display: 'flex',
-        gap: '6px',
-        marginBottom: '8px',
-        alignItems: 'flex-start'
-      }}
-    >
-      <div
-        style={{
-          flex: 1,
-          border: '1px solid #ddd',
-          borderRadius: '4px',
-          overflow: 'hidden',
-          backgroundColor: '#fff'
-        }}
-      >
-        {/* HEIGHT GIẢM XUỐNG 100 */}
-        <canvas
-          id="handwriting-canvas"
-          width={300}
-          height={50}
+        <div
           style={{
-            display: 'block',
-            width: '100%',
-            cursor: 'crosshair'
-          }}
-        />
-      </div>
-
-      <button
-        onClick={handleClear}
-        style={{
-          padding: '6px 10px',
-          backgroundColor: '#fff',
-          border: '1px solid #ddd',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontSize: '12px',
-          color: '#666',
-          whiteSpace: 'nowrap'
-        }}
-      >
-        Xóa
-      </button>
-    </div>
-
-    {/* Kết quả nhận dạng */}
-    {recognizedResults.length > 0 && (
-      <div>
-        <h4
-          style={{
-            fontSize: '11px',
-            fontWeight: '600',
-            marginBottom: '6px',
-            color: '#666'
+            backgroundColor: '#fff',
+            borderRadius: '6px',
+            padding: '10px',
+            marginTop: '6px',
+            boxShadow: '0 1px 6px rgba(0,0,0,0.1)',
+            border: '1px solid #e0e0e0'
           }}
         >
-          Kết quả nhận dạng:
-        </h4>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-          {recognizedResults.map((result, index) => (
-            <button
-              key={index}
-              onClick={() => handleSelectKanji(result.kanji)}
+          {/* Header */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '8px'
+            }}
+          >
+            <h3
               style={{
-                padding: '6px 8px',
-                fontSize: '18px',
-                backgroundColor: '#f9f9f9',
+                margin: 0,
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#333'
+              }}
+            >
+            </h3>
+
+            <button
+              onClick={() => {
+                setShowHandwriting(false);
+                setRecognizedResults([]);
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '16px',
+                cursor: 'pointer',
+                color: '#999',
+                padding: 0,
+                lineHeight: 1
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Canvas + Xóa */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '6px',
+              marginBottom: '8px',
+              alignItems: 'flex-start'
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                overflow: 'hidden',
+                backgroundColor: '#fff'
+              }}
+            >
+              {/* HEIGHT GIẢM XUỐNG 100 */}
+              <canvas
+                id="handwriting-canvas"
+                width={300}
+                height={50}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  cursor: 'crosshair'
+                }}
+              />
+            </div>
+
+            <button
+              onClick={handleClear}
+              style={{
+                padding: '6px 10px',
+                backgroundColor: '#fff',
                 border: '1px solid #ddd',
                 borderRadius: '4px',
                 cursor: 'pointer',
-                fontWeight: 'bold',
-                transition: 'all 0.2s',
-                minWidth: '40px'
+                fontSize: '12px',
+                color: '#666',
+                whiteSpace: 'nowrap'
               }}
             >
-              {result.kanji}
+              Xóa
             </button>
-          ))}
-        </div>
-      </div>
-    )}
+          </div>
 
-    <div style={{ marginTop: '6px', fontSize: '11px', color: '#999' }}>
-    </div>
-  </div>
-)}
+          {/* Kết quả nhận dạng */}
+          {recognizedResults.length > 0 && (
+            <div>
+              <h4
+                style={{
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  marginBottom: '6px',
+                  color: '#666'
+                }}
+              >
+                Kết quả nhận dạng:
+              </h4>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                {recognizedResults.map((result, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSelectKanji(result.kanji)}
+                    style={{
+                      padding: '6px 8px',
+                      fontSize: '18px',
+                      backgroundColor: '#f9f9f9',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      transition: 'all 0.2s',
+                      minWidth: '40px'
+                    }}
+                  >
+                    {result.kanji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginTop: '6px', fontSize: '11px', color: '#999' }}>
+          </div>
+        </div>
+      )}
 
     </div>
   );

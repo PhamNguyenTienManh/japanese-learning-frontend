@@ -212,7 +212,7 @@ function JLPT() {
                     selectedType === "Hán tự" ? "kanji" :
                         "word";
 
-            const url = `http://localhost:9090/api/pdf/jlpt?page=${currentPage}&limit=9&level=${selectedLevel}&type=${typeParam}`;
+            const url = `${process.env.REACT_APP_BASE_URL_API}/pdf/jlpt?page=${currentPage}&limit=9&level=${selectedLevel}&type=${typeParam}`;
 
             const response = await fetch(url);
             const blob = await response.blob();

@@ -1,7 +1,7 @@
 const ContributionService = {
     // Base URL
     BASE_URL: 'https://api.mazii.net/api',
-    LOCAL_URL: 'http://localhost:9090/api',
+    LOCAL_URL: process.env.REACT_APP_BASE_URL_API,
 
     // Token cố định
     TOKEN: '67a52195686f08c66a19d122f9bca902',
@@ -35,10 +35,10 @@ const ContributionService = {
 
             // Map dữ liệu localData.comments vào data.result
             if (Array.isArray(localData.data)) {
-                
+
                 const mappedComments = localData.data.map((item) => ({
-                    mean: item.content || null,          
-                    wordId: item.kanjiId || null,       
+                    mean: item.content || null,
+                    wordId: item.kanjiId || null,
                     like: item.like ?? 0,
                     dislike: item.dislike ?? 0,
                     type: item.type ?? null,
@@ -48,7 +48,7 @@ const ContributionService = {
                     dict: "javi",
                     reportId: 0,
                     status: 2,
-                    type:1,
+                    type: 1,
                     word: ""
 
                 }));
@@ -56,7 +56,7 @@ const ContributionService = {
                 // if (!Array.isArray(data.result)) data.result = [];
                 data.result.push(...mappedComments);
             }
-            
+
             return data;
         } catch (error) {
             console.error('Error fetching comments:', error);
