@@ -2,7 +2,7 @@
 
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:9090/api/search-history";
+const API_BASE_URL = `${process.env.REACT_APP_BASE_URL_API}/search-history`;
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -76,7 +76,7 @@ const searchHistoryService = {
     try {
       const response = await axiosInstance.delete(
         `${API_BASE_URL}/user/${userId}`,
-        { params: { term } } 
+        { params: { term } }
       );
       return response;
     } catch (error) {
