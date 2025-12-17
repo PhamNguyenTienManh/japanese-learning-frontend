@@ -13,17 +13,10 @@ import {
 
 import Card from "~/components/Card";
 import styles from "./Admin.module.scss";
+import { useEffect, useState } from "react";
+import { getStatistics } from "~/services/statistic";
 
 const cx = classNames.bind(styles);
-
-const stats = {
-    totalUsers: 6,
-    activeUsers: 6,
-    totalWords: 5678,
-    totalTests: 5,
-    totalPosts: 11,
-    pendingReports: 3,
-};
 
 const recentActivity = [
     {
@@ -49,6 +42,25 @@ const recentActivity = [
 ];
 
 function Admin() {
+    const [totalUser, setTotalUser] = useState();
+    const [totalJlpt, setTotalJlpt] = useState();
+    const [totalPosts, setTotalPosts] = useState();
+    const [totalNews, setTotalNews] = useState();
+    const [totalExam, setTotalExam] = useState();
+
+    useEffect(() => {
+        const fetchStatistic = async () => {
+            const response = await getStatistics();
+            const statistic = response.data;
+            setTotalUser(statistic.profileNumber);
+            setTotalPosts(statistic.postsNumber);
+            setTotalNews(statistic.newsNumber);
+            setTotalJlpt(statistic.jlptNumber);
+            setTotalExam(statistic.examNumber);
+        }
+        fetchStatistic();
+    }, [])
+
     return (
         <div className={cx("wrapper")}>
 
@@ -71,12 +83,12 @@ function Admin() {
                                         <FontAwesomeIcon icon={faUsers} />
                                     </div>
                                     <div>
-                                        <p className={cx("cardValue")}>{stats.totalUsers}</p>
+                                        <p className={cx("cardValue")}>{totalUser}</p>
                                         <p className={cx("cardLabel")}>Người dùng</p>
                                     </div>
                                 </div>
                                 <p className={cx("cardSub")}>
-                                    {stats.activeUsers} đang hoạt động
+                                    {totalUser} đang hoạt động
                                 </p>
                             </Card>
                         </Link>
@@ -88,7 +100,7 @@ function Admin() {
                                         <FontAwesomeIcon icon={faBookOpen} />
                                     </div>
                                     <div>
-                                        <p className={cx("cardValue")}>{stats.totalWords}</p>
+                                        <p className={cx("cardValue")}>{totalJlpt}</p>
                                         <p className={cx("cardLabel")}>Từ vựng JLPT </p>
                                     </div>
                                 </div>
@@ -103,7 +115,7 @@ function Admin() {
                                         <FontAwesomeIcon icon={faBookReader} />
                                     </div>
                                     <div>
-                                        <p className={cx("cardValue")}>12</p>
+                                        <p className={cx("cardValue")}>{totalNews}</p>
                                         <p className={cx("cardLabel")}>Luyện đọc</p>
                                     </div>
                                 </div>
@@ -118,7 +130,7 @@ function Admin() {
                                         <FontAwesomeIcon icon={faFileLines} />
                                     </div>
                                     <div>
-                                        <p className={cx("cardValue")}>{stats.totalTests}</p>
+                                        <p className={cx("cardValue")}>{totalExam}</p>
                                         <p className={cx("cardLabel")}>Đề thi</p>
                                     </div>
                                 </div>
@@ -133,7 +145,7 @@ function Admin() {
                                         <FontAwesomeIcon icon={faComments} />
                                     </div>
                                     <div>
-                                        <p className={cx("cardValue")}>{stats.totalPosts}</p>
+                                        <p className={cx("cardValue")}>{totalPosts}</p>
                                         <p className={cx("cardLabel")}>Bài viết</p>
                                     </div>
                                 </div>
