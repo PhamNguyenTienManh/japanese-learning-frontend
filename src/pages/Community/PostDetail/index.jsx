@@ -34,7 +34,36 @@ import { useAuth } from "~/context/AuthContext";
 import { getProfile } from "~/services/profileService";
 
 const cx = classNames.bind(styles);
+function ImageZoomModal({ imageUrl, onClose }) {
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
 
+  return (
+    <div
+      className={cx("image-zoom-modal")}
+      onClick={onClose}
+    >
+      <button
+        className={cx("zoom-close-btn")}
+        onClick={onClose}
+      >
+        <FontAwesomeIcon icon={faTimes} />
+      </button>
+
+      <img
+        src={imageUrl}
+        alt="Zoomed"
+        className={cx("zoomed-image")}
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
+  );
+}
 function PostDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -60,6 +89,7 @@ function PostDetail() {
   const [editedCommentContent, setEditedCommentContent] = useState("");
   const [savingComment, setSavingComment] = useState(false);
   const [profile, setProfile] = useState({});
+  const [zoomedImage, setZoomedImage] = useState(null);
 
   // Image upload states
   const [image, setImage] = useState(null);
@@ -812,7 +842,11 @@ function PostDetail() {
 
                 {/* Post Image */}
                 {post.image_url && (
-                  <div className={cx("post-image-container")}>
+                  <div
+                    className={cx("post-image-container")}
+                    onClick={() => setZoomedImage(post.image_url)}
+                    style={{ cursor: 'zoom-in' }}
+                  >
                     <img
                       src={post.image_url}
                       alt={post.title}
@@ -872,7 +906,15 @@ function PostDetail() {
                       />
                     }
                   >
-                    {post.liked.includes(currentUserId) ? "Đã thích" : "Thích"}
+                    <span
+                      className={cx(
+                        "like-text",
+                        post.liked.includes(currentUserId) && "liked"
+                      )}
+                    >
+                      {post.liked.includes(currentUserId) ? "Đã thích" : "Thích"}
+                    </span>
+
                   </Button>
 
                   <Button
@@ -1078,6 +1120,12 @@ function PostDetail() {
           )}
         </div>
       </main>
+      {zoomedImage && (
+        <ImageZoomModal
+          imageUrl={zoomedImage}
+          onClose={() => setZoomedImage(null)}
+        />
+      )}
     </div>
   );
 }

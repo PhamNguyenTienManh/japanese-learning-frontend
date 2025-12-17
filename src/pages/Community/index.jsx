@@ -63,30 +63,30 @@ function Community() {
   // Lấy userId từ token trong localStorage
   const getLoggedInUserId = () => {
     const token = localStorage.getItem("token")
-    
+
     if (token) {
       const decoded = decodeToken(token);
       return decoded?.sub;
     }
     return null;
   };
-  
+
   const currentUserId = getLoggedInUserId();
 
   // Fetch posts
   const fetchPosts = async (page, sort = "popular", category = null) => {
-    
+
     setLoading(true);
     setError(null);
     try {
       let data;
       if (category && category !== "Tất cả") {
         data = await postService.getPostsByCategory(category, page, 5);
-        
+
       } else {
         data = await postService.getPosts(page, 5, sort);
       }
-      
+
       // Map posts với thông tin like
       const postsData = data.posts || data.data || data;
       const mappedPosts = {
@@ -94,7 +94,7 @@ function Community() {
         data: postsData.data?.map(post => {
           const likedArray = Array.isArray(post.liked) ? post.liked : [];
           const isUserLiked = likedArray.includes(currentUserId);
-          
+
           return {
             ...post,
             likeCount: likedArray.length,
@@ -102,7 +102,7 @@ function Community() {
           };
         }) || []
       };
-      
+
       setPosts(mappedPosts);
       setTotalPages(data.data.totalPage || 1);
       setCurrentPage(page);
@@ -119,10 +119,10 @@ function Community() {
     try {
       const data = await postService.getCommunityStats();
       setStats({
-        totalPosts: data.data.totalPosts  || 234,
-        totalMembers: data.data.totalMembers  || "6",
-        totalLikes: data.data.totalLikes  || "0",
-        totalViews: data.data.totalViews  || "16",
+        totalPosts: data.data.totalPosts || 234,
+        totalMembers: data.data.totalMembers || "6",
+        totalLikes: data.data.totalLikes || "0",
+        totalViews: data.data.totalViews || "16",
       });
     } catch (err) {
       console.error("Error fetching stats:", err);
@@ -133,7 +133,7 @@ function Community() {
   const fetchCategories = async () => {
     try {
       const data = await postService.getCategories();
-      
+
       const allCategories = [
         { name: "Tất cả", count: data.reduce((sum, cat) => sum + (cat.count || 0), 0) },
         ...data
@@ -180,7 +180,7 @@ function Community() {
     setSelectedCategory(null);
     try {
       const data = await postService.searchPosts(searchQuery, 1, 5);
-      
+
       // Map search results
       const postsData = data.posts || data.data || data;
       const mappedPosts = {
@@ -194,7 +194,7 @@ function Community() {
           };
         }) || []
       };
-      
+
       setPosts(mappedPosts);
       setTotalPages(data.data.totalPage || 1);
       setCurrentPage(1);
@@ -211,7 +211,7 @@ function Community() {
     setSearchQuery("");
     setSelectedCategory(categoryName);
     const sort = activeTab === "all" ? "popular" : "recent";
-    
+
     if (categoryName === "Tất cả") {
       fetchPosts(1, sort, null);
     } else {
@@ -233,15 +233,15 @@ function Community() {
   const renderPagination = () => {
     // Debug: Xem totalPages và currentPage
     console.log('Pagination debug:', { totalPages, currentPage, postsCount: posts.data?.length });
-    
+
     if (totalPages <= 1) return null;
 
     const pageNumbers = [];
     const maxPagesToShow = 5;
-    
+
     let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
     let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-    
+
     if (endPage - startPage < maxPagesToShow - 1) {
       startPage = Math.max(1, endPage - maxPagesToShow + 1);
     }
@@ -358,7 +358,7 @@ function Community() {
                     className={cx("avatar")}
                   />
                   <div>
-                    
+
                   </div>
                   <div className={cx("post-header-info")}>
                     <div className={cx("post-author-row")}>
@@ -370,11 +370,11 @@ function Community() {
                       </span>
                     </div>
                   </div>
-                    {post.category_id && (
-                      <span className={cx("post-category")}>
-                        {post.category_id.name}
-                      </span>
-                    )}
+                  {post.category_id && (
+                    <span className={cx("post-category")}>
+                      {post.category_id.name}
+                    </span>
+                  )}
                 </div>
 
                 {/* Content */}
@@ -384,10 +384,12 @@ function Community() {
                     {post.excerpt || post.content}
                   </p>
                 </div>
+                {post.image_url && (<div className={cx("post-image-container")}>
+                  <img className={cx("post-image")} src={post.image_url} />
+                </div>)
 
-                <div className={cx("post-image-container")}>
-                    <img className={cx("post-image")} src={post.image_url} />
-                </div>
+                }
+
 
                 {/* Stats */}
                 <div className={cx("post-stats")}>
