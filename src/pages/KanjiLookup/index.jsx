@@ -64,12 +64,12 @@ const KanjiLookupInterface = () => {
       <div className={cx('container')}>
         {/* Tabs */}
         <div className={cx('tabs')}>
-          <button
+          {/* <button
             className={cx('tab', { active: activeTab === 'vocab' })}
             onClick={() => handleTabChange('vocab')}
           >
             Tra từ vựng
-          </button>
+          </button> */}
           <button
             className={cx('tab', { active: activeTab === 'kanji' })}
             onClick={() => handleTabChange('kanji')}
@@ -79,19 +79,19 @@ const KanjiLookupInterface = () => {
         </div>
 
         <div className={cx('content-wrapper')}>
-          {activeTab === 'vocab' ? (
+          {/* {activeTab === 'vocab' ? (
             <VocabSidebar
               keyword={searchKeyword}
               onSelectVocab={handleSelectVocab}
               selectedVocab={selectedVocab}
             />
-          ) : (
+          ) : ( */}
             <SidebarItem
               keyword={searchKeyword}
               onSelectKanji={handleSelectKanji}
               selectedKanji={selectedKanji}
             />
-          )}
+          {/* )} */}
 
           {/* Main content */}
           <div className={cx('main-area')}>
@@ -104,16 +104,16 @@ const KanjiLookupInterface = () => {
               />
             </div>
 
-            {activeTab === 'vocab' ? (
+            {/* {activeTab === 'vocab' ? (
               <VocabContent selectedVocab={selectedVocab} />
             ) : (
               <MainContent selectedKanji={selectedKanji} />
-            )}
-            {/* {activeTab === 'vocab' ? (
+            )} */}
+            {activeTab === 'vocab' ? (
               <MainContent selectedKanji={selectedKanji} />
             ) : (
               <MainContent selectedKanji={selectedKanji} />
-            )} */}
+            )}
           </div>
         </div>
       </div>
