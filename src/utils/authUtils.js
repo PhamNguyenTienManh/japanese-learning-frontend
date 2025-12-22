@@ -1,4 +1,5 @@
 // ~/utils/authUtils.js
+import { useLocation, Navigate } from "react-router-dom";
 import decodeToken from "~/services/pairToken";
 
 export function getToken() {
@@ -54,3 +55,20 @@ export function getAuthInfo() {
         exp: payload?.exp || null
     };
 }
+export const AdminGuard = ({ children }) => {
+    const payload = decodeToken(localStorage.getItem('token'))
+    const location = useLocation();
+    
+    if (!payload || payload.role !== "admin") {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location }}
+      />
+    );
+  }
+
+  return children;
+};
+

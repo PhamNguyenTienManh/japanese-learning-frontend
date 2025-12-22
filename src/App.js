@@ -5,6 +5,7 @@ import { Fragment } from "react/jsx-runtime";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
 import { useStudyTimeTracker } from "./hooks/useStudyTimeTracker";
+import { AdminGuard } from "./utils/authUtils";
 // import { RequireAuth, RequireAdmin } from "~/components/Auth";
 
 function AnimatedRoutes() {
@@ -38,6 +39,29 @@ function AnimatedRoutes() {
             Layout = Fragment;
           }
           const Page = route.component;
+          if (route.path.startsWith("/admin")) {
+            return (
+              <Route
+                key={index}
+                path={route.path}
+                element={
+                  <AdminGuard>
+                    <motion.div
+                      initial={{ opacity: 0, y: 50 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -50 }}
+                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                    >
+                      <Layout>
+                        <Page />
+                      </Layout>
+                    </motion.div>
+                  </AdminGuard>
+                }
+              />
+            );
+          }
+
           return (
             <Route
               key={index}
