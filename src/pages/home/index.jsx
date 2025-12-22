@@ -4,9 +4,6 @@ import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFire,
-  faEye,
-  faHeart,
-  faComments,
   faHistory,
   faTrash,
 } from "@fortawesome/free-solid-svg-icons";
@@ -64,27 +61,6 @@ const mockWords = [
   },
 ];
 
-const communityPosts = [
-  {
-    id: 1,
-    title: "Cách phân biệt N5 và N4 kanji hiệu quả?",
-    author: "Minh Anh",
-    views: 324,
-    likes: 45,
-    comments: 12,
-    category: "Học Tiếng Nhật",
-  },
-  {
-    id: 2,
-    title: "Luyện phát âm chuẩn tiếng Nhật như thế nào?",
-    author: "Hạnh Linh",
-    views: 156,
-    likes: 28,
-    comments: 8,
-    category: "Phát âm",
-  },
-];
-
 const cx = classNames.bind(styles);
 
 function Home() {
@@ -106,27 +82,44 @@ function Home() {
   }, []);
 
   const fetchSearchHistory = async () => {
-    const result = await searchHistoryService.getSearchHistory(userId);
-
-
-    if (result.success) {
-      setSearchHistory(result.history);
+    try {
+      const result = await searchHistoryService.getSearchHistory(userId);
+      if (result.success) {
+        setSearchHistory(result.history);
+      }
+    } catch (error) {
+      console.error('Error fetching search history:', error);
     }
   };
 
   const fetchTrendingWords = async () => {
     setIsLoadingTrending(true);
-    const result = await trendingWordsService.getTrendingWords(5);
+    try {
+      const result = await trendingWordsService.getTrendingWords(5);
 
-    if (result.success) {
-      setTrendingWords(result.data);
+      if (result.success) {
+        setTrendingWords(result.data.data);
+      } else {
+        setTrendingWords([]);
+      }
+    } catch (error) {
+      console.error('Error fetching trending words:', error);
+      setTrendingWords([]);
+    } finally {
+      setIsLoadingTrending(false);
     }
-    setIsLoadingTrending(false);
   };
 
   const addToSearchHistory = async (keyword) => {
-    await searchHistoryService.addSearchHistory(userId, keyword.trim());
-    fetchSearchHistory();
+    if (!userId) return;
+    
+    try {
+      await searchHistoryService.addSearchHistory(userId, keyword.trim());
+      fetchSearchHistory();
+      fetchTrendingWords();
+    } catch (error) {
+      console.error('Error adding to search history:', error);
+    }
   };
 
   const handleSearch = (keyword) => {
@@ -147,13 +140,21 @@ function Home() {
   };
 
   const removeHistoryItem = async (query) => {
-    await searchHistoryService.removeSearchHistory(userId, query);
-    fetchSearchHistory();
+    try {
+      await searchHistoryService.removeSearchHistory(userId, query);
+      fetchSearchHistory();
+    } catch (error) {
+      console.error('Error removing history item:', error);
+    }
   };
 
   const clearAllHistory = async () => {
-    await searchHistoryService.clearAllHistory(userId);
-    setSearchHistory([]);
+    try {
+      await searchHistoryService.clearAllHistory(userId);
+      setSearchHistory([]);
+    } catch (error) {
+      console.error('Error clearing history:', error);
+    }
   };
 
   const searchFromHistory = (keyword) => {
@@ -165,7 +166,6 @@ function Home() {
       prev.includes(id) ? prev.filter((w) => w !== id) : [...prev, id]
     );
   };
-
 
   useEffect(() => {
     if (!showHandwriting) return;
@@ -261,7 +261,6 @@ function Home() {
   };
 
   const handleSelectKanji = (kanji) => {
-    // Navigate to KanjiLookup with selected kanji
     navigate("/kanji-lookup", {
       state: {
         searchQuery: kanji,
@@ -292,58 +291,39 @@ function Home() {
                     Đang tải...
                   </p>
                 </Card>
-              ) : trendingWords.length === 0 ? (
+              ) : !Array.isArray(trendingWords) || trendingWords.length === 0 ? (
                 <Card>
                   <p style={{ textAlign: "center", color: "#888" }}>
-                    Không có dữ liệu
+                    Chưa có dữ liệu
                   </p>
                 </Card>
               ) : (
-                trendingWords.map((w, i) => (
+                trendingWords.map((item, index) => (
                   <Card
-                    key={w.id}
-                    onClick={() => handleSearch(w.kanji)}
+                    key={`${item.term}-${index}`}
+                    onClick={() => handleSearch(item.term)}
                     style={{ cursor: "pointer" }}
                   >
                     <div className={cx("trend-header")}>
-                      <span className={cx("rank")}>{i + 1}</span>
-                      <h5>{w.kanji}</h5>
+                      <span className={cx("rank")}>{index + 1}</span>
+                      <h5>{item.term}</h5>
                     </div>
-                    {w.hiragana && <p>{w.hiragana}</p>}
-                    <p>{w.meaning}</p>
-                    <small>{w.views.toLocaleString()} lượt xem</small>
+                    <p>
+                      <small>
+                        <FontAwesomeIcon icon={faFire} /> {item.count.toLocaleString()} lượt tìm kiếm
+                      </small>
+                    </p>
                   </Card>
                 ))
               )}
             </div>
-
-            {/* <div className={cx("section")}>
-              <h4>
-                <FontAwesomeIcon icon={faComments} /> HỎI & ĐÁP
-              </h4>
-              {communityPosts.map((p) => (
-                <Card key={p.id} className={cx("post-card")}>
-                  <h5>{p.title}</h5>
-                  <div className={cx("meta")}>
-                    <span>
-                      <FontAwesomeIcon icon={faEye} /> {p.views}
-                    </span>
-                    <span>
-                      <FontAwesomeIcon icon={faHeart} /> {p.likes}
-                    </span>
-                    <span>
-                      <FontAwesomeIcon icon={faComments} /> {p.comments}
-                    </span>
-                  </div>
-                  <p>Bởi {p.author}</p>
-                </Card>
-              ))}
-            </div> */}
           </aside>
+          
           <div className={cx("main")}>
-            <div >
+            <div>
               <SearchInput onSearch={handleSearch} />
             </div>
+            
             <div className={cx("section")}>
               <div style={{ display: "flex" }}>
                 <h4>
@@ -351,7 +331,7 @@ function Home() {
                 </h4>
               </div>
               <div>
-                {searchHistory.length === 0 ? (
+                {!Array.isArray(searchHistory) || searchHistory.length === 0 ? (
                   <Card>
                     <p
                       style={{
@@ -414,8 +394,9 @@ function Home() {
                 )}
               </div>
             </div>
+            
             <section className={cx("results")}>
-              {searchResults.length === 0 ? (
+              {!Array.isArray(searchResults) || searchResults.length === 0 ? (
                 <Card className={cx("empty")}>
                   <p className={cx("empty-text")}>
                     Không tìm thấy kết quả nào
