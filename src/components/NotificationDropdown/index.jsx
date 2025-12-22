@@ -137,7 +137,7 @@ function NotificationDropdown({ isOpen, onToggle, onClose }) {
   const formatTime = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diff = Math.floor((now - date) / 1000); // seconds
+    const diff = Math.floor((now - date) / 1000); 
 
     if (diff < 60) return "Vừa xong";
     if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;

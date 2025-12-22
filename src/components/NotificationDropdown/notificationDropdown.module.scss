@@ -219,3 +219,65 @@
     max-height: 350px;
   }
 }
+.notification-wrapper {
+  position: relative;
+  
+  .badge {
+    position: absolute;
+    top: -3px;
+    right: -10px;
+    
+    // Layout & sizing
+    min-width: 14px;
+    height: 18px;
+    padding: 0 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    // Typography
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    
+    // Colors
+    background: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
+    color: white;
+    
+    // Shape
+    border-radius: 10px;
+    border: 2px solid white;
+    
+    // Effects
+    box-shadow: 
+      0 2px 4px rgba(255, 71, 87, 0.3),
+      0 0 0 1px rgba(255, 71, 87, 0.1);
+    
+    // Animation
+    animation: pulse 2s ease-in-out infinite;
+    
+    // Smooth transitions
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Pulse animation
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 
+      0 2px 4px rgba(255, 71, 87, 0.3),
+      0 0 0 1px rgba(255, 71, 87, 0.1),
+      0 0 0 0 rgba(255, 71, 87, 0.4);
+  }
+  50% {
+    box-shadow: 
+      0 2px 6px rgba(255, 71, 87, 0.4),
+      0 0 0 1px rgba(255, 71, 87, 0.1),
+      0 0 0 4px rgba(255, 71, 87, 0.2);
+  }
+}
+
