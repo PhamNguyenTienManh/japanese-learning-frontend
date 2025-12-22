@@ -14,6 +14,7 @@ import Card from "~/components/Card";
 import Button from "~/components/Button";
 import Input from "~/components/Input";
 import postService from "~/services/postService";
+import notificationService from "~/services/notificationService";
 
 import styles from "./AdminPosts.module.scss";
 
@@ -83,7 +84,7 @@ function AdminPosts() {
     }, [searchQuery, categoryFilter, page]);
 
     // Handle delete post
-    const handleDeletePost = async (postId) => {
+    const handleDeletePost = async (postId, title, targetUserId) => {
         if (!window.confirm("Bạn có chắc chắn muốn xóa bài viết này?")) {
             return;
         }
@@ -93,6 +94,16 @@ function AdminPosts() {
             setPosts(posts.filter(post => post.id !== postId));
             setTotalPosts(prev => prev - 1);
             alert("Xóa bài viết thành công!");
+            try {
+                await notificationService.pushNotification({
+                    userId: targetUserId,
+                    targetId: postId,
+                    title: "Bài viết vi phạm",
+                    message: "Admin đã xoá bài viết vì vi phạm tiêu chuẩn cộng đồng: "+ title,
+                });
+            } catch (error) {
+                console.error("Error pushing notification:", error);
+            }
         } catch (error) {
             console.error("Error deleting post:", error);
             alert("Có lỗi xảy ra khi xóa bài viết!");
@@ -214,11 +225,11 @@ function AdminPosts() {
                                             <p className={cx("meta")}>
                                                 Bởi {post.
                                                     profile_id
-                                                    ?.name|| "Ẩn danh"} • {formatDate(post.updated_at || post.createdDate)}
+                                                    ?.name || "Ẩn danh"} • {formatDate(post.updated_at || post.createdDate)}
                                             </p>
                                             <div className={cx("statsRow")}>
                                                 <span>{countComment.find(x => x._id === post._id)?.totalComment || 0} bình luận</span>
-                                                <span>{}</span>
+                                                <span>{ }</span>
                                                 <span>{post.liked.length || 0} thích</span>
                                             </div>
                                         </div>
@@ -235,7 +246,7 @@ function AdminPosts() {
                                                 rounded
                                                 className={cx("dangerBtn")}
                                                 leftIcon={<FontAwesomeIcon icon={faTrash} />}
-                                                onClick={() => handleDeletePost(post._id)}
+                                                onClick={() => handleDeletePost(post._id, post.title, post.profile_id.userId)}
                                             />
                                         </div>
                                     </div>
