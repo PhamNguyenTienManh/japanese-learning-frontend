@@ -8,17 +8,23 @@ import styles from "./Header.module.scss";
 import Logo from "~/components/Logo";
 import { useAuth } from "~/context/AuthContext";
 import NotificationDropdown from "~/components/NotificationDropdown";
-
+import { useNavigate } from "react-router-dom";
 const cx = classNames.bind(styles);
 
 function Header() {
   const [openMenu, setOpenMenu] = useState(null);
   const { logout, isAdmin, userId, role, isLoggedIn } = useAuth();
+  const navigate = useNavigate();
 
   const toggleMenu = (menuName) => {
     setOpenMenu(openMenu === menuName ? null : menuName);
   };
 
+  const handleLogout = async () => {
+    await logout();
+    setOpenMenu(null);
+    navigate("/", { replace: true });
+  };
   return (
     <header className={cx("header")}>
       <div className={cx("container")}>
@@ -161,7 +167,7 @@ function Header() {
                   <Button to="/dashboard/settings" text>
                     Cài đặt
                   </Button>
-                  <Button text onClick={logout}>
+                  <Button text onClick={handleLogout}>
                     Đăng xuất
                   </Button>
                 </div>
