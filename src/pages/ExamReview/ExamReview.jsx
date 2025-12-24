@@ -1,10 +1,8 @@
 // ExamReview.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./ExamReview.module.scss";
-import Card from "~/components/Card";
-import Button from "~/components/Button";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -15,6 +13,7 @@ import {
     faHome,
     faTrophy,
     faClock,
+    faFileAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import { comparisonUserAnswerWithResult } from "~/services/examService";
 
@@ -23,6 +22,7 @@ const cx = classNames.bind(styles);
 function ExamReview() {
     const { testId, level } = useParams();
     const navigate = useNavigate();
+    const audioRef = useRef(null);
 
     const [reviewData, setReviewData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -30,13 +30,11 @@ function ExamReview() {
     const [currentPartIndex, setCurrentPartIndex] = useState(0);
     const [currentQuestionIndexInPart, setCurrentQuestionIndexInPart] = useState(0);
 
-    // Fetch review data
     useEffect(() => {
         const fetchReviewData = async () => {
             try {
                 setLoading(true);
                 const response = await comparisonUserAnswerWithResult(testId);
-
                 if (response.success && response.data) {
                     setReviewData(response.data);
                 } else {
@@ -103,7 +101,7 @@ function ExamReview() {
                 <main className={cx("main")}>
                     <div className={cx("container")}>
                         <div className={cx("loading")}>
-                            <p>Đang tải kết quả...</p>
+                            <p className={cx("loadingText")}>Đang tải kết quả...</p>
                         </div>
                     </div>
                 </main>
@@ -118,10 +116,10 @@ function ExamReview() {
                 <main className={cx("main")}>
                     <div className={cx("container")}>
                         <div className={cx("error")}>
-                            <p className={cx("error-text")}>{error}</p>
-                            <Button primary onClick={() => window.location.reload()}>
+                            <p className={cx("errorText")}>{error}</p>
+                            <button className={cx("retryButton")} onClick={() => window.location.reload()}>
                                 Thử lại
-                            </Button>
+                            </button>
                         </div>
                     </div>
                 </main>
@@ -136,7 +134,7 @@ function ExamReview() {
                 <main className={cx("main")}>
                     <div className={cx("container")}>
                         <div className={cx("error")}>
-                            <p className={cx("error-text")}>Không có dữ liệu kết quả</p>
+                            <p className={cx("errorText")}>Không có dữ liệu kết quả</p>
                         </div>
                     </div>
                 </main>
@@ -146,7 +144,6 @@ function ExamReview() {
 
     const currentPart = reviewData.parts[currentPartIndex];
     const currentQuestion = currentPart.questions[currentQuestionIndexInPart];
-
     const isFirstQuestion = currentPartIndex === 0 && currentQuestionIndexInPart === 0;
     const isLastQuestion =
         currentPartIndex === reviewData.parts.length - 1 &&
@@ -156,6 +153,7 @@ function ExamReview() {
         <div className={cx("wrapper")}>
             <main className={cx("main")}>
                 <div className={cx("container")}>
+                    {/* Breadcrumb */}
                     <div className={cx("breadcrumb")}>
                         <Link to="/practice">Thi thử</Link>
                         {" / "}
@@ -164,15 +162,14 @@ function ExamReview() {
                         <span>Xem đáp án</span>
                     </div>
 
-
                     {/* Section Tabs */}
-                    <div className={cx("section-tabs")}>
+                    <div className={cx("sectionTabs")}>
                         {reviewData.parts.map((part, index) => (
                             <button
                                 key={part.partId}
                                 type="button"
                                 onClick={() => handleSectionChange(index)}
-                                className={cx("section-tab", {
+                                className={cx("sectionTab", {
                                     active: currentPartIndex === index,
                                 })}
                             >
@@ -181,205 +178,266 @@ function ExamReview() {
                         ))}
                     </div>
 
+                    {/* Layout */}
                     <div className={cx("layout")}>
                         {/* Left: Question Review */}
                         <div className={cx("left")}>
-                            <Card className={cx("question-card")}>
+                            <div className={cx("questionCard")}>
                                 {/* Question header */}
-                                <div className={cx("question-header")}>
-                                    <div className={cx("badge-row")}>
-                                        <span className={cx("badge", "badge-main")}>
+                                <div className={cx("questionHeader")}>
+                                    <div className={cx("badgeRow")}>
+                                        <span className={cx("badge", "badgeMain")}>
                                             Câu {currentQuestion.questionNumber}
                                         </span>
                                         <span
                                             className={cx("badge", {
-                                                "badge-correct": currentQuestion.isCorrect,
-                                                "badge-wrong": !currentQuestion.isCorrect,
+                                                badgeCorrect: currentQuestion.isCorrect,
+                                                badgeWrong: !currentQuestion.isCorrect,
                                             })}
                                         >
                                             <FontAwesomeIcon
                                                 icon={currentQuestion.isCorrect ? faCheckCircle : faTimesCircle}
-                                            />{" "}
-                                            {currentQuestion.isCorrect ? "Đúng" : "Sai"}
+                                            />
+                                            {currentQuestion.isCorrect ? " Đúng" : " Sai"}
                                         </span>
                                     </div>
-                                    <h2 className={cx("question-text")}>
-                                        {currentQuestion.questionText}
-                                    </h2>
+
+                                    {/* Question Title */}
+                                    {currentQuestion.questionTitle && (
+                                        <h1 className={cx("questionTitle")}>{currentQuestion.questionTitle}</h1>
+                                    )}
+
+                                    {/* General Info: Audio & Text */}
+                                    {currentQuestion.generalInfo && (
+                                        <div className={cx("generalInfo")}>
+                                            {currentQuestion.generalInfo.audio && (
+                                                <audio
+                                                    ref={audioRef}
+                                                    controls
+                                                    className={cx("audioPlayer")}
+                                                    src={currentQuestion.generalInfo.audio}
+                                                >
+                                                    Trình duyệt của bạn không hỗ trợ audio.
+                                                </audio>
+                                            )}
+
+                                            {currentQuestion.generalInfo.txt_read && (
+                                                <div className={cx("txtReadBox")}>
+                                                    <div className={cx("txtReadContent")}>
+                                                        <FontAwesomeIcon
+                                                            icon={faFileAlt}
+                                                            className={cx("txtReadIcon")}
+                                                        />
+                                                        <p className={cx("txtReadText")}>
+                                                            {currentQuestion.generalInfo.txt_read}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Image */}
+                                    {currentQuestion.generalInfo?.image && (
+                                        <div className={cx("questionImage")}>
+                                            <img
+                                                src={currentQuestion.generalInfo.image}
+                                                alt="Question illustration"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Question Text */}
+                                    <h2 className={cx("questionText")}>{currentQuestion.questionText}</h2>
                                 </div>
 
-                                {/* Content Section */}
-                                <div className={cx("content-section")}>
-                                    {/* Options */}
-                                    <div className={cx("options")}>
-                                        {/* User's answer (if wrong) */}
-                                        {!currentQuestion.isCorrect && currentQuestion.userAnswer !== -1 && (
-                                            <div className={cx("option", "option-user-wrong")}>
-                                                <div className={cx("option-inner")}>
-                                                    <FontAwesomeIcon
-                                                        icon={faTimesCircle}
-                                                        className={cx("option-icon", "icon-wrong")}
-                                                    />
-                                                    <span className={cx("option-label")}>
-                                                        <strong>Bạn đã chọn:</strong> {currentQuestion.userAnswerText}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
+                                {/* Answer Options */}
+                                <div className={cx("answerOptions")}>
+                                    {currentQuestion.answers &&
+                                        currentQuestion.answers.map((answer, idx) => {
+                                            const isUserAnswer = idx === currentQuestion.userAnswer;
+                                            const isCorrectAnswer = idx === currentQuestion.correctAnswer;
+                                            const isCorrectChoice = isUserAnswer && currentQuestion.isCorrect;
+                                            const isWrongChoice = isUserAnswer && !currentQuestion.isCorrect;
 
-                                        {/* Correct answer */}
-                                        <div
-                                            className={cx("option", {
-                                                "option-user-correct": currentQuestion.isCorrect,
-                                                "option-correct": !currentQuestion.isCorrect,
-                                            })}
-                                        >
-                                            <div className={cx("option-inner")}>
+                                            return (
+                                                <div
+                                                    key={idx}
+                                                    className={cx("answerOption", {
+                                                        correct:
+                                                            isCorrectChoice ||
+                                                            (isCorrectAnswer && !isUserAnswer),
+                                                        wrong: isWrongChoice,
+                                                    })}
+                                                >
+                                                    <div className={cx("answerInner")}>
+                                                        {(isCorrectChoice ||
+                                                            (isCorrectAnswer && !isUserAnswer)) && (
+                                                                <FontAwesomeIcon
+                                                                    icon={faCheckCircle}
+                                                                    className={cx("answerIcon", "iconCorrect")}
+                                                                />
+                                                            )}
+                                                        {isWrongChoice && (
+                                                            <FontAwesomeIcon
+                                                                icon={faTimesCircle}
+                                                                className={cx("answerIcon", "iconWrong")}
+                                                            />
+                                                        )}
+
+                                                        <div className={cx("answerContent")}>
+                                                            <div className={cx("answerText")}>
+                                                                <span className={cx("answerNumber")}>
+                                                                    {idx + 1}.
+                                                                </span>
+                                                                <span className={cx("answerValue")}>{answer}</span>
+                                                            </div>
+
+                                                            {isWrongChoice && (
+                                                                <span
+                                                                    className={cx("answerLabel", "labelWrong")}
+                                                                >
+                                                                    ← Bạn đã chọn
+                                                                </span>
+                                                            )}
+                                                            {isCorrectAnswer && !isUserAnswer && (
+                                                                <span
+                                                                    className={cx("answerLabel", "labelCorrect")}
+                                                                >
+                                                                    ← Đáp án đúng
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+
+                                    {/* Not answered */}
+                                    {currentQuestion.userAnswer === -1 && (
+                                        <div className={cx("answerOption", "wrong")}>
+                                            <div className={cx("answerInner")}>
                                                 <FontAwesomeIcon
-                                                    icon={faCheckCircle}
-                                                    className={cx("option-icon", "icon-correct")}
+                                                    icon={faTimesCircle}
+                                                    className={cx("answerIcon", "iconWrong")}
                                                 />
-                                                <span className={cx("option-label")}>
-                                                    <strong>Đáp án đúng:</strong> {currentQuestion.correctAnswerText}
+                                                <span className={cx("answerValue")}>
+                                                    Bạn chưa chọn đáp án
                                                 </span>
                                             </div>
                                         </div>
-
-                                        {/* Not answered */}
-                                        {currentQuestion.userAnswer === -1 && (
-                                            <div className={cx("option", "option-user-wrong")}>
-                                                <div className={cx("option-inner")}>
-                                                    <FontAwesomeIcon
-                                                        icon={faTimesCircle}
-                                                        className={cx("option-icon", "icon-wrong")}
-                                                    />
-                                                    <span className={cx("option-label")}>
-                                                        <strong>Bạn chưa chọn đáp án</strong>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Explanation */}
-                                    {currentQuestion.explain && (
-                                        <div className={cx("explain-box")}>
-                                            <p className={cx("explain-title")}>📖 Giải thích:</p>
-                                            <p className={cx("explain-text")}>{currentQuestion.explain}</p>
-                                        </div>
-                                    )}
-
-                                    {currentQuestion.explainAll && (
-                                        <div className={cx("explain-box", "explain-box-detail")}>
-                                            <p className={cx("explain-title")}>📚 Giải thích chi tiết:</p>
-                                            <p className={cx("explain-text")}>{currentQuestion.explainAll}</p>
-                                        </div>
                                     )}
                                 </div>
+
+                                {/* Explanation */}
+                                {currentQuestion.explain && (
+                                    <div className={cx("explainBox")}>
+                                        <p className={cx("explainTitle")}>📖 Giải thích:</p>
+                                        <p className={cx("explainText")}>{currentQuestion.explain}</p>
+                                    </div>
+                                )}
+
+                                {currentQuestion.explainAll && (
+                                    <div className={cx("explainBox", "explainDetail")}>
+                                        <p className={cx("explainTitle")}>📚 Giải thích chi tiết:</p>
+                                        <p className={cx("explainText")}>{currentQuestion.explainAll}</p>
+                                    </div>
+                                )}
 
                                 {/* Navigation buttons */}
-                                <div className={cx("nav-row")}>
-                                    <Button
-                                        outline
+                                <div className={cx("navRow")}>
+                                    <button
                                         onClick={handlePrevious}
                                         disabled={isFirstQuestion}
-                                        leftIcon={
-                                            <FontAwesomeIcon
-                                                icon={faChevronLeft}
-                                                className={cx("nav-icon")}
-                                            />
-                                        }
+                                        className={cx("navButton")}
                                     >
+                                        <FontAwesomeIcon icon={faChevronLeft} />
                                         Câu trước
-                                    </Button>
+                                    </button>
 
-                                    <Button
-                                        primary
-                                        className={cx("next-btn")}
+                                    <button
                                         onClick={handleNext}
                                         disabled={isLastQuestion}
-                                        rightIcon={
-                                            <FontAwesomeIcon
-                                                icon={faChevronRight}
-                                                className={cx("nav-icon")}
-                                            />
-                                        }
+                                        className={cx("navButton", "navNext")}
                                     >
                                         Câu tiếp
-                                    </Button>
+                                        <FontAwesomeIcon icon={faChevronRight} />
+                                    </button>
                                 </div>
-                            </Card>
+                            </div>
                         </div>
 
                         {/* Right: Sidebar */}
                         <aside className={cx("right")}>
                             {/* Summary Card */}
-                            <Card className={cx("summary-card")}>
-                                <p className={cx("summary-title")}>
-                                    <FontAwesomeIcon icon={faTrophy} /> Kết quả
+                            <div className={cx("summaryCard")}>
+                                <p className={cx("summaryTitle")}>
+                                    <FontAwesomeIcon icon={faTrophy} />
+                                    Kết quả
                                 </p>
 
-                                <div className={cx("summary-row")}>
-                                    <span className={cx("summary-label")}>Điểm số:</span>
-                                    <span className={cx("summary-value")}>
-                                        {reviewData.totalScore}/{reviewData.maxScore}
-                                    </span>
-                                </div>
+                                <div className={cx("summaryContent")}>
+                                    <div className={cx("summaryRow")}>
+                                        <span className={cx("summaryLabel")}>Điểm số:</span>
+                                        <span className={cx("summaryValue")}>
+                                            {reviewData.totalScore}/{reviewData.maxScore}
+                                        </span>
+                                    </div>
 
-                                <div className={cx("summary-row")}>
-                                    <span className={cx("summary-label")}>Thời gian:</span>
-                                    <span className={cx("summary-value")}>
-                                        <FontAwesomeIcon icon={faClock} /> {formatDuration(reviewData.duration)}
-                                    </span>
-                                </div>
+                                    <div className={cx("summaryRow")}>
+                                        <span className={cx("summaryLabel")}>Thời gian:</span>
+                                        <span className={cx("summaryValue")}>
+                                            <FontAwesomeIcon icon={faClock} />
+                                            {formatDuration(reviewData.duration)}
+                                        </span>
+                                    </div>
 
-                                <div className={cx("summary-row")}>
-                                    <span className={cx("summary-label")}>Trạng thái:</span>
-                                    <span
-                                        className={cx("summary-value", {
-                                            "status-passed": reviewData.passed,
-                                            "status-failed": !reviewData.passed,
-                                        })}
-                                    >
-                                        {reviewData.passed ? "Đạt" : "Chưa đạt"}
-                                    </span>
+                                    <div className={cx("summaryRow")}>
+                                        <span className={cx("summaryLabel")}>Trạng thái:</span>
+                                        <span
+                                            className={cx("summaryValue", {
+                                                passed: reviewData.passed,
+                                                failed: !reviewData.passed,
+                                            })}
+                                        >
+                                            {reviewData.passed ? "Đạt" : "Chưa đạt"}
+                                        </span>
+                                    </div>
                                 </div>
-                            </Card>
+                            </div>
 
                             {/* Action Buttons */}
-                            <div className={cx("action-buttons")}>
-                                <Button
-                                    primary
-                                    className={cx("action-btn")}
-                                    onClick={handleBackToHome}
-                                    leftIcon={<FontAwesomeIcon icon={faHome} />}
-                                >
+                            <div className={cx("actionButtons")}>
+                                <button onClick={handleBackToHome} className={cx("actionButton")}>
+                                    <FontAwesomeIcon icon={faHome} />
                                     Về trang chủ
-                                </Button>
+                                </button>
                             </div>
 
                             {/* Question List */}
-                            <Card className={cx("list-card")}>
-                                <p className={cx("list-title")}>Danh sách câu hỏi</p>
-                                <div className={cx("list-sections")}>
+                            <div className={cx("listCard")}>
+                                <p className={cx("listTitle")}>Danh sách câu hỏi</p>
+
+                                <div className={cx("listSections")}>
                                     {reviewData.parts.map((part, pIdx) => (
-                                        <div key={part.partId} className={cx("list-section")}>
-                                            <h4 className={cx("list-section-title")}>{part.partTitle}</h4>
-                                            <div className={cx("list-grid")}>
+                                        <div key={part.partId} className={cx("listSection")}>
+                                            <h4 className={cx("listSectionTitle")}>{part.partTitle}</h4>
+                                            <div className={cx("listGrid")}>
                                                 {part.questions.map((question, qIdx) => {
                                                     const isCurrent =
-                                                        pIdx === currentPartIndex && qIdx === currentQuestionIndexInPart;
+                                                        pIdx === currentPartIndex &&
+                                                        qIdx === currentQuestionIndexInPart;
 
                                                     return (
                                                         <button
                                                             key={`${question.questionId}-${qIdx}`}
                                                             type="button"
-                                                            className={cx("list-item", {
-                                                                "list-item-correct": !isCurrent && question.isCorrect,
-                                                                "list-item-wrong": !isCurrent && !question.isCorrect,
-                                                                "list-item-current": isCurrent,
-                                                            })}
                                                             onClick={() => handleQuestionClick(pIdx, qIdx)}
+                                                            className={cx("listItem", {
+                                                                correct: !isCurrent && question.isCorrect,
+                                                                wrong: !isCurrent && !question.isCorrect,
+                                                                current: isCurrent,
+                                                            })}
                                                         >
                                                             {question.questionNumber}
                                                         </button>
@@ -389,7 +447,7 @@ function ExamReview() {
                                         </div>
                                     ))}
                                 </div>
-                            </Card>
+                            </div>
                         </aside>
                     </div>
                 </div>
