@@ -213,7 +213,7 @@ export default function Flashcards() {
             >
               {notebooks.map((notebook) => (
                 <option key={notebook._id} value={notebook._id}>
-                  {notebook.name} ({notebook.wordCount || 0} từ)
+                  {notebook.name} 
                 </option>
               ))}
             </select>
