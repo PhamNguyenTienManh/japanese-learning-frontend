@@ -1,0 +1,21 @@
+.comment-form {
+  margin-bottom: 20px;
+}
+
+.comment-input {
+  width: 100%;
+  min-height: 100px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  resize: vertical;
+  outline: none;
+  background: #f9fafb;
+  margin-bottom: 8px;
+
+  &:focus {
+    border-color: #4f46e5;
+    background: #ffffff;
+  }
+}

@@ -153,7 +153,7 @@ function Admin() {
                             </Card>
                         </Link>
 
-                        <Link to="/admin/analytics" className={cx("link")}>
+                        {/* <Link to="/admin/analytics" className={cx("link")}>
                             <Card className={cx("statCard")}>
                                 <div className={cx("cardHeader")}>
                                     <div className={cx("iconBox", "iconBoxPrimary")}>
@@ -166,7 +166,7 @@ function Admin() {
                                 </div>
                                 <p className={cx("cardSub")}>So với tháng trước</p>
                             </Card>
-                        </Link>
+                        </Link> */}
 
                         {/* <Link to="/admin/reports" className={cx("link")}>
                             <Card className={cx("statCard")}>
@@ -187,7 +187,7 @@ function Admin() {
                     </div>
 
                     {/* Recent Activity */}
-                    <Card className={cx("activityCard")}>
+                    {/* <Card className={cx("activityCard")}>
                         <h2 className={cx("activityTitle")}>Hoạt động gần đây</h2>
                         <div className={cx("activityList")}>
                             {recentActivity.map((activity, index) => (
@@ -223,7 +223,7 @@ function Admin() {
                                 </div>
                             ))}
                         </div>
-                    </Card>
+                    </Card> */}
                 </div>
             </main>
         </div>

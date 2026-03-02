@@ -62,7 +62,6 @@ const KanjiLookupInterface = () => {
   return (
     <div style={{ display: "flex", justifyContent: "center" }}>
       <div className={cx('container')}>
-        {/* Tabs */}
         <div className={cx('tabs')}>
           {/* <button
             className={cx('tab', { active: activeTab === 'vocab' })}
@@ -93,7 +92,6 @@ const KanjiLookupInterface = () => {
             />
           {/* )} */}
 
-          {/* Main content */}
           <div className={cx('main-area')}>
             <div className={cx('search-header')}>
               <SearchInput

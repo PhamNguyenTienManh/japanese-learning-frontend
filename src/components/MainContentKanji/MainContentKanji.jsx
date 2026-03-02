@@ -51,7 +51,7 @@ const MainContent = ({ selectedKanji }) => {
 
     if (loading) {
         return (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
+            <div style={{ flex: '0 0 900px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
                 <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '24px', marginBottom: '12px' }}>⏳</div>
                     <div style={{ color: '#666' }}>Đang tải dữ liệu...</div>
@@ -73,7 +73,7 @@ const MainContent = ({ selectedKanji }) => {
 
     if (!kanjiData) {
         return (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
+            <div style={{ flex: '0 0 900px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', width: '900px'}}>
                 <div style={{ textAlign: 'center', color: '#999' }}>
                     <div>Tìm một kanji để xem chi tiết</div>
                 </div>

@@ -1,0 +1,127 @@
+.comment-item {
+  display: flex;
+  gap: 10px;
+}
+
+.comment-avatar {
+  height: 40px;
+  width: 40px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.comment-body {
+  flex: 1;
+}
+
+.comment-bubble {
+  background: #f3f4f6;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+}
+
+.comment-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.comment-author {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.comment-time {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.comment-text {
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.comment-owner-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.comment-action-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f0f0f0;
+    color: #333;
+  }
+
+  &.delete:hover {
+    background: #fee;
+    color: #d00;
+  }
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.comment-like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: #6b7280;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: #ef4444;
+  }
+
+  &.liked {
+    color: #ef4444;
+  }
+}
+
+.comment-like-icon {
+  font-size: 11px;
+}
+
+.comment-edit-form {
+  width: 100%;
+}
+
+.comment-edit-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  resize: vertical;
+  font-family: inherit;
+  margin-bottom: 12px;
+
+  &:focus {
+    outline: none;
+    border-color: #ff6b35;
+  }
+}
+
+.comment-edit-actions {
+  display: flex;
+  gap: 8px;
+}
