@@ -1,40 +1,26 @@
 import { useState, useEffect } from "react";
 import classNames from "classnames/bind";
 import styles from "./Community.module.scss";
-
-import Card from "~/components/Card";
-import Button from "~/components/Button";
-import Input from "~/components/Input";
-import Tabs, { TabsList, TabsTrigger, TabsContent } from "~/components/Tabs";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faMessage,
-  faEye,
-  faArrowTrendUp,
-  faClock,
-  faSearch,
-  faPenToSquare,
-  faUsers,
-  faSpinner,
-} from "@fortawesome/free-solid-svg-icons";
-import { faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
-import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
+import Tabs, { TabsContent } from "~/components/Tabs";
 
 import postService from "~/services/postService";
-import formatDateVN from "~/services/formatDate";
+import CommunityHeader from "~/components/CommunityHeader";
+import CommunityStats from "~/components/CommunityStats";
+import CommunitySearch from "~/components/CommunitySearch";
+import CommunitySidebar from "~/components/CommunitySidebar/CommunitySidebar";
+import PostList from "~/components/PostList/PostList";
 
 const cx = classNames.bind(styles);
 
-// Hàm decode JWT token
 function decodeToken(token) {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
     const jsonPayload = decodeURIComponent(
       atob(base64)
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
     );
     return JSON.parse(jsonPayload);
   } catch (error) {
@@ -60,10 +46,8 @@ function Community() {
   });
   const [categories, setCategories] = useState([]);
 
-  // Lấy userId từ token trong localStorage
   const getLoggedInUserId = () => {
-    const token = localStorage.getItem("token")
-
+    const token = localStorage.getItem("token");
     if (token) {
       const decoded = decodeToken(token);
       return decoded?.sub;
@@ -73,34 +57,28 @@ function Community() {
 
   const currentUserId = getLoggedInUserId();
 
-  // Fetch posts
   const fetchPosts = async (page, sort = "popular", category = null) => {
-
     setLoading(true);
     setError(null);
     try {
       let data;
       if (category && category !== "Tất cả") {
         data = await postService.getPostsByCategory(category, page, 5);
-
       } else {
         data = await postService.getPosts(page, 5, sort);
       }
 
-      // Map posts với thông tin like
       const postsData = data.posts || data.data || data;
       const mappedPosts = {
         ...postsData,
-        data: postsData.data?.map(post => {
+        data: postsData.data?.map((post) => {
           const likedArray = Array.isArray(post.liked) ? post.liked : [];
-          const isUserLiked = likedArray.includes(currentUserId);
-
           return {
             ...post,
             likeCount: likedArray.length,
-            isLiked: isUserLiked
+            isLiked: likedArray.includes(currentUserId),
           };
-        }) || []
+        }) || [],
       };
 
       setPosts(mappedPosts);
@@ -114,7 +92,6 @@ function Community() {
     }
   };
 
-  // Fetch community stats
   const fetchStats = async () => {
     try {
       const data = await postService.getCommunityStats();
@@ -129,14 +106,12 @@ function Community() {
     }
   };
 
-  // Fetch categories
   const fetchCategories = async () => {
     try {
       const data = await postService.getCategories();
-
       const allCategories = [
         { name: "Tất cả", count: data.reduce((sum, cat) => sum + (cat.count || 0), 0) },
-        ...data
+        ...data,
       ];
       setCategories(allCategories);
     } catch (err) {
@@ -158,16 +133,13 @@ function Community() {
     fetchCategories();
   }, []);
 
-  // Handle tab change
   const handleTabChange = (value) => {
     setActiveTab(value);
     setSelectedCategory(null);
     setSearchQuery("");
-    const sort = value === "all" ? "popular" : "recent";
-    fetchPosts(1, sort);
+    fetchPosts(1, value === "all" ? "popular" : "recent");
   };
 
-  // Handle search
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       setSelectedCategory(null);
@@ -180,21 +152,18 @@ function Community() {
     setSelectedCategory(null);
     try {
       const data = await postService.searchPosts(searchQuery, 1, 5);
-
-      // Map search results
       const postsData = data.posts || data.data || data;
       const mappedPosts = {
         ...postsData,
-        data: postsData.data?.map(post => {
+        data: postsData.data?.map((post) => {
           const likedArray = Array.isArray(post.liked) ? post.liked : [];
           return {
             ...post,
             likeCount: likedArray.length,
-            isLiked: likedArray.includes(currentUserId)
+            isLiked: likedArray.includes(currentUserId),
           };
-        }) || []
+        }) || [],
       };
-
       setPosts(mappedPosts);
       setTotalPages(data.data.totalPage || 1);
       setCurrentPage(1);
@@ -206,12 +175,10 @@ function Community() {
     }
   };
 
-  // Handle category filter
   const handleCategoryClick = (categoryName) => {
     setSearchQuery("");
     setSelectedCategory(categoryName);
     const sort = activeTab === "all" ? "popular" : "recent";
-
     if (categoryName === "Tất cả") {
       fetchPosts(1, sort, null);
     } else {
@@ -219,364 +186,69 @@ function Community() {
     }
   };
 
-  // Handle pagination
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       const sort = activeTab === "all" ? "popular" : "recent";
       fetchPosts(page, sort, selectedCategory);
-      // Scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
-  // Render pagination
-  const renderPagination = () => {
-    // Debug: Xem totalPages và currentPage
-    console.log('Pagination debug:', { totalPages, currentPage, postsCount: posts.data?.length });
-
-    if (totalPages <= 1) return null;
-
-    const pageNumbers = [];
-    const maxPagesToShow = 5;
-
-    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-
-    if (endPage - startPage < maxPagesToShow - 1) {
-      startPage = Math.max(1, endPage - maxPagesToShow + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
-    }
-
-    return (
-      <div className={cx("pagination")}>
-        <Button
-          outline
-          className={cx("pagination-btn")}
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          ← Trước
-        </Button>
-
-        <div className={cx("pagination-numbers")}>
-          {startPage > 1 && (
-            <>
-              <button
-                className={cx("pagination-number")}
-                onClick={() => handlePageChange(1)}
-              >
-                1
-              </button>
-              {startPage > 2 && <span className={cx("pagination-dots")}>...</span>}
-            </>
-          )}
-
-          {pageNumbers.map((page) => (
-            <button
-              key={page}
-              className={cx("pagination-number", { active: page === currentPage })}
-              onClick={() => handlePageChange(page)}
-            >
-              {page}
-            </button>
-          ))}
-
-          {endPage < totalPages && (
-            <>
-              {endPage < totalPages - 1 && <span className={cx("pagination-dots")}>...</span>}
-              <button
-                className={cx("pagination-number")}
-                onClick={() => handlePageChange(totalPages)}
-              >
-                {totalPages}
-              </button>
-            </>
-          )}
-        </div>
-
-        <Button
-          outline
-          className={cx("pagination-btn")}
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-        >
-          Sau →
-        </Button>
-      </div>
-    );
-  };
-
-  // Render posts
-  const renderPosts = () => {
-    if (loading) {
-      return (
-        <div className={cx("loading")}>
-          <FontAwesomeIcon icon={faSpinner} spin size="2x" />
-          <p>Đang tải...</p>
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <Card className={cx("error-card")}>
-          <p className={cx("error-message")}>{error}</p>
-          <Button
-            outline
-            onClick={() =>
-              fetchPosts(null, activeTab === "all" ? "popular" : "recent", selectedCategory)
-            }
-          >
-            Thử lại
-          </Button>
-        </Card>
-      );
-    }
-
-    if (!posts.data || posts.data.length === 0) {
-      return (
-        <Card className={cx("empty-card")}>
-          <p className={cx("empty-message")}>Không tìm thấy bài viết nào</p>
-        </Card>
-      );
-    }
-
-    return (
-      <>
-        {posts.data.map((post) => (
-          <Card key={post._id || post.id} className={cx("post-card")}>
-            <a href={`/community/${post._id}`}>
-              <div className={cx("post-inner")}>
-                {/* Header */}
-                <div className={cx("post-header")}>
-                  <img
-                    src={post.profile_id?.image_url || "/placeholder.svg"}
-                    alt={post.profile_id?.name || "User"}
-                    className={cx("avatar")}
-                  />
-                  <div>
-
-                  </div>
-                  <div className={cx("post-header-info")}>
-                    <div className={cx("post-author-row")}>
-                      <span className={cx("post-author")}>
-                        {post.profile_id?.name || "Anonymous"}
-                      </span>
-                      <span className={cx("post-time")}>
-                        {formatDateVN(post.created_at) || "Vừa xong"}
-                      </span>
-                    </div>
-                  </div>
-                  {post.category_id && (
-                    <span className={cx("post-category")}>
-                      {post.category_id.name}
-                    </span>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className={cx("post-content")}>
-                  <h3 className={cx("post-title")}>{post.title}</h3>
-                  <p className={cx("post-excerpt")}>
-                    {post.excerpt || post.content}
-                  </p>
-                </div>
-                {post.image_url && (<div className={cx("post-image-container")}>
-                  <img className={cx("post-image")} src={post.image_url} />
-                </div>)
-
-                }
-
-
-                {/* Stats */}
-                <div className={cx("post-stats")}>
-                  <div className={cx("post-stat-item", { liked: post.isLiked })}>
-                    <FontAwesomeIcon
-                      icon={post.isLiked ? faHeartSolid : faHeartRegular}
-                      className={cx("post-stat-icon")}
-                    />
-                    <span>{post.likeCount || 0}</span>
-                  </div>
-                  <div className={cx("post-stat-item")}>
-                    <FontAwesomeIcon
-                      icon={faMessage}
-                      className={cx("post-stat-icon")}
-                    />
-                    <span>{posts.countComment.find(x => x._id === post._id)?.totalComment || 0}</span>
-                  </div>
-                </div>
-              </div>
-            </a>
-          </Card>
-        ))}
-
-        {renderPagination()}
-      </>
-    );
+  const handleRetry = () => {
+    fetchPosts(null, activeTab === "all" ? "popular" : "recent", selectedCategory);
   };
 
   return (
     <div className={cx("wrapper")}>
       <main className={cx("main")}>
         <div className={cx("container")}>
-          {/* Header */}
-          <div className={cx("header")}>
-            <div className={cx("header-left")}>
-              <h1 className={cx("title")}>Cộng đồng</h1>
-              <p className={cx("subtitle")}>Chia sẻ và học hỏi cùng nhau</p>
-            </div>
-            <Button
-              primary
-              href="/community/new"
-              className={cx("create-btn")}
-              leftIcon={<FontAwesomeIcon icon={faPenToSquare} />}
-            >
-              Tạo bài viết
-            </Button>
-          </div>
-
-          {/* Stats */}
-          <div className={cx("stats-grid")}>
-            <Card className={cx("stat-card")}>
-              <div className={cx("stat-inner")}>
-                <div className={cx("stat-icon-wrap")}>
-                  <FontAwesomeIcon
-                    icon={faMessage}
-                    className={cx("stat-icon")}
-                  />
-                </div>
-                <div>
-                  <p className={cx("stat-value")}>{stats.totalPosts}</p>
-                  <p className={cx("stat-label")}>Bài viết</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className={cx("stat-card")}>
-              <div className={cx("stat-inner")}>
-                <div className={cx("stat-icon-wrap")}>
-                  <FontAwesomeIcon icon={faUsers} className={cx("stat-icon")} />
-                </div>
-                <div>
-                  <p className={cx("stat-value")}>{stats.totalMembers}</p>
-                  <p className={cx("stat-label")}>Thành viên</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className={cx("stat-card")}>
-              <div className={cx("stat-inner")}>
-                <div className={cx("stat-icon-wrap")}>
-                  <FontAwesomeIcon icon={faHeartSolid} className={cx("stat-icon")} />
-                </div>
-                <div>
-                  <p className={cx("stat-value")}>{stats.totalLikes}</p>
-                  <p className={cx("stat-label")}>Lượt thích</p>
-                </div>
-              </div>
-            </Card>
-
-          </div>
+          <CommunityHeader />
+          <CommunityStats stats={stats} />
 
           <div className={cx("content")}>
-            {/* Main */}
             <div className={cx("main-col")}>
-              {/* Search */}
-              <Card className={cx("search-card")}>
-                <div className={cx("search-row")}>
-                  <div className={cx("search-input-wrap")}>
-                    <FontAwesomeIcon
-                      icon={faSearch}
-                      className={cx("search-icon")}
-                    />
-                    <Input
-                      placeholder="Tìm kiếm bài viết..."
-                      className="community-search-input"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter") {
-                          handleSearch();
-                        }
-                      }}
-                    />
-                  </div>
-                  <Button outline className="orange" onClick={handleSearch}>
-                    Tìm kiếm
-                  </Button>
-                </div>
-              </Card>
+              <CommunitySearch
+                searchQuery={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onSearch={handleSearch}
+              />
 
-              {/* Tabs */}
-              <Tabs
-                defaultValue="all"
-                value={activeTab}
-                onValueChange={handleTabChange}
-              >
-                {/* <TabsList className={cx("tabs-list")}>
-                  <TabsTrigger value="all">
-                    <FontAwesomeIcon
-                      icon={faArrowTrendUp}
-                      className={cx("tab-icon")}
-                    />
-                    Phổ biến
-                  </TabsTrigger>
-                  <TabsTrigger value="recent">
-                    <FontAwesomeIcon
-                      icon={faClock}
-                      className={cx("tab-icon")}
-                    />
-                    Mới nhất
-                  </TabsTrigger>
-                </TabsList> */}
-
+              <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
                 <TabsContent value="all" className={cx("tabs-content")}>
-                  {renderPosts()}
+                  <PostList
+                    posts={posts}
+                    loading={loading}
+                    error={error}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    activeTab={activeTab}
+                    selectedCategory={selectedCategory}
+                    onPageChange={handlePageChange}
+                    onRetry={handleRetry}
+                  />
                 </TabsContent>
 
                 <TabsContent value="recent" className={cx("tabs-content")}>
-                  {renderPosts()}
+                  <PostList
+                    posts={posts}
+                    loading={loading}
+                    error={error}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    activeTab={activeTab}
+                    selectedCategory={selectedCategory}
+                    onPageChange={handlePageChange}
+                    onRetry={handleRetry}
+                  />
                 </TabsContent>
               </Tabs>
             </div>
 
-            {/* Sidebar */}
-            <aside className={cx("sidebar")}>
-              {/* Categories */}
-              <Card className={cx("side-card")}>
-                <h3 className={cx("side-title")}>Danh mục</h3>
-                <div className={cx("categories-list")}>
-                  {categories.map((category) => (
-                    <button
-                      key={category.name}
-                      type="button"
-                      className={cx("category-item", {
-                        active: selectedCategory === category.name,
-                      })}
-                      onClick={() => handleCategoryClick(category._id)}
-                    >
-                      <span className={cx("category-name")}>
-                        {category.name}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </Card>
-
-              {/* Guidelines */}
-              <Card className={cx("side-card")}>
-                <h3 className={cx("side-title")}>Quy tắc cộng đồng</h3>
-                <ul className={cx("guidelines")}>
-                  <li>• Tôn trọng mọi thành viên</li>
-                  <li>• Không spam hoặc quảng cáo</li>
-                  <li>• Chia sẻ nội dung hữu ích</li>
-                  <li>• Sử dụng ngôn ngữ lịch sự</li>
-                </ul>
-              </Card>
-            </aside>
+            <CommunitySidebar
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onCategoryClick={handleCategoryClick}
+            />
           </div>
         </div>
       </main>

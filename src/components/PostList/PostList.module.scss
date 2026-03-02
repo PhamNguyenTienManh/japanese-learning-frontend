@@ -1,0 +1,42 @@
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  color: #4f46e5;
+  gap: 12px;
+
+  p {
+    font-size: 14px;
+    color: #6b7280;
+  }
+}
+
+.error-card {
+  padding: 24px;
+  text-align: center;
+}
+
+.error-message {
+  color: #dc2626;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.empty-card {
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-message {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.tabs-content {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
