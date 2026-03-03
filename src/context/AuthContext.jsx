@@ -49,22 +49,18 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // ✔ LOGOUT: xóa token + reload context
   const logout = () => {
     localStorage.clear();
     loadAuth();
   };
 
-  // ✔ Check admin
   const isAdmin = () => auth.role === "admin";
 
-  // ✔ Check role bất kỳ
   const hasRole = (role) => auth.role === role;
 
   useEffect(() => {
     loadAuth();
 
-    // Lắng nghe token thay đổi ở tab khác
     window.addEventListener("storage", loadAuth);
 
     return () => {
