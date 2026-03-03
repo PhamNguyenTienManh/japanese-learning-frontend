@@ -35,7 +35,6 @@ export function useToast() {
   return context;
 }
 
-// ---------------- ToastContainer ----------------
 function ToastContainer({ toasts, removeToast }) {
   return (
     <div className={cx("toast-container")}>
@@ -46,7 +45,6 @@ function ToastContainer({ toasts, removeToast }) {
   );
 }
 
-// ---------------- ToastItem ----------------
 function ToastItem({ toast, onClose }) {
   const [isExiting, setIsExiting] = useState(false);
   const [progress, setProgress] = useState(0);
