@@ -128,6 +128,7 @@ function AdminReading() {
                         title: item.title,
                         link: item.link || "",
                         content: item.content.textbody,
+                        syncData:item.content.syncData,
                         imagePreview: item.content.image,
                         audioFile: item.content.audio,
                         audioLink: item.content.audio,
@@ -228,7 +229,6 @@ function AdminReading() {
 
         if (!editingArticle.link.trim()) {
             newErrors.link = "Link bài viết gốc không được để trống";
-            // chỉ focus content nếu title hợp lệ
             if (!newErrors.title) linkRef.current?.focus();
         }
 
@@ -266,13 +266,11 @@ function AdminReading() {
 
 
 
-        // Nếu có lỗi → không save
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             return;
         }
 
-        // Không có lỗi → tiếp tục save
         setErrors({})
 
 
@@ -287,6 +285,7 @@ function AdminReading() {
                         audio: editingArticle.audioLink || "",
                         image: editingArticle.imagePreview || "",
                         textbody: editingArticle.content,
+                        syncData: editingArticle.syncData,
                     },
                     level: editingArticle.level,
                     published: editingArticle.published,
@@ -306,13 +305,13 @@ function AdminReading() {
                         audioFile: editingArticle.audioLink,
                         audioLink: editingArticle.audioLink,
                         difficulty: editingArticle.difficulty,
+                        syncData: editingArticle.syncData,
                         level: editingArticle.level,
                         date: new Date().toLocaleDateString('vi-VN'),
                         published: editingArticle.published,
                     };
                     console.log("ehehe", newArticle)
                     setArticles((prev) => [newArticle, ...prev]);
-                    //alert("Thêm bài đọc thành công!");
                     setToast({
                         show: true,
                         message: 'Thêm bài đọc thành công!',
@@ -328,6 +327,7 @@ function AdminReading() {
                         audio: editingArticle.audioLink || "",
                         image: editingArticle.imagePreview || "",
                         textbody: editingArticle.content || "",
+                        syncData: editingArticle.syncData,
                     },
                     level: editingArticle.level,
                     published: editingArticle.published,
@@ -341,7 +341,6 @@ function AdminReading() {
                             audioFile: editingArticle.audioLink,
                         } : a))
                     );
-                    //alert("Cập nhật bài đọc thành công!");
                     setToast({
                         show: true,
                         message: 'Cập nhật bài đọc thành công!',
@@ -353,7 +352,6 @@ function AdminReading() {
             setEditingArticle(null);
         } catch (error) {
             console.error("Error saving article:", error);
-            // alert("Có lỗi xảy ra khi lưu bài đọc. Vui lòng thử lại.");
             setToast({
                 show: true,
                 message: 'Có lỗi xảy ra khi lưu bài đọc. Vui lòng thử lại.',
@@ -432,8 +430,7 @@ function AdminReading() {
             prev
                 ? {
                     ...prev,
-                    audioLink: link, // Lưu link gốc (có thể có khoảng trắng)
-                    // Set audioPreview ngay lập tức nếu link hợp lệ
+                    audioLink: link, 
                     audioPreview: trimmedLink && (trimmedLink.startsWith('http://') || trimmedLink.startsWith('https://'))
                         ? trimmedLink
                         : '',
@@ -457,14 +454,17 @@ function AdminReading() {
                 .trim();
 
             const response = await uploadVoice(cleanText, 6);
+            
 
             const audioUrl = response?.data?.audioUrl || response?.audioUrl || response;
+            const syncData = response?.data?.syncData || response?.syncData || response;
 
             if (audioUrl) {
                 setEditingArticle((prev) =>
                     prev
                         ? {
                             ...prev,
+                            syncData: syncData,
                             audioLink: audioUrl,
                             audioPreview: audioUrl,
                         }

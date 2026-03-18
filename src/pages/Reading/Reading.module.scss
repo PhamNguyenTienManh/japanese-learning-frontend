@@ -377,3 +377,25 @@
     transform: translateY(-2px);
   }
 }
+
+.articleText {
+    p {
+        line-height: 2; 
+        font-size: 1.2rem;
+    }
+}
+
+.sentence {
+    display: inline;
+    padding: 0 2px;
+    border-radius: 4px;
+    color: #666; 
+    transition: all 0.2s ease; 
+
+    &.active {
+        background-color: #ffeb3b; 
+        color: #000; 
+        font-weight: 500;
+        box-shadow: 0 0 8px rgba(255, 235, 59, 0.5);
+    }
+}

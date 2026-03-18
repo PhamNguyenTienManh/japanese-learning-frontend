@@ -59,6 +59,7 @@ export default function Reading() {
                             content: item.content.textbody,
                             image: item.content.image,
                             audioUrl: item.content.audio,
+                            syncData: item.content.syncData || [],
                             difficulty: item.type,
                             date: new Date(item.dateField).toLocaleDateString('vi-VN'),
                             read: false,
@@ -414,6 +415,24 @@ export default function Reading() {
                             </div>
 
                             <div className={cx("articleText")}>
+                                {selectedArticle.syncData && selectedArticle.syncData.length ? (
+
+                                    <p>
+                                        {selectedArticle.syncData.map((segment, index) => {
+                                            const isActive = currentTime >= segment.s && currentTime <= segment.e;
+                                            return (
+                                                <span
+                                                    key={index}
+                                                    className={cx("sentence", { active: isActive })}
+                                                >
+                                                    {segment.t}{" "}
+                                                </span>
+                                            )
+                                        })}
+                                    </p>
+                                ):(
+                                    <p>{content}</p>
+                                )}
                                 <p>{content}</p>
                             </div>
 
