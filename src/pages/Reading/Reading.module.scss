@@ -380,8 +380,26 @@
 
 .articleText {
     p {
-        line-height: 2; 
+        line-height: 2;
         font-size: 1.2rem;
+    }
+
+    ruby {
+        ruby-position: over;
+        ruby-align: center;
+    }
+
+    rt {
+        font-size: 0.55em;
+        color: var(--text-secondary, #6b7280);
+        font-weight: 400;
+        user-select: none;
+    }
+
+    &.withFurigana {
+        p {
+            line-height: 2.6;
+        }
     }
 }
 
@@ -389,13 +407,343 @@
     display: inline;
     padding: 0 2px;
     border-radius: 4px;
-    color: #666; 
-    transition: all 0.2s ease; 
+    color: #666;
+    transition: all 0.2s ease;
 
     &.active {
-        background-color: #ffeb3b; 
-        color: #000; 
+        background-color: #ffeb3b;
+        color: #000;
         font-weight: 500;
         box-shadow: 0 0 8px rgba(255, 235, 59, 0.5);
     }
+}
+
+/* ===== Practice (luyện đọc) modal ===== */
+
+.practiceOverlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.55);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 16px;
+    animation: fadeIn 0.2s ease;
+}
+
+.practiceModal {
+    background: #fff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 880px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    animation: scaleIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.96); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+}
+
+.practiceHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.practiceTitle {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0 0 4px;
+}
+
+.practiceSubtitle {
+    font-size: 1.3rem;
+    color: var(--text-secondary, #6b7280);
+    margin: 0;
+}
+
+.practiceClose {
+    background: transparent;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary, #6b7280);
+    font-size: 1.6rem;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+        background-color: rgba(0, 0, 0, 0.06);
+    }
+}
+
+.practiceBody {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 20px;
+    padding: 22px;
+    overflow-y: auto;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.practiceContent {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.practiceContentHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.practiceSectionTitle {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary, #111);
+}
+
+.practiceText {
+    background-color: #f9fafb;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 1.6rem;
+    line-height: 2;
+    white-space: pre-line;
+    color: var(--text-primary, #111);
+    max-height: 50vh;
+    overflow-y: auto;
+
+    ruby {
+        ruby-position: over;
+        ruby-align: center;
+    }
+
+    rt {
+        font-size: 0.55em;
+        color: var(--text-secondary, #6b7280);
+        font-weight: 400;
+        user-select: none;
+    }
+
+    &.withFurigana {
+        line-height: 2.6;
+    }
+}
+
+.practiceRecorder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 12px;
+    background: #fff;
+}
+
+.micWrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 6px;
+
+    &.recording::before,
+    &.recording::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 999px;
+        border: 2px solid rgba(239, 68, 68, 0.5);
+        animation: micPulse 1.4s ease-out infinite;
+        pointer-events: none;
+    }
+
+    &.recording::after {
+        animation-delay: 0.7s;
+    }
+}
+
+@keyframes micPulse {
+    0%   { transform: scale(1);   opacity: 0.8; }
+    100% { transform: scale(1.8); opacity: 0;   }
+}
+
+.micButton {
+    width: 84px;
+    height: 84px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    font-size: 2.6rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(102, 126, 234, 0.45);
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    &.recording {
+        background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+    }
+}
+
+.recorderStatus {
+    font-size: 1.3rem;
+    color: var(--text-secondary, #6b7280);
+    margin: 4px 0 0;
+    text-align: center;
+}
+
+.recordedAudio {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.recorderActions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.assessResult {
+    width: 100%;
+    margin-top: 8px;
+    padding: 14px;
+    background-color: #f9fafb;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.assessScore {
+    font-size: 3.2rem;
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.1;
+
+    .scoreUnit {
+        font-size: 1.4rem;
+        font-weight: 500;
+        margin-left: 6px;
+        color: var(--text-secondary, #6b7280);
+    }
+
+    &.scoreGood { color: #16a34a; }
+    &.scoreMid  { color: #f59e0b; }
+    &.scoreLow  { color: #ef4444; }
+}
+
+.assessRow {
+    display: flex;
+    gap: 8px;
+    font-size: 1.3rem;
+    line-height: 1.5;
+}
+
+.assessLabel {
+    font-weight: 600;
+    color: var(--text-secondary, #6b7280);
+    flex-shrink: 0;
+    min-width: 100px;
+}
+
+.assessValue {
+    color: var(--text-primary, #111);
+    word-break: break-word;
+}
+
+.assessTokens {
+    font-size: 1.5rem;
+    line-height: 1.9;
+    color: var(--text-primary, #111);
+    background-color: #fff;
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 8px;
+    padding: 12px 14px;
+    word-break: break-word;
+    white-space: pre-wrap;
+
+    ruby {
+        ruby-position: over;
+        ruby-align: center;
+    }
+
+    rt {
+        font-size: 0.55em;
+        color: var(--text-secondary, #6b7280);
+        font-weight: 400;
+        user-select: none;
+    }
+
+    &.withFurigana {
+        line-height: 2.4;
+    }
+}
+
+.assessToken {
+    transition: color 0.15s ease, opacity 0.15s ease;
+
+    &.missing {
+        color: #cbd5e1;
+        text-decoration: underline;
+        text-decoration-color: rgba(239, 68, 68, 0.45);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+
+        rt {
+            color: #e2e8f0;
+        }
+    }
+}
+
+.assessHint {
+    font-size: 1.2rem;
+    color: var(--text-muted, #94a3b8);
+    margin: 0;
+    text-align: center;
 }
