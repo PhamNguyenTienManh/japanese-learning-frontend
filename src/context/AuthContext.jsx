@@ -9,7 +9,8 @@ export function AuthProvider({ children }) {
     userId: null,
     role: null,
     email: null,
-    exp: null,
+  exp: null,
+  isPremium: false,
   });
 
   const loadAuth = () => {
@@ -36,6 +37,7 @@ export function AuthProvider({ children }) {
         role: payload.role || null,
         email: payload.email || null,
         exp: payload.exp || null,
+  isPremium: localStorage.getItem("isPremium") === "true",
       });
     } catch (err) {
       console.error("Token decode failed:", err);
@@ -44,7 +46,8 @@ export function AuthProvider({ children }) {
         userId: null,
         role: null,
         email: null,
-        exp: null,
+  exp: null,
+  isPremium: localStorage.getItem("isPremium") === "true",
       });
     }
   };

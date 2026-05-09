@@ -96,6 +96,10 @@
             white-space: pre-wrap;
         }
 
+        &.withFurigana .text {
+            line-height: 2.6;
+        }
+
         &.target {
             background: #eef4ff;
             border-color: #cfe0ff;

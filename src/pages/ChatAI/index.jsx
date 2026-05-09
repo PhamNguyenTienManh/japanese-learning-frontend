@@ -39,7 +39,7 @@ function ChatAI() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, isPremium } = useAuth();
 
   const messagesEndRef = useRef(null);
 
@@ -309,6 +309,33 @@ function ChatAI() {
               </div>
               <p className={cx("header-subtitle")}>Đang khởi tạo...</p>
             </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Nếu user đã đăng nhập nhưng chưa là premium -> hiển thị CTA nâng cấp
+  if (isLoggedIn && !isPremium) {
+    return (
+      <div className={cx("wrapper")}> 
+        <main className={cx("main")}>
+          <div className={cx("container")}> 
+            <div className={cx("header")}> 
+              <div className={cx("header-title")}>
+                <FontAwesomeIcon icon={faRobot} className={cx("header-icon")} />
+                <h1>AI Chat</h1>
+              </div>
+              <p className={cx("header-subtitle")}>Tính năng này là nâng cao. Vui lòng nâng cấp để sử dụng không giới hạn.</p>
+            </div>
+
+            <Card className={cx("upgrade-card")}>
+              <p>Bạn chưa mở khoá tính năng Chat AI nâng cao.</p>
+              <div className={cx("upgrade-actions")}>
+                <Button to={`/payment?plan=Pro`} primary>Nâng cấp lên Pro</Button>
+                <Button to="/" outline>Quay lại</Button>
+              </div>
+            </Card>
           </div>
         </main>
       </div>
