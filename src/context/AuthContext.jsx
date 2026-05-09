@@ -3,50 +3,43 @@ import decodeToken from "~/services/pairToken";
 
 const AuthContext = createContext(null);
 
+const EMPTY_AUTH = {
+  isLoggedIn: false,
+  userId: null,
+  role: null,
+  email: null,
+  exp: null,
+};
+
+// Đọc auth state từ localStorage một cách synchronous —
+// dùng cho useState initializer để render đầu tiên đã có giá trị đúng,
+// tránh case các trang phụ thuộc isLoggedIn render trước khi useEffect chạy.
+function readAuthFromStorage() {
+  if (typeof window === "undefined") return EMPTY_AUTH;
+  const token = localStorage.getItem("token");
+  if (!token) return EMPTY_AUTH;
+  try {
+    const payload = decodeToken(token);
+    if (!payload) return EMPTY_AUTH;
+    const isExpired = payload.exp ? payload.exp * 1000 < Date.now() : false;
+    return {
+      isLoggedIn: !isExpired,
+      userId: payload.sub || null,
+      role: payload.role || null,
+      email: payload.email || null,
+      exp: payload.exp || null,
+    };
+  } catch (err) {
+    console.error("Token decode failed:", err);
+    return EMPTY_AUTH;
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [auth, setAuth] = useState({
-    isLoggedIn: false,
-    userId: null,
-    role: null,
-    email: null,
-    exp: null,
-  });
+  const [auth, setAuth] = useState(readAuthFromStorage);
 
   const loadAuth = () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      setAuth({
-        isLoggedIn: false,
-        userId: null,
-        role: null,
-        email: null,
-        exp: null,
-      });
-      return;
-    }
-
-    try {
-      const payload = decodeToken(token);
-      const isExpired = payload.exp * 1000 < Date.now();
-
-      setAuth({
-        isLoggedIn: !isExpired,
-        userId: payload.sub || null,
-        role: payload.role || null,
-        email: payload.email || null,
-        exp: payload.exp || null,
-      });
-    } catch (err) {
-      console.error("Token decode failed:", err);
-      setAuth({
-        isLoggedIn: false,
-        userId: null,
-        role: null,
-        email: null,
-        exp: null,
-      });
-    }
+    setAuth(readAuthFromStorage());
   };
 
   const logout = () => {

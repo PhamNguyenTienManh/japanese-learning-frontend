@@ -146,6 +146,36 @@
   color: #9ca3af;
 }
 
+/* Action buttons gắn dưới bubble assistant (vd: "Xem sổ tay đã tạo") */
+
+.message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.message-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #00879a;
+  background: #ffffff;
+  color: #00879a;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  text-decoration: none;
+
+  &:hover {
+    background: #00879a;
+    color: #ffffff;
+  }
+}
+
 /* Typing */
 
 .typing-bubble {
