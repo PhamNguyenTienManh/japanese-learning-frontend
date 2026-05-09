@@ -1,1 +1,165 @@
-.wrap{display:flex;justify-content:center;padding:40px}.card{max-width:560px;width:100%;padding:24px}.actions{margin-top:16px}
+.wrap {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 48px 16px 64px;
+  min-height: 60vh;
+}
+
+.card {
+  max-width: 520px;
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 44px 36px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+/* ── Success icon ────────────────────────────── */
+.iconWrap {
+  margin-bottom: 22px;
+}
+
+.icon {
+  font-size: 68px;
+  color: var(--primary);
+  animation: popIn 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes popIn {
+  0%   { transform: scale(0.3); opacity: 0; }
+  60%  { transform: scale(1.1); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+/* ── Heading ─────────────────────────────────── */
+.title {
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--text-high);
+  margin: 0 0 10px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--grey);
+  margin: 0 0 28px;
+  line-height: 1.65;
+}
+
+/* ── Transaction detail box ──────────────────── */
+.detailBox {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.detailLabel {
+  color: var(--grey);
+}
+
+.detailValue {
+  font-weight: 600;
+  color: var(--text-high);
+}
+
+.statusOk {
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Unlocked features ───────────────────────── */
+.unlockedBox {
+  background: linear-gradient(135deg, var(--primary-low), rgba(0, 135, 154, 0.06));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  text-align: left;
+  margin-bottom: 28px;
+}
+
+.unlockedTitle {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--primary);
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.unlockedList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-high);
+  }
+}
+
+.checkDot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  flex-shrink: 0;
+}
+
+/* ── Actions ─────────────────────────────────── */
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* ── Responsive ──────────────────────────────── */
+@media (max-width: 480px) {
+  .card {
+    padding: 28px 20px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .actions {
+    flex-direction: column;
+
+    button {
+      width: 100%;
+    }
+  }
+}
