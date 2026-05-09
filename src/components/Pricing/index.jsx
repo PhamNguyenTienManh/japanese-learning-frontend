@@ -32,19 +32,6 @@ const plans = [
     ],
     highlight: true,
   },
-  {
-    name: "Premium",
-    price: "$19.99/tháng",
-    desc: "Trải nghiệm toàn diện nhất",
-    features: [
-      "Tất cả tính năng Pro",
-      "Nhận diện chữ viết tay cao cấp",
-      "Lộ trình học cá nhân",
-      "Sách học tập độc quyền",
-      "Hỗ trợ 24/7 trực tiếp",
-      "Chứng chỉ hoàn thành",
-    ],
-  },
 ];
 
 function Pricing() {
@@ -62,15 +49,9 @@ function Pricing() {
             <p className={cx("plan-desc")}>{plan.desc}</p>
             <div className={cx("plan-price")}>{plan.price}</div>
 
-            {plan.highlight ? (
-              <Button to="/" primary full>
-                Nâng cấp ngay
-              </Button>
-            ) : (
-              <Button to="/" full outline>
-                Bắt đầu ngay
-              </Button>
-            )}
+            <Button to={`/payment?plan=${encodeURIComponent(plan.name)}`} full={true} primary={plan.highlight} outline={!plan.highlight}>
+              {plan.highlight ? "Nâng cấp ngay" : "Bắt đầu ngay"}
+            </Button>
 
             <div className={cx("plan-features")}>
               {plan.features.map((feat, i) => (
