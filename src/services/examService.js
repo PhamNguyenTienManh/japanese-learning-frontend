@@ -199,6 +199,24 @@ export async function comparisonUserAnswerWithResult(examId) {
   return await response.json();
 }
 
+// Lưu tiến trình bài thi (elapsed time + status → SAVING)
+export async function saveProgress(examResultId, elapsed) {
+  const response = await fetch(`${BASE_URL}/exam-results/save-progress`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ examResultId, elapsed }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to save progress: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
 // Tạo đề thi mới
 export async function createExam(data) {
   const response = await fetch(`${BASE_URL}/exams`, {
