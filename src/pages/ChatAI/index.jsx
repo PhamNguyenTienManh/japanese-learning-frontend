@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./ChatAI.module.scss";
 
@@ -14,11 +15,13 @@ import {
   faBookOpen,
   faComments,
   faLightbulb,
+  faArrowRight,
 } from "@fortawesome/free-solid-svg-icons";
+import config from "~/config";
 
 // Import API functions
 import {
-  sendMessage,
+  streamMessage,
   getUserLastSession,
   createSession,
 } from "~/services/aiService";
@@ -39,9 +42,18 @@ function ChatAI() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
+
   const { isLoggedIn, isPremium } = useAuth();
+  const navigate = useNavigate();
 
   const messagesEndRef = useRef(null);
+
+  const handleActionClick = (action) => {
+    if (!action) return;
+    if (action.type === "view_notebook" && action.notebookId) {
+      navigate(`${config.routes.notebook}?id=${action.notebookId}`);
+    }
+  };
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -106,6 +118,7 @@ function ChatAI() {
               role: msg.role === "ai" ? "assistant" : msg.role, // Chuyển "ai" thành "assistant"
               content: msg.content,
               timestamp: new Date(msg.timestamp),
+              actions: Array.isArray(msg.actions) ? msg.actions : [],
             }));
           setMessages(formattedMessages);
         } else {
@@ -223,34 +236,122 @@ function ChatAI() {
     setIsLoading(true);
     setTimeout(() => scrollToBottom(), 150);
 
-    try {
-      // Gửi message đến API
-      const response = await sendMessage(sessionId, textToSend);
-      console.log("Send message response:", response); // Debug response
+    const assistantId = `${Date.now() + 1}`;
+    let assistantCreated = false;
+    let streamErrored = false;
 
-      if (response && response.success && response.data) {
-        const aiMessage = {
-          id: (Date.now() + 1).toString(),
+    const ensureAssistantMessage = (initialContent) => {
+      if (assistantCreated) return;
+      assistantCreated = true;
+      setIsLoading(false); // ẩn typing dots khi token đầu tiên đến
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantId,
           role: "assistant",
-          content: response.data.aiMessage, // Sửa từ response.data.response thành aiMessage
-          timestamp: new Date(response.data.timestamp || Date.now()),
-        };
-        setMessages((prev) => [...prev, aiMessage]);
-      } else {
-        throw new Error("Invalid response from API");
+          content: initialContent,
+          timestamp: new Date(),
+          actions: [],
+        },
+      ]);
+    };
+
+    const appendChunk = (text) => {
+      if (!text) return;
+      if (!assistantCreated) {
+        ensureAssistantMessage(text);
+        return;
+      }
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, content: m.content + text } : m,
+        ),
+      );
+    };
+
+    const appendAction = (action) => {
+      if (!action) return;
+      if (!assistantCreated) {
+        ensureAssistantMessage("");
+      }
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id !== assistantId) return m;
+          const existing = m.actions || [];
+          // tránh duplicate cùng notebookId
+          if (
+            existing.some(
+              (a) =>
+                a.type === action.type && a.notebookId === action.notebookId,
+            )
+          ) {
+            return m;
+          }
+          return { ...m, actions: [...existing, action] };
+        }),
+      );
+    };
+
+    try {
+      await streamMessage(sessionId, textToSend, {
+        onChunk: (text) => appendChunk(text),
+        onAction: (action) => appendAction(action),
+        onDone: (event) => {
+          if (!assistantCreated && event?.aiMessage) {
+            ensureAssistantMessage(event.aiMessage);
+          }
+          if (event?.timestamp) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? { ...m, timestamp: new Date(event.timestamp) }
+                  : m,
+              ),
+            );
+          }
+          // Đồng bộ actions cuối cùng từ server (đảm bảo không miss)
+          if (Array.isArray(event?.actions) && event.actions.length > 0) {
+            setMessages((prev) =>
+              prev.map((m) => {
+                if (m.id !== assistantId) return m;
+                const merged = [...(m.actions || [])];
+                event.actions.forEach((a) => {
+                  if (
+                    !merged.some(
+                      (x) =>
+                        x.type === a.type && x.notebookId === a.notebookId,
+                    )
+                  ) {
+                    merged.push(a);
+                  }
+                });
+                return { ...m, actions: merged };
+              }),
+            );
+          }
+        },
+        onError: (err) => {
+          streamErrored = true;
+          console.error("Stream error:", err);
+          if (!assistantCreated) {
+            ensureAssistantMessage(
+              "Xin lỗi, đã có lỗi xảy ra khi xử lý tin nhắn của bạn. Vui lòng thử lại.",
+            );
+          }
+        },
+      });
+
+      if (!assistantCreated && !streamErrored) {
+        // Stream kết thúc nhưng không nhận được chunk nào và không có lỗi
+        ensureAssistantMessage("Xin lỗi, mình chưa có phản hồi phù hợp.");
       }
     } catch (error) {
-      console.error("Error sending message:", error);
-
-      // Hiển thị thông báo lỗi
-      const errorMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content:
+      console.error("Error streaming message:", error);
+      if (!assistantCreated) {
+        ensureAssistantMessage(
           "Xin lỗi, đã có lỗi xảy ra khi xử lý tin nhắn của bạn. Vui lòng thử lại.",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -408,6 +509,24 @@ function ChatAI() {
                             ))}
                         </p>
                       </div>
+                      {!isUser &&
+                        Array.isArray(message.actions) &&
+                        message.actions.length > 0 && (
+                          <div className={cx("message-actions")}>
+                            {message.actions.map((action, idx) => (
+                              <button
+                                key={`${action.type}-${action.notebookId || idx}`}
+                                type="button"
+                                className={cx("message-action-btn")}
+                                onClick={() => handleActionClick(action)}
+                              >
+                                <FontAwesomeIcon icon={faBookOpen} />
+                                <span>{action.label || "Xem sổ tay"}</span>
+                                <FontAwesomeIcon icon={faArrowRight} />
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       <span className={cx("timestamp")}>
                         {(() => {
                           const now = new Date();

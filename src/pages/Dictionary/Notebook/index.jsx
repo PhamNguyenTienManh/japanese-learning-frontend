@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./Notebook.module.scss";
 import notebookService from "~/services/notebookService";
@@ -32,6 +33,7 @@ function Notebook() {
   const [editingNotebookId, setEditingNotebookId] = useState(null);
   const [editingName, setEditingName] = useState("");
   const { isLoggedIn } = useAuth();
+  const [searchParams] = useSearchParams();
   const [newWord, setNewWord] = useState({
     name: "",
     phonetic: "",
@@ -48,6 +50,17 @@ function Notebook() {
       setError('⚠️ Bạn cần đăng nhập để xem danh sách sổ tay');
     }
   }, [isLoggedIn]);
+
+  // Auto-select notebook nếu URL có ?id=xxx (vd: từ ChatAI điều hướng sang)
+  useEffect(() => {
+    const idFromUrl = searchParams.get("id");
+    if (!idFromUrl || !notebooks || notebooks.length === 0) return;
+    const target = notebooks.find((n) => n._id === idFromUrl);
+    if (target && selectedNotebook !== idFromUrl) {
+      handleSelectNotebook(idFromUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, notebooks]);
 
   // Fetch danh sách notebooks
   const fetchNotebooks = async () => {
