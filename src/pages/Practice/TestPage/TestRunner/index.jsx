@@ -13,8 +13,7 @@ import {
   faPlay,
   faPause,
 } from "@fortawesome/free-solid-svg-icons";
-import { getExamDetail } from "~/services/examService";
-import { saveAnswers, submitExam } from "~/services/examService"; // Import API functions
+import { getExamDetail, saveAnswers, submitExam, resumeExam, saveProgress } from "~/services/examService";
 import PopupModal from "~/components/Popup";
 
 const cx = classNames.bind(styles);
@@ -104,12 +103,16 @@ function TestRunner() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [examResultId, setExamResultId] = useState(null);
   const [examTitle, setExamTitle] = useState("");
+  const [progressRestored, setProgressRestored] = useState(false);
 
   // Hiển thị PopupModal
   const [showConfirm, setShowConfirm] = useState(false);
 
   // Hiển thị popup xác nhận thoát
   const [showConfirmExit, setShowConfirmExit] = useState(false);
+
+  // Hiển thị popup xác nhận lưu bài
+  const [showConfirmSave, setShowConfirmSave] = useState(false);
 
   // Chặn reload + đóng tab
   useEffect(() => {
@@ -141,9 +144,18 @@ function TestRunner() {
     };
   }, []);
 
-  // Khi người dùng nhấn "OK" ở popup → out về trang chủ
-  const confirmExit = () => {
+  // Khi người dùng nhấn "Lưu và thoát" → lưu tiến trình rồi điều hướng
+  const confirmExit = async () => {
     setShowConfirmExit(false);
+    if (examResultId && examData.length > 0) {
+      try {
+        const totalTime = examData.reduce((sum, part) => sum + part.time * 60, 0);
+        const elapsed = Math.max(0, totalTime - timeRemaining);
+        await saveProgress(examResultId, elapsed);
+      } catch (err) {
+        console.error("Không thể lưu tiến trình khi thoát:", err);
+      }
+    }
     navigate(`/practice/${level}`);
   };
 
@@ -180,7 +192,7 @@ function TestRunner() {
             (sum, part) => sum + part.time * 60,
             0
           );
-          setTimeRemaining(totalTime);
+          //setTimeRemaining(totalTime);
         } else {
           setError("Không thể tải dữ liệu bài thi");
         }
@@ -197,9 +209,60 @@ function TestRunner() {
     }
   }, [testId]);
 
-  // Timer
+  // Khôi phục tiến trình (đáp án + thời gian) khi resume
   useEffect(() => {
-    if (loading || examData.length === 0) return;
+    if (!examResultId || examData.length === 0 || progressRestored) return;
+
+    const restoreProgress = async () => {
+      const totalTime = examData.reduce((sum, part) => sum + part.time * 60, 0);
+      try {
+        const response = await resumeExam(examResultId);
+        if (response.success && response.data) {
+          const { elapsed, answers: savedAnswers } = response.data;
+
+          // Khôi phục đáp án đã lưu (dựa trên subQuestionIndex)
+          const restoredAnswers = {};
+          if (savedAnswers && savedAnswers.length > 0) {
+            savedAnswers.forEach((partAnswer) => {
+              partAnswer.answers.forEach((ans) => {
+                const qId = ans.questionId.toString();
+                const subIdx = ans.subQuestionIndex;
+                if (
+                  subIdx !== undefined &&
+                  subIdx !== null &&
+                  ans.selectedAnswer >= 0
+                ) {
+                  restoredAnswers[`${qId}-${subIdx}`] = ans.selectedAnswer;
+                }
+              });
+            });
+          }
+
+          if (Object.keys(restoredAnswers).length > 0) {
+            setAnswers(restoredAnswers);
+          }
+
+          // Luôn set thời gian còn lại dựa trên elapsed (kể cả khi elapsed = 0)
+          const elapsedNum = Number(elapsed) || 0;
+          setTimeRemaining(Math.max(0, totalTime - elapsedNum));
+        } else {
+      // ✅ Nếu API lỗi/không có data → fallback về totalTime
+      setTimeRemaining(totalTime);
+    }
+      } catch (err) {
+        console.error("Không thể khôi phục tiến trình:", err);
+        setTimeRemaining(totalTime);
+      } finally {
+        setProgressRestored(true);
+      }
+    };
+
+    restoreProgress();
+  }, [examResultId, examData, progressRestored]);
+
+  // Timer - chỉ chạy SAU KHI khôi phục tiến trình xong (tránh race với restore)
+  useEffect(() => {
+    if (loading || examData.length === 0 || !progressRestored) return;
 
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
@@ -212,7 +275,7 @@ function TestRunner() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [loading, examData]);
+  }, [loading, examData, progressRestored]);
 
   // Hàm chuyển đổi answers sang format API
   const convertAnswersToAPIFormat = () => {
@@ -298,12 +361,10 @@ function TestRunner() {
           partId: currentPart.partId,
           answers: answersInPart,
         };
-
         await saveAnswers(apiData);
       }
     } catch (error) {
       console.error("Lỗi khi lưu đáp án:", error);
-      // Không hiển thị lỗi cho user để không làm gián đoạn trải nghiệm
     }
   };
 
@@ -335,23 +396,44 @@ function TestRunner() {
     setCurrentQuestionIndex(0);
   };
 
-  // Hàm lưu bài (manual save)
-  const handleSave = async () => {
+  // Mở popup xác nhận lưu bài
+  const handleConfirmSave = () => {
     if (!examResultId) {
       alert("Không tìm thấy phiên làm bài!");
+      return;
+    }
+    setShowConfirmSave(true);
+  };
+
+  // Đóng popup xác nhận lưu
+  const cancelSave = () => {
+    setShowConfirmSave(false);
+  };
+
+  // Lưu bài + thoát ra trang luyện thi (manual save)
+  const handleSaveAndExit = async () => {
+    if (!examResultId) {
+      alert("Không tìm thấy phiên làm bài!");
+      setShowConfirmSave(false);
       return;
     }
 
     try {
       setIsSaving(true);
-      const apiDataArray = convertAnswersToAPIFormat();
+      setShowConfirmSave(false);
 
-      // Save all parts
+      const apiDataArray = convertAnswersToAPIFormat();
       for (const apiData of apiDataArray) {
         await saveAnswers(apiData);
       }
 
-      alert("Đã lưu bài thành công!");
+      // Lưu elapsed time để có thể resume đúng thời gian
+      const totalTime = examData.reduce((sum, part) => sum + part.time * 60, 0);
+      const elapsed = Math.max(0, totalTime - timeRemaining);
+      await saveProgress(examResultId, elapsed);
+
+      // Thoát về trang luyện thi
+      navigate(`/practice/${level}`);
     } catch (error) {
       console.error("Lỗi khi lưu bài:", error);
       alert("Có lỗi xảy ra khi lưu bài. Vui lòng thử lại!");
@@ -426,8 +508,9 @@ function TestRunner() {
     }, 0);
   };
 
-  // Loading state
-  if (loading) {
+  // Loading state - chờ cả fetchExamData và restoreProgress xong mới render UI
+  // (tránh flash 90:00 trước khi restore set đúng giá trị thời gian)
+  if (loading || (examResultId && !progressRestored)) {
     return (
       <div className={cx("wrapper")}>
         <main className={cx("main")}>
@@ -523,8 +606,8 @@ function TestRunner() {
           onConfirm={confirmExit}
           onCancel={cancelExit}
           title="Xác nhận thoát"
-          message="Bạn có chắc chắn muốn rời khỏi bài thi không? Tất cả tiến trình sẽ bị mất."
-          confirmText="Thoát"
+          message="Tiến trình sẽ được lưu lại. Bạn có thể quay lại tiếp tục sau."
+          confirmText="Lưu và thoát"
         />
 
       </div>
@@ -725,7 +808,7 @@ function TestRunner() {
                 <Button
                   outline
                   className={cx("save-btn")}
-                  onClick={handleSave}
+                  onClick={handleConfirmSave}
                   disabled={isSaving}
                 >
                   {isSaving ? "Đang lưu..." : "Lưu bài"}
@@ -796,8 +879,17 @@ function TestRunner() {
         onConfirm={confirmExit}
         onCancel={cancelExit}
         title="Xác nhận thoát"
-        message="Bạn có chắc chắn muốn rời khỏi bài thi không? Tất cả tiến trình sẽ bị mất."
-        confirmText="Thoát"
+        message="Tiến trình sẽ được lưu lại. Bạn có thể quay lại tiếp tục sau."
+        confirmText="Lưu và thoát"
+      />
+
+      <PopupModal
+        visible={showConfirmSave}
+        onConfirm={handleSaveAndExit}
+        onCancel={cancelSave}
+        title="Xác nhận lưu bài"
+        message="Bài làm dở của bạn sẽ được lưu lại. Bạn có thể quay lại tiếp tục sau. Tiếp tục lưu và thoát?"
+        confirmText="Lưu và thoát"
       />
 
     </div>

@@ -14,7 +14,7 @@ import {
   faCheckCircle,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
-import { startExam } from "~/services/examService";
+import { startExam, checkExamStatus } from "~/services/examService";
 import { useAuth } from "~/context/AuthContext";
 const cx = classNames.bind(styles);
 
@@ -34,37 +34,37 @@ export default function TestCard({
 
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
+  const [savedExamResultId, setSavedExamResultId] = useState(null);
   const { isLoggedIn } = useAuth();
   console.log("test: ", test);
 
   const resultsLink = `${basePath}/results/${id}`;
+
+  const doStartNewExam = async () => {
+    const response = await startExam(id);
+    const examResultId = response?.data?._id;
+    if (!examResultId) throw new Error("Không nhận được examResultId từ server");
+    localStorage.setItem("currentExamResultId", examResultId);
+    navigate(`${basePath}/test/${id}`);
+  };
 
   // Hàm xử lý khi nhấn "Bắt đầu" hoặc "Làm lại"
   const handleStartExam = async () => {
     try {
       setIsLoading(true);
 
-      // Gọi API để bắt đầu bài thi
-      const response = await startExam(id);
+      // Kiểm tra trạng thái bài thi trước
+      const statusRes = await checkExamStatus(id);
+      const status = statusRes?.data?.status;
 
-      // Log để kiểm tra cấu trúc response
-      console.log("Response từ API startExam:", response);
-
-      // Lấy examResultId từ response.data._id
-      const examResultId = response?.data?._id;
-
-      if (examResultId) {
-        // Lưu examResultId vào localStorage
-        localStorage.setItem("currentExamResultId", examResultId);
-
-        console.log("Đã lưu examResultId:", examResultId);
-
-        // Chuyển hướng đến trang làm bài
-        navigate(`${basePath}/test/${id}`);
-      } else {
-        console.error("Response structure:", JSON.stringify(response, null, 2));
-        throw new Error("Không nhận được examResultId từ server");
+      if (status === "saving") {
+        setSavedExamResultId(statusRes.data.examResultId);
+        setShowResumeDialog(true);
+        return;
       }
+
+      await doStartNewExam();
     } catch (error) {
       console.error("Lỗi khi bắt đầu bài thi:", error);
       alert("Có lỗi xảy ra khi bắt đầu bài thi. Vui lòng thử lại!");
@@ -73,7 +73,44 @@ export default function TestCard({
     }
   };
 
+  const handleResumeExam = () => {
+    localStorage.setItem("currentExamResultId", savedExamResultId);
+    setShowResumeDialog(false);
+    navigate(`${basePath}/test/${id}`);
+  };
+
+  const handleStartNewExam = async () => {
+    try {
+      setIsLoading(true);
+      setShowResumeDialog(false);
+      await doStartNewExam();
+    } catch (error) {
+      console.error("Lỗi khi bắt đầu bài thi mới:", error);
+      alert("Có lỗi xảy ra. Vui lòng thử lại!");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
+    <>
+    {showResumeDialog && (
+      <div className={cx("resume-overlay")}>
+        <div className={cx("resume-dialog")}>
+          <h3 className={cx("resume-title")}>Bài thi đang làm dở</h3>
+          <p className={cx("resume-message")}>
+            Bạn có bài thi chưa hoàn thành. Bạn muốn tiếp tục hay bắt đầu bài mới?
+          </p>
+          <div className={cx("resume-actions")}>
+            <Button primary onClick={handleResumeExam}>Tiếp tục bài cũ</Button>
+            <Button outline onClick={handleStartNewExam} disabled={isLoading}>Làm bài mới</Button>
+            <button className={cx("resume-cancel")} onClick={() => setShowResumeDialog(false)}>
+              Hủy
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <Card className={`${cx("root")} ${className}`}>
       <div className={cx("inner")}>
         <div className={cx("main")}>
@@ -151,5 +188,6 @@ export default function TestCard({
         </div>
       </div>
     </Card>
+    </>
   );
 }
