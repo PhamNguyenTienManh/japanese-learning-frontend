@@ -11,12 +11,10 @@
 
 .pricing .plans {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  justify-content: center;
   gap: 28px;
 
-  @media (max-width: 992px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
   @media (max-width: 600px) {
     grid-template-columns: 1fr;
   }
@@ -30,6 +28,10 @@
   position: relative;
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+
+  display: flex;
+  flex-direction: column;
+  min-height: 420px; /* ensure cards are visually balanced */
 
   &.highlight {
     border-color: var(--primary);
@@ -79,11 +81,21 @@
   text-align: center;
 }
 
+/* Make button look consistent height */
+.plan-card .plan-btn button,
+.plan-card .plan-btn a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .plan-features {
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-top: 12px;
+  margin-top: auto; /* push features to bottom so cards align */
 }
 
 .plan-features .feature-item {

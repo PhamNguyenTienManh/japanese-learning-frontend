@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import Button from "~/components/Button";
+import { getFurigana } from "~/services/furiganaService";
 import styles from "./TranslateModal.module.scss";
 
 const cx = classNames.bind(styles);
@@ -25,6 +27,24 @@ const SPEECH_LANG = {
     en: "en-US",
 };
 
+const KANJI_RE = /[㐀-鿿豈-﫿]/;
+
+function renderFuriganaSegments(segments) {
+    if (!segments) return null;
+    return segments.map((seg, i) => {
+        const orig = seg.orig || "";
+        const hira = seg.hira || "";
+        const needsRuby = hira && hira !== orig && KANJI_RE.test(orig);
+        if (!needsRuby) return <span key={i}>{orig}</span>;
+        return (
+            <ruby key={i}>
+                {orig}
+                <rt>{hira}</rt>
+            </ruby>
+        );
+    });
+}
+
 function TranslateModal({
     isOpen,
     onClose,
@@ -35,6 +55,18 @@ function TranslateModal({
     loading,
     error,
 }) {
+    const [furiganaOn, setFuriganaOn] = useState(false);
+    const [furiganaSegments, setFuriganaSegments] = useState(null);
+    const [furiganaLoading, setFuriganaLoading] = useState(false);
+
+    // Text tiếng Nhật cần gắn furigana: nguồn nếu ja→vi, bản dịch nếu vi→ja
+    const furiganaText = sourceLang === "ja" ? sourceText : (targetLang === "ja" ? translatedText : null);
+
+    useEffect(() => {
+        setFuriganaOn(false);
+        setFuriganaSegments(null);
+    }, [furiganaText]);
+
     if (!isOpen) return null;
 
     const handleCopy = (text) => {
@@ -42,8 +74,7 @@ function TranslateModal({
         navigator.clipboard.writeText(text);
     };
 
-    const japaneseText =
-        sourceLang === "ja" ? sourceText : targetLang === "ja" ? translatedText : "";
+    const japaneseText = sourceLang === "ja" ? sourceText : (targetLang === "ja" ? translatedText : "");
 
     const handleSpeakJapanese = () => {
         if (!japaneseText) return;
@@ -52,6 +83,28 @@ function TranslateModal({
         speechSynthesis.cancel();
         speechSynthesis.speak(utter);
     };
+
+    const handleToggleFurigana = async () => {
+        if (!furiganaText) return;
+        const next = !furiganaOn;
+        setFuriganaOn(next);
+        if (next && !furiganaSegments) {
+            try {
+                setFuriganaLoading(true);
+                const segs = await getFurigana(furiganaText);
+                setFuriganaSegments(segs);
+            } catch (e) {
+                console.error("Furigana error:", e);
+                setFuriganaOn(false);
+            } finally {
+                setFuriganaLoading(false);
+            }
+        }
+    };
+
+    const furiganaActive = furiganaOn && !!furiganaSegments;
+    // Nút furigana chỉ hiện khi có text tiếng Nhật (và bản dịch đã xong nếu là vi→ja)
+    const showFuriganaBtn = sourceLang === "ja" || (targetLang === "ja" && !loading && !error && !!translatedText);
 
     return (
         <div className={cx("overlay")} onMouseDown={onClose}>
@@ -86,12 +139,16 @@ function TranslateModal({
                     </span>
                 </div>
 
-                <div className={cx("block")}>
+                <div className={cx("block", { withFurigana: furiganaActive && sourceLang === "ja" })}>
                     <div className={cx("label")}>Văn bản gốc</div>
-                    <div className={cx("text")}>{sourceText}</div>
+                    <div className={cx("text")}>
+                        {furiganaActive && sourceLang === "ja"
+                            ? renderFuriganaSegments(furiganaSegments)
+                            : sourceText}
+                    </div>
                 </div>
 
-                <div className={cx("block", "target")}>
+                <div className={cx("block", "target", { withFurigana: furiganaActive && targetLang === "ja" })}>
                     <div className={cx("label")}>Bản dịch</div>
                     {loading ? (
                         <div className={cx("loading")}>
@@ -101,11 +158,29 @@ function TranslateModal({
                     ) : error ? (
                         <div className={cx("error")}>{error}</div>
                     ) : (
-                        <div className={cx("text")}>{translatedText}</div>
+                        <div className={cx("text")}>
+                            {furiganaActive && targetLang === "ja"
+                                ? renderFuriganaSegments(furiganaSegments)
+                                : translatedText}
+                        </div>
                     )}
                 </div>
 
                 <div className={cx("actions")}>
+                    {showFuriganaBtn && (
+                        <Button
+                            primary={furiganaOn}
+                            outline={!furiganaOn}
+                            className={"no-margin"}
+                            onClick={handleToggleFurigana}
+                            disabled={furiganaLoading || loading}
+                            title="Hiện/tắt furigana"
+                        >
+                            {furiganaLoading
+                                ? <><FontAwesomeIcon icon={faSpinner} spin />&nbsp;Đang tải...</>
+                                : furiganaOn ? "Tắt furigana" : "Furigana"}
+                        </Button>
+                    )}
                     <Button
                         outline
                         className={"no-margin"}

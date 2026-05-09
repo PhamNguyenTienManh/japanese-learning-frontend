@@ -34,6 +34,10 @@ const routes = {
   adminPosts: "/admin/posts",
   adminReading: "/admin/reading",
   translate: "/translate"
+  ,
+  payment: "/payment"
+  ,
+  paymentCheckout: "/payment/checkout"
 };
 
 export default routes;

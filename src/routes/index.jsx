@@ -26,6 +26,9 @@ import Reading from "~/pages/Reading";
 import ExamReview from "~/pages/ExamReview/ExamReview";
 import JLPTFlashcard from "~/pages/Dictionary/JLPT/Flashcards";
 import Translate from "~/pages/Translate";
+import Payment from "~/pages/Payment";
+import PaymentCheckout from "~/pages/Payment/Checkout";
+import PaymentSuccess from "~/pages/Payment/Success";
 import Admin from "~/pages/Admin";
 import User from "~/pages/Admin/User";
 import DictionaryAdmin from "~/pages/Admin/Dictionary";
@@ -62,6 +65,9 @@ export const publicRouter = [
   { path: config.routes.reading, component: Reading },
   { path: config.routes.resultDetail, component: ExamReview },
   { path: config.routes.translate, component: Translate },
+  { path: config.routes.payment, component: Payment },
+  { path: config.routes.paymentCheckout, component: PaymentCheckout },
+  { path: config.routes.payment + "/success", component: PaymentSuccess },
 
   { path: config.routes.admin, component: Admin },
   { path: config.routes.user, component: User },

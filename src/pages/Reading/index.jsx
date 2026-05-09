@@ -14,6 +14,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 import Button from "~/components/Button";
+import { useAuth } from "~/context/AuthContext";
 import Card from "~/components/Card";
 import { getNews } from "~/services/newsService";
 import { assessPronunciation } from "~/services/voiceAssessService";
@@ -88,6 +89,8 @@ export default function Reading() {
     const [furiganaOn, setFuriganaOn] = useState(false);
     const [furiganaCache, setFuriganaCache] = useState({});
     const [furiganaLoading, setFuriganaLoading] = useState(false);
+
+    const { isLoggedIn, isPremium } = useAuth();
 
     // Fetch data từ API
     useEffect(() => {
@@ -349,6 +352,13 @@ export default function Reading() {
             audioElement.pause();
             setIsPlaying(false);
         }
+        // Nếu user đã đăng nhập nhưng chưa là premium -> điều hướng tới payment
+        if (isLoggedIn && !isPremium) {
+            // bật một state tạm để hiển thị CTA nâng cấp (sử dụng window.location để điều hướng nhanh)
+            window.location.href = `/payment?plan=Pro`;
+            return;
+        }
+
         resetPracticeState();
         setShowPractice(true);
     };

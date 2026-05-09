@@ -9,6 +9,7 @@ const EMPTY_AUTH = {
   role: null,
   email: null,
   exp: null,
+  isPremium: false,
 };
 
 // Đọc auth state từ localStorage một cách synchronous —
@@ -28,6 +29,7 @@ function readAuthFromStorage() {
       role: payload.role || null,
       email: payload.email || null,
       exp: payload.exp || null,
+      isPremium: localStorage.getItem("isPremium") === "true",
     };
   } catch (err) {
     console.error("Token decode failed:", err);
@@ -48,14 +50,11 @@ export function AuthProvider({ children }) {
   };
 
   const isAdmin = () => auth.role === "admin";
-
   const hasRole = (role) => auth.role === role;
 
   useEffect(() => {
     loadAuth();
-
     window.addEventListener("storage", loadAuth);
-
     return () => {
       window.removeEventListener("storage", loadAuth);
     };
