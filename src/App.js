@@ -1,6 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation, Outlet } from "react-router-dom";
 import { privateRouter, publicRouter, requireAuthRouter } from "./routes";
-import { DefaultLayout } from "~/layouts";
+import { DefaultLayout, AdminLayout } from "~/layouts";
 import { Fragment } from "react/jsx-runtime";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -32,10 +32,24 @@ function AnimatedRoutes() {
     }
   }, []);
 
+  // Tách admin routes để gom dưới 1 parent route → AdminLayout không remount
+  // khi chuyển giữa các tab admin (sidebar giữ state, không bị flash trắng).
+  const adminRoutes = publicRouter.filter((r) => r.path.startsWith("/admin"));
+  const nonAdminRoutes = publicRouter.filter(
+    (r) => !r.path.startsWith("/admin")
+  );
+
+  // Key cho AnimatePresence: trong admin chỉ thay đổi khi rời khỏi admin
+  // → animation transition giữa public ↔ admin vẫn chạy, nhưng admin nội bộ
+  // không bị remount.
+  const routeKey = location.pathname.startsWith("/admin")
+    ? "admin"
+    : location.pathname;
+
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        {publicRouter.map((route, index) => {
+      <Routes location={location} key={routeKey}>
+        {nonAdminRoutes.map((route, index) => {
           let Layout = DefaultLayout;
           if (route.layout) {
             Layout = route.layout;
@@ -43,28 +57,6 @@ function AnimatedRoutes() {
             Layout = Fragment;
           }
           const Page = route.component;
-          if (route.path.startsWith("/admin")) {
-            return (
-              <Route
-                key={index}
-                path={route.path}
-                element={
-                  <AdminGuard>
-                    <motion.div
-                      initial={{ opacity: 0, y: 50 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -50 }}
-                      transition={{ duration: 0.4, ease: "easeInOut" }}
-                    >
-                      <Layout>
-                        <Page />
-                      </Layout>
-                    </motion.div>
-                  </AdminGuard>
-                }
-              />
-            );
-          }
 
           return (
             <Route
@@ -85,6 +77,31 @@ function AnimatedRoutes() {
             />
           );
         })}
+
+        {/* Admin: parent route render AdminLayout 1 lần, các route con dùng <Outlet /> để swap content */}
+        <Route
+          path="/admin"
+          element={
+            <AdminGuard>
+              <AdminLayout>
+                <Outlet />
+              </AdminLayout>
+            </AdminGuard>
+          }
+        >
+          {adminRoutes.map((route, index) => {
+            const Page = route.component;
+            // Bỏ prefix "/admin/" để có path tương đối; "/admin" chính nó là index
+            const relPath =
+              route.path === "/admin"
+                ? null
+                : route.path.replace(/^\/admin\//, "");
+            if (relPath === null) {
+              return <Route key={index} index element={<Page />} />;
+            }
+            return <Route key={index} path={relPath} element={<Page />} />;
+          })}
+        </Route>
         {/* {privateRouter.map((route, index) => {
           let Layout = DefaultLayout;
           if (route.layout) {

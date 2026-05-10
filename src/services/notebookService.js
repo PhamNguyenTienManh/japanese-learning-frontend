@@ -46,6 +46,18 @@ const notebookService = {
       throw error;
     }
   },
+
+  searchNotebooks: async (keyword = '') => {
+    try {
+      const response = await axiosInstance.get('/notebook/search', {
+        params: { q: keyword },
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error searching notebooks:', error);
+      throw error;
+    }
+  },
   updateNotebook: async (id, name) => {
     try {
       const response = await axiosInstance.put(`/notebook/${id}`, { name });
@@ -93,6 +105,25 @@ const notebookService = {
 
     }
   },
+  updateWord: async (wordId, data) => {
+    try {
+      const response = await axiosInstance.put(
+        `/notebook-item/${wordId}`,
+        data
+      );
+      return response.data;
+    } catch (err) {
+      console.log('err update word', err);
+      if (err.response) {
+        throw new Error(err.response.data.message || 'Có lỗi xảy ra');
+      } else if (err.request) {
+        throw new Error('Không thể kết nối đến server');
+      } else {
+        throw new Error(err.message);
+      }
+    }
+  },
+
   addWord: async (notebookId, data) => {
     try {
       const response = await axiosInstance.post(

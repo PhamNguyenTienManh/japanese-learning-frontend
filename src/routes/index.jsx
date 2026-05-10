@@ -5,7 +5,8 @@ import LoginPage from "~/pages/auth/Login";
 import RegisterPage from "~/pages/auth/Register";
 import Dictionary from "~/pages/Dictionary";
 import Home from "~/pages/home";
-import Notebook from "~/pages/Dictionary/Notebook";
+import NotebookList from "~/pages/Dictionary/Notebook/NotebookList";
+import NotebookDetail from "~/pages/Dictionary/Notebook/NotebookDetail";
 import Flashcards from "~/pages/Dictionary/Notebook/Flashcards";
 import Practice from "~/pages/Practice";
 import TestPage from "~/pages/Practice/TestPage";
@@ -46,8 +47,10 @@ export const publicRouter = [
   { path: config.routes.resetPassword, component: ResetPassword },
   { path: config.routes.about, component: About },
   { path: config.routes.dictionary, component: Dictionary },
-  { path: config.routes.notebook, component: Notebook },
+  { path: config.routes.notebook, component: NotebookList },
+  { path: config.routes.flashcardsLegacy, component: Flashcards },
   { path: config.routes.flashcards, component: Flashcards },
+  { path: config.routes.notebookDetail, component: NotebookDetail },
   { path: config.routes.practice, component: Practice },
   { path: config.routes.level, component: TestPage },
   { path: config.routes.test, component: TestRunner },

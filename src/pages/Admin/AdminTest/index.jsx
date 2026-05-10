@@ -107,11 +107,6 @@ function AdminTest() {
                 <div className={cx("inner")}>
                     {/* Header */}
                     <div className={cx("header")}>
-                        <Link to="/admin" className={cx("backLink")}>
-                            <FontAwesomeIcon icon={faArrowLeft} className={cx("backIcon")} />
-                            <span>Quay lại bảng quản trị</span>
-                        </Link>
-
                         <div className={cx("headerMain")}>
                             <div>
                                 <h1 className={cx("title")}>Quản lý đề thi</h1>

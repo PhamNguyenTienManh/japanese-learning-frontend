@@ -51,7 +51,7 @@ function ChatAI() {
   const handleActionClick = (action) => {
     if (!action) return;
     if (action.type === "view_notebook" && action.notebookId) {
-      navigate(`${config.routes.notebook}?id=${action.notebookId}`);
+      navigate(`${config.routes.notebook}/${action.notebookId}`);
     }
   };
 
