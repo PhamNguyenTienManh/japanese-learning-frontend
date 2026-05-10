@@ -2,232 +2,152 @@ import { Link } from "react-router-dom";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-    faUsers,
-    faBookOpen,
-    faFileLines,
-    faComments,
-    faChartLine,
-    faTriangleExclamation,
-    faBookReader,
+  faUsers,
+  faBookOpen,
+  faFileLines,
+  faComments,
+  faBookReader,
+  faArrowTrendUp,
+  faArrowRight,
 } from "@fortawesome/free-solid-svg-icons";
 
-import Card from "~/components/Card";
 import styles from "./Admin.module.scss";
 import { useEffect, useState } from "react";
 import { getStatistics } from "~/services/statistic";
 
 const cx = classNames.bind(styles);
 
-const recentActivity = [
-    {
-        type: "user",
-        message: "Người dùng mới đăng ký: nguyenmanh@gmail.com",
-        time: "5 phút trước",
-    },
-    {
-        type: "post",
-        message: "Bài viết mới: Cách học Kanji hiệu quả",
-        time: "15 phút trước",
-    },
-    {
-        type: "report",
-        message: "Báo cáo vi phạm từ user123",
-        time: "1 giờ trước",
-    },
-    {
-        type: "test",
-        message: "Đề thi N5 - Đề số 10 được tạo",
-        time: "2 giờ trước",
-    },
-];
-
 function Admin() {
-    const [totalUser, setTotalUser] = useState();
-    const [totalJlpt, setTotalJlpt] = useState();
-    const [totalPosts, setTotalPosts] = useState();
-    const [totalNews, setTotalNews] = useState();
-    const [totalExam, setTotalExam] = useState();
+  const [stats, setStats] = useState({
+    profileNumber: 0,
+    postsNumber: 0,
+    newsNumber: 0,
+    jlptNumber: 0,
+    examNumber: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchStatistic = async () => {
-            const response = await getStatistics();
-            const statistic = response.data;
-            setTotalUser(statistic.profileNumber);
-            setTotalPosts(statistic.postsNumber);
-            setTotalNews(statistic.newsNumber);
-            setTotalJlpt(statistic.jlptNumber);
-            setTotalExam(statistic.examNumber);
-        }
-        fetchStatistic();
-    }, [])
+  useEffect(() => {
+    const fetchStatistic = async () => {
+      try {
+        const response = await getStatistics();
+        setStats(response.data || {});
+      } catch (e) {
+        console.error("Failed to load stats:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStatistic();
+  }, []);
 
-    return (
-        <div className={cx("wrapper")}>
+  const cards = [
+    {
+      to: "/admin/users",
+      icon: faUsers,
+      label: "Người dùng",
+      value: stats.profileNumber,
+      sub: "Tổng tài khoản",
+      tone: "blue",
+    },
+    {
+      to: "/admin/dictionary",
+      icon: faBookOpen,
+      label: "Từ vựng JLPT",
+      value: stats.jlptNumber,
+      sub: "Trong từ điển",
+      tone: "green",
+    },
+    {
+      to: "/admin/reading",
+      icon: faBookReader,
+      label: "Luyện đọc",
+      value: stats.newsNumber,
+      sub: "Bài đọc đã đăng",
+      tone: "teal",
+    },
+    {
+      to: "/admin/tests",
+      icon: faFileLines,
+      label: "Đề thi",
+      value: stats.examNumber,
+      sub: "JLPT N5 - N1",
+      tone: "purple",
+    },
+    {
+      to: "/admin/posts",
+      icon: faComments,
+      label: "Bài viết",
+      value: stats.postsNumber,
+      sub: "Trong cộng đồng",
+      tone: "orange",
+    },
+  ];
 
-            <main className={cx("main")}>
-                <div className={cx("inner")}>
-                    {/* Header */}
-                    <header className={cx("header")}>
-                        <h1 className={cx("title")}>Bảng quản trị</h1>
-                        <p className={cx("subtitle")}>
-                            Quản lý và giám sát hệ thống học tiếng Nhật
-                        </p>
-                    </header>
-
-                    {/* Stats Grid */}
-                    <div className={cx("statsGrid")}>
-                        <Link to="/admin/users" className={cx("link")}>
-                            <Card className={cx("statCard")}>
-                                <div className={cx("cardHeader")}>
-                                    <div className={cx("iconBox", "iconBoxBlue")}>
-                                        <FontAwesomeIcon icon={faUsers} />
-                                    </div>
-                                    <div>
-                                        <p className={cx("cardValue")}>{totalUser}</p>
-                                        <p className={cx("cardLabel")}>Người dùng</p>
-                                    </div>
-                                </div>
-                                <p className={cx("cardSub")}>
-                                    {totalUser} đang hoạt động
-                                </p>
-                            </Card>
-                        </Link>
-
-                        <Link to="/admin/dictionary" className={cx("link")}>
-                            <Card className={cx("statCard")}>
-                                <div className={cx("cardHeader")}>
-                                    <div className={cx("iconBox", "iconBoxGreen")}>
-                                        <FontAwesomeIcon icon={faBookOpen} />
-                                    </div>
-                                    <div>
-                                        <p className={cx("cardValue")}>{totalJlpt}</p>
-                                        <p className={cx("cardLabel")}>Từ vựng JLPT </p>
-                                    </div>
-                                </div>
-                                <p className={cx("cardSub")}>Trong từ điển</p>
-                            </Card>
-                        </Link>
-
-                        <Link to="/admin/reading" className={cx("link")}>
-                            <Card className={cx("statCard")}>
-                                <div className={cx("cardHeader")}>
-                                    <div className={cx("iconBox", "iconBoxGreen")}>
-                                        <FontAwesomeIcon icon={faBookReader} />
-                                    </div>
-                                    <div>
-                                        <p className={cx("cardValue")}>{totalNews}</p>
-                                        <p className={cx("cardLabel")}>Luyện đọc</p>
-                                    </div>
-                                </div>
-                                <p className={cx("cardSub")}>Quản lý luyện đọc</p>
-                            </Card>
-                        </Link>
-
-                        <Link to="/admin/tests" className={cx("link")}>
-                            <Card className={cx("statCard")}>
-                                <div className={cx("cardHeader")}>
-                                    <div className={cx("iconBox", "iconBoxPurple")}>
-                                        <FontAwesomeIcon icon={faFileLines} />
-                                    </div>
-                                    <div>
-                                        <p className={cx("cardValue")}>{totalExam}</p>
-                                        <p className={cx("cardLabel")}>Đề thi</p>
-                                    </div>
-                                </div>
-                                <p className={cx("cardSub")}>JLPT N5-N1</p>
-                            </Card>
-                        </Link>
-
-                        <Link to="/admin/posts" className={cx("link")}>
-                            <Card className={cx("statCard")}>
-                                <div className={cx("cardHeader")}>
-                                    <div className={cx("iconBox", "iconBoxOrange")}>
-                                        <FontAwesomeIcon icon={faComments} />
-                                    </div>
-                                    <div>
-                                        <p className={cx("cardValue")}>{totalPosts}</p>
-                                        <p className={cx("cardLabel")}>Bài viết</p>
-                                    </div>
-                                </div>
-                                <p className={cx("cardSub")}>Trong cộng đồng</p>
-                            </Card>
-                        </Link>
-
-                        {/* <Link to="/admin/analytics" className={cx("link")}>
-                            <Card className={cx("statCard")}>
-                                <div className={cx("cardHeader")}>
-                                    <div className={cx("iconBox", "iconBoxPrimary")}>
-                                        <FontAwesomeIcon icon={faChartLine} />
-                                    </div>
-                                    <div>
-                                        <p className={cx("cardValue")}>+24%</p>
-                                        <p className={cx("cardLabel")}>Tăng trưởng</p>
-                                    </div>
-                                </div>
-                                <p className={cx("cardSub")}>So với tháng trước</p>
-                            </Card>
-                        </Link> */}
-
-                        {/* <Link to="/admin/reports" className={cx("link")}>
-                            <Card className={cx("statCard")}>
-                                <div className={cx("cardHeader")}>
-                                    <div className={cx("iconBox", "iconBoxRed")}>
-                                        <FontAwesomeIcon icon={faTriangleExclamation} />
-                                    </div>
-                                    <div>
-                                        <p className={cx("cardValue")}>{stats.pendingReports}</p>
-                                        <p className={cx("cardLabel")}>Báo cáo</p>
-                                    </div>
-                                </div>
-                                <p className={cx("cardSub")}>Cần xử lý</p>
-                            </Card>
-                        </Link> */}
-
-
-                    </div>
-
-                    {/* Recent Activity */}
-                    {/* <Card className={cx("activityCard")}>
-                        <h2 className={cx("activityTitle")}>Hoạt động gần đây</h2>
-                        <div className={cx("activityList")}>
-                            {recentActivity.map((activity, index) => (
-                                <div key={index} className={cx("activityItem")}>
-                                    <div
-                                        className={cx(
-                                            "activityIcon",
-                                            activity.type === "user" && "activityIconBlue",
-                                            activity.type === "post" && "activityIconOrange",
-                                            activity.type === "report" && "activityIconRed",
-                                            activity.type === "test" && "activityIconPurple"
-                                        )}
-                                    >
-                                        {activity.type === "user" && (
-                                            <FontAwesomeIcon icon={faUsers} />
-                                        )}
-                                        {activity.type === "post" && (
-                                            <FontAwesomeIcon icon={faComments} />
-                                        )}
-                                        {activity.type === "report" && (
-                                            <FontAwesomeIcon icon={faTriangleExclamation} />
-                                        )}
-                                        {activity.type === "test" && (
-                                            <FontAwesomeIcon icon={faFileLines} />
-                                        )}
-                                    </div>
-                                    <div className={cx("activityContent")}>
-                                        <p className={cx("activityMessage")}>
-                                            {activity.message}
-                                        </p>
-                                        <p className={cx("activityTime")}>{activity.time}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </Card> */}
-                </div>
-            </main>
+  return (
+    <div className={cx("page")}>
+      <header className={cx("page-header")}>
+        <div>
+          <h1 className={cx("page-title")}>Bảng quản trị</h1>
+          <p className={cx("page-subtitle")}>
+            Tổng quan hệ thống — quản lý nội dung & người dùng
+          </p>
         </div>
-    );
+        <div className={cx("page-badge")}>
+          <FontAwesomeIcon icon={faArrowTrendUp} />
+          <span>Hệ thống đang hoạt động</span>
+        </div>
+      </header>
+
+      <section className={cx("stats-grid")}>
+        {cards.map((c) => (
+          <Link key={c.to} to={c.to} className={cx("stat-card", `tone-${c.tone}`)}>
+            <div className={cx("stat-top")}>
+              <div className={cx("stat-icon")}>
+                <FontAwesomeIcon icon={c.icon} />
+              </div>
+              <span className={cx("stat-arrow")}>
+                <FontAwesomeIcon icon={faArrowRight} />
+              </span>
+            </div>
+            <div className={cx("stat-value")}>
+              {loading ? <span className={cx("skeleton-text")} /> : c.value ?? 0}
+            </div>
+            <div className={cx("stat-meta")}>
+              <span className={cx("stat-label")}>{c.label}</span>
+              <span className={cx("stat-sub")}>{c.sub}</span>
+            </div>
+          </Link>
+        ))}
+      </section>
+
+      <section className={cx("quick-section")}>
+        <h2 className={cx("section-title")}>Truy cập nhanh</h2>
+        <div className={cx("quick-grid")}>
+          <Link to="/admin/users" className={cx("quick-item")}>
+            <FontAwesomeIcon icon={faUsers} />
+            <span>Quản lý người dùng</span>
+          </Link>
+          <Link to="/admin/dictionary" className={cx("quick-item")}>
+            <FontAwesomeIcon icon={faBookOpen} />
+            <span>Quản lý từ điển</span>
+          </Link>
+          <Link to="/admin/tests" className={cx("quick-item")}>
+            <FontAwesomeIcon icon={faFileLines} />
+            <span>Quản lý đề thi</span>
+          </Link>
+          <Link to="/admin/posts" className={cx("quick-item")}>
+            <FontAwesomeIcon icon={faComments} />
+            <span>Quản lý bài viết</span>
+          </Link>
+          <Link to="/admin/reading" className={cx("quick-item")}>
+            <FontAwesomeIcon icon={faBookReader} />
+            <span>Quản lý luyện đọc</span>
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 export default Admin;
