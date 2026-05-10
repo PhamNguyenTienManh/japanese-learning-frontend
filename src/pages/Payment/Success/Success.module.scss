@@ -88,6 +88,17 @@
   gap: 6px;
 }
 
+.statusFail {
+  color: #d92d20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.iconFail {
+  color: #d92d20;
+}
+
 /* ── Unlocked features ───────────────────────── */
 .unlockedBox {
   background: linear-gradient(135deg, var(--primary-low), rgba(0, 135, 154, 0.06));

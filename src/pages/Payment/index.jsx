@@ -70,7 +70,7 @@ function Payment() {
           </div>
 
           <div className={styles.priceRow}>
-            <span className={styles.priceAmount}>{isFree ? "$0" : "$9.99"}</span>
+            <span className={styles.priceAmount}>{isFree ? "0 ₫" : "249.000 ₫"}</span>
             <div className={styles.priceDetail}>
               <span className={styles.pricePer}>/ tháng</span>
               {!isFree && (
@@ -100,7 +100,7 @@ function Payment() {
 
           <div className={styles.summaryItem}>
             <span>Gói {plan}</span>
-            <span>{isFree ? "$0.00" : "$9.99"}</span>
+            <span>{isFree ? "0 ₫" : "249.000 ₫"}</span>
           </div>
           <div className={styles.summaryItem}>
             <span>Chu kỳ thanh toán</span>
@@ -109,7 +109,7 @@ function Payment() {
           {!isFree && (
             <div className={styles.summaryItem}>
               <span>Thuế &amp; phí</span>
-              <span className={styles.summaryMuted}>$0.00</span>
+              <span className={styles.summaryMuted}>0 ₫</span>
             </div>
           )}
 
@@ -117,7 +117,7 @@ function Payment() {
 
           <div className={`${styles.summaryItem} ${styles.summaryTotal}`}>
             <span>Tổng hôm nay</span>
-            <span>{isFree ? "$0.00" : "$9.99"}</span>
+            <span>{isFree ? "0 ₫" : "249.000 ₫"}</span>
           </div>
 
           <Button full primary={!isFree} outline={isFree} onClick={handleContinue}>

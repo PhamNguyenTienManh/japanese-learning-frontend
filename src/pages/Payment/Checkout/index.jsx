@@ -9,6 +9,11 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import styles from "./Checkout.module.scss";
 import { useToast } from "~/context/ToastContext";
+import {
+  createMomoPayment,
+  createStripePayment,
+  createVnpayPayment,
+} from "~/services/paymentService";
 
 /* ── Brand logo badges ─────────────────────────────────────── */
 const BrandVisa = () => (
@@ -30,20 +35,14 @@ const BrandJCB = () => (
 const BrandMoMo = () => (
   <div style={{ width: 38, height: 24, borderRadius: 4, background: '#a50064', color: '#fff', fontWeight: 800, fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>MoMo</div>
 );
-const BrandZalo = () => (
-  <div style={{ width: 38, height: 24, borderRadius: 4, background: '#0068ff', color: '#fff', fontWeight: 800, fontSize: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ZaloPay</div>
-);
-const BrandBank = () => (
-  <div style={{ width: 38, height: 24, borderRadius: 4, background: '#e8f5f7', border: '1px solid #cdd4d4', color: '#00879a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M3 10h18"/><path d="m12 3 9 7H3z"/><path d="M5 10v11"/><path d="M19 10v11"/><path d="M9 10v11"/><path d="M15 10v11"/></svg>
-  </div>
+const BrandVNPay = () => (
+  <div style={{ width: 38, height: 24, borderRadius: 4, background: '#005baa', color: '#fff', fontWeight: 800, fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>VNPay</div>
 );
 
 const METHODS = [
   { id: "card", label: "Thẻ tín dụng / ghi nợ", sub: "Visa · Mastercard · JCB", logos: [BrandVisa, BrandMC, BrandJCB] },
   { id: "momo", label: "Ví MoMo", sub: "Quét QR thanh toán", logos: [BrandMoMo] },
-  { id: "zalopay", label: "ZaloPay", sub: "Liên kết tài khoản hoặc QR", logos: [BrandZalo] },
-  { id: "bank", label: "Chuyển khoản ngân hàng", sub: "VietinBank · Vietcombank · Techcombank", logos: [BrandBank] },
+  { id: "vnpay", label: "VNPay", sub: "Liên kết tài khoản hoặc QR", logos: [BrandVNPay] },
 ];
 
 const PLAN_FEATURES = [
@@ -54,8 +53,11 @@ const PLAN_FEATURES = [
   "Ưu tiên hỗ trợ",
 ];
 
-const MONTHLY_PRICE = 9.99;
-const YEARLY_PRICE = 95.88; // ~20% off
+const MONTHLY_PRICE = 249000;
+const YEARLY_PRICE = 2390000; // ~20% off
+
+const formatVND = (amount) =>
+  `${new Intl.NumberFormat("vi-VN").format(amount)} ₫`;
 
 export default function Checkout() {
   const [searchParams] = useSearchParams();
@@ -74,20 +76,36 @@ export default function Checkout() {
   const yearlyDiscount = cycle === "yearly" ? MONTHLY_PRICE * 12 - YEARLY_PRICE : 0;
   const total = isFree ? 0 : subtotal;
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
     if (!agree && !isFree) return;
+
+    if (isFree) {
+      addToast("Bạn đã ở gói Miễn phí.", "info");
+      navigate("/");
+      return;
+    }
+
+    // Tất cả phương thức đều redirect sang cổng thanh toán thật do BE tạo.
+    const creators = {
+      momo: createMomoPayment,
+      vnpay: createVnpayPayment,
+      card: createStripePayment,
+    };
+    const create = creators[method];
+    if (!create) {
+      addToast("Phương thức thanh toán không hỗ trợ.", "error");
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const { paymentUrl } = await create({ cycle });
+      if (!paymentUrl) throw new Error("Không nhận được paymentUrl từ máy chủ");
+      window.location.href = paymentUrl;
+    } catch (err) {
       setLoading(false);
-      if (method === "bank") {
-        addToast("Vui lòng chuyển khoản theo thông tin bên dưới.", "info");
-        return;
-      }
-      localStorage.setItem("isPremium", "true");
-      window.dispatchEvent(new StorageEvent("storage", { key: "isPremium", newValue: "true" }));
-      addToast("Thanh toán thành công!", "success");
-      navigate("/payment/success?provider=" + method);
-    }, 1400);
+      addToast(err.message || "Không tạo được giao dịch", "error");
+    }
   };
 
   return (
@@ -154,34 +172,18 @@ export default function Checkout() {
               ))}
             </div>
 
-            {/* Card form */}
+            {/* Stripe redirect note */}
             {method === "card" && (
               <div className={styles.subPanel}>
                 <p className={styles.subPanelTitle}>
                   <FontAwesomeIcon icon={faLock} style={{ fontSize: 11 }} />
-                  Thông tin thẻ — mã hoá đầu cuối
+                  Thanh toán an toàn qua Stripe
                 </p>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Số thẻ</label>
-                  <div className={styles.inputWrap}>
-                    <input className={styles.input} placeholder="1234 5678 9012 3456" maxLength={19} />
-                    <span className={styles.inputSlot}><BrandVisa /></span>
-                  </div>
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Tên chủ thẻ</label>
-                  <input className={styles.input} placeholder="NGUYEN VAN A" />
-                </div>
-                <div className={styles.formRow2}>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>Hết hạn</label>
-                    <input className={styles.input} placeholder="MM/YY" />
-                  </div>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>CVV</label>
-                    <input className={styles.input} placeholder="•••" maxLength={4} />
-                  </div>
-                </div>
+                <p style={{ fontSize: 14, color: 'var(--grey-low)', margin: 0 }}>
+                  Bạn sẽ được chuyển đến trang thanh toán <strong>Stripe</strong>{" "}
+                  để nhập thông tin thẻ. Thông tin thẻ không lưu trên hệ thống của
+                  JLearn — Stripe xử lý theo chuẩn PCI DSS.
+                </p>
               </div>
             )}
 
@@ -204,24 +206,12 @@ export default function Checkout() {
               </div>
             )}
 
-            {/* ZaloPay redirect */}
-            {method === "zalopay" && (
+            {/* VNPay redirect */}
+            {method === "vnpay" && (
               <div className={styles.subPanel}>
                 <p style={{ fontSize: 14, color: 'var(--grey-low)' }}>
-                  Bạn sẽ được chuyển đến <strong>ZaloPay</strong> để hoàn tất giao dịch sau khi nhấn <strong>Thanh toán</strong>.
+                  Bạn sẽ được chuyển đến <strong>VNPay</strong> để hoàn tất giao dịch sau khi nhấn <strong>Thanh toán</strong>.
                 </p>
-              </div>
-            )}
-
-            {/* Bank transfer */}
-            {method === "bank" && (
-              <div className={styles.subPanel}>
-                <div className={styles.bankGrid}>
-                  <div><span className={styles.bankLabel}>Ngân hàng</span><span className={styles.bankVal}>Vietcombank</span></div>
-                  <div><span className={styles.bankLabel}>Số tài khoản</span><span className={`${styles.bankVal} ${styles.mono}`}>0123 4567 8901</span></div>
-                  <div><span className={styles.bankLabel}>Chủ tài khoản</span><span className={styles.bankVal}>CTY TNHH JLEARN</span></div>
-                  <div><span className={styles.bankLabel}>Nội dung</span><span className={`${styles.bankVal} ${styles.mono} ${styles.primary}`}>JLEARN PRO 482910</span></div>
-                </div>
               </div>
             )}
           </div>
@@ -305,21 +295,21 @@ export default function Checkout() {
               <div className={styles.breakdown}>
                 <div className={styles.breakdownRow}>
                   <span>Tạm tính</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{formatVND(subtotal)}</span>
                 </div>
                 {yearlyDiscount > 0 && (
                   <div className={`${styles.breakdownRow} ${styles.breakdownDiscount}`}>
                     <span>Tiết kiệm khi trả năm</span>
-                    <span>−${yearlyDiscount.toFixed(2)}</span>
+                    <span>−{formatVND(yearlyDiscount)}</span>
                   </div>
                 )}
                 <div className={`${styles.breakdownRow} ${styles.breakdownMuted}`}>
                   <span>Khuyến mãi</span>
-                  <span>−$0.00</span>
+                  <span>−0 ₫</span>
                 </div>
                 <div className={`${styles.breakdownRow} ${styles.breakdownMuted}`}>
                   <span>VAT (0%)</span>
-                  <span>$0.00</span>
+                  <span>0 ₫</span>
                 </div>
               </div>
 
@@ -327,7 +317,7 @@ export default function Checkout() {
               <div className={styles.totalRow}>
                 <span className={styles.totalLabel}>Tổng thanh toán</span>
                 <div className={styles.totalPrice}>
-                  <span className={styles.totalAmount}>${total.toFixed(2)}</span>
+                  <span className={styles.totalAmount}>{formatVND(total)}</span>
                   <span className={styles.totalPer}>/ {cycle === "monthly" ? "tháng" : "năm"}</span>
                 </div>
               </div>
@@ -362,7 +352,7 @@ export default function Checkout() {
                 onClick={handleProceed}
                 disabled={loading || (!agree && !isFree)}
               >
-                {loading ? "Đang xử lý..." : `Thanh toán $${total.toFixed(2)}`}
+                {loading ? "Đang xử lý..." : `Thanh toán ${formatVND(total)}`}
                 {!loading && <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: 13 }} />}
               </button>
 

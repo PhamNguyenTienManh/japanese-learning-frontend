@@ -8,7 +8,7 @@ const cx = classNames.bind(styles);
 const plans = [
   {
     name: "Miễn phí",
-    price: "$0/tháng",
+    price: "0 ₫/tháng",
     desc: "Hoàn hảo để bắt đầu",
     features: [
       "Từ điển cơ bản",
@@ -20,7 +20,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "$9.99/tháng",
+    price: "249.000 ₫/tháng",
     desc: "Tối ưu cho học viên nghiêm túc",
     features: [
       "Tất cả tính năng Miễn phí",
