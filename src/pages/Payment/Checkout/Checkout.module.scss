@@ -318,33 +318,6 @@
   margin: 0;
 }
 
-/* Bank */
-.bankGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  font-size: 13px;
-
-  > div {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-}
-
-.bankLabel {
-  color: var(--grey);
-  font-size: 12px;
-}
-
-.bankVal {
-  font-weight: 600;
-  color: var(--text-high);
-}
-
-.mono { font-family: ui-monospace, monospace; }
-.primary { color: var(--primary); }
-
 /* ── Right column – summary ──────────────────── */
 .right {
   position: sticky;
