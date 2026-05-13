@@ -8,20 +8,27 @@ const cx = classNames.bind(styles);
 
 function CommunityHeader() {
   return (
-    <div className={cx("header")}>
-      <div className={cx("header-left")}>
-        <h1 className={cx("title")}>Cộng đồng</h1>
-        <p className={cx("subtitle")}>Chia sẻ và học hỏi cùng nhau</p>
+    <section className={cx("hero")}>
+      <div className={cx("hero-inner")}>
+        <div className={cx("hero-left")}>
+          <h1 className={cx("title")}>
+            Cộng đồng <span className={cx("accent")}>học tiếng Nhật</span>
+          </h1>
+          <p className={cx("subtitle")}>
+            Nơi bạn chia sẻ kinh nghiệm, đặt câu hỏi và cùng nhau tiến bộ mỗi ngày.
+          </p>
+
+          <Button
+            primary
+            href="/community/new"
+            className={cx("create-btn")}
+            leftIcon={<FontAwesomeIcon icon={faPenToSquare} />}
+          >
+            Tạo bài viết
+          </Button>
+        </div>
       </div>
-      <Button
-        primary
-        href="/community/new"
-        className={cx("create-btn")}
-        leftIcon={<FontAwesomeIcon icon={faPenToSquare} />}
-      >
-        Tạo bài viết
-      </Button>
-    </div>
+    </section>
   );
 }
 

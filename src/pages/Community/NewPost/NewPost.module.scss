@@ -1,7 +1,11 @@
 .wrapper {
+  position: relative;
   min-height: 100vh;
-  background: #f5f5f5;
-  padding: 24px 16px 64px;
+  background:
+    radial-gradient(900px 360px at 0% -10%, rgba(0, 135, 154, 0.10), transparent 60%),
+    radial-gradient(700px 320px at 100% 0%, rgba(252, 95, 0, 0.06), transparent 60%),
+    var(--background);
+  padding: 28px 16px 80px;
 }
 
 .main {
@@ -11,9 +15,33 @@
 
 .container {
   width: 100%;
-  max-width: 800px;
+  max-width: 880px;
 }
 
 .form-card {
-  padding: 24px;
+  padding: 28px 32px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
+  margin-bottom: 18px;
+}
+
+.loading-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 20px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  color: var(--grey);
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .form-card {
+    padding: 22px 20px;
+    border-radius: 18px;
+  }
 }

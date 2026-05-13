@@ -1,14 +1,18 @@
 .field {
-  margin-bottom: 16px;
+  margin-bottom: 22px;
 }
 
 .label {
+  display: block;
   font-size: 14px;
   font-weight: 600;
+  color: var(--text-high);
+  margin-bottom: 8px;
 }
 
 .required {
-  color: red;
+  color: var(--orange);
+  margin-left: 2px;
 }
 
 .category-list {
@@ -19,21 +23,31 @@
 }
 
 .category-item {
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 2px solid #e5e7eb;
-  background: #ffffff;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
   font-size: 13px;
+  font-weight: 600;
+  color: var(--text-high);
   cursor: pointer;
-  transition: all 0.15s ease;
-}
+  transition: all 0.18s ease;
 
-.category-item:hover {
-  border-color: #a855f7;
-}
+  &:hover:not(:disabled) {
+    border-color: rgba(0, 135, 154, 0.4);
+    color: var(--primary);
+    transform: translateY(-1px);
+  }
 
-.category-item.active {
-  border-color: #a855f7;
-  background: rgba(168, 85, 247, 0.06);
-  color: #7c3aed;
+  &.active {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(0, 135, 154, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }

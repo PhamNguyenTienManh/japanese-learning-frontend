@@ -2,13 +2,9 @@ import { useState, useEffect } from "react";
 import classNames from "classnames/bind";
 import styles from "./NewPost.module.scss";
 
-import Card from "~/components/Card";
-import Button from "~/components/Button";
-import Input from "~/components/Input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft, faXmark, faImage } from "@fortawesome/free-solid-svg-icons";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import postService from "~/services/postService";
-import CategorySelector from "~/components/CategorySelection";
 import NewPostHeader from "~/components/NewPostHeader/NewPostHeader";
 import NewPostForm from "~/components/NewPostForm/NewPostForm";
 import NewPostGuidelines from "~/components/NewPostGuideline/NewPostGuidelines";
@@ -175,9 +171,10 @@ function NewPost() {
       <div className={cx("wrapper")}>
         <main className={cx("main")}>
           <div className={cx("container")}>
-            <Card className={cx("form-card")}>
-              <p style={{ textAlign: "center", padding: "40px" }}>Đang tải dữ liệu...</p>
-            </Card>
+            <div className={cx("loading-card")}>
+              <FontAwesomeIcon icon={faSpinner} spin />
+              <span style={{ marginLeft: 10 }}>Đang tải dữ liệu...</span>
+            </div>
           </div>
         </main>
       </div>
@@ -190,7 +187,7 @@ function NewPost() {
         <div className={cx("container")}>
           <NewPostHeader isEdit={isEdit} onBack={handleBack} />
 
-          <Card className={cx("form-card")}>
+          <div className={cx("form-card")}>
             <NewPostForm
               title={title}
               content={content}
@@ -208,7 +205,7 @@ function NewPost() {
               onRemoveImage={handleRemoveImage}
               onSubmit={handleSubmit}
             />
-          </Card>
+          </div>
 
           <NewPostGuidelines />
         </div>

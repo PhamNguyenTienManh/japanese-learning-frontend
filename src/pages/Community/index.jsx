@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import classNames from "classnames/bind";
 import styles from "./Community.module.scss";
-import Tabs, { TabsContent } from "~/components/Tabs";
+import Tabs, { TabsList, TabsTrigger, TabsContent } from "~/components/Tabs";
 
 import postService from "~/services/postService";
 import CommunityHeader from "~/components/CommunityHeader";
@@ -213,33 +213,42 @@ function Community() {
                 onSearch={handleSearch}
               />
 
-              <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
-                <TabsContent value="all" className={cx("tabs-content")}>
-                  <PostList
-                    posts={posts}
-                    loading={loading}
-                    error={error}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    activeTab={activeTab}
-                    selectedCategory={selectedCategory}
-                    onPageChange={handlePageChange}
-                    onRetry={handleRetry}
-                  />
+              <Tabs active={activeTab} onChange={handleTabChange}>
+                <TabsList>
+                  <TabsTrigger value="all">Phổ biến</TabsTrigger>
+                  <TabsTrigger value="recent">Mới nhất</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="all">
+                  <div className={cx("tabs-content")}>
+                    <PostList
+                      posts={posts}
+                      loading={loading}
+                      error={error}
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      activeTab={activeTab}
+                      selectedCategory={selectedCategory}
+                      onPageChange={handlePageChange}
+                      onRetry={handleRetry}
+                    />
+                  </div>
                 </TabsContent>
 
-                <TabsContent value="recent" className={cx("tabs-content")}>
-                  <PostList
-                    posts={posts}
-                    loading={loading}
-                    error={error}
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    activeTab={activeTab}
-                    selectedCategory={selectedCategory}
-                    onPageChange={handlePageChange}
-                    onRetry={handleRetry}
-                  />
+                <TabsContent value="recent">
+                  <div className={cx("tabs-content")}>
+                    <PostList
+                      posts={posts}
+                      loading={loading}
+                      error={error}
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      activeTab={activeTab}
+                      selectedCategory={selectedCategory}
+                      onPageChange={handlePageChange}
+                      onRetry={handleRetry}
+                    />
+                  </div>
                 </TabsContent>
               </Tabs>
             </div>

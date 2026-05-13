@@ -1,39 +1,59 @@
-import Card from "~/components/Card";
 import classNames from "classnames/bind";
 import styles from "./CommunitySidebar.module.scss";
 
 const cx = classNames.bind(styles);
 
+const TRENDING_TAGS = ["#N3", "#Kanji", "#Mẹo học", "#JLPT", "#Ngữ pháp", "#Hội thoại"];
+
+const GUIDELINES = [
+  "Tôn trọng mọi thành viên",
+  "Không spam hoặc quảng cáo",
+  "Chia sẻ nội dung hữu ích, đúng chủ đề",
+  "Sử dụng ngôn ngữ lịch sự, thân thiện",
+];
+
 function CommunitySidebar({ categories, selectedCategory, onCategoryClick }) {
   return (
     <aside className={cx("sidebar")}>
-      <Card className={cx("side-card")}>
+      <section className={cx("side-card")}>
         <h3 className={cx("side-title")}>Danh mục</h3>
         <div className={cx("categories-list")}>
-          {categories.map((category) => (
-            <button
-              key={category.name}
-              type="button"
-              className={cx("category-item", {
-                active: selectedCategory === category.name,
-              })}
-              onClick={() => onCategoryClick(category._id)}
-            >
-              <span className={cx("category-name")}>{category.name}</span>
+          {categories.map((category) => {
+            const isActive = selectedCategory === category.name;
+            return (
+              <button
+                key={category.name}
+                type="button"
+                className={cx("category-item", { active: isActive })}
+                onClick={() => onCategoryClick(category._id || category.name)}
+              >
+                <span className={cx("category-name")}>{category.name}</span>
+                <span className={cx("category-count")}>{category.count ?? 0}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className={cx("side-card")}>
+        <h3 className={cx("side-title")}>Thẻ thịnh hành</h3>
+        <div className={cx("tags-wrap")}>
+          {TRENDING_TAGS.map((tag) => (
+            <button key={tag} type="button" className={cx("tag-chip")}>
+              {tag}
             </button>
           ))}
         </div>
-      </Card>
+      </section>
 
-      <Card className={cx("side-card")}>
+      <section className={cx("side-card")}>
         <h3 className={cx("side-title")}>Quy tắc cộng đồng</h3>
         <ul className={cx("guidelines")}>
-          <li>• Tôn trọng mọi thành viên</li>
-          <li>• Không spam hoặc quảng cáo</li>
-          <li>• Chia sẻ nội dung hữu ích</li>
-          <li>• Sử dụng ngôn ngữ lịch sự</li>
+          {GUIDELINES.map((rule) => (
+            <li key={rule}>{rule}</li>
+          ))}
         </ul>
-      </Card>
+      </section>
     </aside>
   );
 }

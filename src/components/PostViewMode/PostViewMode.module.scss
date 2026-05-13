@@ -1,72 +1,157 @@
 .title {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 10px;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.4px;
+  color: var(--text-high);
+  margin: 0 0 14px;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--grey);
+  margin-bottom: 22px;
+}
+
+.meta-dot {
+  font-size: 6px;
+  color: var(--border);
 }
 
 .post-image-container {
-  width: 200px;
-  height: 200px;
-  margin-bottom: 16px;
-  transition: opacity 0.3s;
+  position: relative;
+  width: 100%;
+  max-height: 480px;
+  margin-bottom: 24px;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: var(--card);
+  border: 1px solid var(--border);
+  transition: border-color 0.2s ease;
 
   &:hover {
-    opacity: 0.9;
+    border-color: rgba(0, 135, 154, 0.3);
   }
 }
 
 .post-image {
   width: 100%;
-  height: 100%;
-  object-fit: contain;
+  max-height: 480px;
+  object-fit: cover;
+  display: block;
 }
 
 .content {
-  margin-bottom: 16px;
+  margin-bottom: 28px;
 }
 
 .content-text {
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 16px;
+  line-height: 1.85;
+  color: var(--text-high);
   white-space: pre-line;
+  word-break: break-word;
 }
 
-.stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  font-size: 13px;
-  color: #6b7280;
-  margin-bottom: 12px;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.stat-icon {
-  font-size: 13px;
-}
-
+/* Actions */
 .actions {
-  border-top: 1px solid #e5e7eb;
-  padding-top: 12px;
-  margin-top: 8px;
   display: flex;
   flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--border);
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--text-high);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+
+  svg {
+    font-size: 14px;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  }
 }
 
-.like-icon.filled {
-  color: white;
+.like-btn {
+  &:hover {
+    border-color: rgba(225, 29, 99, 0.4);
+    color: #e11d63;
+
+    svg {
+      color: #e11d63;
+    }
+  }
+
+  &.active {
+    background: linear-gradient(135deg, #ff5e8a 0%, #e11d63 100%);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(225, 29, 99, 0.3);
+
+    svg {
+      color: #fff;
+    }
+
+    .count-pill {
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+  }
 }
 
-.like-text {
-  color: #000;
+.share-btn {
+  &:hover {
+    border-color: rgba(0, 135, 154, 0.4);
+    color: var(--primary);
+
+    svg {
+      color: var(--primary);
+    }
+  }
 }
 
-.like-text.liked {
-  color: #fff;
+.count-pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--grey-low);
+  margin-left: 4px;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+@media (max-width: 640px) {
+  .title {
+    font-size: 24px;
+  }
+
+  .content-text {
+    font-size: 15px;
+    line-height: 1.75;
+  }
+
+  .post-image-container,
+  .post-image {
+    max-height: 360px;
+  }
 }
