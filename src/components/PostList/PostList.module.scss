@@ -3,40 +3,53 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 20px;
-  color: #4f46e5;
-  gap: 12px;
+  padding: 56px 20px;
+  color: var(--primary);
+  gap: 14px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
 
   p {
     font-size: 14px;
-    color: #6b7280;
+    color: var(--grey);
   }
 }
 
-.error-card {
-  padding: 24px;
-  text-align: center;
-}
-
-.error-message {
-  color: #dc2626;
-  margin-bottom: 16px;
-  font-size: 14px;
-}
-
+.error-card,
 .empty-card {
   padding: 48px 24px;
   text-align: center;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.error-message {
+  color: var(--red);
+  font-size: 14px;
+  margin: 0;
 }
 
 .empty-message {
-  color: #6b7280;
+  color: var(--grey);
   font-size: 14px;
+  margin: 0;
+}
+
+.empty-icon {
+  font-size: 42px;
+  color: var(--primary-low);
+  margin-bottom: 4px;
 }
 
 .tabs-content {
   margin-top: 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }

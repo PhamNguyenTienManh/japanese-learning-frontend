@@ -1,7 +1,7 @@
-import Card from "~/components/Card";
 import Button from "~/components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCommentDots } from "@fortawesome/free-regular-svg-icons";
 import classNames from "classnames/bind";
 import styles from "./PostList.module.scss";
 
@@ -15,25 +15,28 @@ function PostList({ posts, loading, error, currentPage, totalPages, activeTab, s
     return (
       <div className={cx("loading")}>
         <FontAwesomeIcon icon={faSpinner} spin size="2x" />
-        <p>Đang tải...</p>
+        <p>Đang tải bài viết...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <Card className={cx("error-card")}>
+      <div className={cx("error-card")}>
         <p className={cx("error-message")}>{error}</p>
         <Button outline onClick={onRetry}>Thử lại</Button>
-      </Card>
+      </div>
     );
   }
 
   if (!posts.data || posts.data.length === 0) {
     return (
-      <Card className={cx("empty-card")}>
-        <p className={cx("empty-message")}>Không tìm thấy bài viết nào</p>
-      </Card>
+      <div className={cx("empty-card")}>
+        <FontAwesomeIcon icon={faCommentDots} className={cx("empty-icon")} />
+        <p className={cx("empty-message")}>
+          Chưa có bài viết nào ở đây — hãy là người đầu tiên chia sẻ nhé!
+        </p>
+      </div>
     );
   }
 
