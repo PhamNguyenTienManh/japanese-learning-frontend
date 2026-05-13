@@ -3,13 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./PostDetail.module.scss";
 
-import Card from "~/components/Card";
 import Button from "~/components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft,
   faSpinner,
-
+  faComments,
 } from "@fortawesome/free-solid-svg-icons";
 import postService from "~/services/postService";
 import notificationService from "~/services/notificationService";
@@ -373,10 +372,10 @@ function PostDetail() {
       <div className={cx("wrapper")}>
         <main className={cx("main")}>
           <div className={cx("container")}>
-            <Card className={cx("error-card")}>
+            <div className={cx("error-card")}>
               <p className={cx("error-message")}>{error || "Không tìm thấy bài viết"}</p>
               <Button outline onClick={handleBack}>Quay lại cộng đồng</Button>
-            </Card>
+            </div>
           </div>
         </main>
       </div>
@@ -392,7 +391,7 @@ function PostDetail() {
             <span>Quay lại cộng đồng</span>
           </button>
 
-          <Card className={cx("post-card")}>
+          <article className={cx("post-card")}>
             <PostHeader
               post={post}
               isOwner={isOwner}
@@ -430,11 +429,17 @@ function PostDetail() {
                 onZoomImage={setZoomedImage}
               />
             )}
-          </Card>
+          </article>
 
           {!isEditing && (
-            <Card className={cx("comments-card")}>
-              <h2 className={cx("comments-title")}>Bình luận ({comments.length})</h2>
+            <section className={cx("comments-card")}>
+              <h2 className={cx("comments-title")}>
+                <span className={cx("comments-title-icon")}>
+                  <FontAwesomeIcon icon={faComments} />
+                </span>
+                Bình luận
+                <span className={cx("comments-count")}>{comments.length}</span>
+              </h2>
               <CommentForm
                 comment={comment}
                 submitting={submitting}
@@ -456,7 +461,7 @@ function PostDetail() {
                 onSaveEdit={handleSaveEditComment}
                 onCancelEdit={handleCancelEditComment}
               />
-            </Card>
+            </section>
           )}
         </div>
       </main>

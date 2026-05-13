@@ -3,25 +3,54 @@ import {
   faHeart,
   faCommentDots,
   faShareNodes,
+  faEye,
 } from "@fortawesome/free-solid-svg-icons";
+import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
 import classNames from "classnames/bind";
 import styles from "./PostViewMode.module.scss";
-import Button from "~/components/Button";
 
 const cx = classNames.bind(styles);
 
 function PostViewMode({ post, countComment, currentUserId, isLoggedIn, onLike, onShare, onZoomImage }) {
+  const likeCount = post.liked?.length || 0;
+  const isLiked = post.liked?.includes(currentUserId);
+
+  const handleLikeClick = () => {
+    if (!isLoggedIn) {
+      alert("Bạn cần đăng nhập để thực hiện thao tác này.");
+      return;
+    }
+    onLike();
+  };
+
   return (
     <>
       <h1 className={cx("title")}>{post.title}</h1>
+
+      <div className={cx("meta-row")}>
+        <span className={cx("meta-item")}>
+          <FontAwesomeIcon icon={faEye} />
+          {post.view_count || 0} lượt xem
+        </span>
+        <span className={cx("meta-dot")}>•</span>
+        <span className={cx("meta-item")}>
+          <FontAwesomeIcon icon={faHeart} />
+          {likeCount} thích
+        </span>
+        <span className={cx("meta-dot")}>•</span>
+        <span className={cx("meta-item")}>
+          <FontAwesomeIcon icon={faCommentDots} />
+          {countComment || 0} bình luận
+        </span>
+      </div>
 
       {post.image_url && (
         <div
           className={cx("post-image-container")}
           onClick={() => onZoomImage(post.image_url)}
-          style={{ cursor: "zoom-in" }}
         >
           <img src={post.image_url} alt={post.title} className={cx("post-image")} />
+          <span className={cx("zoom-hint")}>Bấm để phóng to</span>
         </div>
       )}
 
@@ -38,49 +67,25 @@ function PostViewMode({ post, countComment, currentUserId, isLoggedIn, onLike, o
         </p>
       </div>
 
-      <div className={cx("stats")}>
-        <div className={cx("stat-item")}>
-          <FontAwesomeIcon icon={faHeart} className={cx("stat-icon")} />
-          <span>{post.liked.length || 0} lượt thích</span>
-        </div>
-        <div className={cx("stat-item")}>
-          <FontAwesomeIcon icon={faCommentDots} className={cx("stat-icon")} />
-          <span>{countComment || 0} bình luận</span>
-        </div>
-      </div>
-
       <div className={cx("actions")}>
-        <Button
-          className={"orange"}
-          primary={post.isLiked}
-          outline={!post.isLiked}
-          onClick={() => {
-            if (!isLoggedIn) {
-              alert("Bạn cần đăng nhập để thực hiện thao tác này.");
-              return;
-            }
-            onLike();
-          }}
-          leftIcon={
-            <FontAwesomeIcon
-              icon={faHeart}
-              className={cx("like-icon", { filled: post.isLiked })}
-            />
-          }
+        <button
+          type="button"
+          className={cx("action-btn", "like-btn", { active: isLiked })}
+          onClick={handleLikeClick}
         >
-          <span className={cx("like-text", { liked: post.liked.includes(currentUserId) })}>
-            {post.liked.includes(currentUserId) ? "Đã thích" : "Thích"}
-          </span>
-        </Button>
+          <FontAwesomeIcon icon={isLiked ? faHeart : faHeartRegular} />
+          <span>{isLiked ? "Đã thích" : "Thích"}</span>
+          {likeCount > 0 && <span className={cx("count-pill")}>{likeCount}</span>}
+        </button>
 
-        <Button
-          outline
-          className={"orange"}
+        <button
+          type="button"
+          className={cx("action-btn", "share-btn")}
           onClick={onShare}
-          leftIcon={<FontAwesomeIcon icon={faShareNodes} className={cx("icon")} />}
         >
-          Chia sẻ
-        </Button>
+          <FontAwesomeIcon icon={faShareNodes} />
+          <span>Chia sẻ</span>
+        </button>
       </div>
     </>
   );
