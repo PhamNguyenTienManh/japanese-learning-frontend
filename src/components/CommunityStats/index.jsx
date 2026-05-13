@@ -3,7 +3,6 @@ import {
   faMessage,
   faUsers,
   faHeart,
-  faEye,
 } from "@fortawesome/free-solid-svg-icons";
 import classNames from "classnames/bind";
 import styles from "./CommunityStats.module.scss";
@@ -29,12 +28,6 @@ function CommunityStats({ stats }) {
       value: stats.totalLikes,
       label: "Lượt thích",
       tone: "rose",
-    },
-    {
-      icon: faEye,
-      value: stats.totalViews,
-      label: "Lượt xem",
-      tone: "violet",
     },
   ];
 
