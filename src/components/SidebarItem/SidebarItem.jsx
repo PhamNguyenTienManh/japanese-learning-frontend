@@ -1,29 +1,19 @@
-// src/components/Sidebar.jsx
-
 import { useState, useEffect } from "react";
+import classNames from "classnames/bind";
 import kantanService from "../../services/kantanService";
+import styles from "./sidebarItem.module.scss";
+
+const cx = classNames.bind(styles);
 
 const SidebarItem = ({ kanji, hanviet, isActive, onClick }) => (
-  <div
+  <button
+    type="button"
     onClick={onClick}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      padding: '12px 16px',
-      cursor: 'pointer',
-      borderRadius: '8px',
-      marginBottom: '4px',
-      backgroundColor: isActive ? '#e3f2fd' : 'transparent',
-      transition: 'background-color 0.2s'
-    }}
+    className={cx("sidebar-item", { active: isActive })}
   >
-    <span style={{ fontSize: '24px', color: '#1976d2', fontWeight: 'bold', marginRight: '12px', minWidth: '30px' }}>
-      {kanji}
-    </span>
-    <span style={{ fontSize: '15px', color: '#333', fontWeight: isActive ? '600' : '400' }}>
-      {hanviet}
-    </span>
-  </div>
+    <span className={cx("kanji-char")}>{kanji}</span>
+    <span className={cx("meaning")}>{hanviet}</span>
+  </button>
 );
 
 const Sidebar = ({ keyword, onSelectKanji, selectedKanji }) => {
@@ -50,7 +40,6 @@ const Sidebar = ({ keyword, onSelectKanji, selectedKanji }) => {
           }));
           setKanjiList(simplifiedList);
 
-          // Auto select first kanji
           if (simplifiedList.length > 0 && onSelectKanji) {
             onSelectKanji(simplifiedList[0].kanji);
           }
@@ -66,26 +55,28 @@ const Sidebar = ({ keyword, onSelectKanji, selectedKanji }) => {
     };
 
     fetchKanji();
-  }, [keyword]); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyword]);
 
   return (
-    <div style={{
-      width: '280px',
-      backgroundColor: '#fff',
-      borderRight: '1px solid #e0e0e0',
-      overflowY: 'auto',
-      padding: '20px 16px'
-    }}>
-      <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#333', marginBottom: '16px', padding: '0 8px' }}>
-        Kết quả tra kanji
-      </h2>
+    <aside className={cx("sidebar")}>
+      <header className={cx("sidebar-head")}>
+        <h2 className={cx("sidebar-title")}>Kết quả</h2>
+        {kanjiList.length > 0 && (
+          <span className={cx("count-pill")}>{kanjiList.length}</span>
+        )}
+      </header>
 
       {loading ? (
-        <div style={{ padding: '10px' }}>Đang tải...</div>
+        <div className={cx("empty-state")}>Đang tải...</div>
+      ) : !keyword ? (
+        <div className={cx("empty-state")}>
+          Nhập từ khoá ở trên để bắt đầu tra cứu.
+        </div>
       ) : kanjiList.length === 0 ? (
-        <div style={{ padding: '10px', color: '#666' }}>Không tìm thấy kết quả</div>
+        <div className={cx("empty-state")}>Không tìm thấy kết quả</div>
       ) : (
-        <div>
+        <div className={cx("list")}>
           {kanjiList.map((item, index) => (
             <SidebarItem
               key={index}
@@ -97,7 +88,7 @@ const Sidebar = ({ keyword, onSelectKanji, selectedKanji }) => {
           ))}
         </div>
       )}
-    </div>
+    </aside>
   );
 };
 

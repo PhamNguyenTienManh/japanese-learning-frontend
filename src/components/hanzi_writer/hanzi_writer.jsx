@@ -1,16 +1,19 @@
 import { useState, useEffect, useRef } from "react";
+import classNames from "classnames/bind";
+import styles from "./hanzi_writer.module.scss";
+
+const cx = classNames.bind(styles);
 
 const HanziWriter = ({ kanji }) => {
     const writerContainerRef = useRef(null);
     const writerInstanceRef = useRef(null);
-    const [animationSpeed, setAnimationSpeed] = useState(1);
-    const [showOutline, setShowOutline] = useState(true);
-    const [showOrder, setShowOrder] = useState(false);
-    const [strokeColor, setStrokeColor] = useState('#1976d2');
+    const [animationSpeed] = useState(1);
+    const [showOutline] = useState(true);
+    const [showOrder] = useState(false);
+    const [strokeColor] = useState('#00879a');
     const [isLoaded, setIsLoaded] = useState(false);
-    const [size, setSize] = useState(240);
+    const [size] = useState(240);
 
-    // Load Hanzi Writer script
     useEffect(() => {
         if (window.HanziWriter) {
             setIsLoaded(true);
@@ -31,13 +34,9 @@ const HanziWriter = ({ kanji }) => {
         };
     }, []);
 
-    // Initialize writer when kanji changes
     useEffect(() => {
-        if (!kanji || !isLoaded || !writerContainerRef.current) {
-            return;
-        };
+        if (!kanji || !isLoaded || !writerContainerRef.current) return;
 
-        // Clear previous writer
         if (writerContainerRef.current) {
             writerContainerRef.current.innerHTML = '';
         }
@@ -52,28 +51,27 @@ const HanziWriter = ({ kanji }) => {
                     padding: 10,
                     strokeAnimationSpeed: animationSpeed,
                     delayBetweenStrokes: 200,
-                    strokeColor: strokeColor,
-                    radicalColor: '#ff9800',
-                    outlineColor: '#ddd',
-                    showOutline: showOutline,
+                    strokeColor,
+                    radicalColor: '#fc5f00',
+                    outlineColor: '#cdd4d4',
+                    showOutline,
                     showCharacter: false,
                     showStrokeOrder: showOrder,
-                    strokeWidth: 6
+                    strokeWidth: 6,
                 }
             );
 
-            // Auto-animate after creation
             setTimeout(() => {
                 try {
                     if (writerInstanceRef.current && writerInstanceRef.current.animateCharacter) {
                         writerInstanceRef.current.animateCharacter();
                     }
                 } catch (err) {
-                    // Không hiển thị lỗi auto-animate
+                    // ignore auto-animate errors
                 }
             }, 200);
         } catch (err) {
-            // Không hiển thị lỗi khi API không trả về dữ liệu
+            // ignore creation errors when API has no data
         }
 
         return () => {
@@ -82,15 +80,7 @@ const HanziWriter = ({ kanji }) => {
             }
             writerInstanceRef.current = null;
         };
-    }, [kanji, isLoaded, showOutline, showOrder, size]);
-
-    // Update writer options when settings change
-    useEffect(() => {
-        if (writerInstanceRef.current && writerInstanceRef.current._options) {
-            writerInstanceRef.current._options.strokeColor = strokeColor;
-            writerInstanceRef.current._options.strokeAnimationSpeed = animationSpeed;
-        }
-    }, [strokeColor, animationSpeed]);
+    }, [kanji, isLoaded, showOutline, showOrder, size, animationSpeed, strokeColor]);
 
     const handleAnimateAll = () => {
         if (writerInstanceRef.current) {
@@ -103,89 +93,28 @@ const HanziWriter = ({ kanji }) => {
         }
     };
 
-
     if (!kanji) {
-        return (
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '40px',
-                backgroundColor: '#fafafa',
-                borderRadius: '12px',
-                border: '2px solid #e0e0e0'
-            }}>
-                <div style={{ textAlign: 'center', color: '#999' }}>
-                    <div style={{ fontSize: '48px', marginBottom: '8px' }}>✍️</div>
-                    <div style={{ fontSize: '14px' }}>Chưa có ký tự kanji</div>
-                </div>
-            </div>
-        );
+        return <div className={cx("empty")}>Chưa có ký tự</div>;
     }
 
     if (!isLoaded) {
-        return (
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '40px',
-                backgroundColor: '#fafafa',
-                borderRadius: '12px',
-                border: '2px solid #e0e0e0'
-            }}>
-                <div style={{ textAlign: 'center', color: '#666' }}>
-                    <div style={{ fontSize: '14px' }}>Đang tải </div>
-                </div>
-            </div>
-        );
+        return <div className={cx("loading")}>Đang tải...</div>;
     }
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'row', gap: '16px' }}>
-            {/* Canvas Container */}
-            <div
-                ref={writerContainerRef}
-                style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    padding: '20px',
-                    backgroundColor: '#fafafa',
-                    borderRadius: '12px',
-                    border: '2px solid #e0e0e0',
-                    minWidth: `${size + 40}px`,
-                    minHeight: `${size + 40}px`
-                }}
-            />
-
-
-            {/* Animation Buttons */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button
-
-                    onClick={handleAnimateAll}
-                    style={{
-                        color: 'black',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '20px',
-                        fontWeight: '600',
-                        boxSizing: "border-box",
-                        backgroundColor: "white",
-
-                    }}
-                >
-                    ↻
-                </button>
-
-
-            </div>
-
+        <div className={cx("wrap")}>
+            <div ref={writerContainerRef} className={cx("canvas-frame")} />
+            <button
+                type="button"
+                onClick={handleAnimateAll}
+                className={cx("replay-btn")}
+                title="Phát lại"
+                aria-label="Phát lại"
+            >
+                ↻
+            </button>
         </div>
     );
 };
-
 
 export default HanziWriter;

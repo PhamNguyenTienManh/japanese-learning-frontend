@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import MainContent from '../../components/MainContentKanji/MainContentKanji';
-import VocabContent from '~/components/VocabContent';
 import SearchInput from '~/components/searchInput/searchInput';
 import SidebarItem from '~/components/SidebarItem/SidebarItem';
-import VocabSidebar from '~/components/VocabSidebar/'
 import classNames from 'classnames/bind';
 import styles from './kanji_look_up.module.scss';
 
@@ -12,7 +10,7 @@ const cx = classNames.bind(styles);
 
 const KanjiLookupInterface = () => {
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState('vocab');
+  const [activeTab, setActiveTab] = useState('kanji');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedKanji, setSelectedKanji] = useState('');
   const [selectedVocab, setSelectedVocab] = useState('');
@@ -20,11 +18,11 @@ const KanjiLookupInterface = () => {
   useEffect(() => {
     if (location.state) {
       const { searchQuery, tab } = location.state;
-      
+
       if (tab) {
         setActiveTab(tab);
       }
-      
+
       if (searchQuery) {
         setSearchKeyword(searchQuery);
         setTimeout(() => {
@@ -32,11 +30,11 @@ const KanjiLookupInterface = () => {
         }, 100);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
 
   const handleSearch = (keyword) => {
     setSearchKeyword(keyword);
-    // Reset selected item khi search mới
     if (activeTab === 'vocab') {
       setSelectedVocab('');
     } else {
@@ -48,10 +46,6 @@ const KanjiLookupInterface = () => {
     setSelectedKanji(kanji);
   };
 
-  const handleSelectVocab = (vocab) => {
-    setSelectedVocab(vocab);
-  };
-
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setSearchKeyword('');
@@ -60,61 +54,46 @@ const KanjiLookupInterface = () => {
   };
 
   return (
-    <div style={{ display: "flex", justifyContent: "center" }}>
-      <div className={cx('container')}>
-        <div className={cx('tabs')}>
-          {/* <button
-            className={cx('tab', { active: activeTab === 'vocab' })}
-            onClick={() => handleTabChange('vocab')}
-          >
-            Tra từ vựng
-          </button> */}
-          <button
-            className={cx('tab', { active: activeTab === 'kanji' })}
-            onClick={() => handleTabChange('kanji')}
-          >
-            Tra Kanji
-          </button>
-        </div>
+    <div className={cx('wrapper')}>
+      <main className={cx('main')}>
+        <div className={cx('container')}>
+          <div className={cx('page-head')}>
+            <h1 className={cx('title')}>Tra cứu Kanji</h1>
+            <p className={cx('subtitle')}>
+              Tìm kiếm theo Hán tự, âm Hán Việt, kunyomi/onyomi hoặc viết tay trực tiếp.
+            </p>
+          </div>
 
-        <div className={cx('content-wrapper')}>
-          {/* {activeTab === 'vocab' ? (
-            <VocabSidebar
-              keyword={searchKeyword}
-              onSelectVocab={handleSelectVocab}
-              selectedVocab={selectedVocab}
-            />
-          ) : ( */}
+          <div className={cx('tabs')}>
+            <button
+              type="button"
+              className={cx('tab', { active: activeTab === 'kanji' })}
+              onClick={() => handleTabChange('kanji')}
+            >
+              Tra Kanji
+            </button>
+          </div>
+
+          <SearchInput
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onSearch={handleSearch}
+            placeholder={activeTab === 'vocab' ? 'Tìm từ vựng...' : '日本、nihon, Nhật Bản'}
+          />
+
+          <div className={cx('content-wrapper')}>
             <SidebarItem
               keyword={searchKeyword}
               onSelectKanji={handleSelectKanji}
               selectedKanji={selectedKanji}
             />
-          {/* )} */}
 
-          <div className={cx('main-area')}>
-            <div className={cx('search-header')}>
-              <SearchInput
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                onSearch={handleSearch}
-                placeholder={activeTab === 'vocab' ? 'Tìm từ vựng...' : 'Tìm Kanji...'}
-              />
+            <div className={cx('main-area')}>
+              <MainContent selectedKanji={selectedKanji} />
             </div>
-
-            {/* {activeTab === 'vocab' ? (
-              <VocabContent selectedVocab={selectedVocab} />
-            ) : (
-              <MainContent selectedKanji={selectedKanji} />
-            )} */}
-            {activeTab === 'vocab' ? (
-              <MainContent selectedKanji={selectedKanji} />
-            ) : (
-              <MainContent selectedKanji={selectedKanji} />
-            )}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

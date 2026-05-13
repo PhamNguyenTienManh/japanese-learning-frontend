@@ -1,7 +1,14 @@
-import { useState, useEffect } from "react";
-import { ThumbsUp, ThumbsDown, Send } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { ThumbsUp, ThumbsDown, Send, MessageSquare, X } from "lucide-react";
+import classNames from "classnames/bind";
 import ContributionService from "~/services/contributionService";
+import styles from "./contribution.module.scss";
+
+const cx = classNames.bind(styles);
+
 const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [hasLoaded, setHasLoaded] = useState(false);
 
     const [comments, setComments] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -13,60 +20,84 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
 
     const commentsPerPage = 5;
     const totalComments = comments.length || initialTotal || 0;
-    const totalPages = Math.ceil(totalComments / commentsPerPage);
+    const totalPages = Math.ceil(totalComments / commentsPerPage) || 1;
 
     const indexOfLastComment = currentPage * commentsPerPage;
     const indexOfFirstComment = indexOfLastComment - commentsPerPage;
     const currentComments = comments.slice(indexOfFirstComment, indexOfLastComment);
 
-    // Fetch comments from API using service
-    useEffect(() => {
+    const fetchComments = useCallback(async () => {
         if (!kanjiChar) return;
-
-        const fetchComments = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const data = await ContributionService.getComments(kanjiId, kanjiChar);
-
-                if (data.status === 200 && data.result) {
-                    // Map API data to component format
-                    const mappedComments = data.result.map(item => ({
-                        id: item.reportId,
-                        author: item.username,
-                        content: item.mean,
-                        likes: item.like,
-                        dislikes: item.dislike,
-                        userId: item.userId,
-                        status: item.status,
-                        type: item.type
-                    }));
-                    setComments(mappedComments);
-                } else {
-                    setComments([]);
-                }
-            } catch (err) {
-                console.error('Error fetching comments:', err);
-                setError(err.message);
-            } finally {
-                setLoading(false);
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await ContributionService.getComments(kanjiId, kanjiChar);
+            if (data.status === 200 && data.result) {
+                const mapped = data.result.map((item) => ({
+                    id: item.reportId,
+                    author: item.username,
+                    content: item.mean,
+                    likes: item.like,
+                    dislikes: item.dislike,
+                    userId: item.userId,
+                    status: item.status,
+                    type: item.type,
+                }));
+                setComments(mapped);
+            } else {
+                setComments([]);
             }
-        };
-
-        fetchComments();
+        } catch (err) {
+            console.error('Error fetching comments:', err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+            setHasLoaded(true);
+        }
     }, [kanjiId, kanjiChar]);
+
+    // Reset cached results when the kanji changes
+    useEffect(() => {
+        setHasLoaded(false);
+        setComments([]);
+        setCurrentPage(1);
+    }, [kanjiId, kanjiChar]);
+
+    const handleOpen = () => {
+        setIsOpen(true);
+        if (!hasLoaded) {
+            fetchComments();
+        }
+    };
+
+    const handleClose = useCallback(() => {
+        setIsOpen(false);
+    }, []);
+
+    // Lock body scroll while drawer is open + close on Escape
+    useEffect(() => {
+        if (!isOpen) return;
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        const onKey = (e) => {
+            if (e.key === "Escape") handleClose();
+        };
+        window.addEventListener("keydown", onKey);
+        return () => {
+            document.body.style.overflow = prev;
+            window.removeEventListener("keydown", onKey);
+        };
+    }, [isOpen, handleClose]);
 
     const handleLike = (commentId) => {
         const newLiked = new Set(likedComments);
         const newDisliked = new Set(dislikedComments);
-
         if (newLiked.has(commentId)) {
             newLiked.delete(commentId);
         } else {
             newLiked.add(commentId);
             newDisliked.delete(commentId);
         }
-
         setLikedComments(newLiked);
         setDislikedComments(newDisliked);
     };
@@ -74,14 +105,12 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
     const handleDislike = (commentId) => {
         const newLiked = new Set(likedComments);
         const newDisliked = new Set(dislikedComments);
-
         if (newDisliked.has(commentId)) {
             newDisliked.delete(commentId);
         } else {
             newDisliked.add(commentId);
             newLiked.delete(commentId);
         }
-
         setLikedComments(newLiked);
         setDislikedComments(newDisliked);
     };
@@ -89,7 +118,6 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
     const handleSubmitComment = async () => {
         if (!newComment.trim()) return;
 
-        // Tạo comment tạm thời để hiển thị ngay
         const tempComment = {
             id: Date.now(),
             author: "Bạn",
@@ -98,7 +126,7 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
             dislikes: 0,
             userId: null,
             status: 1,
-            type: 0
+            type: 0,
         };
 
         setComments([tempComment, ...comments]);
@@ -107,19 +135,17 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
 
         try {
             const token = localStorage.getItem("token");
-            await ContributionService.addComment({
-                kanjiId: kanjiId,
-                content: newComment,
-            }, token);
+            await ContributionService.addComment(
+                { kanjiId, content: newComment },
+                token
+            );
         } catch (err) {
             console.error('Error submitting comment:', err);
         }
     };
 
     const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && e.shiftKey) {
-            return;
-        }
+        if (e.key === 'Enter' && e.shiftKey) return;
         if (e.key === 'Enter') {
             e.preventDefault();
             handleSubmitComment();
@@ -128,355 +154,210 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
 
     const renderPageNumbers = () => {
         const pages = [];
-        const maxVisiblePages = 5;
-
-        if (totalPages <= maxVisiblePages) {
-            for (let i = 1; i <= totalPages; i++) {
-                pages.push(i);
-            }
+        const maxVisible = 5;
+        if (totalPages <= maxVisible) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else if (currentPage <= 3) {
+            for (let i = 1; i <= 4; i++) pages.push(i);
+            pages.push('...');
+            pages.push(totalPages);
+        } else if (currentPage >= totalPages - 2) {
+            pages.push(1);
+            pages.push('...');
+            for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
         } else {
-            if (currentPage <= 3) {
-                for (let i = 1; i <= 4; i++) {
-                    pages.push(i);
-                }
-                pages.push('...');
-                pages.push(totalPages);
-            } else if (currentPage >= totalPages - 2) {
-                pages.push(1);
-                pages.push('...');
-                for (let i = totalPages - 3; i <= totalPages; i++) {
-                    pages.push(i);
-                }
-            } else {
-                pages.push(1);
-                pages.push('...');
-                for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                    pages.push(i);
-                }
-                pages.push('...');
-                pages.push(totalPages);
-            }
+            pages.push(1);
+            pages.push('...');
+            for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+            pages.push('...');
+            pages.push(totalPages);
         }
-
         return pages;
     };
 
-    if (loading) {
-        return (
-            <div style={{
-                maxWidth: '1000px',
-                margin: '0 auto',
-                padding: '40px',
-                textAlign: 'center'
-            }}>
-                <div style={{ fontSize: '24px', marginBottom: '12px' }}>⏳</div>
-                <div style={{ color: '#666' }}>Đang tải bình luận...</div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div style={{
-                maxWidth: '1000px',
-                margin: '0 auto',
-                padding: '40px',
-                textAlign: 'center'
-            }}>
-                <div style={{ fontSize: '24px', marginBottom: '12px', color: '#d32f2f' }}>❌</div>
-                <div style={{ color: '#d32f2f' }}>Lỗi: {error}</div>
-            </div>
-        );
-    }
-
     return (
-        <div style={{
-            maxWidth: '1000px',
-            margin: '0 auto',
-            padding: '20px',
-            backgroundColor: '#fff',
-            borderRadius: '8px'
-        }}>
-            {/* Header */}
-            <div style={{
-                fontSize: '15px',
-                color: '#606060',
-                marginBottom: '20px',
-                fontWeight: '500'
-            }}>
-                Có {totalComments} ý kiến đóng góp
-            </div>
+        <>
+            <button
+                type="button"
+                className={cx("fab", { hidden: isOpen })}
+                onClick={handleOpen}
+                aria-label="Xem ý kiến đóng góp"
+                title="Xem ý kiến đóng góp"
+            >
+                <MessageSquare size={24} />
+                {totalComments > 0 && (
+                    <span className={cx("fab-count")}>
+                        {totalComments > 99 ? "99+" : totalComments}
+                    </span>
+                )}
+            </button>
 
-            {/* Comment Input */}
-            <div style={{ marginBottom: '32px' }}>
-                <div style={{
-                    display: 'flex',
-                    gap: '12px',
-                    alignItems: 'flex-start',
-                    position: 'relative'
-                }}>
-                    <textarea
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Thêm nghĩa hoặc ví dụ. Ấn SHIFT + ENTER để xuống dòng"
-                        style={{
-                            flex: 1,
-                            padding: '12px 48px 12px 12px',
-                            border: '1px solid #e0e0e0',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            minHeight: '44px',
-                            maxHeight: '120px',
-                            resize: 'vertical',
-                            fontFamily: 'inherit',
-                            outline: 'none',
-                            transition: 'border-color 0.2s'
-                        }}
-                        onFocus={(e) => e.target.style.borderColor = '#1976d2'}
-                        onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-                    />
+            <div
+                className={cx("overlay", { open: isOpen })}
+                onClick={handleClose}
+                aria-hidden="true"
+            />
+
+            <aside
+                className={cx("drawer", { open: isOpen })}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Ý kiến đóng góp"
+            >
+                <header className={cx("drawer-head")}>
+                    <div>
+                        <h2 className={cx("drawer-title")}>Ý kiến đóng góp</h2>
+                        <p className={cx("drawer-subtitle")}>
+                            {kanjiChar
+                                ? `Cho chữ ${kanjiChar} — ${totalComments} ý kiến`
+                                : "Chưa có kanji được chọn"}
+                        </p>
+                    </div>
                     <button
-                        onClick={handleSubmitComment}
-                        disabled={!newComment.trim()}
-                        style={{
-                            position: 'absolute',
-                            right: '8px',
-                            top: '8px',
-                            padding: '8px',
-                            backgroundColor: newComment.trim() ? '#1976d2' : '#e0e0e0',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '50%',
-                            cursor: newComment.trim() ? 'pointer' : 'not-allowed',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'all 0.2s',
-                            width: '36px',
-                            height: '36px'
-                        }}
+                        type="button"
+                        className={cx("drawer-close")}
+                        onClick={handleClose}
+                        aria-label="Đóng"
                     >
-                        <Send size={18} />
+                        <X size={20} />
                     </button>
-                </div>
-            </div>
+                </header>
 
-            {/* Comments List */}
-            {comments.length === 0 ? (
-                <div style={{
-                    textAlign: 'center',
-                    padding: '40px',
-                    color: '#999'
-                }}>
-                    <div style={{ fontSize: '48px', marginBottom: '12px' }}>💬</div>
-                    <div>Chưa có ý kiến đóng góp nào</div>
-                </div>
-            ) : (
-                <>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        {currentComments.map((comment) => {
-                            const isLiked = likedComments.has(comment.id);
-                            const isDisliked = dislikedComments.has(comment.id);
-                            const displayLikes = comment.likes + (isLiked ? 1 : 0);
-                            const displayDislikes = comment.dislikes + (isDisliked ? 1 : 0);
-
-                            return (
-                                <div key={comment.id} style={{
-                                    padding: '12px 0',
-                                    borderBottom: '1px solid #f0f0f0'
-                                }}>
-                                    {/* Comment Content */}
-                                    <div style={{ marginBottom: '8px' }}>
-                                        <div style={{
-                                            fontSize: '14px',
-                                            lineHeight: '1.6',
-                                            color: '#030303',
-                                            marginBottom: '4px',
-                                            whiteSpace: 'pre-wrap'
-                                        }}>
-                                            {comment.content}
-                                        </div>
-                                    </div>
-
-                                    {/* Comment Actions */}
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '16px',
-                                        fontSize: '13px',
-                                        color: '#606060'
-                                    }}>
-                                        {/* Like Button */}
-                                        <button
-                                            onClick={() => handleLike(comment.id)}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '6px',
-                                                padding: '4px 8px',
-                                                backgroundColor: 'transparent',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                color: isLiked ? '#1976d2' : '#606060',
-                                                fontSize: '13px',
-                                                borderRadius: '4px',
-                                                transition: 'background-color 0.2s'
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                        >
-                                            <ThumbsUp size={14} fill={isLiked ? '#1976d2' : 'none'} />
-                                            {displayLikes > 0 && <span>{displayLikes}</span>}
-                                        </button>
-
-                                        {/* Dislike Button */}
-                                        <button
-                                            onClick={() => handleDislike(comment.id)}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '6px',
-                                                padding: '4px 8px',
-                                                backgroundColor: 'transparent',
-                                                border: 'none',
-                                                cursor: 'pointer',
-                                                color: isDisliked ? '#1976d2' : '#606060',
-                                                fontSize: '13px',
-                                                borderRadius: '4px',
-                                                transition: 'background-color 0.2s'
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                                        >
-                                            <ThumbsDown size={14} fill={isDisliked ? '#1976d2' : 'none'} />
-                                            {displayDislikes > 0 && <span>{displayDislikes}</span>}
-                                        </button>
-
-                                        {/* Author */}
-                                        <div style={{
-                                            marginLeft: 'auto',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px',
-                                            fontSize: '12px',
-                                            color: '#909090'
-                                        }}>
-                                            <span style={{
-                                                color: '#606060',
-                                                fontWeight: '500',
-                                            }}>
-                                                {comment.author}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                <div className={cx("drawer-body")}>
+                    {/* Comment input */}
+                    <div className={cx("comment-form")}>
+                        <textarea
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Thêm nghĩa hoặc ví dụ. Shift + Enter để xuống dòng."
+                            className={cx("comment-input")}
+                        />
+                        <button
+                            type="button"
+                            onClick={handleSubmitComment}
+                            disabled={!newComment.trim()}
+                            className={cx("send-btn", { disabled: !newComment.trim() })}
+                            aria-label="Gửi"
+                        >
+                            <Send size={18} />
+                        </button>
                     </div>
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            gap: '8px',
-                            marginTop: '32px',
-                            paddingTop: '20px',
-                            borderTop: '1px solid #f0f0f0'
-                        }}>
-                            {/* Previous Button */}
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1}
-                                style={{
-                                    padding: '8px 12px',
-                                    backgroundColor: 'transparent',
-                                    border: 'none',
-                                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                                    color: currentPage === 1 ? '#ccc' : '#606060',
-                                    fontSize: '20px',
-                                    borderRadius: '4px',
-                                    transition: 'background-color 0.2s'
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (currentPage !== 1) e.currentTarget.style.backgroundColor = '#f0f0f0';
-                                }}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                                «
-                            </button>
-
-                            {/* Page Numbers */}
-                            {renderPageNumbers().map((page, index) => (
-                                page === '...' ? (
-                                    <span key={`ellipsis-${index}`} style={{
-                                        padding: '8px 12px',
-                                        color: '#606060'
-                                    }}>
-                                        ...
-                                    </span>
-                                ) : (
-                                    <button
-                                        key={page}
-                                        onClick={() => setCurrentPage(page)}
-                                        style={{
-                                            padding: '8px 12px',
-                                            minWidth: '36px',
-                                            backgroundColor: currentPage === page ? '#1976d2' : 'transparent',
-                                            color: currentPage === page ? 'white' : '#606060',
-                                            border: 'none',
-                                            borderRadius: '50%',
-                                            cursor: 'pointer',
-                                            fontSize: '14px',
-                                            fontWeight: currentPage === page ? '600' : '400',
-                                            transition: 'all 0.2s'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            if (currentPage !== page) {
-                                                e.currentTarget.style.backgroundColor = '#f0f0f0';
-                                            }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (currentPage !== page) {
-                                                e.currentTarget.style.backgroundColor = 'transparent';
-                                            }
-                                        }}
-                                    >
-                                        {page}
-                                    </button>
-                                )
-                            ))}
-
-                            {/* Next Button */}
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages}
-                                style={{
-                                    padding: '8px 12px',
-                                    backgroundColor: 'transparent',
-                                    border: 'none',
-                                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                                    color: currentPage === totalPages ? '#ccc' : '#606060',
-                                    fontSize: '20px',
-                                    borderRadius: '4px',
-                                    transition: 'background-color 0.2s'
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (currentPage !== totalPages) e.currentTarget.style.backgroundColor = '#f0f0f0';
-                                }}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                                »
-                            </button>
+                    {/* States */}
+                    {loading ? (
+                        <div className={cx("state")}>
+                            <div className={cx("spinner")} />
+                            <div>Đang tải bình luận...</div>
                         </div>
+                    ) : error ? (
+                        <div className={cx("state", "state-error")}>Lỗi: {error}</div>
+                    ) : comments.length === 0 ? (
+                        <div className={cx("state")}>Chưa có ý kiến đóng góp nào</div>
+                    ) : (
+                        <>
+                            <div className={cx("comments-list")}>
+                                {currentComments.map((comment) => {
+                                    const isLiked = likedComments.has(comment.id);
+                                    const isDisliked = dislikedComments.has(comment.id);
+                                    const displayLikes = comment.likes + (isLiked ? 1 : 0);
+                                    const displayDislikes =
+                                        comment.dislikes + (isDisliked ? 1 : 0);
+
+                                    return (
+                                        <div key={comment.id} className={cx("comment-item")}>
+                                            <div className={cx("comment-content")}>
+                                                {comment.content}
+                                            </div>
+                                            <div className={cx("comment-actions")}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleLike(comment.id)}
+                                                    className={cx("action-btn", { active: isLiked })}
+                                                >
+                                                    <ThumbsUp
+                                                        size={14}
+                                                        fill={isLiked ? "currentColor" : "none"}
+                                                    />
+                                                    {displayLikes > 0 && <span>{displayLikes}</span>}
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDislike(comment.id)}
+                                                    className={cx("action-btn", { active: isDisliked })}
+                                                >
+                                                    <ThumbsDown
+                                                        size={14}
+                                                        fill={isDisliked ? "currentColor" : "none"}
+                                                    />
+                                                    {displayDislikes > 0 && (
+                                                        <span>{displayDislikes}</span>
+                                                    )}
+                                                </button>
+
+                                                <span className={cx("comment-author")}>
+                                                    {comment.author}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {totalPages > 1 && (
+                                <div className={cx("pagination")}>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setCurrentPage((p) => Math.max(1, p - 1))
+                                        }
+                                        disabled={currentPage === 1}
+                                        className={cx("page-btn")}
+                                    >
+                                        ‹
+                                    </button>
+
+                                    {renderPageNumbers().map((page, index) =>
+                                        page === '...' ? (
+                                            <span
+                                                key={`ellipsis-${index}`}
+                                                className={cx("page-dots")}
+                                            >
+                                                ...
+                                            </span>
+                                        ) : (
+                                            <button
+                                                key={page}
+                                                type="button"
+                                                onClick={() => setCurrentPage(page)}
+                                                className={cx("page-btn", {
+                                                    active: currentPage === page,
+                                                })}
+                                            >
+                                                {page}
+                                            </button>
+                                        )
+                                    )}
+
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setCurrentPage((p) => Math.min(totalPages, p + 1))
+                                        }
+                                        disabled={currentPage === totalPages}
+                                        className={cx("page-btn")}
+                                    >
+                                        ›
+                                    </button>
+                                </div>
+                            )}
+                        </>
                     )}
-                </>
-            )}
-        </div>
+                </div>
+            </aside>
+        </>
     );
 };
-
 
 export default CommentSection;
