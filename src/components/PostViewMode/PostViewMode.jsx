@@ -1,9 +1,7 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHeart,
-  faCommentDots,
   faShareNodes,
-  faEye,
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
 import classNames from "classnames/bind";
@@ -28,20 +26,11 @@ function PostViewMode({ post, countComment, currentUserId, isLoggedIn, onLike, o
       <h1 className={cx("title")}>{post.title}</h1>
 
       <div className={cx("meta-row")}>
-        <span className={cx("meta-item")}>
-          <FontAwesomeIcon icon={faEye} />
-          {post.view_count || 0} lượt xem
-        </span>
+        <span>{post.view_count || 0} lượt xem</span>
         <span className={cx("meta-dot")}>•</span>
-        <span className={cx("meta-item")}>
-          <FontAwesomeIcon icon={faHeart} />
-          {likeCount} thích
-        </span>
+        <span>{likeCount} thích</span>
         <span className={cx("meta-dot")}>•</span>
-        <span className={cx("meta-item")}>
-          <FontAwesomeIcon icon={faCommentDots} />
-          {countComment || 0} bình luận
-        </span>
+        <span>{countComment || 0} bình luận</span>
       </div>
 
       {post.image_url && (
@@ -50,7 +39,6 @@ function PostViewMode({ post, countComment, currentUserId, isLoggedIn, onLike, o
           onClick={() => onZoomImage(post.image_url)}
         >
           <img src={post.image_url} alt={post.title} className={cx("post-image")} />
-          <span className={cx("zoom-hint")}>Bấm để phóng to</span>
         </div>
       )}
 

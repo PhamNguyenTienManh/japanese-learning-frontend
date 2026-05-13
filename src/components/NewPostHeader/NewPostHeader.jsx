@@ -12,10 +12,15 @@ function NewPostHeader({ isEdit, onBack }) {
         <FontAwesomeIcon icon={faArrowLeft} className={cx("back-icon")} />
         <span>Quay lại cộng đồng</span>
       </button>
+
       <h1 className={cx("title")}>
         {isEdit ? "Chỉnh sửa bài viết" : "Tạo bài viết mới"}
       </h1>
-      <p className={cx("subtitle")}>Chia sẻ kiến thức và kinh nghiệm của bạn</p>
+      <p className={cx("subtitle")}>
+        {isEdit
+          ? "Cập nhật nội dung để bài viết của bạn hay hơn"
+          : "Chia sẻ kiến thức và kinh nghiệm học tiếng Nhật của bạn"}
+      </p>
     </div>
   );
 }

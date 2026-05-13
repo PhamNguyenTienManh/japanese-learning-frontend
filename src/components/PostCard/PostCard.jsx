@@ -2,9 +2,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faMessage,
   faArrowRight,
-  faClock,
-} from "@fortawesome/free-solid-svg-icons";
-import {
   faHeart as faHeartSolid,
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
@@ -28,7 +25,6 @@ function PostCard({ post, commentCount }) {
             <div className={cx("post-meta")}>
               <span className={cx("post-author")}>{authorName}</span>
               <span className={cx("post-time")}>
-                <FontAwesomeIcon icon={faClock} />
                 {formatDateVN(post.created_at) || "Vừa xong"}
               </span>
             </div>

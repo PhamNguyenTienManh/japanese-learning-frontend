@@ -215,8 +215,8 @@ function Community() {
 
               <Tabs active={activeTab} onChange={handleTabChange}>
                 <TabsList>
-                  <TabsTrigger value="all">🔥 Phổ biến</TabsTrigger>
-                  <TabsTrigger value="recent">🆕 Mới nhất</TabsTrigger>
+                  <TabsTrigger value="all">Phổ biến</TabsTrigger>
+                  <TabsTrigger value="recent">Mới nhất</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="all">

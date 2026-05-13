@@ -1,7 +1,6 @@
 import Button from "~/components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
-import { faCommentDots } from "@fortawesome/free-regular-svg-icons";
 import classNames from "classnames/bind";
 import styles from "./PostList.module.scss";
 
@@ -32,7 +31,6 @@ function PostList({ posts, loading, error, currentPage, totalPages, activeTab, s
   if (!posts.data || posts.data.length === 0) {
     return (
       <div className={cx("empty-card")}>
-        <FontAwesomeIcon icon={faCommentDots} className={cx("empty-icon")} />
         <p className={cx("empty-message")}>
           Chưa có bài viết nào ở đây — hãy là người đầu tiên chia sẻ nhé!
         </p>

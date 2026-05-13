@@ -16,12 +16,13 @@ function NewPostImageUpload({ imagePreview, loading, onImageChange, onRemoveImag
             className={cx("image-remove-btn")}
             onClick={onRemoveImage}
             disabled={loading}
+            aria-label="Xoá ảnh"
           >
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
       ) : (
-        <div className={cx("image-upload-placeholder")}>
+        <label htmlFor="post-image-input" className={cx("image-upload-placeholder")}>
           <input
             type="file"
             id="post-image-input"
@@ -30,12 +31,14 @@ function NewPostImageUpload({ imagePreview, loading, onImageChange, onRemoveImag
             className={cx("image-input")}
             disabled={loading}
           />
-          <label htmlFor="post-image-input" className={cx("image-upload-label")}>
-            <FontAwesomeIcon icon={faImage} className={cx("upload-icon")} />
-            <span>Chọn ảnh</span>
-          </label>
-          <p className={cx("upload-hint")}>JPG, PNG hoặc GIF (tối đa 5MB)</p>
-        </div>
+          <div className={cx("image-upload-label")}>
+            <span className={cx("upload-icon-wrap")}>
+              <FontAwesomeIcon icon={faImage} className={cx("upload-icon")} />
+            </span>
+            <span>Bấm để chọn ảnh, hoặc kéo thả vào đây</span>
+            <p className={cx("upload-hint")}>JPG, PNG hoặc GIF — tối đa 5MB</p>
+          </div>
+        </label>
       )}
     </div>
   );

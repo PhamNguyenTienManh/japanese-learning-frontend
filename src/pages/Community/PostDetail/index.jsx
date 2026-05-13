@@ -8,7 +8,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft,
   faSpinner,
-  faComments,
 } from "@fortawesome/free-solid-svg-icons";
 import postService from "~/services/postService";
 import notificationService from "~/services/notificationService";
@@ -434,11 +433,7 @@ function PostDetail() {
           {!isEditing && (
             <section className={cx("comments-card")}>
               <h2 className={cx("comments-title")}>
-                <span className={cx("comments-title-icon")}>
-                  <FontAwesomeIcon icon={faComments} />
-                </span>
-                Bình luận
-                <span className={cx("comments-count")}>{comments.length}</span>
+                Bình luận ({comments.length})
               </h2>
               <CommentForm
                 comment={comment}

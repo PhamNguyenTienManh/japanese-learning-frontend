@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPaperPlane, faSpinner, faLock } from "@fortawesome/free-solid-svg-icons";
+import { faPaperPlane, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import classNames from "classnames/bind";
 import styles from "./CommentForm.module.scss";
 
@@ -9,8 +9,7 @@ function CommentForm({ comment, submitting, isLoggedIn, onChange, onSubmit }) {
   if (!isLoggedIn) {
     return (
       <div className={cx("login-prompt")}>
-        <FontAwesomeIcon icon={faLock} className={cx("login-icon")} />
-        <span>Đăng nhập để tham gia bình luận cùng cộng đồng</span>
+        Đăng nhập để tham gia bình luận cùng cộng đồng
       </div>
     );
   }
@@ -27,9 +26,6 @@ function CommentForm({ comment, submitting, isLoggedIn, onChange, onSubmit }) {
         rows={3}
       />
       <div className={cx("form-footer")}>
-        <span className={cx("hint")}>
-          Hãy giữ cuộc trò chuyện văn minh và thân thiện 🌸
-        </span>
         <button
           type="button"
           className={cx("submit-btn", { disabled })}
