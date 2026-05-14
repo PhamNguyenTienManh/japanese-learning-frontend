@@ -1,16 +1,13 @@
 import { useState } from "react";
 import classNames from "classnames/bind";
-import styles from "./Translate.module.scss";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faVolumeHigh,
     faCopy,
-    faRepeat,
-    faXmark,
     faRightLeft,
 } from "@fortawesome/free-solid-svg-icons";
 
-import Button from "~/components/Button";
+import styles from "./Translate.module.scss";
 import { useToast } from "~/context/ToastContext";
 import CustomSelect from "~/components/CustomSelect";
 import { translateText } from "~/services/traslate";
@@ -25,14 +22,16 @@ const languages = [
     { code: "zh", name: "Tiếng Trung" },
 ];
 
+const langOptions = languages.map((l) => ({ value: l.code, label: l.name }));
+
 function Translate() {
     const [sourceText, setSourceText] = useState("");
     const [translatedText, setTranslatedText] = useState("");
     const [sourceLang, setSourceLang] = useState("ja");
     const [targetLang, setTargetLang] = useState("vi");
+    const [isTranslating, setIsTranslating] = useState(false);
     const { addToast } = useToast();
 
-    // ===== TRANSLATE =====
     const handleTranslate = async () => {
         if (!sourceText.trim()) {
             addToast("Vui lòng nhập văn bản", "info");
@@ -45,19 +44,16 @@ function Translate() {
         }
 
         try {
-            const res = await translateText(
-                sourceText,
-                sourceLang,
-                targetLang
-            );
-
+            setIsTranslating(true);
+            const res = await translateText(sourceText, sourceLang, targetLang);
             setTranslatedText(res.data.translatedText);
         } catch (error) {
             addToast("Lỗi dịch văn bản", "error");
+        } finally {
+            setIsTranslating(false);
         }
     };
 
-    // ===== SWAP LANGUAGE =====
     const handleSwapLanguages = () => {
         setSourceLang(targetLang);
         setTargetLang(sourceLang);
@@ -65,20 +61,17 @@ function Translate() {
         setTranslatedText(sourceText);
     };
 
-    // ===== COPY =====
     const handleCopy = (text) => {
         if (!text.trim()) return;
         navigator.clipboard.writeText(text);
         addToast("Đã sao chép!", "success");
     };
 
-    // ===== CLEAR =====
     const handleClear = () => {
         setSourceText("");
         setTranslatedText("");
     };
 
-    // ===== TEXT TO SPEECH (FIX ĐÚNG LANG) =====
     const handleSpeak = (text, lang) => {
         if (!text.trim()) return;
 
@@ -93,137 +86,146 @@ function Translate() {
         };
 
         utter.lang = langMap[lang] || "en-US";
-        speechSynthesis.cancel(); // tránh đọc chồng
+        speechSynthesis.cancel();
         speechSynthesis.speak(utter);
     };
 
     return (
         <div className={cx("wrapper")}>
+            <div className={cx("blob1")} />
+            <div className={cx("blob2")} />
+
             <div className={cx("container")}>
-                <h1 className={cx("title")}>Dịch Văn Bản</h1>
-                <p className={cx("subtitle")}>
-                    Dịch giữa tiếng Nhật và các ngôn ngữ khác
-                </p>
-
-                {/* Language Selector */}
-                <div className={cx("lang-row")}>
-                    <CustomSelect
-                        label="Từ"
-                        value={sourceLang}
-                        onChange={(v) => setSourceLang(v)}
-                        options={languages.map((l) => ({
-                            value: l.code,
-                            label: l.name,
-                        }))}
-                    />
-
-                    <Button
-                        outline
-                        onClick={handleSwapLanguages}
-                        className={cx("swap-btn")}
-                    >
-                        <FontAwesomeIcon icon={faRightLeft} />
-                    </Button>
-
-                    <CustomSelect
-                        label="Sang"
-                        value={targetLang}
-                        onChange={(v) => setTargetLang(v)}
-                        options={languages.map((l) => ({
-                            value: l.code,
-                            label: l.name,
-                        }))}
-                    />
+                {/* Hero */}
+                <div className={cx("hero")}>
+                    <h1 className={cx("title")}>Dịch văn bản</h1>
                 </div>
 
-                {/* Translation Boxes */}
-                <div className={cx("grid")}>
-                    {/* SOURCE */}
-                    <div className={cx("box")}>
-                        <textarea
-                            value={sourceText}
-                            onChange={(e) => setSourceText(e.target.value)}
-                            placeholder="Nhập văn bản để dịch..."
-                            className={cx("textarea")}
-                        />
-
-                        <div className={cx("tools")}>
-                            <Button
-                                outline
-                                onClick={() =>
-                                    handleSpeak(sourceText, sourceLang)
-                                }
-                                disabled={!sourceText.trim()}
-                            >
-                                <FontAwesomeIcon icon={faVolumeHigh} />
-                            </Button>
-
-                            <Button
-                                outline
-                                onClick={() => handleCopy(sourceText)}
-                                disabled={!sourceText.trim()}
-                            >
-                                <FontAwesomeIcon icon={faCopy} />
-                            </Button>
+                {/* Translator card */}
+                <div className={cx("translatorCard")}>
+                    {/* Language bar */}
+                    <div className={cx("langBar")}>
+                        <div className={cx("langSide")}>
+                            <span className={cx("langLabel")}>Từ</span>
+                            <div className={cx("langSelect")}>
+                                <CustomSelect
+                                    value={sourceLang}
+                                    onChange={(v) => setSourceLang(v)}
+                                    options={langOptions}
+                                />
+                            </div>
                         </div>
 
-                        <span className={cx("length")}>
-                            {sourceText.length} ký tự
-                        </span>
+                        <button
+                            type="button"
+                            className={cx("swapBtn")}
+                            onClick={handleSwapLanguages}
+                            aria-label="Đảo ngôn ngữ"
+                        >
+                            <FontAwesomeIcon icon={faRightLeft} />
+                        </button>
+
+                        <div className={cx("langSide")}>
+                            <span className={cx("langLabel")}>Sang</span>
+                            <div className={cx("langSelect")}>
+                                <CustomSelect
+                                    value={targetLang}
+                                    onChange={(v) => setTargetLang(v)}
+                                    options={langOptions}
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    {/* TARGET */}
-                    <div className={cx("box")}>
-                        <textarea
-                            value={translatedText}
-                            readOnly
-                            placeholder="Kết quả dịch sẽ xuất hiện ở đây..."
-                            className={cx("textarea")}
-                        />
-
-                        <div className={cx("tools")}>
-                            <Button
-                                outline
-                                onClick={() =>
-                                    handleSpeak(translatedText, targetLang)
-                                }
-                                disabled={!translatedText.trim()}
-                            >
-                                <FontAwesomeIcon icon={faVolumeHigh} />
-                            </Button>
-
-                            <Button
-                                outline
-                                onClick={() =>
-                                    handleCopy(translatedText)
-                                }
-                                disabled={!translatedText.trim()}
-                            >
-                                <FontAwesomeIcon icon={faCopy} />
-                            </Button>
+                    {/* Panes */}
+                    <div className={cx("panes")}>
+                        <div className={cx("pane")}>
+                            <textarea
+                                value={sourceText}
+                                onChange={(e) => setSourceText(e.target.value)}
+                                placeholder="Nhập văn bản để dịch..."
+                                className={cx("textarea")}
+                            />
+                            <div className={cx("paneFoot")}>
+                                <div className={cx("tools")}>
+                                    <button
+                                        type="button"
+                                        className={cx("iconBtn")}
+                                        onClick={() => handleSpeak(sourceText, sourceLang)}
+                                        disabled={!sourceText.trim()}
+                                        aria-label="Phát âm"
+                                    >
+                                        <FontAwesomeIcon icon={faVolumeHigh} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={cx("iconBtn")}
+                                        onClick={() => handleCopy(sourceText)}
+                                        disabled={!sourceText.trim()}
+                                        aria-label="Sao chép"
+                                    >
+                                        <FontAwesomeIcon icon={faCopy} />
+                                    </button>
+                                </div>
+                                <span className={cx("length")}>
+                                    {sourceText.length} ký tự
+                                </span>
+                            </div>
                         </div>
 
-                        <span className={cx("length")}>
-                            {translatedText.length} ký tự
-                        </span>
+                        <div className={cx("pane")}>
+                            <textarea
+                                value={translatedText}
+                                readOnly
+                                placeholder="Kết quả dịch sẽ xuất hiện ở đây..."
+                                className={cx("textarea")}
+                            />
+                            <div className={cx("paneFoot")}>
+                                <div className={cx("tools")}>
+                                    <button
+                                        type="button"
+                                        className={cx("iconBtn")}
+                                        onClick={() => handleSpeak(translatedText, targetLang)}
+                                        disabled={!translatedText.trim()}
+                                        aria-label="Phát âm"
+                                    >
+                                        <FontAwesomeIcon icon={faVolumeHigh} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={cx("iconBtn")}
+                                        onClick={() => handleCopy(translatedText)}
+                                        disabled={!translatedText.trim()}
+                                        aria-label="Sao chép"
+                                    >
+                                        <FontAwesomeIcon icon={faCopy} />
+                                    </button>
+                                </div>
+                                <span className={cx("length")}>
+                                    {translatedText.length} ký tự
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Action Buttons */}
+                {/* Action row */}
                 <div className={cx("actions")}>
-                    <Button primary onClick={handleTranslate}>
-                        Dịch
-                    </Button>
-
-                    <Button outline onClick={handleClear}>
-                        <FontAwesomeIcon icon={faXmark} />
-                        &nbsp; Xóa
-                    </Button>
-
-                    <Button outline onClick={handleSwapLanguages}>
-                        <FontAwesomeIcon icon={faRepeat} />
-                        &nbsp; Làm lại
-                    </Button>
+                    <button
+                        type="button"
+                        className={cx("actionBtn", "actionPrimary")}
+                        onClick={handleTranslate}
+                        disabled={isTranslating}
+                    >
+                        {isTranslating ? "Đang dịch..." : "Dịch"}
+                    </button>
+                    <button
+                        type="button"
+                        className={cx("actionBtn")}
+                        onClick={handleClear}
+                    >
+                        Xoá
+                    </button>
                 </div>
             </div>
         </div>
