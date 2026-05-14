@@ -1,6 +1,6 @@
 import { useState } from "react";
 import classNames from "classnames/bind";
-import { faChevronDown, faUser, faBell } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import Button from "~/components/Button";
@@ -11,9 +11,15 @@ import NotificationDropdown from "~/components/NotificationDropdown";
 import { useNavigate } from "react-router-dom";
 const cx = classNames.bind(styles);
 
+function getInitial(name, email) {
+  const source = (name || email || "").trim();
+  if (!source) return "?";
+  return source.charAt(0).toUpperCase();
+}
+
 function Header() {
   const [openMenu, setOpenMenu] = useState(null);
-  const { logout, isAdmin, userId, role, isLoggedIn } = useAuth();
+  const { logout, isAdmin, name, avatar, email, isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
   const toggleMenu = (menuName) => {
@@ -142,14 +148,40 @@ function Header() {
                 onMouseEnter={() => toggleMenu("account")}
                 onMouseLeave={() => toggleMenu(null)}
               >
-                <Button
-                  primary
-                  leftIcon={<FontAwesomeIcon icon={faUser} />}
-                  className={"user"}
-                >
-                  Tài khoản
-                </Button>
+                <button type="button" className={cx("userTrigger")}>
+                  <span className={cx("avatar")}>
+                    {avatar ? (
+                      <img src={avatar} alt={name || "Avatar"} />
+                    ) : (
+                      <span className={cx("avatarFallback")}>
+                        {getInitial(name, email)}
+                      </span>
+                    )}
+                  </span>
+                  <span className={cx("userName")}>
+                    {name || email || "Tài khoản"}
+                  </span>
+                  <FontAwesomeIcon icon={faChevronDown} className={cx("userCaret")} />
+                </button>
                 <div className={cx("dropdown-menu", "right")}>
+                  <div className={cx("userMenuHeader")}>
+                    <span className={cx("userMenuAvatar")}>
+                      {avatar ? (
+                        <img src={avatar} alt={name || "Avatar"} />
+                      ) : (
+                        <span className={cx("userMenuAvatarFallback")}>
+                          {getInitial(name, email)}
+                        </span>
+                      )}
+                    </span>
+                    <div className={cx("userMenuInfo")}>
+                      <p className={cx("userMenuName")}>{name || "Người dùng"}</p>
+                      {email && (
+                        <p className={cx("userMenuEmail")}>{email}</p>
+                      )}
+                    </div>
+                  </div>
+
                   {isAdmin() && (
                     <Button to="/admin" text>
                       Quản trị
@@ -167,7 +199,10 @@ function Header() {
                   <Button to="/dashboard/settings" text>
                     Cài đặt
                   </Button>
-                  <Button text onClick={handleLogout}>
+
+                  <div className={cx("userMenuDivider")} />
+
+                  <Button text onClick={handleLogout} className={cx("logoutBtn")}>
                     Đăng xuất
                   </Button>
                 </div>
