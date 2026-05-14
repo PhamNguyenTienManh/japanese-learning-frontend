@@ -1,29 +1,7 @@
-.wrapper {
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 40px 20px;
-  flex-direction: column;
-}
-
-.header {
-  text-align: center;
-  margin-bottom: 24px;
-
-  h1 {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--primary);
-  }
-
-  p {
-    font-weight: 500;
-    font-size: 15px;
-    color: var(--grey);
-    margin-top: 6px;
-  }
-}
+$ink: #0f2a2a;
+$ink-soft: #5b7575;
+$soft-border: #dff1ea;
+$soft-tint: #e6f7f2;
 
 .form {
   display: flex;
@@ -35,15 +13,109 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
 
-  label {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-high);
+.label {
+  font-size: 13px;
+  font-weight: 700;
+  color: $ink;
+  letter-spacing: 0.2px;
+}
+
+.inputWrap :global(input) {
+  height: 48px;
+  border-radius: 14px;
+  border: 1.5px solid $soft-border;
+  background: #fafdfc;
+  font-size: 15px;
+  transition: all 0.15s;
+
+  &:focus {
+    border-color: var(--primary);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(0, 135, 154, 0.12);
   }
 }
 
-.submit-btn {
-  width: 100%;
+.callout {
+  background: $soft-tint;
+  border: 1.5px solid rgba(0, 135, 154, 0.18);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.calloutIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.calloutBody {
+  font-size: 13px;
+  color: $ink;
+  line-height: 1.5;
+
+  strong {
+    font-weight: 700;
+  }
+}
+
+.submit {
   margin-top: 8px;
+  width: 100%;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 0 #d44e00;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 0 #d44e00;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #d44e00;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.helper-text {
+  text-align: center;
+  margin-top: 22px;
+  font-size: 14px;
+  color: $ink-soft;
+}
+
+.helper-link {
+  margin-left: 6px;
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+  }
 }
