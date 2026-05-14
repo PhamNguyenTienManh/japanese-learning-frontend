@@ -2,10 +2,6 @@ import React, { useState, useEffect } from "react";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-    faBookOpen,
-    faBolt,
-    faUsers,
-    faFileLines,
     faPlay,
     faShuffle,
     faPlus,
@@ -15,9 +11,7 @@ import {
     faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
 
-import Button from "~/components/Button";
 import styles from "./JLPT.module.scss";
-import Card from "~/components/Card";
 import { getJlptWords, getJlptKanji, getJlptGrammar } from "~/services/jlptService";
 import notebookService from "~/services/notebookService";
 import AuthRequiredModal from "~/components/AuthRequiredModal";
@@ -48,6 +42,13 @@ const initialDisplayOptions = {
     ],
 };
 
+const jlptTabs = [
+    { icon: "🎴", label: "FlashCard", key: "flashcard", requireLogin: true },
+    { icon: "⚡", label: "Quiz", key: "quizz", href: "/quizz" },
+    { icon: "🗣️", label: "Luyện nói, viết", key: "speaking", href: "/speaking" },
+    { icon: "📝", label: "Mini Test", key: "minitest", href: "/mini-test" },
+];
+
 
 function JLPT() {
     const [selectedType, setSelectedType] = useState("Từ vựng");
@@ -64,10 +65,10 @@ function JLPT() {
     const [showPdfModal, setShowPdfModal] = useState(false);
     const [pdfUrl, setPdfUrl] = useState("");
     const [pdfLoading, setPdfLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState("flashcard");
 
     const navigate = useNavigate();
     const { isLoggedIn } = useAuth();
-    // Thêm từ vựng, ngữ pháp vào Notebook
     const [showModal, setShowModal] = useState(false);
     const [selectedWord, setSelectedWord] = useState(null);
     const [toast, setToast] = useState({ show: false, message: '', type: '' });
@@ -76,18 +77,27 @@ function JLPT() {
         fetchNotebooks();
     }, []);
 
-
-    const handleFlashCardClick = (href) => {
-        if (!isLoggedIn) {
-            setPendingHref(href);        // lưu lại link để chuyển sau khi login
-            setShowAuthModal(true);      // mở modal yêu cầu login
-            return;
-        }
-
-        window.location.href = "/jlpt/" + href;
+    const getFlashcardLink = () => {
+        const typeParam = selectedType === "Từ vựng" ? "word" :
+            selectedType === "Ngữ pháp" ? "grammar" : "kanji";
+        return `flashcards?type=${typeParam}&level=${selectedLevel}&source=jlpt`;
     };
 
-    // Fetch danh sách notebooks
+    const handleTabClick = (tab) => {
+        setActiveTab(tab.key);
+        if (tab.requireLogin) {
+            const href = getFlashcardLink();
+            if (!isLoggedIn) {
+                setPendingHref(href);
+                setShowAuthModal(true);
+                return;
+            }
+            window.location.href = "/jlpt/" + href;
+        } else if (tab.href) {
+            navigate(tab.href);
+        }
+    };
+
     const fetchNotebooks = async () => {
         try {
             const data = await notebookService.getNotebooks();
@@ -99,17 +109,16 @@ function JLPT() {
 
     useEffect(() => {
         if (showModal) {
-            document.body.style.overflow = "hidden"; // khóa scroll
+            document.body.style.overflow = "hidden";
         } else {
-            document.body.style.overflow = "auto"; // mở lại
+            document.body.style.overflow = "auto";
         }
 
         return () => {
-            document.body.style.overflow = "auto"; // cleanup
+            document.body.style.overflow = "auto";
         };
     }, [showModal]);
 
-    // Auto hide toast after 3 seconds
     useEffect(() => {
         if (toast.show) {
             const timer = setTimeout(() => {
@@ -121,13 +130,6 @@ function JLPT() {
 
 
     const itemsPerPage = 9;
-
-    // Tạo link flashcard động với type và level hiện tại
-    const getFlashcardLink = () => {
-        const typeParam = selectedType === "Từ vựng" ? "word" :
-            selectedType === "Ngữ pháp" ? "grammar" : "kanji";
-        return `flashcards?type=${typeParam}&level=${selectedLevel}&source=jlpt`;
-    };
 
     const handleAddWord = async (newWord, type, selectedNotebook) => {
         try {
@@ -176,11 +178,8 @@ function JLPT() {
                     type: 'error'
                 });
             }
-
-            // Show success toast
         } catch (err) {
             console.error('Failed to add word:', err);
-            // Show error toast
             setToast({
                 show: true,
                 message: err.message || 'Không thể thêm từ. Vui lòng thử lại.',
@@ -192,7 +191,6 @@ function JLPT() {
     };
 
     const handlePreviewPdf = async () => {
-        // Kiểm tra nếu là Ngữ pháp thì không cho download
         if (selectedType === "Ngữ pháp") {
             setToast({
                 show: true,
@@ -203,7 +201,6 @@ function JLPT() {
         }
 
         try {
-            // Bật loading và mở modal ngay
             setPdfLoading(true);
             setShowPdfModal(true);
 
@@ -221,7 +218,7 @@ function JLPT() {
             setPdfUrl(pdfPreviewUrl);
         } catch (err) {
             console.error(err);
-            setShowPdfModal(false); // Đóng modal nếu lỗi
+            setShowPdfModal(false);
             setToast({
                 show: true,
                 message: 'Không thể tải PDF. Vui lòng thử lại.',
@@ -231,30 +228,6 @@ function JLPT() {
             setPdfLoading(false);
         }
     };
-
-    const jlptFeatures = [
-        {
-            icon: faBookOpen,
-            label: "FlashCard",
-            href: getFlashcardLink(),
-            requireLogin: true,
-        },
-        {
-            icon: faBolt,
-            label: "Quizz",
-            href: "/quizz",
-        },
-        {
-            icon: faUsers,
-            label: "Luyện nói, viết",
-            href: "/speaking",
-        },
-        {
-            icon: faFileLines,
-            label: "Mini Test",
-            href: "/mini-test",
-        },
-    ];
 
     useEffect(() => {
         fetchData();
@@ -355,209 +328,224 @@ function JLPT() {
     const renderCard = (item, index) => {
         if (selectedType === "Từ vựng") {
             return (
-                <Card key={index}>
-                    <div className={cx("vocab-container")}>
-                        <Button
-                            className={"orange"}
-                            leftIcon={<FontAwesomeIcon icon={faVolumeHigh} />}
+                <div key={index} className={cx("card")}>
+                    <div className={cx("cardTop")}>
+                        <button
+                            type="button"
+                            className={cx("speakerBtn")}
                             onClick={() => handlePlayAudio(item.phonetic)}
-                        ></Button>
-                        <div className={cx("vocab-inner")}>
-                            <div className={cx("vocab-header")}>
-                                <div className={cx("vocab-main")}>
-
-                                    {isShown("Từ vựng") && (
-                                        <span className={cx("kanji")}>{item.word}</span>
-                                    )}
-                                </div>
-
-                            </div>
-                            {isShown("Phiên âm") && (
-                                <div className={cx("hiragana")}>{item.phonetic}</div>
-                            )}
-                            {isShown("Nghĩa") && (
-                                <div className={cx("meaning-block")}>
-                                    <p className={cx("meaning")}>{item.meanings}</p>
-                                </div>
-                            )}
-                        </div>
-                        <Button
-                            className={"orange"}
-                            leftIcon={<FontAwesomeIcon icon={faPlus} />}
+                            aria-label="Nghe phát âm"
+                        >
+                            <FontAwesomeIcon icon={faVolumeHigh} />
+                        </button>
+                        <button
+                            type="button"
+                            className={cx("addBtn")}
                             onClick={() => {
                                 setSelectedWord(item);
                                 setShowModal(true);
                             }}
-                        ></Button>
+                            aria-label="Thêm vào sổ tay"
+                        >
+                            <FontAwesomeIcon icon={faPlus} />
+                        </button>
                     </div>
-                </Card>
+                    {isShown("Từ vựng") && (
+                        <div className={cx("kanji")}>{item.word}</div>
+                    )}
+                    {isShown("Phiên âm") && (
+                        <div className={cx("hiragana")}>{item.phonetic}</div>
+                    )}
+                    {isShown("Nghĩa") && (
+                        <div className={cx("meaning")}>{item.meanings}</div>
+                    )}
+                </div>
             );
         } else if (selectedType === "Ngữ pháp") {
             return (
-                <div key={item._id} className={cx("grammar-item")}>
-                    <div className={cx("grammar-content")}>
+                <div key={item._id} className={cx("card", "grammarCard")}>
+                    <div className={cx("grammarBody")}>
                         {isShown("Từ vựng") && (
-                            <div className={cx("grammar-pattern")}>{item.title}</div>
+                            <div className={cx("grammarPattern")}>{item.title}</div>
                         )}
                         {isShown("Nghĩa") && (
-                            <div className={cx("grammar-meaning")}>{item.mean}</div>
+                            <div className={cx("grammarMeaning")}>{item.mean}</div>
                         )}
                     </div>
-                    <Button
-                        outline
-                        className={"no-margin"}
-                        leftIcon={<FontAwesomeIcon icon={faPlus} />}
+                    <button
+                        type="button"
+                        className={cx("addBtn")}
                         onClick={() => {
                             setSelectedWord(item);
                             setShowModal(true);
                         }}
-                    ></Button>
+                        aria-label="Thêm vào sổ tay"
+                    >
+                        <FontAwesomeIcon icon={faPlus} />
+                    </button>
                 </div>
             );
         } else if (selectedType === "Hán tự") {
             return (
                 <div
                     key={item._id}
-                    className={cx("kanji-item")}
+                    className={cx("card", "kanjiCard")}
                     onClick={() => {
                         setSelectedWord(item);
                         setShowModal(true);
                     }}
                 >
                     {isShown("Từ vựng") && (
-                        <div className={cx("kanji-char")}>{item.kanji}</div>
+                        <div className={cx("kanji")}>{item.kanji}</div>
                     )}
                     {isShown("Nghĩa") && (
-                        <div className={cx("kanji-meaning")}>{item.mean}</div>
+                        <div className={cx("meaning")}>{item.mean}</div>
                     )}
                 </div>
             );
         }
     };
 
+    const gridClass = cx("grid", {
+        kanjiGrid: selectedType === "Hán tự",
+        grammarGrid: selectedType === "Ngữ pháp",
+    });
+
     return (
         <div className={cx("wrapper")}>
+            <div className={cx("blob1")} />
+            <div className={cx("blob2")} />
+
             <div className={cx("inner")}>
-                <div className={cx("header")}>
-                    <h1 className={cx("title")}>JLPT</h1>
-                    <p className={cx("subtitle")}>
-                        Đang xem: {selectedType} - Cấp độ {selectedLevel}
-                    </p>
+                {/* Hero */}
+                <div className={cx("hero")}>
+                    <div className={cx("heroLeft")}>
+                        <div className={cx("heroBadge")}>{selectedLevel}</div>
+                        <div>
+                            <h1 className={cx("title")}>Học JLPT</h1>
+                            <div className={cx("subtitle")}>
+                                <span className={cx("chip")}>{selectedType}</span>
+                                <span className={cx("dot")}>·</span>
+                                <span>Cấp độ {selectedLevel}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div className={cx("features")}>
-                    {jlptFeatures.map((feature) => (
-                        <Button
-                            key={feature.label}
-                            primary
-                            leftIcon={<FontAwesomeIcon icon={feature.icon} />}
-                            {...(!feature.requireLogin
-                                ? { to: feature.href }
-                                : { onClick: () => handleFlashCardClick(feature.href) }
-                            )}
+                {/* Tabs */}
+                <div className={cx("tabs")}>
+                    {jlptTabs.map((tab) => (
+                        <button
+                            key={tab.key}
+                            type="button"
+                            className={cx("tab", { tabActive: activeTab === tab.key })}
+                            onClick={() => handleTabClick(tab)}
                         >
-                            {feature.label}
-                        </Button>
+                            <span className={cx("tabIcon")}>{tab.icon}</span>
+                            <span>{tab.label}</span>
+                        </button>
                     ))}
                 </div>
 
                 <div className={cx("layout")}>
                     <aside className={cx("sidebar")}>
-                        <Card>
-                            <div className={cx("filter-block")}>
-                                <h3 className={cx("filter-title")}>Chọn loại từ</h3>
-                                <div className={cx("filter-options")}>
-                                    {vocabularyTypes.map((type) => (
-                                        <label
-                                            key={type}
-                                            className={cx("filter-option", {
-                                                active: selectedType === type,
-                                            })}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="vocab-type"
-                                                value={type}
-                                                checked={selectedType === type}
-                                                onChange={(e) => handleTypeChange(e.target.value)}
-                                                className={cx("radio")}
-                                            />
-                                            <span className={cx("filter-label")}>{type}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
+                        <div className={cx("sideTitle")}>Loại từ</div>
+                        <div className={cx("radioGroup")}>
+                            {vocabularyTypes.map((type) => (
+                                <label
+                                    key={type}
+                                    className={cx("radioRow", {
+                                        radioActive: selectedType === type,
+                                    })}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="vocab-type"
+                                        value={type}
+                                        checked={selectedType === type}
+                                        onChange={(e) => handleTypeChange(e.target.value)}
+                                        className={cx("radioInput")}
+                                    />
+                                    <span className={cx("radioDot")} />
+                                    <span>{type}</span>
+                                </label>
+                            ))}
+                        </div>
 
-                            <div className={cx("filter-block")}>
-                                <h3 className={cx("filter-title")}>Chọn cấp độ</h3>
-                                <div className={cx("filter-options")}>
-                                    {jlptLevels.map((level) => (
-                                        <label
-                                            key={level}
-                                            className={cx("filter-option", {
-                                                active: selectedLevel === level,
-                                            })}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="level"
-                                                value={level}
-                                                checked={selectedLevel === level}
-                                                onChange={(e) => handleLevelChange(e.target.value)}
-                                                className={cx("radio")}
-                                            />
-                                            <span className={cx("filter-label")}>{level}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                        </Card>
+                        <div className={cx("divider")} />
+
+                        <div className={cx("sideTitle")}>Cấp độ</div>
+                        <div className={cx("radioGroup")}>
+                            {jlptLevels.map((level) => (
+                                <label
+                                    key={level}
+                                    className={cx("radioRow", {
+                                        radioActive: selectedLevel === level,
+                                    })}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="level"
+                                        value={level}
+                                        checked={selectedLevel === level}
+                                        onChange={(e) => handleLevelChange(e.target.value)}
+                                        className={cx("radioInput")}
+                                    />
+                                    <span className={cx("radioDot")} />
+                                    <span>{level}</span>
+                                </label>
+                            ))}
+                        </div>
                     </aside>
 
                     <div className={cx("content")}>
-                        <Card className={cx("display-card")}>
-                            <div className={cx("display-row")}>
-                                <div className={cx("display-options")}>
-                                    {currentDisplayOptions.map((option) => (
-                                        <label
-                                            key={option.label}
-                                            className={cx("display-option")}
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={option.checked}
-                                                onChange={() =>
-                                                    handleToggleDisplayOption(option.label)
-                                                }
-                                                className={cx("checkbox")}
-                                            />
-                                            <span className={cx("display-label")}>
-                                                {option.label}
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-
-                                <div className={cx("display-actions")}>
-                                    <Button
-                                        outline
-                                        className={"no-margin"}
-                                        leftIcon={<FontAwesomeIcon icon={faDownload} />}
-                                        onClick={handlePreviewPdf}
-                                    ></Button>
-                                    <Button
-                                        outline
-                                        className={"no-margin"}
-                                        leftIcon={<FontAwesomeIcon icon={faPlay} />}
-                                    ></Button>
-                                    <Button
-                                        outline
-                                        className={"no-margin"}
-                                        leftIcon={<FontAwesomeIcon icon={faShuffle} />}
-                                    ></Button>
-                                </div>
+                        <div className={cx("toolbar")}>
+                            <div className={cx("displayOptions")}>
+                                {currentDisplayOptions.map((option) => (
+                                    <label
+                                        key={option.label}
+                                        className={cx("displayOption", {
+                                            displayOptionChecked: option.checked,
+                                        })}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={option.checked}
+                                            onChange={() =>
+                                                handleToggleDisplayOption(option.label)
+                                            }
+                                            className={cx("checkbox")}
+                                        />
+                                        <span>{option.label}</span>
+                                    </label>
+                                ))}
                             </div>
-                        </Card>
+
+                            <div className={cx("iconBtns")}>
+                                <button
+                                    type="button"
+                                    className={cx("iconBtn")}
+                                    onClick={handlePreviewPdf}
+                                    aria-label="Tải PDF"
+                                >
+                                    <FontAwesomeIcon icon={faDownload} />
+                                </button>
+                                <button
+                                    type="button"
+                                    className={cx("iconBtn")}
+                                    aria-label="Phát"
+                                >
+                                    <FontAwesomeIcon icon={faPlay} />
+                                </button>
+                                <button
+                                    type="button"
+                                    className={cx("iconBtn", "shuffleBtn")}
+                                    aria-label="Trộn"
+                                >
+                                    <FontAwesomeIcon icon={faShuffle} />
+                                </button>
+                            </div>
+                        </div>
 
                         {loading && (
                             <div className={cx("loading")}>Đang tải dữ liệu...</div>
@@ -568,25 +556,26 @@ function JLPT() {
                         )}
 
                         {!loading && !error && (
-                            <div className={cx("vocab-grid", {
-                                "kanji-grid": selectedType === "Hán tự"
-                            })}>
+                            <>
                                 {data.length > 0 ? (
-                                    data.map((item, index) => renderCard(item, index))
+                                    <div className={gridClass}>
+                                        {data.map((item, index) => renderCard(item, index))}
+                                    </div>
                                 ) : (
-                                    <div className={cx("no-data")}>Không có dữ liệu</div>
+                                    <div className={cx("noData")}>Không có dữ liệu</div>
                                 )}
-                            </div>
+                            </>
                         )}
 
                         {!loading && !error && totalPages > 1 && (
                             <div className={cx("pagination")}>
                                 <button
-                                    className={cx("pagination-btn", "pagination-arrow", {
-                                        disabled: currentPage === 1,
+                                    className={cx("pagBtn", {
+                                        pagDisabled: currentPage === 1,
                                     })}
                                     onClick={() => handlePageChange(currentPage - 1)}
                                     disabled={currentPage === 1}
+                                    aria-label="Trang trước"
                                 >
                                     <FontAwesomeIcon icon={faChevronLeft} />
                                 </button>
@@ -595,15 +584,15 @@ function JLPT() {
                                     page === "..." ? (
                                         <span
                                             key={`ellipsis-${index}`}
-                                            className={cx("pagination-ellipsis")}
+                                            className={cx("pagEllipsis")}
                                         >
                                             ...
                                         </span>
                                     ) : (
                                         <button
                                             key={page}
-                                            className={cx("pagination-btn", {
-                                                active: currentPage === page,
+                                            className={cx("pagBtn", {
+                                                pagActive: currentPage === page,
                                             })}
                                             onClick={() => handlePageChange(page)}
                                         >
@@ -613,11 +602,12 @@ function JLPT() {
                                 )}
 
                                 <button
-                                    className={cx("pagination-btn", "pagination-arrow", {
-                                        disabled: currentPage === totalPages,
+                                    className={cx("pagBtn", {
+                                        pagDisabled: currentPage === totalPages,
                                     })}
                                     onClick={() => handlePageChange(currentPage + 1)}
                                     disabled={currentPage === totalPages}
+                                    aria-label="Trang sau"
                                 >
                                     <FontAwesomeIcon icon={faChevronRight} />
                                 </button>
@@ -626,13 +616,12 @@ function JLPT() {
                     </div>
                 </div>
 
-
-                {/* Hiển thị show modal */}
+                {/* Modal chọn sổ tay */}
                 {showModal && (
                     <div className={cx("modal-overlay")} onClick={() => setShowModal(false)}>
                         <div
                             className={cx("modal-container")}
-                            onClick={(e) => e.stopPropagation()} // ngăn tắt modal khi click bên trong
+                            onClick={(e) => e.stopPropagation()}
                         >
                             <div className={cx("modal-header")}>
                                 <h3>Thêm từ vào sổ tay</h3>
@@ -663,7 +652,7 @@ function JLPT() {
                     show={showPdfModal}
                     onClose={() => {
                         setShowPdfModal(false);
-                        setPdfUrl(""); // Reset URL khi đóng
+                        setPdfUrl("");
                     }}
                     pdfUrl={pdfUrl}
                     loading={pdfLoading}
@@ -687,6 +676,15 @@ function JLPT() {
                     </div>
                 )}
 
+                {/* Auth required modal */}
+                <AuthRequiredModal
+                    isOpen={showAuthModal}
+                    onClose={() => setShowAuthModal(false)}
+                    onConfirm={() => {
+                        setShowAuthModal(false);
+                        navigate("/login");
+                    }}
+                />
             </div>
         </div>
     );
