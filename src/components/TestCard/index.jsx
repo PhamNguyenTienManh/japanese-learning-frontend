@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./TestCard.module.scss";
@@ -92,25 +93,30 @@ export default function TestCard({
     }
   };
 
+  const resumeDialog = showResumeDialog
+    ? createPortal(
+        <div className={cx("resume-overlay")} onClick={() => setShowResumeDialog(false)}>
+          <div className={cx("resume-dialog")} onClick={(e) => e.stopPropagation()}>
+            <h3 className={cx("resume-title")}>Bài thi đang làm dở</h3>
+            <p className={cx("resume-message")}>
+              Bạn có bài thi chưa hoàn thành. Bạn muốn tiếp tục hay bắt đầu bài mới?
+            </p>
+            <div className={cx("resume-actions")}>
+              <Button primary onClick={handleResumeExam}>Tiếp tục bài cũ</Button>
+              <Button outline onClick={handleStartNewExam} disabled={isLoading}>Làm bài mới</Button>
+              <button className={cx("resume-cancel")} onClick={() => setShowResumeDialog(false)}>
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
+
   return (
     <>
-    {showResumeDialog && (
-      <div className={cx("resume-overlay")}>
-        <div className={cx("resume-dialog")}>
-          <h3 className={cx("resume-title")}>Bài thi đang làm dở</h3>
-          <p className={cx("resume-message")}>
-            Bạn có bài thi chưa hoàn thành. Bạn muốn tiếp tục hay bắt đầu bài mới?
-          </p>
-          <div className={cx("resume-actions")}>
-            <Button primary onClick={handleResumeExam}>Tiếp tục bài cũ</Button>
-            <Button outline onClick={handleStartNewExam} disabled={isLoading}>Làm bài mới</Button>
-            <button className={cx("resume-cancel")} onClick={() => setShowResumeDialog(false)}>
-              Hủy
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
+    {resumeDialog}
     <Card className={`${cx("root")} ${className}`}>
       <div className={cx("inner")}>
         <div className={cx("main")}>

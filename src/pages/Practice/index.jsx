@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import classNames from "classnames/bind";
+import { motion } from "framer-motion";
 import styles from "./Practice.module.scss";
 
-import Card from "~/components/Card";
 import LevelCard from "~/components/LevelCard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -15,6 +15,28 @@ import {
 import { getExamCountByLevel } from "~/services/examService";
 
 const cx = classNames.bind(styles);
+
+const easeOut = [0.22, 1, 0.36, 1];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: easeOut } },
+};
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
+};
+
+const statItem = {
+  hidden: { opacity: 0, y: 22, scale: 0.96 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.5, ease: easeOut },
+  },
+};
 
 export default function Practice() {
   const [levels, setLevels] = useState([]);
@@ -31,8 +53,6 @@ export default function Practice() {
             name: "Sơ cấp",
             description: "Hiểu được tiếng Nhật cơ bản",
             totalTests: counts.N5 || 0,
-            // duration: "90 phút",
-            // questions: 180,
             colorClass: "n5",
           },
           {
@@ -40,8 +60,6 @@ export default function Practice() {
             name: "Sơ cấp nâng cao",
             description: "Hiểu được tiếng Nhật cơ bản ở mức độ cao hơn",
             totalTests: counts.N4 || 0,
-            // duration: "115 phút",
-            // questions: 180,
             colorClass: "n4",
           },
           {
@@ -50,8 +68,6 @@ export default function Practice() {
             description:
               "Hiểu được tiếng Nhật sử dụng trong cuộc sống hàng ngày",
             totalTests: counts.N3 || 0,
-            // duration: "140 phút",
-            // questions: 180,
             colorClass: "n3",
           },
           {
@@ -59,8 +75,6 @@ export default function Practice() {
             name: "Trung cấp nâng cao",
             description: "Hiểu được tiếng Nhật trong nhiều tình huống",
             totalTests: counts.N2 || 0,
-            // duration: "155 phút",
-            // questions: 180,
             colorClass: "n2",
           },
           {
@@ -68,8 +82,6 @@ export default function Practice() {
             name: "Cao cấp",
             description: "Hiểu được tiếng Nhật trong nhiều tình huống phức tạp",
             totalTests: counts.N1 || 0,
-            // duration: "165 phút",
-            // questions: 180,
             colorClass: "n1",
           },
         ];
@@ -85,82 +97,119 @@ export default function Practice() {
 
   const totalExams = levels.reduce(
     (sum, lvl) => sum + (lvl.totalTests || 0),
-    0
+    0,
   );
+
+  const stats = [
+    { icon: faTrophy, tone: "teal", value: totalExams, label: "Đề thi" },
+    { icon: faBookOpen, tone: "orange", value: 420, label: "Câu hỏi" },
+    { icon: faBullseye, tone: "mint", value: 12, label: "Đã hoàn thành" },
+    { icon: faClock, tone: "yellow", value: "85%", label: "Điểm TB" },
+  ];
 
   return (
     <div className={cx("root")}>
+      <motion.div
+        className={cx("blob1")}
+        animate={{ y: [0, -22, 0], x: [0, 12, 0] }}
+        transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className={cx("blob2")}
+        animate={{ y: [0, 20, 0], x: [0, -14, 0] }}
+        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className={cx("blob3")}
+        animate={{ y: [0, -18, 0], x: [0, 10, 0] }}
+        transition={{ duration: 17, repeat: Infinity, ease: "easeInOut" }}
+      />
+
       <div className={cx("container")}>
         {/* Header */}
-        <div className={cx("header")}>
-          <h1 className={cx("title")}>Luyện thi JLPT</h1>
-          <p className={cx("subtitle")}>
-            Hệ thống đề thi JLPT đầy đủ từ N5 đến N1 với chấm điểm tự động
-          </p>
-        </div>
+        <motion.div
+          className={cx("header")}
+          initial="hidden"
+          animate="show"
+          variants={stagger}
+        >
+          <motion.span className={cx("hero-badge")} variants={fadeUp}>
+            JLPT • N5 → N1
+          </motion.span>
+          <motion.h1 className={cx("title")} variants={fadeUp}>
+            Luyện thi{" "}
+            <span className={cx("title-accent")}>JLPT</span>
+          </motion.h1>
+          <motion.p className={cx("subtitle")} variants={fadeUp}>
+            Hệ thống đề thi JLPT đầy đủ từ N5 đến N1, chấm điểm tự động và phân
+            tích kết quả chi tiết.
+          </motion.p>
+        </motion.div>
 
         {/* Stats */}
-        <div className={cx("stats-grid")}>
-          <Card className={cx("stat-card")}>
-            <div className={cx("stat-inner")}>
-              <div className={cx("stat-icon")}>
-                <FontAwesomeIcon icon={faTrophy} />
+        <motion.div
+          className={cx("stats-grid")}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={stagger}
+        >
+          {stats.map((s) => (
+            <motion.div
+              key={s.label}
+              className={cx("stat-card")}
+              variants={statItem}
+              whileHover={{ y: -4 }}
+              transition={{ type: "spring", stiffness: 320, damping: 20 }}
+            >
+              <div className={cx("stat-inner")}>
+                <div className={cx("stat-icon", `tone-${s.tone}`)}>
+                  <FontAwesomeIcon icon={s.icon} />
+                </div>
+                <div>
+                  <p className={cx("stat-value")}>{s.value}</p>
+                  <p className={cx("stat-label")}>{s.label}</p>
+                </div>
               </div>
-              <div>
-                <p className={cx("stat-value")}>{totalExams}</p>
-                <p className={cx("stat-label")}>Đề thi</p>
-              </div>
-            </div>
-          </Card>
+            </motion.div>
+          ))}
+        </motion.div>
 
-          <Card className={cx("stat-card")}>
-            <div className={cx("stat-inner")}>
-              <div className={cx("stat-icon")}>
-                <FontAwesomeIcon icon={faBookOpen} />
-              </div>
-              <div>
-                <p className={cx("stat-value")}>420</p>
-                <p className={cx("stat-label")}>Câu hỏi</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className={cx("stat-card")}>
-            <div className={cx("stat-inner")}>
-              <div className={cx("stat-icon")}>
-                <FontAwesomeIcon icon={faBullseye} />
-              </div>
-              <div>
-                <p className={cx("stat-value")}>12</p>
-                <p className={cx("stat-label")}>Đã hoàn thành</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className={cx("stat-card")}>
-            <div className={cx("stat-inner")}>
-              <div className={cx("stat-icon")}>
-                <FontAwesomeIcon icon={faClock} />
-              </div>
-              <div>
-                <p className={cx("stat-value")}>85%</p>
-                <p className={cx("stat-label")}>Điểm TB</p>
-              </div>
-            </div>
-          </Card>
-        </div>
+        {/* Section heading */}
+        <motion.div
+          className={cx("section-head")}
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.5, ease: easeOut }}
+        >
+          <span className={cx("section-label")}>Chọn cấp độ</span>
+          <h2 className={cx("section-title")}>Bắt đầu với cấp độ phù hợp</h2>
+        </motion.div>
 
         {/* Level cards */}
-        <div className={cx("levels")}>
+        <motion.div
+          className={cx("levels")}
+          initial="hidden"
+          animate={levels.length > 0 ? "show" : "hidden"}
+          variants={stagger}
+        >
           {levels.map((lvl) => (
-            <LevelCard
+            <motion.div
               key={lvl.level}
-              level={lvl}
-              startTo={`/practice/${lvl.level.toLowerCase()}`}
-              resultsTo={`/practice/${lvl.level.toLowerCase()}/results`}
-            />
+              className={cx("level-wrap", lvl.colorClass)}
+              variants={fadeUp}
+              whileHover={{ y: -4 }}
+              transition={{ type: "spring", stiffness: 320, damping: 22 }}
+            >
+              <LevelCard
+                level={lvl}
+                startTo={`/practice/${lvl.level.toLowerCase()}`}
+                resultsTo={`/practice/${lvl.level.toLowerCase()}/results`}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </div>
   );

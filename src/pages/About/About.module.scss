@@ -88,10 +88,27 @@ $yellow: #ffd166;
 }
 
 .titleAccent {
-  background: linear-gradient(135deg, var(--primary), var(--orange));
+  background: linear-gradient(
+    100deg,
+    var(--primary) 0%,
+    var(--orange) 45%,
+    var(--primary) 90%
+  );
+  background-size: 220% auto;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  animation: shiftGradient 6s ease-in-out infinite;
+}
+
+@keyframes shiftGradient {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 .heroDesc {
@@ -207,13 +224,33 @@ $yellow: #ffd166;
   border: 2px solid $soft-border;
   border-radius: 20px;
   padding: 24px;
-  transition: all 0.15s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
   box-shadow: 0 4px 0 rgba(15, 42, 42, 0.04);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(135deg, var(--primary), var(--orange));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+  }
 
   &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 0 rgba(15, 42, 42, 0.06);
-    border-color: var(--primary-low);
+    box-shadow: 0 14px 30px -18px rgba(0, 135, 154, 0.45);
+    border-color: transparent;
+  }
+
+  &:hover::before {
+    opacity: 1;
   }
 }
 
@@ -417,10 +454,34 @@ $yellow: #ffd166;
   transition: all 0.15s;
   border: none;
   cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      120deg,
+      transparent 0%,
+      transparent 35%,
+      rgba(255, 255, 255, 0.45) 50%,
+      transparent 65%,
+      transparent 100%
+    );
+    transform: translateX(-120%);
+    transition: transform 0.7s ease;
+    pointer-events: none;
+    z-index: 1;
+  }
 
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 5px 0 #d44e00;
+  }
+
+  &:hover::after {
+    transform: translateX(120%);
   }
 
   &:active {
