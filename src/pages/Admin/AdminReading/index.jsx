@@ -1,13 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-    faArrowLeft,
     faMagnifyingGlass,
     faPenToSquare,
-    faTrash,
-    faEye,
     faPlus,
     faXmark,
     faLink,
@@ -63,10 +59,6 @@ function AdminReading() {
     const imageUrlRef = useRef(null);
     const audioLinkRef = useRef(null);
 
-    // ref cho input file
-    const imageInputRef = useRef(null);
-    const audioInputRef = useRef(null);
-
     // Auto hide toast after 3 seconds
     useEffect(() => {
         if (toast.show) {
@@ -76,21 +68,6 @@ function AdminReading() {
             return () => clearTimeout(timer);
         }
     }, [toast.show]);
-
-    // Hiển thị ở content các đoạn paragraphs
-    useEffect(() => {
-        if (editingArticle) {
-            // Khi mở form edit/create, split content thành array
-            if (editingArticle.content && editingArticle.content.trim()) {
-                const paragraphs = editingArticle.content.split('/n/n').filter(p => p.trim());
-                setContentParagraphs(paragraphs.length > 0 ? paragraphs : [""]);
-            } else {
-                setContentParagraphs([""]);
-            }
-        }
-    }, [editingArticle?.id]);
-
-
 
     const handleParagraphChange = (index, value) => {
         const newParagraphs = [...contentParagraphs];
@@ -127,11 +104,11 @@ function AdminReading() {
                         id: item._id,
                         title: item.title,
                         link: item.link || "",
-                        content: item.content.textbody,
-                        syncData:item.content.syncData,
-                        imagePreview: item.content.image,
-                        audioFile: item.content.audio,
-                        audioLink: item.content.audio,
+                        content: item.content?.textbody || "",
+                        syncData: item.content?.syncData,
+                        imagePreview: item.content?.image || "",
+                        audioFile: item.content?.audio || "",
+                        audioLink: item.content?.audio || "",
                         difficulty: item.type,
                         level: item.level || 1,
                         date: new Date(item.dateField).toLocaleDateString('vi-VN'),
@@ -152,8 +129,8 @@ function AdminReading() {
         const q = searchQuery.trim().toLowerCase();
         const matchSearch =
             !q ||
-            a.title.toLowerCase().includes(q) ||
-            a.content.toLowerCase().includes(q);
+            (a.title || "").toLowerCase().includes(q) ||
+            (a.content || "").toLowerCase().includes(q);
 
         const matchDiff =
             difficultyFilter === "all" || a.difficulty === difficultyFilter;
@@ -166,6 +143,7 @@ function AdminReading() {
     const handleStartCreate = () => {
         setMode("create");
         setAudioInputType("link");
+        setContentParagraphs([""]);
         setEditingArticle({
             id: "",
             title: "",
@@ -185,6 +163,10 @@ function AdminReading() {
 
     const handleStartEdit = (article) => {
         setMode("edit");
+        const paragraphs = article.content
+            ? article.content.split('/n/n').filter(p => p.trim())
+            : [];
+        setContentParagraphs(paragraphs.length > 0 ? paragraphs : [""]);
         if (article.audioPreview || article.audioLink) {
             setAudioInputType("link");
         } else {
@@ -395,35 +377,6 @@ function AdminReading() {
 
     }
 
-
-    const handleDelete = (id) => {
-        if (!window.confirm("Bạn có chắc muốn xóa bài đọc này?")) return;
-        setArticles((prev) => prev.filter((a) => a.id !== id));
-    };
-
-    // ===== FILE HANDLERS =====
-
-    const handlePickImage = () => {
-        if (imageInputRef.current) {
-            imageInputRef.current.click();
-        }
-    };
-
-    const handleImageChange = (event) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        const preview = URL.createObjectURL(file);
-        setEditingArticle((prev) =>
-            prev
-                ? {
-                    ...prev,
-                    imageFile: file,
-                    imagePreview: preview,
-                }
-                : prev
-        );
-    };
-
     const handleAudioLinkChange = (link) => {
         const trimmedLink = link.trim();
         setEditingArticle((prev) =>
@@ -438,6 +391,9 @@ function AdminReading() {
                 : prev
         );
     };
+
+    const publishedCount = articles.filter((article) => article.published).length;
+    const hiddenCount = articles.length - publishedCount;
 
     const handleGenerateAudio = async () => {
         if (!editingArticle?.content.trim()) {
@@ -517,24 +473,48 @@ function AdminReading() {
         <div className={cx("wrapper")}>
             <main className={cx("main")}>
                 <div className={cx("inner")}>
-                    {/* Header */}
                     <div className={cx("header")}>
                         <div className={cx("headerMain")}>
-                            <div>
-                                <h1 className={cx("title")}>Quản lý bài luyện đọc</h1>
+                            <div className={cx("titleBlock")}>
+                                <span className={cx("eyebrow")}>Quản trị</span>
+                                <h1 className={cx("title")}>
+                                    Quản lý <span className={cx("titleAccent")}>bài luyện đọc</span>
+                                </h1>
                                 <p className={cx("subtitle")}>
-                                    Tổng cộng {articles.length} bài đọc
-                                    {filteredArticles.length !== articles.length &&
-                                        ` · ${filteredArticles.length} kết quả`}
+                                    Tổng cộng <strong>{articles.length}</strong> bài đọc
+                                    {filteredArticles.length !== articles.length && (
+                                        <>
+                                            {" "}· hiển thị <strong>{filteredArticles.length}</strong> kết quả
+                                        </>
+                                    )}
                                 </p>
                             </div>
-                            <Button
-                                primary
-                                leftIcon={<FontAwesomeIcon icon={faPlus} />}
-                                onClick={handleStartCreate}
-                            >
-                                Thêm bài đọc mới
-                            </Button>
+
+                            <div className={cx("headerRight")}>
+                                <div className={cx("statsRow")}>
+                                    <div className={cx("statPill", "tonePrimary")}>
+                                        <span className={cx("statValue")}>{articles.length}</span>
+                                        <span className={cx("statLabel")}>Tổng</span>
+                                    </div>
+                                    <div className={cx("statPill", "toneOrange")}>
+                                        <span className={cx("statValue")}>{publishedCount}</span>
+                                        <span className={cx("statLabel")}>Công khai</span>
+                                    </div>
+                                    <div className={cx("statPill", "toneMuted")}>
+                                        <span className={cx("statValue")}>{hiddenCount}</span>
+                                        <span className={cx("statLabel")}>Ẩn</span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    className={cx("primaryBtn")}
+                                    onClick={handleStartCreate}
+                                >
+                                    <FontAwesomeIcon icon={faPlus} />
+                                    <span>Thêm bài đọc</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -578,6 +558,7 @@ function AdminReading() {
                                     {mode === "create"
                                         ? "Thêm bài đọc mới"
                                         : "Chỉnh sửa bài đọc"}
+                                    <span>{mode === "create" ? "Tạo nội dung luyện đọc" : "Cập nhật nội dung luyện đọc"}</span>
                                 </h2>
                                 <button
                                     type="button"
@@ -871,8 +852,8 @@ function AdminReading() {
                                         </div>
 
                                         <p className={cx("articleExcerpt")}>
-                                            {article.content.slice(0, 80)}
-                                            {article.content.length > 80 && "…"}
+                                            {(article.content || "").slice(0, 120)}
+                                            {(article.content || "").length > 120 && "…"}
                                         </p>
 
                                         <div className={cx("metaRow")}>
@@ -880,6 +861,12 @@ function AdminReading() {
                                                 Level:{" "}
                                                 <span className={cx("metaValue")}>
                                                     {levelOptions.find(l => l.value === article.level)?.label || 'N/A'}
+                                                </span>
+                                            </span>
+                                            <span className={cx("metaItem")}>
+                                                Trạng thái:{" "}
+                                                <span className={cx("metaValue")}>
+                                                    {article.published ? "Công khai" : "Ẩn"}
                                                 </span>
                                             </span>
                                             <span className={cx("metaItem")}>
@@ -922,6 +909,9 @@ function AdminReading() {
 
                         {filteredArticles.length === 0 && (
                             <Card className={cx("emptyCard")}>
+                                <div className={cx("emptyIcon")}>
+                                    <FontAwesomeIcon icon={faMagnifyingGlass} />
+                                </div>
                                 <p className={cx("emptyText")}>
                                     Không tìm thấy bài đọc nào phù hợp
                                 </p>

@@ -97,7 +97,6 @@ function CreateTest() {
     };
 
     const removeQuestion = (id) => {
-        const index = questions.findIndex((q) => q.id === id);
         setQuestions((prev) => prev.filter((q) => q.id !== id));
         if (currentQuestionIndex >= questions.length - 1) {
             setCurrentQuestionIndex(Math.max(0, questions.length - 2));
@@ -190,12 +189,6 @@ function CreateTest() {
         } finally {
             setIsGeneratingAudio(false);
         }
-    };
-
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, "0")}`;
     };
 
     // ====== CÂU CON ======
@@ -416,21 +409,48 @@ function CreateTest() {
     };
 
     const currentQuestion = questions[currentQuestionIndex];
+    const subQuestionTotal = questions.reduce(
+        (total, question) => total + question.subQuestions.length,
+        0
+    );
+    const currentQuestionTypeLabel =
+        currentQuestion?.type === "vocab"
+            ? "Từ vựng"
+            : currentQuestion?.type === "grammar"
+                ? "Ngữ pháp, Đọc hiểu"
+                : "Thi nghe";
 
     return (
         <div className={cx("wrapper")}>
             <main className={cx("main")}>
                 <div className={cx("container")}>
-                    {/* Header */}
                     <div className={cx("header")}>
                         <Link to="/admin/tests" className={cx("backLink")}>
                             <FontAwesomeIcon icon={faArrowLeft} className={cx("backIcon")} />
                             <span>Quay lại quản lý đề thi</span>
                         </Link>
-                        <h1 className={cx("title")}>Tạo đề thi mới</h1>
-                        <p className={cx("subtitle")}>
-                            Thiết lập thông tin đề thi và thêm câu hỏi
-                        </p>
+                        <div className={cx("headerMain")}>
+                            <div className={cx("titleBlock")}>
+                                <span className={cx("eyebrow")}>Quản trị đề thi</span>
+                                <h1 className={cx("title")}>
+                                    Tạo <span className={cx("titleAccent")}>đề thi mới</span>
+                                </h1>
+                                <p className={cx("subtitle")}>
+                                    Thiết lập thông tin đề thi, soạn câu hỏi và xem trước nội dung trước khi lưu.
+                                </p>
+                            </div>
+
+                            <div className={cx("headerStats")}>
+                                <div className={cx("statPill", "tonePrimary")}>
+                                    <span className={cx("statValue")}>{questions.length}</span>
+                                    <span className={cx("statLabel")}>Câu chính</span>
+                                </div>
+                                <div className={cx("statPill", "toneOrange")}>
+                                    <span className={cx("statValue")}>{subQuestionTotal}</span>
+                                    <span className={cx("statLabel")}>Câu con</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Test Info */}
@@ -674,6 +694,7 @@ function CreateTest() {
                                     <div className={cx("editorHeader")}>
                                         <h3 className={cx("editorTitle")}>
                                             Chỉnh sửa Câu {currentQuestionIndex + 1}
+                                            <span>{currentQuestionTypeLabel}</span>
                                         </h3>
                                         {questions.length > 1 && (
                                             <Button
@@ -710,7 +731,7 @@ function CreateTest() {
                                     <div className={cx("field")}>
                                         <div className={cx("labelWrapper")}>
                                             <label className={cx("label")}>
-                                                "Nội dung chung (đoạn văn / phần mô tả)"
+                                                Nội dung chung
                                             </label>
                                             <span className={cx("requiredStar")}>*</span>
                                         </div>
@@ -736,7 +757,7 @@ function CreateTest() {
                                         {currentQuestion.type === "listening" && (
                                             <div>
                                                 <label className={cx("label")}>
-                                                    "Nội dung phần nghe"
+                                                    Nội dung phần nghe
                                                 </label>
                                                 <textarea
                                                     placeholder="Nhập nội dung phần nghe..."
