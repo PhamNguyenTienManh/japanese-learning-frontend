@@ -1,14 +1,14 @@
 // DictionaryAdmin.jsx
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import classNames from "classnames/bind";
+import { motion, AnimatePresence } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-    faArrowLeft,
     faMagnifyingGlass,
     faPlus,
     faPenToSquare,
     faTrash,
+    faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 
 import Card from "~/components/Card";
@@ -31,6 +31,8 @@ import styles from "./DictionaryAdmin.module.scss";
 const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 
 const cx = classNames.bind(styles);
+
+const easeOut = [0.22, 1, 0.36, 1];
 
 const TYPE_OPTIONS = [
     "Danh từ",
@@ -115,7 +117,6 @@ function DictionaryAdmin() {
         return resJson?.data?.data || resJson?.data || resJson || null;
     };
 
-    // POST helpers (return created item or error)
     async function createWord(payload) {
         try {
             const resp = await fetch(`${BASE_URL}/jlpt-word`, {
@@ -220,7 +221,6 @@ function DictionaryAdmin() {
         return kanji.length;
     }, [activeTab, words, grammar, kanji]);
 
-    // ADD/UPDATE
     async function handleSubmitAdd(e) {
         e.preventDefault();
 
@@ -257,12 +257,11 @@ function DictionaryAdmin() {
                 return;
             }
 
-            // usages optional now. send empty array to be safe.
             const payload = {
                 title: formState.title,
                 mean: formState.mean,
                 level: formState.level,
-                usages: [], // optional, backend accepts empty
+                usages: [],
                 isJlpt: !!formState.isJlpt,
             };
 
@@ -323,7 +322,7 @@ function DictionaryAdmin() {
                 title: formState.title,
                 mean: formState.mean,
                 level: formState.level,
-                usages: editingItem?.usages || [], // keep existing usages if any, otherwise empty
+                usages: editingItem?.usages || [],
             };
 
             const updated = await updateJlptGrammar(editingItem._id, payload);
@@ -394,22 +393,45 @@ function DictionaryAdmin() {
         }
     }
 
+    const tabLabel =
+        activeTab === "words" ? "từ vựng" : activeTab === "grammar" ? "ngữ pháp" : "kanji";
+
     return (
         <div className={cx("wrapper")}>
+            <motion.div
+                className={cx("blob1")}
+                animate={{ y: [0, -22, 0], x: [0, 12, 0] }}
+                transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+                className={cx("blob2")}
+                animate={{ y: [0, 18, 0], x: [0, -14, 0] }}
+                transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+            />
+
             <main className={cx("main")}>
                 <div className={cx("inner")}>
                     {/* HEADER */}
-                    <div className={cx("header")}>
+                    <motion.div
+                        className={cx("header")}
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, ease: easeOut }}
+                    >
                         <div className={cx("headerMain")}>
-                            <div>
-                                <h1 className={cx("title")}>Quản lý từ điển</h1>
+                            <div className={cx("titleBlock")}>
+                                <span className={cx("eyebrow")}>Quản trị</span>
+                                <h1 className={cx("title")}>
+                                    Quản lý <span className={cx("titleAccent")}>từ điển</span>
+                                </h1>
                                 <p className={cx("subtitle")}>
-                                    <strong>{totalCount}</strong> mục ·{" "}
-                                    {filteredItems.length !== totalCount && `${filteredItems.length} kết quả`}
+                                    <strong>{totalCount}</strong> mục {tabLabel}
+                                    {filteredItems.length !== totalCount &&
+                                        ` · hiển thị ${filteredItems.length} kết quả`}
                                 </p>
                             </div>
 
-                            <div style={{ display: "flex", gap: 8 }}>
+                            <div className={cx("headerRight")}>
                                 <div className={cx("tabs")}>
                                     <button
                                         className={cx("tabBtn", { active: activeTab === "words" })}
@@ -445,218 +467,340 @@ function DictionaryAdmin() {
                                     </button>
                                 </div>
 
-                                <Button
-                                    primary
-                                    leftIcon={<FontAwesomeIcon icon={faPlus} />}
+                                <motion.button
+                                    type="button"
+                                    className={cx("primaryBtn")}
                                     onClick={() => {
                                         setEditingItem(null);
                                         resetFormForTab(activeTab);
                                         setShowAddForm((s) => !s);
                                     }}
+                                    whileHover={{ y: -1 }}
+                                    whileTap={{ scale: 0.98 }}
                                 >
-                                    Thêm
-                                </Button>
+                                    <FontAwesomeIcon icon={faPlus} />
+                                    <span>Thêm</span>
+                                </motion.button>
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
 
                     {/* FORM */}
-                    {showAddForm && (
-                        <Card className={cx("formCard")}>
-                            <h3 className={cx("formTitle")}>
-                                {editingItem ? `Cập nhật — ${activeTab}` : `Thêm mới — ${activeTab}`}
-                            </h3>
+                    <AnimatePresence>
+                        {showAddForm && (
+                            <motion.div
+                                className={cx("formCard")}
+                                initial={{ opacity: 0, height: 0, y: -8 }}
+                                animate={{ opacity: 1, height: "auto", y: 0 }}
+                                exit={{ opacity: 0, height: 0, y: -8 }}
+                                transition={{ duration: 0.4, ease: easeOut }}
+                            >
+                                <div className={cx("formInner")}>
+                                    <div className={cx("formHeader")}>
+                                        <div className={cx("formHeaderLeft")}>
+                                            <span className={cx("formBadge")}>
+                                                {editingItem ? "Chỉnh sửa" : "Mới"}
+                                            </span>
+                                            <h3 className={cx("formTitle")}>
+                                                {editingItem
+                                                    ? `Cập nhật ${tabLabel}`
+                                                    : `Thêm mới ${tabLabel}`}
+                                            </h3>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className={cx("formClose")}
+                                            onClick={() => {
+                                                setShowAddForm(false);
+                                                setEditingItem(null);
+                                            }}
+                                        >
+                                            <FontAwesomeIcon icon={faXmark} />
+                                        </button>
+                                    </div>
 
-                            <form onSubmit={handleSubmitAdd}>
-                                <div className={cx("formGrid")}>
-                                    {/* WORD FORM */}
-                                    {activeTab === "words" && (
-                                        <>
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Từ</label>
-                                                <Input
-                                                    value={formState.word}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, word: e.target.value }))}
-                                                />
-                                            </div>
+                                    <form onSubmit={handleSubmitAdd}>
+                                        <div className={cx("formGrid")}>
+                                            {/* WORD FORM */}
+                                            {activeTab === "words" && (
+                                                <>
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>Từ</label>
+                                                        <Input
+                                                            value={formState.word}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    word: e.target.value,
+                                                                }))
+                                                            }
+                                                        />
+                                                    </div>
 
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Phonetic (phân tách bằng , )</label>
-                                                <Input
-                                                    value={formState.phonetic}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, phonetic: e.target.value }))}
-                                                />
-                                            </div>
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>
+                                                            Phonetic (phân tách bằng , )
+                                                        </label>
+                                                        <Input
+                                                            value={formState.phonetic}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    phonetic: e.target.value,
+                                                                }))
+                                                            }
+                                                        />
+                                                    </div>
 
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Loại từ</label>
-                                                <select
-                                                    className={cx("select")}
-                                                    value={formState.type}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, type: e.target.value }))}
-                                                >
-                                                    <option value="">-- Chọn loại từ --</option>
-                                                    {TYPE_OPTIONS.map((t) => (
-                                                        <option key={t} value={t}>
-                                                            {t}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>Loại từ</label>
+                                                        <select
+                                                            className={cx("select")}
+                                                            value={formState.type}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    type: e.target.value,
+                                                                }))
+                                                            }
+                                                        >
+                                                            <option value="">-- Chọn loại từ --</option>
+                                                            {TYPE_OPTIONS.map((t) => (
+                                                                <option key={t} value={t}>
+                                                                    {t}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
 
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Nghĩa (phân tách bằng , )</label>
-                                                <Input
-                                                    value={formState.meanings}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, meanings: e.target.value }))}
-                                                />
-                                            </div>
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>
+                                                            Nghĩa (phân tách bằng , )
+                                                        </label>
+                                                        <Input
+                                                            value={formState.meanings}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    meanings: e.target.value,
+                                                                }))
+                                                            }
+                                                        />
+                                                    </div>
 
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Level</label>
-                                                <select
-                                                    className={cx("select")}
-                                                    value={formState.level}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, level: e.target.value }))}
-                                                >
-                                                    <option value="N5">N5</option>
-                                                    <option value="N4">N4</option>
-                                                    <option value="N3">N3</option>
-                                                    <option value="N2">N2</option>
-                                                    <option value="N1">N1</option>
-                                                </select>
-                                            </div>
-                                        </>
-                                    )}
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>Level</label>
+                                                        <select
+                                                            className={cx("select")}
+                                                            value={formState.level}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    level: e.target.value,
+                                                                }))
+                                                            }
+                                                        >
+                                                            <option value="N5">N5</option>
+                                                            <option value="N4">N4</option>
+                                                            <option value="N3">N3</option>
+                                                            <option value="N2">N2</option>
+                                                            <option value="N1">N1</option>
+                                                        </select>
+                                                    </div>
+                                                </>
+                                            )}
 
-                                    {/* GRAMMAR FORM */}
-                                    {activeTab === "grammar" && (
-                                        <>
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Tiêu đề</label>
-                                                <Input
-                                                    value={formState.title}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, title: e.target.value }))}
-                                                />
-                                            </div>
+                                            {/* GRAMMAR FORM */}
+                                            {activeTab === "grammar" && (
+                                                <>
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>Tiêu đề</label>
+                                                        <Input
+                                                            value={formState.title}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    title: e.target.value,
+                                                                }))
+                                                            }
+                                                        />
+                                                    </div>
 
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Ý nghĩa (tóm tắt)</label>
-                                                <Input
-                                                    value={formState.mean}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, mean: e.target.value }))}
-                                                />
-                                            </div>
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>
+                                                            Ý nghĩa (tóm tắt)
+                                                        </label>
+                                                        <Input
+                                                            value={formState.mean}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    mean: e.target.value,
+                                                                }))
+                                                            }
+                                                        />
+                                                    </div>
 
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Level</label>
-                                                <select
-                                                    className={cx("select")}
-                                                    value={formState.level}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, level: e.target.value }))}
-                                                >
-                                                    <option value="N5">N5</option>
-                                                    <option value="N4">N4</option>
-                                                    <option value="N3">N3</option>
-                                                    <option value="N2">N2</option>
-                                                    <option value="N1">N1</option>
-                                                </select>
-                                            </div>
-                                        </>
-                                    )}
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>Level</label>
+                                                        <select
+                                                            className={cx("select")}
+                                                            value={formState.level}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    level: e.target.value,
+                                                                }))
+                                                            }
+                                                        >
+                                                            <option value="N5">N5</option>
+                                                            <option value="N4">N4</option>
+                                                            <option value="N3">N3</option>
+                                                            <option value="N2">N2</option>
+                                                            <option value="N1">N1</option>
+                                                        </select>
+                                                    </div>
+                                                </>
+                                            )}
 
-                                    {/* KANJI FORM */}
-                                    {activeTab === "kanji" && (
-                                        <>
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Kanji</label>
-                                                <Input
-                                                    value={formState.kanji}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, kanji: e.target.value }))}
-                                                />
-                                            </div>
+                                            {/* KANJI FORM */}
+                                            {activeTab === "kanji" && (
+                                                <>
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>Kanji</label>
+                                                        <Input
+                                                            value={formState.kanji}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    kanji: e.target.value,
+                                                                }))
+                                                            }
+                                                        />
+                                                    </div>
 
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Nghĩa</label>
-                                                <Input
-                                                    value={formState.mean}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, mean: e.target.value }))}
-                                                />
-                                            </div>
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>Nghĩa</label>
+                                                        <Input
+                                                            value={formState.mean}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    mean: e.target.value,
+                                                                }))
+                                                            }
+                                                        />
+                                                    </div>
 
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Detail</label>
-                                                <Input
-                                                    value={formState.detail}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, detail: e.target.value }))}
-                                                />
-                                            </div>
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>Detail</label>
+                                                        <Input
+                                                            value={formState.detail}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    detail: e.target.value,
+                                                                }))
+                                                            }
+                                                        />
+                                                    </div>
 
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Kun</label>
-                                                <Input
-                                                    value={formState.kun}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, kun: e.target.value }))}
-                                                />
-                                            </div>
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>Kun</label>
+                                                        <Input
+                                                            value={formState.kun}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    kun: e.target.value,
+                                                                }))
+                                                            }
+                                                        />
+                                                    </div>
 
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>On</label>
-                                                <Input
-                                                    value={formState.on}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, on: e.target.value }))}
-                                                />
-                                            </div>
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>On</label>
+                                                        <Input
+                                                            value={formState.on}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    on: e.target.value,
+                                                                }))
+                                                            }
+                                                        />
+                                                    </div>
 
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Stroke Count</label>
-                                                <Input
-                                                    value={formState.stroke_count}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, stroke_count: e.target.value }))}
-                                                />
-                                            </div>
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>Stroke Count</label>
+                                                        <Input
+                                                            value={formState.stroke_count}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    stroke_count: e.target.value,
+                                                                }))
+                                                            }
+                                                        />
+                                                    </div>
 
-                                            <div className={cx("formField")}>
-                                                <label className={cx("label")}>Level</label>
-                                                <select
-                                                    className={cx("select")}
-                                                    value={formState.level}
-                                                    onChange={(e) => setFormState((s) => ({ ...s, level: e.target.value }))}
-                                                >
-                                                    <option value="N5">N5</option>
-                                                    <option value="N4">N4</option>
-                                                    <option value="N3">N3</option>
-                                                    <option value="N2">N2</option>
-                                                    <option value="N1">N1</option>
-                                                </select>
-                                            </div>
-                                        </>
-                                    )}
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>Level</label>
+                                                        <select
+                                                            className={cx("select")}
+                                                            value={formState.level}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    level: e.target.value,
+                                                                }))
+                                                            }
+                                                        >
+                                                            <option value="N5">N5</option>
+                                                            <option value="N4">N4</option>
+                                                            <option value="N3">N3</option>
+                                                            <option value="N2">N2</option>
+                                                            <option value="N1">N1</option>
+                                                        </select>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        <div className={cx("formActions")}>
+                                            <Button
+                                                outline
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowAddForm(false);
+                                                    setEditingItem(null);
+                                                }}
+                                            >
+                                                Hủy
+                                            </Button>
+                                            <Button primary type="submit">
+                                                {editingItem ? "Cập nhật" : "Thêm"}
+                                            </Button>
+                                        </div>
+                                    </form>
                                 </div>
-
-                                <div className={cx("formActions")}>
-                                    <Button primary type="submit">
-                                        {editingItem ? "Cập nhật" : "Thêm"}
-                                    </Button>
-                                    <Button
-                                        outline
-                                        type="button"
-                                        onClick={() => {
-                                            setShowAddForm(false);
-                                            setEditingItem(null);
-                                        }}
-                                    >
-                                        Hủy
-                                    </Button>
-                                </div>
-                            </form>
-                        </Card>
-                    )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* SEARCH & FILTER */}
-                    <Card className={cx("filterCard")}>
+                    <motion.div
+                        className={cx("filterCard")}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, ease: easeOut, delay: 0.1 }}
+                    >
                         <div className={cx("filterRow")}>
                             <div className={cx("searchWrapper")}>
+                                <FontAwesomeIcon
+                                    icon={faMagnifyingGlass}
+                                    className={cx("searchIcon")}
+                                />
                                 <Input
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -684,130 +828,220 @@ function DictionaryAdmin() {
                                 <option value="N1">N1</option>
                             </select>
                         </div>
-                    </Card>
+                    </motion.div>
 
                     {/* LIST */}
-                    <div className={cx("list")}>
+                    <motion.div
+                        className={cx("list")}
+                        initial="hidden"
+                        animate={filteredItems.length > 0 ? "show" : "hidden"}
+                        variants={{
+                            hidden: {},
+                            show: {
+                                transition: { staggerChildren: 0.04, delayChildren: 0.05 },
+                            },
+                        }}
+                        key={activeTab}
+                    >
                         {filteredItems.map((item) => {
                             if (!item) return null;
 
+                            const levelLower = (item.level || "n5").toLowerCase();
+
                             if (activeTab === "words") {
                                 return (
-                                    <Card key={item._id} className={cx("wordCard")}>
-                                        <div className={cx("wordHeader")}>
-                                            <div className={cx("wordInfo")}>
-                                                <div className={cx("wordTitleRow")}>
-                                                    <h3 className={cx("wordTitle")}>{item.word}</h3>
-                                                    <span className={cx("badge", "badgeLevel")}>{item.level}</span>
-                                                    <span className={cx("badge")}>{item.type}</span>
+                                    <motion.div
+                                        key={item._id}
+                                        className={cx("itemCard", levelLower)}
+                                        variants={{
+                                            hidden: { opacity: 0, y: 14 },
+                                            show: {
+                                                opacity: 1,
+                                                y: 0,
+                                                transition: { duration: 0.35, ease: easeOut },
+                                            },
+                                        }}
+                                    >
+                                        <div className={cx("itemHeader")}>
+                                            <div className={cx("itemInfo")}>
+                                                <div className={cx("itemTitleRow")}>
+                                                    <h3 className={cx("itemTitle")}>{item.word}</h3>
+                                                    <span
+                                                        className={cx(
+                                                            "badge",
+                                                            "badgeLevel",
+                                                            levelLower,
+                                                        )}
+                                                    >
+                                                        {item.level}
+                                                    </span>
+                                                    {item.type && (
+                                                        <span className={cx("badge", "badgeType")}>
+                                                            {item.type}
+                                                        </span>
+                                                    )}
                                                 </div>
 
-                                                <p className={cx("romaji")}>{(item.phonetic || []).join(" ・ ")}</p>
+                                                <p className={cx("romaji")}>
+                                                    {(item.phonetic || []).join(" ・ ")}
+                                                </p>
 
                                                 <p className={cx("meaning")}>
-                                                    {(item.meanings || []).map((m) => m.meaning).join(", ")}
+                                                    {(item.meanings || [])
+                                                        .map((m) => m.meaning)
+                                                        .join(", ")}
                                                 </p>
                                             </div>
 
                                             <div className={cx("actions")}>
-                                                <Button
-                                                    outline
-                                                    rounded
-                                                    leftIcon={<FontAwesomeIcon icon={faPenToSquare} />}
+                                                <button
+                                                    type="button"
+                                                    className={cx("editBtn")}
                                                     onClick={() => openEditForm(item)}
-                                                />
-
-                                                <Button
-                                                    outline
-                                                    rounded
-                                                    className={cx("dangerBtn")}
-                                                    leftIcon={<FontAwesomeIcon icon={faTrash} />}
+                                                >
+                                                    <FontAwesomeIcon icon={faPenToSquare} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={cx("deleteBtn")}
                                                     onClick={() => handleDelete(item._id)}
-                                                />
+                                                >
+                                                    <FontAwesomeIcon icon={faTrash} />
+                                                </button>
                                             </div>
                                         </div>
-                                    </Card>
+                                    </motion.div>
                                 );
                             }
 
                             if (activeTab === "grammar") {
                                 return (
-                                    <Card key={item._id} className={cx("wordCard")}>
-                                        <div className={cx("wordHeader")}>
-                                            <div className={cx("wordInfo")}>
-                                                <div className={cx("wordTitleRow")}>
-                                                    <h3 className={cx("wordTitle")}>{item.title}</h3>
-                                                    <span className={cx("badge", "badgeLevel")}>{item.level}</span>
+                                    <motion.div
+                                        key={item._id}
+                                        className={cx("itemCard", levelLower)}
+                                        variants={{
+                                            hidden: { opacity: 0, y: 14 },
+                                            show: {
+                                                opacity: 1,
+                                                y: 0,
+                                                transition: { duration: 0.35, ease: easeOut },
+                                            },
+                                        }}
+                                    >
+                                        <div className={cx("itemHeader")}>
+                                            <div className={cx("itemInfo")}>
+                                                <div className={cx("itemTitleRow")}>
+                                                    <h3 className={cx("itemTitle")}>{item.title}</h3>
+                                                    <span
+                                                        className={cx(
+                                                            "badge",
+                                                            "badgeLevel",
+                                                            levelLower,
+                                                        )}
+                                                    >
+                                                        {item.level}
+                                                    </span>
                                                 </div>
 
                                                 <p className={cx("meaning")}>{item.mean}</p>
                                             </div>
 
                                             <div className={cx("actions")}>
-                                                <Button
-                                                    outline
-                                                    rounded
-                                                    leftIcon={<FontAwesomeIcon icon={faPenToSquare} />}
+                                                <button
+                                                    type="button"
+                                                    className={cx("editBtn")}
                                                     onClick={() => openEditForm(item)}
-                                                />
-
-                                                <Button
-                                                    outline
-                                                    rounded
-                                                    className={cx("dangerBtn")}
-                                                    leftIcon={<FontAwesomeIcon icon={faTrash} />}
+                                                >
+                                                    <FontAwesomeIcon icon={faPenToSquare} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={cx("deleteBtn")}
                                                     onClick={() => handleDelete(item._id)}
-                                                />
+                                                >
+                                                    <FontAwesomeIcon icon={faTrash} />
+                                                </button>
                                             </div>
                                         </div>
-                                    </Card>
+                                    </motion.div>
                                 );
                             }
 
                             return (
-                                <Card key={item._id} className={cx("wordCard")}>
-                                    <div className={cx("wordHeader")}>
-                                        <div className={cx("wordInfo")}>
-                                            <div className={cx("wordTitleRow")}>
-                                                <h3 className={cx("wordTitle")}>{item.kanji}</h3>
-                                                <span className={cx("badge", "badgeLevel")}>{item.level}</span>
+                                <motion.div
+                                    key={item._id}
+                                    className={cx("itemCard", "kanjiCard", levelLower)}
+                                    variants={{
+                                        hidden: { opacity: 0, y: 14 },
+                                        show: {
+                                            opacity: 1,
+                                            y: 0,
+                                            transition: { duration: 0.35, ease: easeOut },
+                                        },
+                                    }}
+                                >
+                                    <div className={cx("itemHeader")}>
+                                        <div className={cx("kanjiGlyph", levelLower)}>
+                                            {item.kanji}
+                                        </div>
+                                        <div className={cx("itemInfo")}>
+                                            <div className={cx("itemTitleRow")}>
+                                                <h3 className={cx("itemTitle")}>{item.mean}</h3>
+                                                <span
+                                                    className={cx(
+                                                        "badge",
+                                                        "badgeLevel",
+                                                        levelLower,
+                                                    )}
+                                                >
+                                                    {item.level}
+                                                </span>
                                             </div>
-
-                                            <p className={cx("romaji")}>{item.mean}</p>
                                             <p className={cx("meaning")}>{item.detail}</p>
-
-                                            <p className={cx("romaji")}>
-                                                Kun: {item.kun} · On: {item.on} · Strokes: {item.stroke_count}
-                                            </p>
+                                            <div className={cx("kanjiMeta")}>
+                                                <span>
+                                                    Kun: <strong>{item.kun || "—"}</strong>
+                                                </span>
+                                                <span>
+                                                    On: <strong>{item.on || "—"}</strong>
+                                                </span>
+                                                <span>
+                                                    Strokes:{" "}
+                                                    <strong>{item.stroke_count || "—"}</strong>
+                                                </span>
+                                            </div>
                                         </div>
 
                                         <div className={cx("actions")}>
-                                            <Button
-                                                outline
-                                                rounded
-                                                leftIcon={<FontAwesomeIcon icon={faPenToSquare} />}
+                                            <button
+                                                type="button"
+                                                className={cx("editBtn")}
                                                 onClick={() => openEditForm(item)}
-                                            />
-
-                                            <Button
-                                                outline
-                                                rounded
-                                                className={cx("dangerBtn")}
-                                                leftIcon={<FontAwesomeIcon icon={faTrash} />}
+                                            >
+                                                <FontAwesomeIcon icon={faPenToSquare} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={cx("deleteBtn")}
                                                 onClick={() => handleDelete(item._id)}
-                                            />
+                                            >
+                                                <FontAwesomeIcon icon={faTrash} />
+                                            </button>
                                         </div>
                                     </div>
-                                </Card>
+                                </motion.div>
                             );
                         })}
 
                         {filteredItems.length === 0 && (
                             <Card className={cx("emptyCard")}>
+                                <div className={cx("emptyIcon")}>
+                                    <FontAwesomeIcon icon={faMagnifyingGlass} />
+                                </div>
                                 <p className={cx("emptyText")}>Không tìm thấy mục phù hợp</p>
                             </Card>
                         )}
-                    </div>
+                    </motion.div>
                 </div>
             </main>
         </div>

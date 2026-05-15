@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import classNames from "classnames/bind";
+import { motion } from "framer-motion";
 import styles from "./AdminPosts.module.scss";
 
 import Card from "~/components/Card";
@@ -9,8 +10,9 @@ import UserHeader from "~/components/UserHeader/UserHeader";
 import AdminPostsFilters from "~/components/AdminPostFilter/AdminPostsFilters";
 import AdminPostCard from "~/components/AdminPostCard/AdminPostCard";
 
-
 const cx = classNames.bind(styles);
+
+const easeOut = [0.22, 1, 0.36, 1];
 
 function AdminPosts() {
   const [posts, setPosts] = useState([]);
@@ -46,14 +48,10 @@ function AdminPosts() {
         } else if (categoryFilter !== "all") {
           data = await postService.getPostsByCategory(categoryFilter, page, 50);
         } else {
-            console.log("cccccccc", categoryFilter);
-            
           data = await postService.getPosts(page, 50);
         }
         setPosts(data.data.data || []);
         setCountComment(data.data.countComment);
-        console.log("cccccccccc", data);
-        
         setTotalPosts(data.data?.total || 0);
       } catch (err) {
         console.error("Error loading posts:", err);
@@ -97,45 +95,95 @@ function AdminPosts() {
 
   return (
     <div className={cx("wrapper")}>
+      <motion.div
+        className={cx("blob1")}
+        animate={{ y: [0, -22, 0], x: [0, 12, 0] }}
+        transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className={cx("blob2")}
+        animate={{ y: [0, 18, 0], x: [0, -14, 0] }}
+        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+      />
+
       <main className={cx("main")}>
         <div className={cx("inner")}>
-          <UserHeader
-            filteredCount={filteredPosts.length}
-            total={totalPosts}
-            page='bài viết'
-          />
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: easeOut }}
+          >
+            <UserHeader
+              filteredCount={filteredPosts.length}
+              total={totalPosts}
+              page="bài viết"
+            />
+          </motion.div>
 
-          <AdminPostsFilters
-            searchQuery={searchQuery}
-            categoryFilter={categoryFilter}
-            categories={categories}
-            onSearchChange={setSearchQuery}
-            onCategoryChange={setCategoryFilter}
-          />
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: easeOut, delay: 0.1 }}
+          >
+            <AdminPostsFilters
+              searchQuery={searchQuery}
+              categoryFilter={categoryFilter}
+              categories={categories}
+              onSearchChange={setSearchQuery}
+              onCategoryChange={setCategoryFilter}
+            />
+          </motion.div>
 
           {loading && (
-            <Card className={cx("emptyCard")}>
+            <Card className={cx("loadingCard")}>
+              <div className={cx("loadingRing")} />
               <p className={cx("emptyText")}>Đang tải dữ liệu...</p>
             </Card>
           )}
 
           {!loading && (
-            <div className={cx("list")}>
+            <motion.div
+              className={cx("list")}
+              initial="hidden"
+              animate={filteredPosts.length > 0 ? "show" : "hidden"}
+              variants={{
+                hidden: {},
+                show: {
+                  transition: { staggerChildren: 0.06, delayChildren: 0.05 },
+                },
+              }}
+            >
               {filteredPosts.map((post) => (
-                <AdminPostCard
+                <motion.div
                   key={post._id}
-                  post={post}
-                  commentCount={countComment.find((x) => x._id === post._id)?.totalComment || 0}
-                  onDelete={handleDeletePost}
-                />
+                  variants={{
+                    hidden: { opacity: 0, y: 18 },
+                    show: {
+                      opacity: 1,
+                      y: 0,
+                      transition: { duration: 0.45, ease: easeOut },
+                    },
+                  }}
+                >
+                  <AdminPostCard
+                    post={post}
+                    commentCount={
+                      countComment.find((x) => x._id === post._id)
+                        ?.totalComment || 0
+                    }
+                    onDelete={handleDeletePost}
+                  />
+                </motion.div>
               ))}
 
               {filteredPosts.length === 0 && (
                 <Card className={cx("emptyCard")}>
-                  <p className={cx("emptyText")}>Không tìm thấy bài viết nào phù hợp</p>
+                  <p className={cx("emptyText")}>
+                    Không tìm thấy bài viết nào phù hợp
+                  </p>
                 </Card>
               )}
-            </div>
+            </motion.div>
           )}
         </div>
       </main>
