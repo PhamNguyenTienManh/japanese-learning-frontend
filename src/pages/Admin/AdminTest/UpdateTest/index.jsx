@@ -229,7 +229,6 @@ function EditTest() {
             }
         }
 
-        const index = questions.findIndex((q) => q.id === questionId);
         setQuestions((prev) => prev.filter((q) => q.id !== questionId));
         if (currentQuestionIndex >= questions.length - 1) {
             setCurrentQuestionIndex(Math.max(0, questions.length - 2));
@@ -523,7 +522,8 @@ function EditTest() {
             <div className={cx("wrapper")}>
                 <main className={cx("main")}>
                     <div className={cx("container")}>
-                        <div style={{ textAlign: "center", padding: "40px" }}>
+                        <div className={cx("loadingState")}>
+                            <div className={cx("loadingRing")} />
                             <p>Đang tải dữ liệu...</p>
                         </div>
                     </div>
@@ -533,6 +533,16 @@ function EditTest() {
     }
 
     const currentQuestion = questions[currentQuestionIndex];
+    const subQuestionTotal = questions.reduce(
+        (total, question) => total + question.subQuestions.length,
+        0
+    );
+    const currentQuestionTypeLabel =
+        currentQuestion?.type === "vocab"
+            ? "Từ vựng"
+            : currentQuestion?.type === "grammar"
+                ? "Ngữ pháp, Đọc hiểu"
+                : "Thi nghe";
 
     // PHẦN RETURN CỦA EditTest Component
 
@@ -540,16 +550,33 @@ function EditTest() {
         <div className={cx("wrapper")}>
             <main className={cx("main")}>
                 <div className={cx("container")}>
-                    {/* Header */}
                     <div className={cx("header")}>
                         <Link to="/admin/tests" className={cx("backLink")}>
                             <FontAwesomeIcon icon={faArrowLeft} className={cx("backIcon")} />
                             <span>Quay lại quản lý đề thi</span>
                         </Link>
-                        <h1 className={cx("title")}>Chỉnh sửa đề thi</h1>
-                        <p className={cx("subtitle")}>
-                            Cập nhật thông tin đề thi và câu hỏi
-                        </p>
+                        <div className={cx("headerMain")}>
+                            <div className={cx("titleBlock")}>
+                                <span className={cx("eyebrow")}>Quản trị đề thi</span>
+                                <h1 className={cx("title")}>
+                                    Chỉnh sửa <span className={cx("titleAccent")}>đề thi</span>
+                                </h1>
+                                <p className={cx("subtitle")}>
+                                    Cập nhật thông tin đề thi, chỉnh sửa câu hỏi và xem trước nội dung trước khi lưu.
+                                </p>
+                            </div>
+
+                            <div className={cx("headerStats")}>
+                                <div className={cx("statPill", "tonePrimary")}>
+                                    <span className={cx("statValue")}>{questions.length}</span>
+                                    <span className={cx("statLabel")}>Câu chính</span>
+                                </div>
+                                <div className={cx("statPill", "toneOrange")}>
+                                    <span className={cx("statValue")}>{subQuestionTotal}</span>
+                                    <span className={cx("statLabel")}>Câu con</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Test Info */}
@@ -793,6 +820,7 @@ function EditTest() {
                                     <div className={cx("editorHeader")}>
                                         <h3 className={cx("editorTitle")}>
                                             Chỉnh sửa Câu {currentQuestionIndex + 1}
+                                            <span>{currentQuestionTypeLabel}</span>
                                         </h3>
                                         {questions.length > 1 && (
                                             <Button
@@ -829,7 +857,7 @@ function EditTest() {
                                     <div className={cx("field")}>
                                         <div className={cx("labelWrapper")}>
                                             <label className={cx("label")}>
-                                                "Nội dung chung (đoạn văn / phần mô tả)"
+                                                Nội dung chung
                                             </label>
                                             <span className={cx("requiredStar")}>*</span>
                                         </div>
@@ -855,7 +883,7 @@ function EditTest() {
                                         {currentQuestion.type === "listening" && (
                                             <div>
                                                 <label className={cx("label")}>
-                                                    "Nội dung phần nghe"
+                                                    Nội dung phần nghe
                                                 </label>
                                                 <textarea
                                                     placeholder="Nhập nội dung phần nghe..."

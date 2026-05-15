@@ -1,27 +1,36 @@
+$ink: #0f2a2a;
+$ink-soft: #5b7575;
+$soft-border: #dff1ea;
+$soft-tint: #e6f7f2;
+
 .row {
-  border-bottom: 1px solid #e5e7eb;
-  transition: background 0.12s ease;
+  border-bottom: 1px solid $soft-border;
+  transition: background 0.18s ease;
 
   &:last-child {
     border-bottom: none;
   }
 
   &:hover {
-    background: #f9fafb;
+    background: rgba(0, 135, 154, 0.04);
   }
 }
 
 .td {
-  padding: 16px;
+  padding: 14px 18px;
   font-size: 14px;
   vertical-align: middle;
 }
 
 .tdText {
   font-size: 13px;
+  color: $ink-soft;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-/* User info */
+/* ============ USER CELL ============ */
+
 .userCell {
   display: flex;
   align-items: center;
@@ -29,78 +38,94 @@
 }
 
 .avatar {
-  height: 40px;
-  width: 40px;
+  height: 42px;
+  width: 42px;
   border-radius: 999px;
   object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 12px -4px rgba(0, 135, 154, 0.25);
+  flex-shrink: 0;
 }
 
 .userName {
-  font-weight: 600;
+  font-weight: 700;
+  color: $ink;
+  margin: 0;
+  font-size: 14px;
 }
 
 .userEmail {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 12px;
+  color: $ink-soft;
+  margin: 2px 0 0;
 }
 
-/* Badges */
+/* ============ BADGES ============ */
+
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
 }
 
 .badgeActive {
-  background: rgba(34, 197, 94, 0.06);
-  color: #16a34a;
-  border-color: rgba(34, 197, 94, 0.2);
+  background: linear-gradient(135deg, #d9f5ec, #a8efd9);
+  color: #1aa284;
 }
 
 .badgeBanned {
-  background: rgba(239, 68, 68, 0.06);
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.2);
+  background: linear-gradient(135deg, #fde2e2, #ffc1c1);
+  color: #e53e3e;
 }
 
 .badgeProvider {
-  background: rgba(147, 51, 234, 0.06);
-  color: #9333ea;
-  border-color: rgba(147, 51, 234, 0.2);
+  background: $soft-tint;
+  color: var(--primary);
+  text-transform: capitalize;
 }
 
 .badgeIcon {
-  font-size: 12px;
+  font-size: 10px;
 }
 
-/* Role select */
+/* ============ ROLE SELECT ============ */
+
 .roleSelect {
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  font-size: 13px;
-  font-weight: 500;
+  padding: 7px 32px 7px 12px;
+  border-radius: 10px;
+  border: 1.5px solid $soft-border;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300879a' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  color: $ink;
   outline: none;
   cursor: pointer;
-  transition: all 0.15s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color 0.15s ease, background-color 0.15s, box-shadow 0.15s;
 
   &:hover {
-    border-color: #9ca3af;
+    border-color: var(--primary-low);
+    background-color: $soft-tint;
   }
 
   &:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 135, 154, 0.15);
   }
 }
 
-/* Actions */
+/* ============ ACTIONS ============ */
+
 .actions {
   display: flex;
   align-items: center;
@@ -109,38 +134,47 @@
 }
 
 .actionButton {
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  min-width: auto;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.15s ease;
+  padding: 7px 14px !important;
+  min-width: auto !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  border-radius: 999px !important;
+  transition: all 0.18s ease;
 
   svg {
-    font-size: 13px;
+    font-size: 11px;
   }
 }
 
 .banButton {
-  background: rgba(239, 68, 68, 0.06);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: #fff !important;
+  color: #e53e3e !important;
+  border: 1.5px solid #ffc1c1 !important;
+  box-shadow: 0 2px 0 rgba(229, 62, 62, 0.06);
 
   &:hover {
-    background: rgba(239, 68, 68, 0.12);
-    border-color: rgba(239, 68, 68, 0.3);
+    background: linear-gradient(135deg, #ff7a7a, #e53e3e) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+    box-shadow: 0 6px 14px -8px rgba(229, 62, 62, 0.55);
+    transform: translateY(-1px);
   }
 }
 
 .unlockButton {
-  background: rgba(34, 197, 94, 0.06);
-  color: #16a34a;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: #fff !important;
+  color: #1aa284 !important;
+  border: 1.5px solid #a8efd9 !important;
+  box-shadow: 0 2px 0 rgba(26, 162, 132, 0.06);
 
   &:hover {
-    background: rgba(34, 197, 94, 0.12);
-    border-color: rgba(34, 197, 94, 0.3);
+    background: linear-gradient(135deg, #5fd0b1, #1aa284) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+    box-shadow: 0 6px 14px -8px rgba(26, 162, 132, 0.55);
+    transform: translateY(-1px);
   }
 }
