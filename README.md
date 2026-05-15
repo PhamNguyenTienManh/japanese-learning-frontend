@@ -1,6 +1,6 @@
 # 📘 Japanese Learning Support System
 
-Hệ thống hỗ trợ học tiếng Nhật – Đồ án môn học  
+Hệ thống hỗ trợ học tiếng Nhật 
 (Frontend + Backend)
 
 ---
