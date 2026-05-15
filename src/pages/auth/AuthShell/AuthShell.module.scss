@@ -1,0 +1,258 @@
+$ink: #0f2a2a;
+$ink-soft: #5b7575;
+$soft-bg: #f0fbf7;
+$soft-border: #dff1ea;
+$soft-tint: #e6f7f2;
+$soft-mint: #a8efd9;
+
+.wrapper {
+  min-height: 100vh;
+  width: 100%;
+  background: $soft-bg;
+  color: $ink;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  font-family: inherit;
+}
+
+/* ============ LEFT BRAND PANEL ============ */
+.brand {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--primary) 0%, #0a6a78 60%, #053f4a 100%);
+  color: #fff;
+  padding: 56px 56px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.brand .blobA,
+.brand .blobB {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(2px);
+}
+
+.brand .blobA {
+  width: 380px;
+  height: 380px;
+  top: -120px;
+  right: -120px;
+  background: radial-gradient(circle, rgba(168, 239, 217, 0.45), transparent 70%);
+}
+
+.brand .blobB {
+  width: 320px;
+  height: 320px;
+  bottom: -80px;
+  left: -60px;
+  background: radial-gradient(circle, rgba(255, 209, 102, 0.28), transparent 70%);
+}
+
+.brandTop {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brandLogo {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: -0.4px;
+}
+
+.brandLogoAccent {
+  color: var(--orange);
+}
+
+.brandMain {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  margin: 32px 0;
+}
+
+.brandHero {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -3px;
+  opacity: 0.95;
+}
+
+.brandHeroAccent {
+  color: var(--orange);
+}
+
+.brandTitle {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.6px;
+  margin: 0;
+  max-width: 420px;
+}
+
+.brandSub {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.82);
+  max-width: 420px;
+  margin: 0;
+}
+
+.brandFeatures {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.brandFeature {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.brandFeatureIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.brandFooter {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ============ RIGHT FORM PANEL ============ */
+.formPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 56px;
+  background: #fff;
+  position: relative;
+  overflow-y: auto;
+}
+
+.formInner {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: $ink-soft;
+  text-decoration: none;
+  margin-bottom: 32px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: $soft-tint;
+  width: fit-content;
+  transition: all 0.15s;
+
+  &:hover {
+    background: $soft-mint;
+    color: var(--primary-hover);
+  }
+}
+
+.header {
+  margin-bottom: 28px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  color: $ink;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: $ink-soft;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1024px) {
+  .brand {
+    padding: 40px 36px;
+  }
+
+  .brandHero {
+    font-size: 72px;
+  }
+
+  .brandTitle {
+    font-size: 26px;
+  }
+
+  .formPanel {
+    padding: 40px 36px;
+  }
+}
+
+@media (max-width: 860px) {
+  .wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .brand {
+    padding: 32px 24px;
+    min-height: 200px;
+  }
+
+  .brandMain {
+    margin: 16px 0;
+    gap: 16px;
+  }
+
+  .brandHero {
+    display: none;
+  }
+
+  .brandTitle {
+    font-size: 22px;
+  }
+
+  .brandFeatures {
+    display: none;
+  }
+
+  .brandFooter {
+    display: none;
+  }
+
+  .formPanel {
+    padding: 32px 20px 48px;
+  }
+}

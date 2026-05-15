@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft, faLock } from "@fortawesome/free-solid-svg-icons";
+import { faLock } from "@fortawesome/free-solid-svg-icons";
 
 import styles from "./resetPass.module.scss";
-import Button from "~/components/Button";
+import AuthShell from "~/pages/auth/AuthShell";
 import Input from "~/components/Input";
-import Card from "~/components/Card";
 import authService from "~/services/authService";
 import { useToast } from "~/context/ToastContext";
 
@@ -66,27 +65,33 @@ function ResetPassword() {
     };
 
     return (
-        <div className={cx("wrapper")}>
-            <Card className={"auth"}>
-                <Button
-                    to="/login"
-                    back
-                    leftIcon={<FontAwesomeIcon icon={faArrowLeft} />}
-                >
-                    Quay lại đăng nhập
-                </Button>
-
-                <div className={cx("header")}>
-                    <h1>Đặt lại mật khẩu</h1>
-                    <p>Nhập mật khẩu mới cho tài khoản của bạn</p>
+        <AuthShell
+            title="Tạo mật khẩu mới 🔒"
+            subtitle="Chọn một mật khẩu mạnh để bảo vệ tài khoản của bạn."
+            backTo="/login"
+            backLabel="Quay lại đăng nhập"
+            brandTitle="Bước cuối — tạo mật khẩu mới."
+            brandSub="Một mật khẩu mạnh sẽ giúp tài khoản của bạn an toàn hơn."
+            features={[
+                { icon: "🔐", label: "Tối thiểu 8 ký tự" },
+                { icon: "🅰️", label: "Kết hợp chữ hoa, chữ thường và số" },
+                { icon: "✨", label: "Thêm ký tự đặc biệt để tăng độ mạnh" },
+            ]}
+        >
+            {email && (
+                <div className={cx("callout")}>
+                    Đặt lại mật khẩu cho tài khoản <strong>{email}</strong>
                 </div>
+            )}
 
-                <form onSubmit={handleSubmit} className={cx("form")}>
-                    <div className={cx("form-group")}>
-                        <label htmlFor="newPassword">Mật khẩu mới</label>
+            <form onSubmit={handleSubmit} className={cx("form")}>
+                <div className={cx("form-group")}>
+                    <label className={cx("label")} htmlFor="newPassword">Mật khẩu mới</label>
+                    <div className={cx("inputWrap")}>
                         <Input
                             type="password"
                             name="newPassword"
+                            id="newPassword"
                             placeholder="••••••••"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
@@ -95,14 +100,17 @@ function ResetPassword() {
                             required
                             disabled={isLoading}
                         />
-                        <p className={cx("hint-text")}>Tối thiểu 8 ký tự</p>
                     </div>
+                    <p className={cx("hint-text")}>Tối thiểu 8 ký tự</p>
+                </div>
 
-                    <div className={cx("form-group")}>
-                        <label htmlFor="confirmPassword">Xác nhận mật khẩu</label>
+                <div className={cx("form-group")}>
+                    <label className={cx("label")} htmlFor="confirmPassword">Xác nhận mật khẩu</label>
+                    <div className={cx("inputWrap")}>
                         <Input
                             type="password"
                             name="confirmPassword"
+                            id="confirmPassword"
                             placeholder="••••••••"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -112,15 +120,13 @@ function ResetPassword() {
                             disabled={isLoading}
                         />
                     </div>
+                </div>
 
-                    <div style={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
-                        <Button primary type="submit" disabled={isLoading}>
-                            {isLoading ? "Đang xử lý..." : "Đặt lại mật khẩu"}
-                        </Button>
-                    </div>
-                </form>
-            </Card>
-        </div>
+                <button type="submit" className={cx("submit")} disabled={isLoading}>
+                    {isLoading ? "Đang xử lý..." : "Đặt lại mật khẩu"}
+                </button>
+            </form>
+        </AuthShell>
     );
 }
 

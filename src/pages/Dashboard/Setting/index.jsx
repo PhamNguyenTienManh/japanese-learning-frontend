@@ -15,10 +15,12 @@ import {
   faPen,
 } from "@fortawesome/free-solid-svg-icons";
 import { getProfile, updateProfile, updateAvatar } from "~/services/profileService";
+import { useAuth } from "~/context/AuthContext";
 
 const cx = classNames.bind(styles);
 
 function Setting() {
+  const { refreshProfile } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [bio, setBio] = useState("");
@@ -187,6 +189,8 @@ function Setting() {
 
       // Fetch lại profile để đảm bảo dữ liệu đồng bộ với server
       await fetchProfileData();
+      // Đồng bộ avatar + tên trong header
+      refreshProfile?.();
 
       // Clear success message after 3 seconds
       setTimeout(() => setSuccessMessage(""), 3000);

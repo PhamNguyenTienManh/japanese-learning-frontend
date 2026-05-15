@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
+import { motion, AnimatePresence } from "framer-motion";
 import styles from "./ChatAI.module.scss";
 
 import Card from "~/components/Card";
@@ -16,6 +17,7 @@ import {
   faComments,
   faLightbulb,
   faArrowRight,
+  faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import config from "~/config";
 
@@ -35,6 +37,18 @@ const suggestedPrompts = [
   "Sự khác biệt giữa は và が là gì?",
   "Luyện hội thoại đặt món ăn ở nhà hàng",
 ];
+
+const easeOut = [0.22, 1, 0.36, 1];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: easeOut } },
+};
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+};
 
 function ChatAI() {
   const [messages, setMessages] = useState([]);
@@ -65,9 +79,7 @@ function ChatAI() {
   };
 
   useEffect(() => {
-    // Chỉ scroll khi có message mới và không đang loading
     if (messages.length > 0 && !isLoading) {
-      // Delay nhỏ để đảm bảo DOM đã render xong
       const timeoutId = setTimeout(() => {
         scrollToBottom();
       }, 100);
@@ -76,9 +88,9 @@ function ChatAI() {
     }
   }, [messages, isLoading]);
 
-  // Khởi tạo session khi component mount
   useEffect(() => {
     initializeSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initializeSession = async () => {
@@ -94,35 +106,27 @@ function ChatAI() {
             timestamp: new Date(),
           },
         ]);
-        setIsInitializing(false); // Kết thúc trạng thái loading
-        return; // Không init session nếu chưa login
+        setIsInitializing(false);
+        return;
       }
-      // Gọi API để lấy session cuối cùng của user
-      console.log("Fetching user's last session...");
       const sessionResponse = await getUserLastSession();
 
-      // Kiểm tra xem có session hay không
       if (sessionResponse && sessionResponse.success && sessionResponse.data) {
-        // ĐÃ CÓ SESSION - Load lịch sử
         const sessionData = sessionResponse.data;
-        console.log("Found existing session:", sessionData._id);
-        console.log("Session messages:", sessionData.messages); // Debug messages
         setSessionId(sessionData._id);
 
         if (sessionData.messages && sessionData.messages.length > 0) {
-          // Format messages từ API
           const formattedMessages = sessionData.messages
-            .filter((msg) => msg && msg.content) // Lọc bỏ messages không hợp lệ
+            .filter((msg) => msg && msg.content)
             .map((msg, index) => ({
               id: msg._id || index.toString(),
-              role: msg.role === "ai" ? "assistant" : msg.role, // Chuyển "ai" thành "assistant"
+              role: msg.role === "ai" ? "assistant" : msg.role,
               content: msg.content,
               timestamp: new Date(msg.timestamp),
               actions: Array.isArray(msg.actions) ? msg.actions : [],
             }));
           setMessages(formattedMessages);
         } else {
-          // Session có nhưng chưa có tin nhắn
           setMessages([
             {
               id: "welcome",
@@ -134,8 +138,6 @@ function ChatAI() {
           ]);
         }
       } else {
-        // CHƯA CÓ SESSION - Tạo mới
-        console.log("No existing session, creating new one...");
         const newSessionResponse = await createSession();
 
         if (
@@ -145,9 +147,7 @@ function ChatAI() {
         ) {
           const newSessionData = newSessionResponse.data;
           setSessionId(newSessionData._id);
-          console.log("Created new session:", newSessionData._id);
 
-          // Hiển thị message chào mừng
           setMessages([
             {
               id: "welcome",
@@ -162,10 +162,8 @@ function ChatAI() {
     } catch (error) {
       console.error("Error initializing session:", error);
 
-      // Nếu lỗi là do chưa có session (404 hoặc data null), thử tạo mới
       if (error.message.includes("404") || error.message.includes("null")) {
         try {
-          console.log("Creating new session after error...");
           const newSessionResponse = await createSession();
 
           if (
@@ -187,7 +185,6 @@ function ChatAI() {
           }
         } catch (createError) {
           console.error("Error creating session:", createError);
-          // Set sessionId tạm để không block UI
           setSessionId(`temp-${Date.now()}`);
 
           setMessages([
@@ -201,7 +198,6 @@ function ChatAI() {
           ]);
         }
       } else {
-        // Lỗi khác
         setSessionId(`temp-${Date.now()}`);
 
         setMessages([
@@ -243,7 +239,7 @@ function ChatAI() {
     const ensureAssistantMessage = (initialContent) => {
       if (assistantCreated) return;
       assistantCreated = true;
-      setIsLoading(false); // ẩn typing dots khi token đầu tiên đến
+      setIsLoading(false);
       setMessages((prev) => [
         ...prev,
         {
@@ -278,7 +274,6 @@ function ChatAI() {
         prev.map((m) => {
           if (m.id !== assistantId) return m;
           const existing = m.actions || [];
-          // tránh duplicate cùng notebookId
           if (
             existing.some(
               (a) =>
@@ -309,7 +304,6 @@ function ChatAI() {
               ),
             );
           }
-          // Đồng bộ actions cuối cùng từ server (đảm bảo không miss)
           if (Array.isArray(event?.actions) && event.actions.length > 0) {
             setMessages((prev) =>
               prev.map((m) => {
@@ -342,7 +336,6 @@ function ChatAI() {
       });
 
       if (!assistantCreated && !streamErrored) {
-        // Stream kết thúc nhưng không nhận được chunk nào và không có lỗi
         ensureAssistantMessage("Xin lỗi, mình chưa có phản hồi phù hợp.");
       }
     } catch (error) {
@@ -364,13 +357,11 @@ function ChatAI() {
     }
   };
 
-  // Hàm tạo cuộc trò chuyện mới
   const handleNewChat = async () => {
     try {
       setIsInitializing(true);
       setMessages([]);
 
-      // Tạo session mới
       const newSessionResponse = await createSession();
 
       if (
@@ -397,18 +388,24 @@ function ChatAI() {
     }
   };
 
-  // Hiển thị loading khi đang khởi tạo
   if (isInitializing) {
     return (
       <div className={cx("wrapper")}>
+        <div className={cx("blob1")} />
+        <div className={cx("blob2")} />
         <main className={cx("main")}>
           <div className={cx("container")}>
             <div className={cx("header")}>
               <div className={cx("header-title")}>
-                <FontAwesomeIcon icon={faRobot} className={cx("header-icon")} />
+                <span className={cx("header-icon-wrap")}>
+                  <FontAwesomeIcon icon={faRobot} className={cx("header-icon")} />
+                </span>
                 <h1>AI Chat</h1>
               </div>
-              <p className={cx("header-subtitle")}>Đang khởi tạo...</p>
+              <p className={cx("header-subtitle")}>Đang khởi tạo phiên...</p>
+              <div className={cx("loaderBar")}>
+                <span />
+              </div>
             </div>
           </div>
         </main>
@@ -416,25 +413,34 @@ function ChatAI() {
     );
   }
 
-  // Nếu user đã đăng nhập nhưng chưa là premium -> hiển thị CTA nâng cấp
   if (isLoggedIn && !isPremium) {
     return (
-      <div className={cx("wrapper")}> 
+      <div className={cx("wrapper")}>
+        <div className={cx("blob1")} />
+        <div className={cx("blob2")} />
         <main className={cx("main")}>
-          <div className={cx("container")}> 
-            <div className={cx("header")}> 
+          <div className={cx("container")}>
+            <div className={cx("header")}>
               <div className={cx("header-title")}>
-                <FontAwesomeIcon icon={faRobot} className={cx("header-icon")} />
+                <span className={cx("header-icon-wrap")}>
+                  <FontAwesomeIcon icon={faRobot} className={cx("header-icon")} />
+                </span>
                 <h1>AI Chat</h1>
               </div>
-              <p className={cx("header-subtitle")}>Tính năng này là nâng cao. Vui lòng nâng cấp để sử dụng không giới hạn.</p>
+              <p className={cx("header-subtitle")}>
+                Tính năng nâng cao. Nâng cấp để sử dụng không giới hạn.
+              </p>
             </div>
 
             <Card className={cx("upgrade-card")}>
               <p>Bạn chưa mở khoá tính năng Chat AI nâng cao.</p>
               <div className={cx("upgrade-actions")}>
-                <Button to={`/payment?plan=Pro`} primary>Nâng cấp lên Pro</Button>
-                <Button to="/" outline>Quay lại</Button>
+                <Button to={`/payment?plan=Pro`} primary>
+                  Nâng cấp lên Pro
+                </Button>
+                <Button to="/" outline>
+                  Quay lại
+                </Button>
               </div>
             </Card>
           </div>
@@ -445,231 +451,332 @@ function ChatAI() {
 
   return (
     <div className={cx("wrapper")}>
+      <motion.div
+        className={cx("blob1")}
+        animate={{ y: [0, -22, 0], x: [0, 14, 0] }}
+        transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className={cx("blob2")}
+        animate={{ y: [0, 18, 0], x: [0, -12, 0] }}
+        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+      />
+
       <main className={cx("main")}>
         <div className={cx("container")}>
           {/* Header */}
-          <div className={cx("header")}>
-            <div className={cx("header-title")}>
-              <FontAwesomeIcon icon={faRobot} className={cx("header-icon")} />
-              <h1>AI Chat</h1>
-            </div>
-            <p className={cx("header-subtitle")}>
-              Trợ lý AI học tiếng Nhật của bạn
-            </p>
-          </div>
+          <motion.div
+            className={cx("header")}
+            initial="hidden"
+            animate="show"
+            variants={stagger}
+          >
+            <motion.div className={cx("header-title")} variants={fadeUp}>
+              <motion.span
+                className={cx("header-icon-wrap")}
+                animate={{ y: [0, -3, 0] }}
+                transition={{
+                  duration: 2.4,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <FontAwesomeIcon icon={faRobot} className={cx("header-icon")} />
+              </motion.span>
+              <h1>
+                AI <span className={cx("title-accent")}>Chat</span>
+              </h1>
+            </motion.div>
+            <motion.p className={cx("header-subtitle")} variants={fadeUp}>
+              Trợ lý AI học tiếng Nhật của bạn — học, hỏi, trò chuyện 24/7
+            </motion.p>
+            <motion.div className={cx("header-actions")} variants={fadeUp}>
+              <button
+                type="button"
+                className={cx("newChatBtn")}
+                onClick={handleNewChat}
+                disabled={isLoading}
+              >
+                <FontAwesomeIcon icon={faPlus} />
+                <span>Cuộc trò chuyện mới</span>
+              </button>
+            </motion.div>
+          </motion.div>
 
           {/* Chat */}
-          <Card className={cx("chat-card")}>
-            {/* Messages */}
-            <div className={cx("messages")}>
-              {messages.map((message) => {
-                const isUser = message.role === "user";
+          <motion.div
+            className={cx("chat-shell")}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: easeOut, delay: 0.1 }}
+          >
+            <div className={cx("chat-card")}>
+              {/* Messages */}
+              <div className={cx("messages")}>
+                <AnimatePresence initial={false}>
+                  {messages.map((message) => {
+                    const isUser = message.role === "user";
 
-                return (
-                  <div
-                    key={message.id}
-                    className={cx("message-row", { user: isUser })}
+                    return (
+                      <motion.div
+                        key={message.id}
+                        layout
+                        className={cx("message-row", { user: isUser })}
+                        initial={{
+                          opacity: 0,
+                          y: 12,
+                          x: isUser ? 18 : -18,
+                        }}
+                        animate={{ opacity: 1, y: 0, x: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.35, ease: easeOut }}
+                      >
+                        <div
+                          className={cx("avatar", {
+                            "avatar-user": isUser,
+                            "avatar-assistant": !isUser,
+                          })}
+                        >
+                          <FontAwesomeIcon
+                            icon={isUser ? faUser : faRobot}
+                            className={cx("avatar-icon")}
+                          />
+                        </div>
+
+                        <div
+                          className={cx("message-body", {
+                            "message-body-user": isUser,
+                            "message-body-assistant": !isUser,
+                          })}
+                        >
+                          <div
+                            className={cx("bubble", {
+                              "bubble-user": isUser,
+                              "bubble-assistant": !isUser,
+                            })}
+                          >
+                            <p className={cx("bubble-text")}>
+                              {(message.content || "")
+                                .split("\n")
+                                .map((line, i) => (
+                                  <span key={i}>
+                                    {line}
+                                    {i <
+                                      (message.content || "").split("\n")
+                                        .length -
+                                        1 && <br />}
+                                  </span>
+                                ))}
+                            </p>
+                          </div>
+                          {!isUser &&
+                            Array.isArray(message.actions) &&
+                            message.actions.length > 0 && (
+                              <div className={cx("message-actions")}>
+                                {message.actions.map((action, idx) => (
+                                  <motion.button
+                                    key={`${action.type}-${action.notebookId || idx}`}
+                                    type="button"
+                                    className={cx("message-action-btn")}
+                                    onClick={() => handleActionClick(action)}
+                                    whileHover={{ y: -1 }}
+                                    whileTap={{ scale: 0.97 }}
+                                  >
+                                    <FontAwesomeIcon icon={faBookOpen} />
+                                    <span>
+                                      {action.label || "Xem sổ tay"}
+                                    </span>
+                                    <FontAwesomeIcon icon={faArrowRight} />
+                                  </motion.button>
+                                ))}
+                              </div>
+                            )}
+                          <span className={cx("timestamp")}>
+                            {(() => {
+                              const now = new Date();
+                              const msgDate = new Date(message.timestamp);
+
+                              const isToday =
+                                now.getFullYear() === msgDate.getFullYear() &&
+                                now.getMonth() === msgDate.getMonth() &&
+                                now.getDate() === msgDate.getDate();
+
+                              if (isToday) {
+                                return msgDate.toLocaleTimeString("vi-VN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                });
+                              } else {
+                                return msgDate.toLocaleString("vi-VN", {
+                                  year: "numeric",
+                                  month: "2-digit",
+                                  day: "2-digit",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                });
+                              }
+                            })()}
+                          </span>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+
+                {isLoading && (
+                  <motion.div
+                    className={cx("message-row")}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25 }}
                   >
-                    {/* Avatar */}
-                    <div
-                      className={cx("avatar", {
-                        "avatar-user": isUser,
-                        "avatar-assistant": !isUser,
-                      })}
-                    >
+                    <div className={cx("avatar", "avatar-assistant")}>
                       <FontAwesomeIcon
-                        icon={isUser ? faUser : faRobot}
+                        icon={faRobot}
                         className={cx("avatar-icon")}
                       />
                     </div>
-
-                    {/* Content */}
-                    <div
-                      className={cx("message-body", {
-                        "message-body-user": isUser,
-                        "message-body-assistant": !isUser,
-                      })}
-                    >
-                      <div
-                        className={cx("bubble", {
-                          "bubble-user": isUser,
-                          "bubble-assistant": !isUser,
-                        })}
-                      >
-                        <p className={cx("bubble-text")}>
-                          {(message.content || "")
-                            .split("\n")
-                            .map((line, i) => (
-                              <span key={i}>
-                                {line}
-                                {i <
-                                  (message.content || "").split("\n").length -
-                                  1 && <br />}
-                              </span>
-                            ))}
-                        </p>
+                    <div className={cx("typing-bubble")}>
+                      <div className={cx("typing-dots")}>
+                        <span />
+                        <span />
+                        <span />
                       </div>
-                      {!isUser &&
-                        Array.isArray(message.actions) &&
-                        message.actions.length > 0 && (
-                          <div className={cx("message-actions")}>
-                            {message.actions.map((action, idx) => (
-                              <button
-                                key={`${action.type}-${action.notebookId || idx}`}
-                                type="button"
-                                className={cx("message-action-btn")}
-                                onClick={() => handleActionClick(action)}
-                              >
-                                <FontAwesomeIcon icon={faBookOpen} />
-                                <span>{action.label || "Xem sổ tay"}</span>
-                                <FontAwesomeIcon icon={faArrowRight} />
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      <span className={cx("timestamp")}>
-                        {(() => {
-                          const now = new Date();
-                          const msgDate = new Date(message.timestamp);
-
-                          const isToday =
-                            now.getFullYear() === msgDate.getFullYear() &&
-                            now.getMonth() === msgDate.getMonth() &&
-                            now.getDate() === msgDate.getDate();
-
-                          if (isToday) {
-                            // Chỉ hiển thị giờ và phút
-                            return msgDate.toLocaleTimeString("vi-VN", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            });
-                          } else {
-                            // Hiển thị ngày + giờ
-                            return msgDate.toLocaleString("vi-VN", {
-                              year: "numeric",
-                              month: "2-digit",
-                              day: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            });
-                          }
-                        })()}
-                      </span>
                     </div>
-                  </div>
-                );
-              })}
+                  </motion.div>
+                )}
 
-              {isLoading && (
-                <div className={cx("message-row")}>
-                  <div className={cx("avatar", "avatar-assistant")}>
-                    <FontAwesomeIcon
-                      icon={faRobot}
-                      className={cx("avatar-icon")}
-                    />
-                  </div>
-                  <div className={cx("typing-bubble")}>
-                    <div className={cx("typing-dots")}>
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                  </div>
-                </div>
-              )}
+                <div ref={messagesEndRef} />
+              </div>
 
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Suggested prompts */}
-            {messages.length <= 1 && (
-              <div className={cx("suggestions")}>
-                <p className={cx("suggestions-title")}>
-                  <FontAwesomeIcon
-                    icon={faLightbulb}
-                    className={cx("suggestions-icon")}
-                  />
-                  Gợi ý câu hỏi:
-                </p>
-                <div className={cx("suggestions-grid")}>
-                  {suggestedPrompts.map((prompt, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      className={cx("suggestion-btn")}
-                      onClick={() => handleSend(prompt)}
-                      disabled={isLoading}
+              {/* Suggested prompts */}
+              <AnimatePresence>
+                {messages.length <= 1 && (
+                  <motion.div
+                    className={cx("suggestions")}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.4, ease: easeOut }}
+                  >
+                    <p className={cx("suggestions-title")}>
+                      <FontAwesomeIcon
+                        icon={faLightbulb}
+                        className={cx("suggestions-icon")}
+                      />
+                      Gợi ý câu hỏi
+                    </p>
+                    <motion.div
+                      className={cx("suggestions-grid")}
+                      variants={stagger}
+                      initial="hidden"
+                      animate="show"
                     >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+                      {suggestedPrompts.map((prompt, index) => (
+                        <motion.button
+                          key={index}
+                          type="button"
+                          className={cx("suggestion-btn")}
+                          onClick={() => handleSend(prompt)}
+                          disabled={isLoading}
+                          variants={fadeUp}
+                          whileHover={{ y: -2 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <span className={cx("suggestion-text")}>{prompt}</span>
+                          <FontAwesomeIcon
+                            icon={faArrowRight}
+                            className={cx("suggestion-arrow")}
+                          />
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-            {/* Input */}
-            <div className={cx("input-area")}>
-              <div className={cx("input-row")}>
-                <Input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Nhập câu hỏi của bạn..."
-                  className={cx("chat-input")}
-                  disabled={isLoading || !sessionId}
-                />
-                <Button
-                  primary
-                  className={cx("chat")}
-                  onClick={() => handleSend()}
-                  disabled={!input.trim() || isLoading || !sessionId}
-                  leftIcon={<FontAwesomeIcon icon={faPaperPlane} />}
-                />
+              {/* Input */}
+              <div className={cx("input-area")}>
+                <div className={cx("input-row")}>
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Nhập câu hỏi của bạn..."
+                    className={cx("chat-input")}
+                    disabled={isLoading || !sessionId}
+                  />
+                  <motion.button
+                    type="button"
+                    className={cx("sendBtn")}
+                    onClick={() => handleSend()}
+                    disabled={!input.trim() || isLoading || !sessionId}
+                    whileHover={
+                      !isLoading && input.trim() ? { scale: 1.05 } : {}
+                    }
+                    whileTap={
+                      !isLoading && input.trim() ? { scale: 0.95 } : {}
+                    }
+                  >
+                    <FontAwesomeIcon icon={faPaperPlane} />
+                  </motion.button>
+                </div>
+                <p className={cx("input-note")}>
+                  Nhấn <kbd>Enter</kbd> để gửi, <kbd>Shift</kbd> + <kbd>Enter</kbd>{" "}
+                  để xuống dòng
+                </p>
               </div>
-              <p className={cx("input-note")}>
-                Nhấn Enter để gửi, Shift + Enter để xuống dòng
-              </p>
             </div>
-          </Card>
+          </motion.div>
 
           {/* Feature cards */}
-          <div className={cx("features")}>
-            <Card className={cx("feature-card")}>
-              <div className={cx("feature-icon-wrap")}>
-                <FontAwesomeIcon
-                  icon={faBookOpen}
-                  className={cx("feature-icon")}
-                />
-              </div>
-              <div>
-                <p className={cx("feature-title")}>Giải thích ngữ pháp</p>
-                <p className={cx("feature-subtitle")}>Chi tiết và dễ hiểu</p>
-              </div>
-            </Card>
-
-            <Card className={cx("feature-card")}>
-              <div className={cx("feature-icon-wrap")}>
-                <FontAwesomeIcon
-                  icon={faComments}
-                  className={cx("feature-icon")}
-                />
-              </div>
-              <div>
-                <p className={cx("feature-title")}>Luyện hội thoại</p>
-                <p className={cx("feature-subtitle")}>Thực hành giao tiếp</p>
-              </div>
-            </Card>
-
-            <Card className={cx("feature-card")}>
-              <div className={cx("feature-icon-wrap")}>
-                <FontAwesomeIcon icon={faStar} className={cx("feature-icon")} />
-              </div>
-              <div>
-                <p className={cx("feature-title")}>Sửa lỗi câu văn</p>
-                <p className={cx("feature-subtitle")}>Cải thiện kỹ năng</p>
-              </div>
-            </Card>
-          </div>
+          <motion.div
+            className={cx("features")}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={stagger}
+          >
+            {[
+              {
+                icon: faBookOpen,
+                title: "Giải thích ngữ pháp",
+                subtitle: "Chi tiết và dễ hiểu",
+                tone: "teal",
+              },
+              {
+                icon: faComments,
+                title: "Luyện hội thoại",
+                subtitle: "Thực hành giao tiếp",
+                tone: "orange",
+              },
+              {
+                icon: faStar,
+                title: "Sửa lỗi câu văn",
+                subtitle: "Cải thiện kỹ năng",
+                tone: "yellow",
+              },
+            ].map((f) => (
+              <motion.div
+                key={f.title}
+                className={cx("feature-card")}
+                variants={fadeUp}
+                whileHover={{ y: -4 }}
+                transition={{ type: "spring", stiffness: 320, damping: 20 }}
+              >
+                <div className={cx("feature-icon-wrap", `tone-${f.tone}`)}>
+                  <FontAwesomeIcon
+                    icon={f.icon}
+                    className={cx("feature-icon")}
+                  />
+                </div>
+                <div>
+                  <p className={cx("feature-title")}>{f.title}</p>
+                  <p className={cx("feature-subtitle")}>{f.subtitle}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </main>
     </div>

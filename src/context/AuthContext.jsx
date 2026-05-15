@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import decodeToken from "~/services/pairToken";
+import { getProfile } from "~/services/profileService";
 
 const AuthContext = createContext(null);
 
@@ -10,11 +11,10 @@ const EMPTY_AUTH = {
   email: null,
   exp: null,
   isPremium: false,
+  name: null,
+  avatar: null,
 };
 
-// Đọc auth state từ localStorage một cách synchronous —
-// dùng cho useState initializer để render đầu tiên đã có giá trị đúng,
-// tránh case các trang phụ thuộc isLoggedIn render trước khi useEffect chạy.
 function readAuthFromStorage() {
   if (typeof window === "undefined") return EMPTY_AUTH;
   const token = localStorage.getItem("token");
@@ -30,6 +30,8 @@ function readAuthFromStorage() {
       email: payload.email || null,
       exp: payload.exp || null,
       isPremium: localStorage.getItem("isPremium") === "true",
+      name: localStorage.getItem("userName") || null,
+      avatar: localStorage.getItem("userAvatar") || null,
     };
   } catch (err) {
     console.error("Token decode failed:", err);
@@ -40,9 +42,32 @@ function readAuthFromStorage() {
 export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(readAuthFromStorage);
 
-  const loadAuth = () => {
+  const loadAuth = useCallback(() => {
     setAuth(readAuthFromStorage());
-  };
+  }, []);
+
+  const fetchUserProfile = useCallback(async () => {
+    if (!localStorage.getItem("token")) return;
+    try {
+      const profile = await getProfile();
+      const data = profile?.data;
+      if (!data) return;
+
+      const name = data.name || "";
+      const avatar = data.image_url || "";
+      localStorage.setItem("userName", name);
+      localStorage.setItem("userAvatar", avatar);
+
+      setAuth((prev) => ({ ...prev, name, avatar }));
+    } catch (err) {
+      console.error("Failed to load user profile:", err);
+    }
+  }, []);
+
+  const refreshAuth = useCallback(() => {
+    loadAuth();
+    fetchUserProfile();
+  }, [loadAuth, fetchUserProfile]);
 
   const logout = () => {
     localStorage.clear();
@@ -58,13 +83,22 @@ export function AuthProvider({ children }) {
     return () => {
       window.removeEventListener("storage", loadAuth);
     };
-  }, []);
+  }, [loadAuth]);
+
+  // Fetch profile whenever we transition into a logged-in state
+  useEffect(() => {
+    if (auth.isLoggedIn && (!auth.name || !auth.avatar)) {
+      fetchUserProfile();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.isLoggedIn]);
 
   return (
     <AuthContext.Provider
       value={{
         ...auth,
-        refreshAuth: loadAuth,
+        refreshAuth,
+        refreshProfile: fetchUserProfile,
         logout,
         isAdmin,
         hasRole,

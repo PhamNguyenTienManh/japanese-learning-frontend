@@ -1,21 +1,9 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import classNames from "classnames/bind";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-    faArrowLeft,
-    faMagnifyingGlass,
-    faBan,
-    faCircleCheck,
-    faLock,
-    faLockOpen,
-} from "@fortawesome/free-solid-svg-icons";
+import { motion } from "framer-motion";
 
-import Card from "~/components/Card";
 import Button from "~/components/Button";
-import Input from "~/components/Input";
 import { userApi } from "~/services/userService";
-import { USER_ROLES, USER_STATUS, PROVIDER_LABELS } from "~/services/userConstants";
 
 import styles from "./User.module.scss";
 import UserHeader from "~/components/UserHeader/UserHeader";
@@ -23,6 +11,8 @@ import UserFilters from "~/components/UserFilters/UserFilters";
 import UserTable from "~/components/UserTable/UserTable";
 
 const cx = classNames.bind(styles);
+
+const easeOut = [0.22, 1, 0.36, 1];
 
 function User() {
   const [users, setUsers] = useState([]);
@@ -56,7 +46,7 @@ function User() {
       const response = await userApi.updateUserStatus(userId, newStatus);
       if (response.success) {
         setUsers((prev) =>
-          prev.map((u) => (u._id === userId ? { ...u, status: newStatus } : u))
+          prev.map((u) => (u._id === userId ? { ...u, status: newStatus } : u)),
         );
         alert(response.data.message);
       }
@@ -71,7 +61,7 @@ function User() {
       const response = await userApi.updateUserRole(userId, newRole);
       if (response.success) {
         setUsers((prev) =>
-          prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u))
+          prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u)),
         );
         alert(response.data.message);
       }
@@ -89,18 +79,19 @@ function User() {
       (user.email || "").toLowerCase().includes(q);
     const matchStatus =
       statusFilter === "all" || user.status === statusFilter;
-    const matchRole =
-      roleFilter === "all" || user.role === roleFilter;
+    const matchRole = roleFilter === "all" || user.role === roleFilter;
     return matchSearch && matchStatus && matchRole;
   });
-
 
   if (loading) {
     return (
       <div className={cx("wrapper")}>
         <main className={cx("main")}>
           <div className={cx("inner")}>
-            <div className={cx("loading")}>Đang tải...</div>
+            <div className={cx("loading")}>
+              <div className={cx("loadingRing")} />
+              <p>Đang tải danh sách người dùng...</p>
+            </div>
           </div>
         </main>
       </div>
@@ -112,8 +103,12 @@ function User() {
       <div className={cx("wrapper")}>
         <main className={cx("main")}>
           <div className={cx("inner")}>
-            <div className={cx("error")}>{error}</div>
-            <Button onClick={fetchUsers}>Thử lại</Button>
+            <div className={cx("errorState")}>
+              <p>{error}</p>
+              <Button primary onClick={fetchUsers}>
+                Thử lại
+              </Button>
+            </div>
           </div>
         </main>
       </div>
@@ -122,22 +117,57 @@ function User() {
 
   return (
     <div className={cx("wrapper")}>
+      <motion.div
+        className={cx("blob1")}
+        animate={{ y: [0, -22, 0], x: [0, 12, 0] }}
+        transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className={cx("blob2")}
+        animate={{ y: [0, 18, 0], x: [0, -14, 0] }}
+        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+      />
+
       <main className={cx("main")}>
         <div className={cx("inner")}>
-          <UserHeader total={users.length} filteredCount={filteredUsers.length} page='người dùng' />
-          <UserFilters
-            searchQuery={searchQuery}
-            statusFilter={statusFilter}
-            roleFilter={roleFilter}
-            onSearchChange={setSearchQuery}
-            onStatusChange={setStatusFilter}
-            onRoleChange={setRoleFilter}
-          />
-          <UserTable
-            users={filteredUsers}
-            onToggleStatus={handleToggleStatus}
-            onChangeRole={handleChangeRole}
-          />
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: easeOut }}
+          >
+            <UserHeader
+              total={users.length}
+              filteredCount={filteredUsers.length}
+              page="người dùng"
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: easeOut, delay: 0.1 }}
+          >
+            <UserFilters
+              searchQuery={searchQuery}
+              statusFilter={statusFilter}
+              roleFilter={roleFilter}
+              onSearchChange={setSearchQuery}
+              onStatusChange={setStatusFilter}
+              onRoleChange={setRoleFilter}
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: easeOut, delay: 0.18 }}
+          >
+            <UserTable
+              users={filteredUsers}
+              onToggleStatus={handleToggleStatus}
+              onChangeRole={handleChangeRole}
+            />
+          </motion.div>
         </div>
       </main>
     </div>

@@ -1,9 +1,9 @@
 // TestRunner.jsx
 import { useState, useRef, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import classNames from "classnames/bind";
+import { motion } from "framer-motion";
 import styles from "./TestRunner.module.scss";
-import Card from "~/components/Card";
 import Button from "~/components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -12,11 +12,22 @@ import {
   faChevronRight,
   faPlay,
   faPause,
+  faPaperPlane,
+  faSave,
+  faAngleRight,
 } from "@fortawesome/free-solid-svg-icons";
-import { getExamDetail, saveAnswers, submitExam, resumeExam, saveProgress } from "~/services/examService";
+import {
+  getExamDetail,
+  saveAnswers,
+  submitExam,
+  resumeExam,
+  saveProgress,
+} from "~/services/examService";
 import PopupModal from "~/components/Popup";
 
 const cx = classNames.bind(styles);
+
+const easeOut = [0.22, 1, 0.36, 1];
 
 function AudioPlayer({ src }) {
   const audioRef = useRef(null);
@@ -69,9 +80,14 @@ function AudioPlayer({ src }) {
     <div className={cx("audio-player")}>
       <audio ref={audioRef} src={src} />
       <div className={cx("audio-controls")}>
-        <button onClick={togglePlay} className={cx("audio-play-btn")}>
+        <motion.button
+          onClick={togglePlay}
+          className={cx("audio-play-btn")}
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.94 }}
+        >
           <FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />
-        </button>
+        </motion.button>
         <div className={cx("audio-progress-wrapper")}>
           <div className={cx("audio-progress-bar")} onClick={handleSeek}>
             <div
@@ -92,6 +108,9 @@ function AudioPlayer({ src }) {
 function TestRunner() {
   const { testId, level } = useParams();
   const navigate = useNavigate();
+  const upperLevel = level?.toUpperCase();
+  const lowerLevel = level?.toLowerCase();
+
   const [examData, setExamData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -105,16 +124,10 @@ function TestRunner() {
   const [examTitle, setExamTitle] = useState("");
   const [progressRestored, setProgressRestored] = useState(false);
 
-  // Hiển thị PopupModal
   const [showConfirm, setShowConfirm] = useState(false);
-
-  // Hiển thị popup xác nhận thoát
   const [showConfirmExit, setShowConfirmExit] = useState(false);
-
-  // Hiển thị popup xác nhận lưu bài
   const [showConfirmSave, setShowConfirmSave] = useState(false);
 
-  // Chặn reload + đóng tab
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       e.preventDefault();
@@ -128,12 +141,11 @@ function TestRunner() {
     };
   }, []);
 
-  // Chặn nút Back
   useEffect(() => {
     const handlePopState = () => {
-      setShowConfirmExit(true); // mở popup
+      setShowConfirmExit(true);
       setShowConfirm(false);
-      window.history.pushState(null, "", window.location.href); // giữ lại trang
+      window.history.pushState(null, "", window.location.href);
     };
 
     window.history.pushState(null, "", window.location.href);
@@ -144,12 +156,14 @@ function TestRunner() {
     };
   }, []);
 
-  // Khi người dùng nhấn "Lưu và thoát" → lưu tiến trình rồi điều hướng
   const confirmExit = async () => {
     setShowConfirmExit(false);
     if (examResultId && examData.length > 0) {
       try {
-        const totalTime = examData.reduce((sum, part) => sum + part.time * 60, 0);
+        const totalTime = examData.reduce(
+          (sum, part) => sum + part.time * 60,
+          0,
+        );
         const elapsed = Math.max(0, totalTime - timeRemaining);
         await saveProgress(examResultId, elapsed);
       } catch (err) {
@@ -159,14 +173,10 @@ function TestRunner() {
     navigate(`/practice/${level}`);
   };
 
-  // Khi nhấn hủy → đóng popup
   const cancelExit = () => {
     setShowConfirmExit(false);
   };
 
-
-
-  // Lấy examResultId từ localStorage khi component mount
   useEffect(() => {
     const savedExamResultId = localStorage.getItem("currentExamResultId");
     if (savedExamResultId) {
@@ -176,7 +186,6 @@ function TestRunner() {
     }
   }, []);
 
-  // Fetch exam data
   useEffect(() => {
     const fetchExamData = async () => {
       try {
@@ -186,13 +195,6 @@ function TestRunner() {
         if (response.success && response.data) {
           setExamData(response.data.parts);
           setExamTitle(response.data.exam.title);
-
-          // Calculate total time from all parts
-          const totalTime = response.data.parts.reduce(
-            (sum, part) => sum + part.time * 60,
-            0
-          );
-          //setTimeRemaining(totalTime);
         } else {
           setError("Không thể tải dữ liệu bài thi");
         }
@@ -209,18 +211,19 @@ function TestRunner() {
     }
   }, [testId]);
 
-  // Khôi phục tiến trình (đáp án + thời gian) khi resume
   useEffect(() => {
     if (!examResultId || examData.length === 0 || progressRestored) return;
 
     const restoreProgress = async () => {
-      const totalTime = examData.reduce((sum, part) => sum + part.time * 60, 0);
+      const totalTime = examData.reduce(
+        (sum, part) => sum + part.time * 60,
+        0,
+      );
       try {
         const response = await resumeExam(examResultId);
         if (response.success && response.data) {
           const { elapsed, answers: savedAnswers } = response.data;
 
-          // Khôi phục đáp án đã lưu (dựa trên subQuestionIndex)
           const restoredAnswers = {};
           if (savedAnswers && savedAnswers.length > 0) {
             savedAnswers.forEach((partAnswer) => {
@@ -242,13 +245,11 @@ function TestRunner() {
             setAnswers(restoredAnswers);
           }
 
-          // Luôn set thời gian còn lại dựa trên elapsed (kể cả khi elapsed = 0)
           const elapsedNum = Number(elapsed) || 0;
           setTimeRemaining(Math.max(0, totalTime - elapsedNum));
         } else {
-      // ✅ Nếu API lỗi/không có data → fallback về totalTime
-      setTimeRemaining(totalTime);
-    }
+          setTimeRemaining(totalTime);
+        }
       } catch (err) {
         console.error("Không thể khôi phục tiến trình:", err);
         setTimeRemaining(totalTime);
@@ -260,14 +261,13 @@ function TestRunner() {
     restoreProgress();
   }, [examResultId, examData, progressRestored]);
 
-  // Timer - chỉ chạy SAU KHI khôi phục tiến trình xong (tránh race với restore)
   useEffect(() => {
     if (loading || examData.length === 0 || !progressRestored) return;
 
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
-          handleSubmit(); // Auto submit when time's up
+          handleSubmit();
           return 0;
         }
         return prev - 1;
@@ -275,17 +275,15 @@ function TestRunner() {
     }, 1000);
 
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, examData, progressRestored]);
 
-  // Hàm chuyển đổi answers sang format API
   const convertAnswersToAPIFormat = () => {
     const answersByPart = {};
 
-    // Group answers by part
     Object.keys(answers).forEach((key) => {
       const [questionId, contentIndex] = key.split("-");
 
-      // Find which part this question belongs to
       examData.forEach((part) => {
         const question = part.questions.find((q) => q._id === questionId);
         if (question) {
@@ -303,7 +301,6 @@ function TestRunner() {
       });
     });
 
-    // Convert to API format
     return Object.keys(answersByPart).map((partId) => ({
       examResultId,
       partId,
@@ -323,11 +320,8 @@ function TestRunner() {
     const newAnswers = { ...answers, [answerKey]: optionIndex };
     setAnswers(newAnswers);
 
-    // Auto-save answer to API
     try {
       const currentPart = examData[currentPartIndex];
-
-      // Gom TẤT CẢ các câu hỏi đã trả lời trong part hiện tại
       const answersInPart = [];
 
       currentPart.questions.forEach((question) => {
@@ -345,7 +339,6 @@ function TestRunner() {
           }
         });
 
-        // Chỉ thêm vào nếu câu hỏi này có ít nhất 1 subAnswer
         if (subAnswers.length > 0) {
           answersInPart.push({
             questionId: question._id,
@@ -354,7 +347,6 @@ function TestRunner() {
         }
       });
 
-      // Chỉ gọi API nếu có ít nhất 1 câu trả lời trong part
       if (answersInPart.length > 0) {
         const apiData = {
           examResultId,
@@ -396,7 +388,6 @@ function TestRunner() {
     setCurrentQuestionIndex(0);
   };
 
-  // Mở popup xác nhận lưu bài
   const handleConfirmSave = () => {
     if (!examResultId) {
       alert("Không tìm thấy phiên làm bài!");
@@ -405,12 +396,10 @@ function TestRunner() {
     setShowConfirmSave(true);
   };
 
-  // Đóng popup xác nhận lưu
   const cancelSave = () => {
     setShowConfirmSave(false);
   };
 
-  // Lưu bài + thoát ra trang luyện thi (manual save)
   const handleSaveAndExit = async () => {
     if (!examResultId) {
       alert("Không tìm thấy phiên làm bài!");
@@ -427,12 +416,13 @@ function TestRunner() {
         await saveAnswers(apiData);
       }
 
-      // Lưu elapsed time để có thể resume đúng thời gian
-      const totalTime = examData.reduce((sum, part) => sum + part.time * 60, 0);
+      const totalTime = examData.reduce(
+        (sum, part) => sum + part.time * 60,
+        0,
+      );
       const elapsed = Math.max(0, totalTime - timeRemaining);
       await saveProgress(examResultId, elapsed);
 
-      // Thoát về trang luyện thi
       navigate(`/practice/${level}`);
     } catch (error) {
       console.error("Lỗi khi lưu bài:", error);
@@ -446,35 +436,23 @@ function TestRunner() {
     setShowConfirm(true);
   };
 
-  // Hàm nộp bài
   const handleSubmit = async () => {
     if (!examResultId) {
       alert("Không tìm thấy phiên làm bài!");
       return;
     }
 
-    // const confirmSubmit = window.confirm(
-    //   "Bạn có chắc chắn muốn nộp bài? Sau khi nộp bạn không thể thay đổi câu trả lời."
-    // );
-
-    // if (!confirmSubmit) return;
-
     try {
       setIsSubmitting(true);
       setShowConfirm(false);
 
-      // Submit exam
       const response = await submitExam(examResultId);
 
       if (response.success) {
-        //alert("Nộp bài thành công!");
-
-        // Clear localStorage
         localStorage.removeItem("currentExamResultId");
         localStorage.removeItem("currentExamId");
         localStorage.removeItem("examStartTime");
 
-        // Navigate to results page
         navigate(`/practice/${level}/results/${testId}`);
       } else {
         throw new Error("Không thể nộp bài");
@@ -490,7 +468,6 @@ function TestRunner() {
   const handleCancel = () => {
     setShowConfirm(false);
   };
-
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -508,14 +485,13 @@ function TestRunner() {
     }, 0);
   };
 
-  // Loading state - chờ cả fetchExamData và restoreProgress xong mới render UI
-  // (tránh flash 90:00 trước khi restore set đúng giá trị thời gian)
   if (loading || (examResultId && !progressRestored)) {
     return (
-      <div className={cx("wrapper")}>
+      <div className={cx("wrapper", lowerLevel)}>
         <main className={cx("main")}>
           <div className={cx("container")}>
             <div className={cx("loading")}>
+              <div className={cx("loading-ring")} />
               <p>Đang tải bài thi...</p>
             </div>
           </div>
@@ -524,13 +500,12 @@ function TestRunner() {
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className={cx("wrapper")}>
+      <div className={cx("wrapper", lowerLevel)}>
         <main className={cx("main")}>
           <div className={cx("container")}>
-            <div className={cx("error")}>
+            <div className={cx("error-state")}>
               <p>{error}</p>
               <Button primary onClick={() => window.location.reload()}>
                 Thử lại
@@ -542,13 +517,12 @@ function TestRunner() {
     );
   }
 
-  // No data or empty questions
   if (!examData || examData.length === 0) {
     return (
-      <div className={cx("wrapper")}>
+      <div className={cx("wrapper", lowerLevel)}>
         <main className={cx("main")}>
           <div className={cx("container")}>
-            <div className={cx("error")}>
+            <div className={cx("error-state")}>
               <p>Không có dữ liệu bài thi</p>
             </div>
           </div>
@@ -559,17 +533,22 @@ function TestRunner() {
 
   const currentPart = examData[currentPartIndex];
 
-  // Check if current part has questions
   if (
     !currentPart ||
     !currentPart.questions ||
     currentPart.questions.length === 0
   ) {
     return (
-      <div className={cx("wrapper")}>
+      <div className={cx("wrapper", lowerLevel)}>
         <main className={cx("main")}>
           <div className={cx("container")}>
-            <div className={cx("breadcrumb")}>Thi thử / JLPT - N5 / {examTitle}</div>
+            <div className={cx("breadcrumb")}>
+              <Link to="/practice">Thi thử</Link>
+              <FontAwesomeIcon icon={faAngleRight} />
+              <Link to={`/practice/${lowerLevel}`}>JLPT - {upperLevel}</Link>
+              <FontAwesomeIcon icon={faAngleRight} />
+              <span>{examTitle}</span>
+            </div>
 
             <div className={cx("section-tabs")}>
               {examData.map((part, index) => (
@@ -586,7 +565,7 @@ function TestRunner() {
               ))}
             </div>
 
-            <div className={cx("error")}>
+            <div className={cx("error-state")}>
               <p>Phần này chưa có câu hỏi</p>
             </div>
           </div>
@@ -609,7 +588,6 @@ function TestRunner() {
           message="Tiến trình sẽ được lưu lại. Bạn có thể quay lại tiếp tục sau."
           confirmText="Lưu và thoát"
         />
-
       </div>
     );
   }
@@ -621,15 +599,60 @@ function TestRunner() {
     currentPartIndex === examData.length - 1 &&
     currentQuestionIndex === currentPart.questions.length - 1;
 
+  const totalAnswered = getTotalAnswered();
+  const totalQuestions = getTotalQuestions();
+  const progressPct = totalQuestions
+    ? (totalAnswered / totalQuestions) * 100
+    : 0;
+
+  const isLowTime = timeRemaining <= 300;
+  const isCriticalTime = timeRemaining <= 60;
+
   return (
-    <div className={cx("wrapper")}>
+    <div className={cx("wrapper", lowerLevel)}>
       <main className={cx("main")}>
         <div className={cx("container")}>
           {/* Breadcrumb */}
-          <div className={cx("breadcrumb")}>Thi thử / JLPT - N5 / {examTitle}</div>
+          <motion.div
+            className={cx("breadcrumb")}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: easeOut }}
+          >
+            <Link to="/practice">Thi thử</Link>
+            <FontAwesomeIcon icon={faAngleRight} />
+            <Link to={`/practice/${lowerLevel}`}>JLPT - {upperLevel}</Link>
+            <FontAwesomeIcon icon={faAngleRight} />
+            <span className={cx("breadcrumb-current")}>{examTitle}</span>
+          </motion.div>
+
+          {/* Progress strip */}
+          <motion.div
+            className={cx("progress-strip")}
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: easeOut, delay: 0.05 }}
+          >
+            <div className={cx("progress-track")}>
+              <motion.div
+                className={cx("progress-fill")}
+                initial={{ width: 0 }}
+                animate={{ width: `${progressPct}%` }}
+                transition={{ duration: 0.4, ease: easeOut }}
+              />
+            </div>
+            <span className={cx("progress-label")}>
+              {totalAnswered}/{totalQuestions} câu
+            </span>
+          </motion.div>
 
           {/* Section Tabs */}
-          <div className={cx("section-tabs")}>
+          <motion.div
+            className={cx("section-tabs")}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: easeOut, delay: 0.1 }}
+          >
             {examData.map((part, index) => (
               <button
                 key={part.partId}
@@ -642,12 +665,23 @@ function TestRunner() {
                 {part.partName}
               </button>
             ))}
-          </div>
+          </motion.div>
 
           <div className={cx("layout")}>
             {/* Left: Question */}
-            <div className={cx("left")}>
-              <Card className={cx("question-card")}>
+            <motion.div
+              className={cx("left")}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: easeOut, delay: 0.15 }}
+            >
+              <motion.div
+                key={`${currentPartIndex}-${currentQuestionIndex}`}
+                className={cx("question-card")}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: easeOut }}
+              >
                 {/* Question header */}
                 <div className={cx("question-header")}>
                   <div className={cx("badge-row")}>
@@ -670,19 +704,16 @@ function TestRunner() {
                   </h2>
                 </div>
 
-                {/* General Audio */}
                 {currentQuestion.general?.audio && (
                   <AudioPlayer src={currentQuestion.general.audio} />
                 )}
 
-                {/* General Text Read */}
                 {currentPartIndex === 1 && currentQuestion.general?.txt_read && (
                   <div className={cx("text-read-box")}>
                     <p>{currentQuestion.general.txt_read}</p>
                   </div>
                 )}
 
-                {/* General Image */}
                 {currentQuestion.general?.image && (
                   <div className={cx("general-image")}>
                     <img
@@ -692,36 +723,45 @@ function TestRunner() {
                   </div>
                 )}
 
-                {/* All Content Items */}
                 {currentQuestion.content.map((content, contentIndex) => {
                   const answerKey = `${currentQuestion._id}-${contentIndex}`;
 
                   return (
                     <div key={contentIndex} className={cx("content-section")}>
                       <p className={cx("content-question")}>
-                        {currentQuestionIndex + 1}.{contentIndex + 1}{" "}
+                        <span className={cx("content-num")}>
+                          {currentQuestionIndex + 1}.{contentIndex + 1}
+                        </span>{" "}
                         {content.question}
                       </p>
 
-                      {/* Content Image */}
                       {content.image && (
                         <div className={cx("content-image")}>
-                          <img src={content.image} alt="Content illustration" />
+                          <img
+                            src={content.image}
+                            alt="Content illustration"
+                          />
                         </div>
                       )}
 
-                      {/* Options */}
                       <div className={cx("options")}>
                         {content.answers.map((answer, optionIndex) => {
                           const selected = answers[answerKey] === optionIndex;
                           return (
-                            <button
+                            <motion.button
                               key={optionIndex}
                               type="button"
                               onClick={() =>
                                 handleAnswer(contentIndex, optionIndex)
                               }
                               className={cx("option", { selected })}
+                              whileHover={{ x: 3 }}
+                              whileTap={{ scale: 0.99 }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 400,
+                                damping: 26,
+                              }}
                             >
                               <div className={cx("option-inner")}>
                                 <div
@@ -730,14 +770,26 @@ function TestRunner() {
                                   })}
                                 >
                                   {selected && (
-                                    <div className={cx("option-radio-dot")} />
+                                    <motion.div
+                                      className={cx("option-radio-dot")}
+                                      initial={{ scale: 0 }}
+                                      animate={{ scale: 1 }}
+                                      transition={{
+                                        type: "spring",
+                                        stiffness: 500,
+                                        damping: 22,
+                                      }}
+                                    />
                                   )}
                                 </div>
+                                <span className={cx("option-letter")}>
+                                  {String.fromCharCode(65 + optionIndex)}
+                                </span>
                                 <span className={cx("option-label")}>
                                   {answer}
                                 </span>
                               </div>
-                            </button>
+                            </motion.button>
                           );
                         })}
                       </div>
@@ -745,7 +797,6 @@ function TestRunner() {
                   );
                 })}
 
-                {/* Navigation buttons */}
                 <div className={cx("nav-row")}>
                   <Button
                     outline
@@ -776,48 +827,76 @@ function TestRunner() {
                     Câu tiếp
                   </Button>
                 </div>
-              </Card>
-            </div>
+              </motion.div>
+            </motion.div>
 
             {/* Right: Sidebar */}
-            <aside className={cx("right")}>
+            <motion.aside
+              className={cx("right")}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: easeOut, delay: 0.2 }}
+            >
               {/* Time */}
-              <Card className={cx("time-card")}>
-                <p className={cx("time-label")}>Thời gian làm bài</p>
+              <div
+                className={cx("time-card", {
+                  low: isLowTime,
+                  critical: isCriticalTime,
+                })}
+              >
+                <p className={cx("time-label")}>Thời gian còn lại</p>
                 <div className={cx("time-row")}>
                   <FontAwesomeIcon icon={faClock} className={cx("time-icon")} />
                   <span className={cx("time-value")}>
                     {formatTime(timeRemaining)}
                   </span>
                 </div>
+                <div className={cx("time-progress")}>
+                  <div
+                    className={cx("time-progress-fill")}
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
                 <p className={cx("time-sub")}>
-                  Đã trả lời {getTotalAnswered()}/{getTotalQuestions()} câu
+                  Đã trả lời <strong>{totalAnswered}</strong>/{totalQuestions}{" "}
+                  câu
                 </p>
-              </Card>
+              </div>
 
               {/* Actions */}
               <div className={cx("action-buttons")}>
-                <Button
-                  primary
+                <motion.button
+                  type="button"
                   className={cx("submit-btn")}
                   onClick={handleConfirmSubmit}
                   disabled={isSubmitting}
+                  whileHover={!isSubmitting ? { y: -1 } : {}}
+                  whileTap={!isSubmitting ? { scale: 0.98 } : {}}
                 >
-                  {isSubmitting ? "Đang nộp..." : "Nộp bài"}
-                </Button>
-                <Button
-                  outline
+                  <FontAwesomeIcon icon={faPaperPlane} />
+                  <span>{isSubmitting ? "Đang nộp..." : "Nộp bài"}</span>
+                </motion.button>
+                <motion.button
+                  type="button"
                   className={cx("save-btn")}
                   onClick={handleConfirmSave}
                   disabled={isSaving}
+                  whileHover={!isSaving ? { y: -1 } : {}}
+                  whileTap={!isSaving ? { scale: 0.98 } : {}}
                 >
-                  {isSaving ? "Đang lưu..." : "Lưu bài"}
-                </Button>
+                  <FontAwesomeIcon icon={faSave} />
+                  <span>{isSaving ? "Đang lưu..." : "Lưu bài"}</span>
+                </motion.button>
               </div>
 
               {/* Question list */}
-              <Card className={cx("list-card")}>
-                <p className={cx("list-title")}>Danh sách câu hỏi</p>
+              <div className={cx("list-card")}>
+                <div className={cx("list-header")}>
+                  <p className={cx("list-title")}>Danh sách câu hỏi</p>
+                  <span className={cx("list-counter")}>
+                    {totalAnswered}/{totalQuestions}
+                  </span>
+                </div>
                 <div className={cx("list-sections")}>
                   {examData.map((part, pIdx) => (
                     <div key={part.partId} className={cx("list-section")}>
@@ -830,12 +909,11 @@ function TestRunner() {
                             pIdx === currentPartIndex &&
                             qIdx === currentQuestionIndex;
 
-                          // Check if all content in this question are answered
                           const allAnswered = question.content.every(
                             (_, cIdx) => {
                               const key = `${question._id}-${cIdx}`;
                               return answers[key] !== undefined;
-                            }
+                            },
                           );
 
                           return (
@@ -859,8 +937,22 @@ function TestRunner() {
                     </div>
                   ))}
                 </div>
-              </Card>
-            </aside>
+                <div className={cx("list-legend")}>
+                  <div className={cx("legend-item")}>
+                    <span className={cx("legend-dot", "answered")} />
+                    Đã làm
+                  </div>
+                  <div className={cx("legend-item")}>
+                    <span className={cx("legend-dot", "current")} />
+                    Hiện tại
+                  </div>
+                  <div className={cx("legend-item")}>
+                    <span className={cx("legend-dot")} />
+                    Chưa làm
+                  </div>
+                </div>
+              </div>
+            </motion.aside>
           </div>
         </div>
       </main>
@@ -891,7 +983,6 @@ function TestRunner() {
         message="Bài làm dở của bạn sẽ được lưu lại. Bạn có thể quay lại tiếp tục sau. Tiếp tục lưu và thoát?"
         confirmText="Lưu và thoát"
       />
-
     </div>
   );
 }

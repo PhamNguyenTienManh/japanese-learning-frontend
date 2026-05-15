@@ -41,10 +41,10 @@ import EditTest from "~/pages/Admin/AdminTest/UpdateTest";
 
 export const publicRouter = [
   { path: config.routes.home, component: Home },
-  { path: config.routes.login, component: LoginPage },
-  { path: config.routes.register, component: RegisterPage },
-  { path: config.routes.forgotPassword, component: ForgotPasswordPage },
-  { path: config.routes.resetPassword, component: ResetPassword },
+  { path: config.routes.login, component: LoginPage, layout: null },
+  { path: config.routes.register, component: RegisterPage, layout: null },
+  { path: config.routes.forgotPassword, component: ForgotPasswordPage, layout: null },
+  { path: config.routes.resetPassword, component: ResetPassword, layout: null },
   { path: config.routes.about, component: About },
   { path: config.routes.dictionary, component: Dictionary },
   { path: config.routes.notebook, component: NotebookList },

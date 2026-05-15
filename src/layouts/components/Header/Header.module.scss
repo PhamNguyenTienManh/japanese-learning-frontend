@@ -57,28 +57,45 @@
 
 .dropdown-menu {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 10px);
   left: 0;
   display: none;
   flex-direction: column;
   background: #ffffff;
-  color: #000;
-  border-radius: 6px;
-  padding: 6px 4px;
-  min-width: 160px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  color: #0f2a2a;
+  border: 2px solid #dff1ea;
+  border-radius: 16px;
+  padding: 8px;
+  min-width: 200px;
+  box-shadow: 0 12px 32px rgba(15, 42, 42, 0.16);
   z-index: 10;
+  animation: dropdownIn 0.16s ease-out;
+
+  /* Invisible bridge so hover doesn't break across the visual gap */
+  &::before {
+    content: "";
+    position: absolute;
+    top: -12px;
+    left: 0;
+    right: 0;
+    height: 12px;
+  }
 
   a,
   button {
-    color: #333 !important;
+    color: #0f2a2a !important;
     justify-content: flex-start;
     text-align: left;
-    padding: 6px 16px;
+    padding: 10px 14px !important;
     width: 100%;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.12s ease, color 0.12s ease;
 
     &:hover {
-      background: #00879a;
+      background: #e6f7f2 !important;
+      color: #00879a !important;
     }
   }
 
@@ -88,9 +105,158 @@
   }
 }
 
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Account-specific dropdown additions */
+.userMenuHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 12px;
+  margin-bottom: 6px;
+  border-bottom: 1.5px solid #dff1ea;
+}
+
+.userMenuAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #e6f7f2;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.userMenuAvatarFallback {
+  font-size: 18px;
+  font-weight: 800;
+  color: #00879a;
+}
+
+.userMenuInfo {
+  min-width: 0;
+  flex: 1;
+}
+
+.userMenuName {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f2a2a;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userMenuEmail {
+  font-size: 12px;
+  color: #5b7575;
+  margin: 2px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.userMenuDivider {
+  height: 1.5px;
+  background: #dff1ea;
+  margin: 6px 4px;
+  border-radius: 2px;
+}
+
+/* Logout button — destructive hover */
+.dropdown-menu .logoutBtn {
+  color: #ef4444 !important;
+
+  &:hover {
+    background: #fee2e2 !important;
+    color: #dc2626 !important;
+  }
+}
+
 /* Actions */
 .actions {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+/* User trigger (avatar + name) */
+.userTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 12px 4px 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  transition: background 0.15s, border-color 0.15s;
+  max-width: 240px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #fff;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.avatarFallback {
+  font-size: 14px;
+  font-weight: 800;
+  color: #00879a;
+  letter-spacing: 0;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.userCaret {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+  flex-shrink: 0;
 }

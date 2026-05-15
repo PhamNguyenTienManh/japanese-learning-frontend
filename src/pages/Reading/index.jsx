@@ -3,7 +3,6 @@ import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faVolumeHigh,
-    faPlus,
     faPlay,
     faPause,
     faMicrophone,
@@ -11,11 +10,11 @@ import {
     faXmark,
     faSpinner,
     faRotateRight,
+    faHeart,
+    faBookOpen,
 } from "@fortawesome/free-solid-svg-icons";
 
-import Button from "~/components/Button";
 import { useAuth } from "~/context/AuthContext";
-import Card from "~/components/Card";
 import { getNews } from "~/services/newsService";
 import { assessPronunciation } from "~/services/voiceAssessService";
 import { getFurigana } from "~/services/furiganaService";
@@ -36,7 +35,7 @@ function formatTime(seconds) {
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
-const KANJI_RE = /[㐀-鿿豈-﫿]/;
+const KANJI_RE = /[㐀-鿿豈-﫿]/;
 
 function renderFuriganaSegments(segments) {
     if (!segments) return null;
@@ -71,7 +70,6 @@ export default function Reading() {
 
     const progressBarRef = useRef(null);
 
-    // ===== Practice (luyện đọc) state =====
     const [showPractice, setShowPractice] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const [recordedBlob, setRecordedBlob] = useState(null);
@@ -85,14 +83,12 @@ export default function Reading() {
     const recordedChunksRef = useRef([]);
     const recordingTimerRef = useRef(null);
 
-    // ===== Furigana state =====
     const [furiganaOn, setFuriganaOn] = useState(false);
     const [furiganaCache, setFuriganaCache] = useState({});
     const [furiganaLoading, setFuriganaLoading] = useState(false);
 
     const { isLoggedIn, isPremium } = useAuth();
 
-    // Fetch data từ API
     useEffect(() => {
         const fetchArticles = async () => {
             try {
@@ -100,7 +96,6 @@ export default function Reading() {
                 const response = await getNews();
 
                 if (response.success && response.data) {
-                    // Transform API data to component format
                     const transformedArticles = response.data
                         .filter(item => item.published === true)
                         .sort((a, b) => new Date(b.dateField) - new Date(a.dateField))
@@ -138,20 +133,16 @@ export default function Reading() {
 
     const progressPercent = duration ? (currentTime / duration) * 100 : 0;
 
-    // Tạo audio element khi component mount hoặc khi đổi bài
     useEffect(() => {
         if (!selectedArticle) return;
 
-        // Dọn dẹp audio cũ
         if (audioElement) {
             audioElement.pause();
             audioElement.src = "";
         }
 
-        // Tạo audio mới
         const audio = new Audio(selectedArticle.audioUrl);
 
-        // Event listeners
         audio.addEventListener("loadedmetadata", () => {
             setDuration(audio.duration);
         });
@@ -175,14 +166,13 @@ export default function Reading() {
         setIsPlaying(false);
         setCurrentTime(0);
 
-        // Cleanup
         return () => {
             audio.pause();
             audio.src = "";
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedArticle?.id]);
 
-    // Xử lý play/pause
     useEffect(() => {
         if (!audioElement) return;
 
@@ -237,7 +227,6 @@ export default function Reading() {
         setIsDragging(false);
     };
 
-    // Global mouse events for dragging
     useEffect(() => {
         const handleGlobalMouseMove = (e) => {
             if (isDragging) {
@@ -260,6 +249,7 @@ export default function Reading() {
             document.removeEventListener("mousemove", handleGlobalMouseMove);
             document.removeEventListener("mouseup", handleGlobalMouseUp);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isDragging, duration, audioElement]);
 
     const handleRestart = () => {
@@ -270,7 +260,6 @@ export default function Reading() {
         setIsPlaying(true);
     };
 
-    // ===== Furigana handlers =====
     const ensureFuriganaForArticle = async (article) => {
         if (!article || furiganaCache[article.id]) return;
 
@@ -308,7 +297,6 @@ export default function Reading() {
         }
     };
 
-    // Tự fetch furigana khi đổi bài mà toggle đang bật
     useEffect(() => {
         if (furiganaOn && selectedArticle && !furiganaCache[selectedArticle.id]) {
             ensureFuriganaForArticle(selectedArticle);
@@ -316,7 +304,6 @@ export default function Reading() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedArticle?.id, furiganaOn]);
 
-    // ===== Practice (luyện đọc) handlers =====
     const stopMediaTracks = () => {
         if (mediaStreamRef.current) {
             mediaStreamRef.current.getTracks().forEach((t) => t.stop());
@@ -352,9 +339,7 @@ export default function Reading() {
             audioElement.pause();
             setIsPlaying(false);
         }
-        // Nếu user đã đăng nhập nhưng chưa là premium -> điều hướng tới payment
         if (isLoggedIn && !isPremium) {
-            // bật một state tạm để hiển thị CTA nâng cấp (sử dụng window.location để điều hướng nhanh)
             window.location.href = `/payment?plan=Pro`;
             return;
         }
@@ -478,7 +463,6 @@ export default function Reading() {
         }
     };
 
-    // Cleanup khi unmount
     useEffect(() => {
         return () => {
             clearRecordingTimer();
@@ -490,33 +474,44 @@ export default function Reading() {
 
     const isLiked = selectedArticle ? likedIds.includes(selectedArticle.id) : false;
 
-    if (loading) {
-        return (
-            <div className={cx("wrapper")}>
-                <div className={cx("inner")}>
-                    <div className={cx("header")}>
-                        <h1 className={cx("title")}>Luyện đọc</h1>
-                    </div>
-                    <div style={{ textAlign: 'center', padding: '40px' }}>
-                        <p>Đang tải bài viết...</p>
+    const renderShell = (body) => (
+        <div className={cx("wrapper")}>
+            <div className={cx("blob1")} />
+            <div className={cx("blob2")} />
+            <div className={cx("inner")}>
+                <div className={cx("hero")}>
+                    <div className={cx("heroLeft")}>
+                        <div className={cx("heroBadge")}>
+                            <FontAwesomeIcon icon={faBookOpen} />
+                        </div>
+                        <div>
+                            <h1 className={cx("title")}>Luyện đọc</h1>
+                            <div className={cx("subtitle")}>
+                                <span className={cx("chip")}>Tin tức tiếng Nhật</span>
+                                <span className={cx("dot")}>·</span>
+                                <span>
+                                    {readingArticles.length > 0
+                                        ? `${readingArticles.length} bài viết`
+                                        : "Đang tải..."}
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
+                {body}
             </div>
+        </div>
+    );
+
+    if (loading) {
+        return renderShell(
+            <div className={cx("stateCard")}>Đang tải bài viết...</div>
         );
     }
 
     if (!selectedArticle) {
-        return (
-            <div className={cx("wrapper")}>
-                <div className={cx("inner")}>
-                    <div className={cx("header")}>
-                        <h1 className={cx("title")}>Luyện đọc</h1>
-                    </div>
-                    <div style={{ textAlign: 'center', padding: '40px' }}>
-                        <p>Không có bài viết nào</p>
-                    </div>
-                </div>
-            </div>
+        return renderShell(
+            <div className={cx("stateCard")}>Không có bài viết nào</div>
         );
     }
 
@@ -524,41 +519,55 @@ export default function Reading() {
 
     return (
         <div className={cx("wrapper")}>
+            <div className={cx("blob1")} />
+            <div className={cx("blob2")} />
+
             <div className={cx("inner")}>
-                {/* header */}
-                <div className={cx("header")}>
-                    <h1 className={cx("title")}>Luyện đọc</h1>
+                {/* Hero */}
+                <div className={cx("hero")}>
+                    <div className={cx("heroLeft")}>
+                        <div className={cx("heroBadge")}>
+                            <FontAwesomeIcon icon={faBookOpen} />
+                        </div>
+                        <div>
+                            <h1 className={cx("title")}>Luyện đọc</h1>
+                            <div className={cx("subtitle")}>
+                                <span className={cx("chip")}>Tin tức tiếng Nhật</span>
+                                <span className={cx("dot")}>·</span>
+                                <span>{readingArticles.length} bài viết</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {/* hàng filter */}
+                {/* Difficulty filter */}
                 <div className={cx("controlsRow")}>
                     <div className={cx("difficultyGroup")}>
                         {difficultyOptions.map((opt) => (
-                            <Button
+                            <button
                                 key={opt.value}
-                                primary={difficulty === opt.value}
-                                outline={difficulty !== opt.value}
+                                type="button"
                                 className={cx("difficultyButton", {
                                     active: difficulty === opt.value,
-                                    easy: opt.value === "easy",
-                                    hard: opt.value === "hard",
                                 })}
                                 onClick={() => setDifficulty(opt.value)}
                             >
                                 {opt.label}
-                            </Button>
+                            </button>
                         ))}
                     </div>
                 </div>
 
                 <div className={cx("layout")}>
-                    {/* sidebar list*/}
+                    {/* Sidebar */}
                     <aside className={cx("sidebar")}>
                         <div className={cx("sidebarScroll")}>
                             {filteredArticles.map((article) => (
-                                <Card
+                                <div
                                     key={article.id}
-                                    className={{ active: selectedArticle.id === article.id }}
+                                    className={cx("articleItem", {
+                                        active: selectedArticle.id === article.id,
+                                    })}
                                     onClick={() => setSelectedArticle(article)}
                                 >
                                     <div className={cx("articleItemInner")}>
@@ -583,21 +592,16 @@ export default function Reading() {
                                                     <span className={cx("readDot")} />
                                                 )}
                                             </div>
-
-                                            {/* <span className={cx("moreLink")}>
-                                                Xem thêm →
-                                            </span> */}
                                         </div>
                                     </div>
-                                </Card>
+                                </div>
                             ))}
                         </div>
                     </aside>
 
-                    {/* nội dung bài */}
+                    {/* Main article */}
                     <section className={cx("content")}>
-                        <Card className={cx("articleCard")}>
-                            {/* header bài */}
+                        <div className={cx("articleCard")}>
                             <div className={cx("articleHeader")}>
                                 <div className={cx("articleHeaderMain")}>
                                     <h2 className={cx("articleMainTitle")}>
@@ -608,59 +612,45 @@ export default function Reading() {
                                     </p>
                                 </div>
 
-                                <Button
-                                    iconOnly
-                                    className={cx("likeButton", {
-                                        liked: isLiked,
-                                    })}
-                                    onClick={() =>
-                                        handleToggleLike(selectedArticle.id)
-                                    }
-                                />
+                                <button
+                                    type="button"
+                                    className={cx("likeButton", { liked: isLiked })}
+                                    onClick={() => handleToggleLike(selectedArticle.id)}
+                                    aria-label={isLiked ? "Bỏ thích" : "Thích"}
+                                >
+                                    <FontAwesomeIcon icon={faHeart} />
+                                </button>
                             </div>
 
-                            {/* ảnh */}
                             <div className={cx("imageWrap")}>
                                 <img
-                                    src={
-                                        selectedArticle.image ||
-                                        "/placeholder.svg"
-                                    }
+                                    src={selectedArticle.image || "/placeholder.svg"}
                                     alt={selectedArticle.title}
                                     className={cx("mainImage")}
                                 />
                             </div>
 
-                            {/* thanh nghe - CÓ DRAG */}
+                            {/* Audio player */}
                             <div className={cx("audioPlayer")}>
                                 <div className={cx("audioControlsRow")}>
-                                    <Button
-                                        outline
-                                        iconOnly
+                                    <button
+                                        type="button"
                                         className={cx("audioPlayButton")}
                                         onClick={() => {
-                                            if (!audioElement || duration === 0)
-                                                return;
+                                            if (!audioElement || duration === 0) return;
                                             setIsPlaying((prev) => !prev);
                                         }}
-                                        leftIcon={
-                                            <FontAwesomeIcon
-                                                icon={
-                                                    isPlaying
-                                                        ? faPause
-                                                        : faPlay
-                                                }
-                                            />
-                                        }
-                                    />
+                                        aria-label={isPlaying ? "Tạm dừng" : "Phát"}
+                                    >
+                                        <FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />
+                                    </button>
                                     <div className={cx("audioInfo")}>
                                         <FontAwesomeIcon
                                             icon={faVolumeHigh}
                                             className={cx("audioIcon")}
                                         />
                                         <span className={cx("audioTime")}>
-                                            {formatTime(currentTime)} /{" "}
-                                            {formatTime(duration)}
+                                            {formatTime(currentTime)} / {formatTime(duration)}
                                         </span>
                                     </div>
                                 </div>
@@ -674,9 +664,7 @@ export default function Reading() {
                                 >
                                     <div
                                         className={cx("audioProgress")}
-                                        style={{
-                                            width: `${progressPercent}%`,
-                                        }}
+                                        style={{ width: `${progressPercent}%` }}
                                     >
                                         <div className={cx("audioProgressThumb")} />
                                     </div>
@@ -687,79 +675,71 @@ export default function Reading() {
                                 {selectedArticle.syncData && selectedArticle.syncData.length ? (
                                     <p>
                                         {selectedArticle.syncData.map((segment, index) => {
-                                            const isActive = currentTime >= segment.s && currentTime <= segment.e;
+                                            const isActive =
+                                                currentTime >= segment.s &&
+                                                currentTime <= segment.e;
                                             const cached = furiganaCache[selectedArticle.id];
-                                            const segs = furiganaOn && cached?.mode === "sync"
-                                                ? cached.segments[index]
-                                                : null;
+                                            const segs =
+                                                furiganaOn && cached?.mode === "sync"
+                                                    ? cached.segments[index]
+                                                    : null;
                                             return (
                                                 <span
                                                     key={index}
                                                     className={cx("sentence", { active: isActive })}
                                                 >
-                                                    {segs
-                                                        ? renderFuriganaSegments(segs)
-                                                        : segment.t}
+                                                    {segs ? renderFuriganaSegments(segs) : segment.t}
                                                     {" "}
                                                 </span>
-                                            )
+                                            );
                                         })}
                                     </p>
                                 ) : (
                                     <p>
-                                        {furiganaOn && furiganaCache[selectedArticle.id]?.mode === "plain"
-                                            ? renderFuriganaSegments(furiganaCache[selectedArticle.id].segments[0])
+                                        {furiganaOn &&
+                                            furiganaCache[selectedArticle.id]?.mode === "plain"
+                                            ? renderFuriganaSegments(
+                                                furiganaCache[selectedArticle.id].segments[0]
+                                            )
                                             : content}
                                     </p>
                                 )}
                             </div>
 
                             <div className={cx("tools")}>
-                                <Button
-                                    outline
-                                    className={cx(
-                                        "toolButton",
-                                        "no-margin"
-                                    )}
+                                <button
+                                    type="button"
+                                    className={cx("toolButton")}
                                     onClick={handleRestart}
-                                    leftIcon={
-                                        <FontAwesomeIcon
-                                            icon={faVolumeHigh}
-                                        />
-                                    }
                                 >
+                                    <FontAwesomeIcon icon={faVolumeHigh} />
                                     Nghe lại từ đầu
-                                </Button>
-                                <Button
-                                    primary={furiganaOn}
-                                    outline={!furiganaOn}
+                                </button>
+                                <button
+                                    type="button"
                                     disabled={furiganaLoading}
-                                    className={cx("toolButton", "no-margin")}
+                                    className={cx("toolButton", { toolActive: furiganaOn })}
                                     onClick={handleToggleFurigana}
-                                    leftIcon={
-                                        furiganaLoading ? (
-                                            <FontAwesomeIcon icon={faSpinner} spin />
-                                        ) : null
-                                    }
                                 >
+                                    {furiganaLoading && (
+                                        <FontAwesomeIcon icon={faSpinner} spin />
+                                    )}
                                     {furiganaLoading
                                         ? "Đang tải furigana..."
                                         : furiganaOn
                                             ? "Tắt furigana"
                                             : "Hiện furigana"}
-                                </Button>
-                                <Button
-                                    primary
-                                    className={cx("toolButton", "no-margin")}
+                                </button>
+                                <button
+                                    type="button"
+                                    className={cx("toolButton", "toolPrimary")}
                                     onClick={handleOpenPractice}
-                                    leftIcon={
-                                        <FontAwesomeIcon icon={faMicrophone} />
-                                    }
                                 >
+                                    <FontAwesomeIcon icon={faMicrophone} />
                                     Luyện đọc
-                                </Button>
+                                </button>
                             </div>
-                        </Card>
+                        </div>
                     </section>
                 </div>
             </div>
@@ -837,7 +817,7 @@ function PracticeModal({
             <div className={cx("practiceModal")}>
                 <div className={cx("practiceHeader")}>
                     <div>
-                        <h2 className={cx("practiceTitle")}>Luyện đọc</h2>
+                        <h2 className={cx("practiceTitle")}>Luyện đọc 🎤</h2>
                         <p className={cx("practiceSubtitle")}>{article?.title}</p>
                     </div>
                     <button
@@ -854,45 +834,32 @@ function PracticeModal({
                     <div className={cx("practiceContent")}>
                         <div className={cx("practiceContentHead")}>
                             <h3 className={cx("practiceSectionTitle")}>Nội dung bài đọc</h3>
-                            <Button
-                                primary={furiganaOn}
-                                outline={!furiganaOn}
+                            <button
+                                type="button"
                                 disabled={furiganaLoading}
-                                className={cx("toolButton", "no-margin")}
+                                className={cx("toolButton", { toolActive: furiganaOn })}
                                 onClick={onToggleFurigana}
-                                leftIcon={
-                                    furiganaLoading ? (
-                                        <FontAwesomeIcon icon={faSpinner} spin />
-                                    ) : null
-                                }
                             >
+                                {furiganaLoading && (
+                                    <FontAwesomeIcon icon={faSpinner} spin />
+                                )}
                                 {furiganaLoading
                                     ? "Đang tải..."
                                     : furiganaOn
                                         ? "Tắt furigana"
                                         : "Hiện furigana"}
-                            </Button>
+                            </button>
                         </div>
-                        <div
-                            className={cx("practiceText", { withFurigana: showRuby })}
-                        >
-                            {showRuby
-                                ? renderFuriganaSegments(furiganaSegments)
-                                : text}
+                        <div className={cx("practiceText", { withFurigana: showRuby })}>
+                            {showRuby ? renderFuriganaSegments(furiganaSegments) : text}
                         </div>
                     </div>
 
                     <div className={cx("practiceRecorder")}>
-                        <div
-                            className={cx("micWrapper", {
-                                recording: isRecording,
-                            })}
-                        >
+                        <div className={cx("micWrapper", { recording: isRecording })}>
                             <button
                                 type="button"
-                                className={cx("micButton", {
-                                    recording: isRecording,
-                                })}
+                                className={cx("micButton", { recording: isRecording })}
                                 onClick={isRecording ? onStop : onStart}
                                 disabled={isAssessing}
                                 aria-label={isRecording ? "Dừng ghi âm" : "Bắt đầu ghi âm"}
@@ -921,44 +888,32 @@ function PracticeModal({
 
                         {recordedBlob && !isRecording && (
                             <div className={cx("recorderActions")}>
-                                <Button
-                                    outline
-                                    className={cx("toolButton", "no-margin")}
+                                <button
+                                    type="button"
+                                    className={cx("toolButton")}
                                     onClick={onRetake}
                                     disabled={isAssessing}
-                                    leftIcon={
-                                        <FontAwesomeIcon icon={faRotateRight} />
-                                    }
                                 >
+                                    <FontAwesomeIcon icon={faRotateRight} />
                                     Ghi lại
-                                </Button>
-                                <Button
-                                    primary
-                                    className={cx("toolButton", "no-margin")}
+                                </button>
+                                <button
+                                    type="button"
+                                    className={cx("toolButton", "toolPrimary")}
                                     onClick={onSubmit}
                                     disabled={isAssessing}
-                                    leftIcon={
-                                        isAssessing ? (
-                                            <FontAwesomeIcon
-                                                icon={faSpinner}
-                                                spin
-                                            />
-                                        ) : null
-                                    }
                                 >
+                                    {isAssessing && (
+                                        <FontAwesomeIcon icon={faSpinner} spin />
+                                    )}
                                     {isAssessing ? "Đang chấm điểm..." : "Gửi chấm điểm"}
-                                </Button>
+                                </button>
                             </div>
                         )}
 
                         {assessResult && !isAssessing && (
                             <div className={cx("assessResult")}>
-                                <div
-                                    className={cx(
-                                        "assessScore",
-                                        scoreColor,
-                                    )}
-                                >
+                                <div className={cx("assessScore", scoreColor)}>
                                     {Math.round(assessResult.score ?? 0)}
                                     <span className={cx("scoreUnit")}>điểm</span>
                                 </div>
@@ -968,12 +923,14 @@ function PracticeModal({
                                         withFurigana: furiganaOn,
                                     })}
                                 >
-                                    {Array.isArray(assessResult.tokens) && assessResult.tokens.length > 0
+                                    {Array.isArray(assessResult.tokens) &&
+                                        assessResult.tokens.length > 0
                                         ? assessResult.tokens.map((tok, i) => {
                                             const orig = tok.orig || "";
                                             const hira = tok.hira || "";
                                             const isKanji = KANJI_RE.test(orig);
-                                            const showRuby = furiganaOn && hira && hira !== orig && isKanji;
+                                            const showRuby =
+                                                furiganaOn && hira && hira !== orig && isKanji;
                                             const tokenClass = cx("assessToken", {
                                                 missing: !tok.matched,
                                             });

@@ -42,7 +42,6 @@ function Community() {
     totalPosts: 234,
     totalMembers: "1.2K",
     totalLikes: "3.4K",
-    totalViews: "12K",
   });
   const [categories, setCategories] = useState([]);
 
@@ -99,7 +98,6 @@ function Community() {
         totalPosts: data.data.totalPosts || 234,
         totalMembers: data.data.totalMembers || "6",
         totalLikes: data.data.totalLikes || "0",
-        totalViews: data.data.totalViews || "16",
       });
     } catch (err) {
       console.error("Error fetching stats:", err);
