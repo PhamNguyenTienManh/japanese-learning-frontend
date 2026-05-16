@@ -91,7 +91,7 @@ function Footer() {
               <a href="#" className={cx("icon")}>
                 <FontAwesomeIcon icon={faGithub} />
               </a>
-              <a href="mailto:contact@japaneselearn.com" className={cx("icon")}>
+              <a href="mailto:contact@javi.com" className={cx("icon")}>
                 <FontAwesomeIcon icon={faEnvelope} />
               </a>
             </div>
@@ -104,7 +104,7 @@ function Footer() {
         {/* Bottom */}
         <div className={cx("bottom")}>
           <p className={cx("copy")}>
-            © {currentYear} 日本語Learn. Tất cả các quyền được bảo lưu.
+            © {currentYear} JAVI. Tất cả các quyền được bảo lưu.
           </p>
 
           <div className={cx("bottom-links")}>

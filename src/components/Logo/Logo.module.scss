@@ -1,29 +1,37 @@
 .logo {
-  font-weight: 700;
-  font-size: 22px !important;
-  text-decoration: none;
-  //   display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: transform 0.2s ease, background-color 0.2s ease;
 
-  &-main {
-    transition: color 0.2s;
+  &:hover {
+    transform: translateY(-1px);
   }
 
-  &-sub {
-    font-size: 26px;
-    color: #ffd86e;
+  &-image {
+    display: block;
+    width: 148px;
+    height: 44px;
+    object-fit: contain;
   }
 }
 
 .color-white {
-  .logo-main {
-    color: #fff;
-  }
+  background: rgba(255, 255, 255, 0.96);
+  padding: 4px 10px;
+  box-shadow: 0 8px 20px rgba(15, 42, 42, 0.12);
 }
 
 .color-green {
-  .logo-main {
-    color: #00879a;
+  padding: 0;
+  background: transparent;
+}
+
+@media (max-width: 768px) {
+  .logo-image {
+    width: 124px;
+    height: 38px;
   }
 }
