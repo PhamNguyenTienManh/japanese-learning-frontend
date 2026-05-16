@@ -1,15 +1,17 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-    faLanguage,
-    faXmark,
+    faArrowRight,
+    faCheck,
+    faCircleExclamation,
     faCopy,
-    faVolumeHigh,
+    faLanguage,
     faSpinner,
+    faVolumeHigh,
+    faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 
-import Button from "~/components/Button";
 import { getFurigana } from "~/services/furiganaService";
 import styles from "./TranslateModal.module.scss";
 
@@ -58,23 +60,66 @@ function TranslateModal({
     const [furiganaOn, setFuriganaOn] = useState(false);
     const [furiganaSegments, setFuriganaSegments] = useState(null);
     const [furiganaLoading, setFuriganaLoading] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const copyTimerRef = useRef(null);
 
-    // Text tiếng Nhật cần gắn furigana: nguồn nếu ja→vi, bản dịch nếu vi→ja
-    const furiganaText = sourceLang === "ja" ? sourceText : (targetLang === "ja" ? translatedText : null);
+    const sourceIsJapanese = sourceLang === "ja";
+    const targetIsJapanese = targetLang === "ja";
+    const furiganaText = sourceIsJapanese
+        ? sourceText
+        : targetIsJapanese
+            ? translatedText
+            : null;
+    const japaneseText = sourceIsJapanese ? sourceText : targetIsJapanese ? translatedText : "";
+    const furiganaActive = furiganaOn && !!furiganaSegments;
+    const showFuriganaBtn = sourceIsJapanese || (targetIsJapanese && !loading && !error && !!translatedText);
 
     useEffect(() => {
         setFuriganaOn(false);
         setFuriganaSegments(null);
     }, [furiganaText]);
 
+    useEffect(() => {
+        setCopied(false);
+    }, [translatedText, sourceText]);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") {
+                onClose();
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [isOpen, onClose]);
+
+    useEffect(() => {
+        return () => {
+            if (copyTimerRef.current) {
+                window.clearTimeout(copyTimerRef.current);
+            }
+        };
+    }, []);
+
     if (!isOpen) return null;
 
-    const handleCopy = (text) => {
+    const handleCopy = async (text) => {
         if (!text) return;
-        navigator.clipboard.writeText(text);
-    };
 
-    const japaneseText = sourceLang === "ja" ? sourceText : (targetLang === "ja" ? translatedText : "");
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            if (copyTimerRef.current) {
+                window.clearTimeout(copyTimerRef.current);
+            }
+            copyTimerRef.current = window.setTimeout(() => setCopied(false), 1400);
+        } catch (copyError) {
+            console.error("Copy error:", copyError);
+        }
+    };
 
     const handleSpeakJapanese = () => {
         if (!japaneseText) return;
@@ -102,112 +147,139 @@ function TranslateModal({
         }
     };
 
-    const furiganaActive = furiganaOn && !!furiganaSegments;
-    // Nút furigana chỉ hiện khi có text tiếng Nhật (và bản dịch đã xong nếu là vi→ja)
-    const showFuriganaBtn = sourceLang === "ja" || (targetLang === "ja" && !loading && !error && !!translatedText);
-
     return (
         <div className={cx("overlay")} onMouseDown={onClose}>
-            <div
+            <section
                 className={cx("modal")}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="quick-translate-title"
                 onMouseDown={(e) => e.stopPropagation()}
             >
-                <div className={cx("header")}>
-                    <h3>
-                        <FontAwesomeIcon
-                            icon={faLanguage}
-                            className={cx("icon")}
-                        />
-                        Dịch nhanh
-                    </h3>
+                <header className={cx("header")}>
+                    <span className={cx("brandIcon")} aria-hidden="true">
+                        <FontAwesomeIcon icon={faLanguage} />
+                    </span>
+                    <div className={cx("titleWrap")}>
+                        <p className={cx("eyebrow")}>Tra cứu nhanh</p>
+                        <h3 id="quick-translate-title">Dịch nhanh</h3>
+                    </div>
                     <button
+                        type="button"
                         className={cx("close")}
                         onClick={onClose}
                         aria-label="Đóng"
                     >
                         <FontAwesomeIcon icon={faXmark} />
                     </button>
-                </div>
+                </header>
 
-                <div className={cx("langRow")}>
-                    <span className={cx("lang")}>
-                        {LANG_LABEL[sourceLang] || sourceLang}
-                    </span>
-                    <span className={cx("arrow")}>→</span>
-                    <span className={cx("lang")}>
-                        {LANG_LABEL[targetLang] || targetLang}
-                    </span>
-                </div>
+                <div className={cx("body")}>
+                    <div className={cx("langRow")} aria-label="Cặp ngôn ngữ">
+                        <span className={cx("langChip")}>
+                            {LANG_LABEL[sourceLang] || sourceLang}
+                        </span>
+                        <span className={cx("arrow")} aria-hidden="true">
+                            <FontAwesomeIcon icon={faArrowRight} />
+                        </span>
+                        <span className={cx("langChip", "targetChip")}>
+                            {LANG_LABEL[targetLang] || targetLang}
+                        </span>
+                    </div>
 
-                <div className={cx("block", { withFurigana: furiganaActive && sourceLang === "ja" })}>
-                    <div className={cx("label")}>Văn bản gốc</div>
-                    <div className={cx("text")}>
-                        {furiganaActive && sourceLang === "ja"
-                            ? renderFuriganaSegments(furiganaSegments)
-                            : sourceText}
+                    <div className={cx("contentGrid")}>
+                        <article className={cx("panel", "sourcePanel")}>
+                            <div className={cx("panelHeader")}>
+                                <span className={cx("panelTitle")}>Văn bản gốc</span>
+                                <span className={cx("meta")}>{sourceText.length} ký tự</span>
+                            </div>
+                            <div className={cx("text", { furiganaText: furiganaActive && sourceIsJapanese })}>
+                                {furiganaActive && sourceIsJapanese
+                                    ? renderFuriganaSegments(furiganaSegments)
+                                    : sourceText}
+                            </div>
+                        </article>
+
+                        <article className={cx("panel", "targetPanel")}>
+                            <div className={cx("panelHeader")}>
+                                <span className={cx("panelTitle")}>Bản dịch</span>
+                                {!loading && !error && translatedText && (
+                                    <button
+                                        type="button"
+                                        className={cx("miniAction", { copied })}
+                                        onClick={() => handleCopy(translatedText)}
+                                    >
+                                        <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
+                                        <span>{copied ? "Đã chép" : "Chép"}</span>
+                                    </button>
+                                )}
+                            </div>
+                            {loading ? (
+                                <div className={cx("loading")}>
+                                    <span className={cx("spinner")}>
+                                        <FontAwesomeIcon icon={faSpinner} spin />
+                                    </span>
+                                    <span>Đang dịch...</span>
+                                </div>
+                            ) : error ? (
+                                <div className={cx("error")}>
+                                    <FontAwesomeIcon icon={faCircleExclamation} />
+                                    <span>{error}</span>
+                                </div>
+                            ) : (
+                                <div className={cx("text", { furiganaText: furiganaActive && targetIsJapanese })}>
+                                    {furiganaActive && targetIsJapanese
+                                        ? renderFuriganaSegments(furiganaSegments)
+                                        : translatedText}
+                                </div>
+                            )}
+                        </article>
                     </div>
                 </div>
 
-                <div className={cx("block", "target", { withFurigana: furiganaActive && targetLang === "ja" })}>
-                    <div className={cx("label")}>Bản dịch</div>
-                    {loading ? (
-                        <div className={cx("loading")}>
-                            <FontAwesomeIcon icon={faSpinner} spin />
-                            Đang dịch...
-                        </div>
-                    ) : error ? (
-                        <div className={cx("error")}>{error}</div>
-                    ) : (
-                        <div className={cx("text")}>
-                            {furiganaActive && targetLang === "ja"
-                                ? renderFuriganaSegments(furiganaSegments)
-                                : translatedText}
-                        </div>
-                    )}
-                </div>
-
-                <div className={cx("actions")}>
-                    {showFuriganaBtn && (
-                        <Button
-                            primary={furiganaOn}
-                            outline={!furiganaOn}
-                            className={"no-margin"}
-                            onClick={handleToggleFurigana}
-                            disabled={furiganaLoading || loading}
-                            title="Hiện/tắt furigana"
+                <footer className={cx("toolbar")}>
+                    <div className={cx("tools")}>
+                        {showFuriganaBtn && (
+                            <button
+                                type="button"
+                                className={cx("toolButton", { active: furiganaOn })}
+                                onClick={handleToggleFurigana}
+                                disabled={furiganaLoading || loading}
+                                title="Hiện/tắt furigana"
+                            >
+                                {furiganaLoading ? (
+                                    <FontAwesomeIcon icon={faSpinner} spin />
+                                ) : (
+                                    <FontAwesomeIcon icon={faLanguage} />
+                                )}
+                                <span>{furiganaLoading ? "Đang tải" : "Furigana"}</span>
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            className={cx("toolButton", "iconOnly")}
+                            onClick={handleSpeakJapanese}
+                            disabled={!japaneseText || loading}
+                            title="Phát âm tiếng Nhật"
+                            aria-label="Phát âm tiếng Nhật"
                         >
-                            {furiganaLoading
-                                ? <><FontAwesomeIcon icon={faSpinner} spin />&nbsp;Đang tải...</>
-                                : furiganaOn ? "Tắt furigana" : "Furigana"}
-                        </Button>
-                    )}
-                    <Button
-                        outline
-                        className={"no-margin"}
-                        onClick={handleSpeakJapanese}
-                        disabled={!japaneseText || loading}
-                        title="Phát âm tiếng Nhật"
-                    >
-                        <FontAwesomeIcon icon={faVolumeHigh} />
-                    </Button>
-                    <Button
-                        outline
-                        className={"no-margin"}
-                        onClick={() => handleCopy(translatedText)}
-                        disabled={!translatedText || loading}
-                    >
-                        <FontAwesomeIcon icon={faCopy} />
-                        &nbsp; Sao chép
-                    </Button>
-                    <Button
-                        primary
-                        className={"no-margin"}
-                        onClick={onClose}
-                    >
+                            <FontAwesomeIcon icon={faVolumeHigh} />
+                        </button>
+                        <button
+                            type="button"
+                            className={cx("toolButton")}
+                            onClick={() => handleCopy(translatedText)}
+                            disabled={!translatedText || loading}
+                        >
+                            <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
+                            <span>{copied ? "Đã chép" : "Sao chép"}</span>
+                        </button>
+                    </div>
+                    <button type="button" className={cx("primaryAction")} onClick={onClose}>
                         Đóng
-                    </Button>
-                </div>
-            </div>
+                    </button>
+                </footer>
+            </section>
         </div>
     );
 }

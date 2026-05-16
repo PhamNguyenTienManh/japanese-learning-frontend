@@ -1,7 +1,6 @@
 import classNames from "classnames/bind";
 import styles from "./Dashboard.module.scss";
 
-import Card from "~/components/Card";
 import Button from "~/components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -14,6 +13,8 @@ import {
   faMedal,
   faFire,
   faStar,
+  faGear,
+  faChartSimple,
 } from "@fortawesome/free-solid-svg-icons";
 import { useEffect, useState } from "react";
 import { getUserStatistics } from "~/services/statistic";
@@ -103,8 +104,8 @@ const mockUserData = {
 
 function Dashboard() {
   const [userData, setUserData] = useState(null);
-  const [studyTimeToday, setStudyTimeToday] = useState(0); // Thời gian đã lưu
-  const [currentSessionMinutes, setCurrentSessionMinutes] = useState(0); // Session hiện tại
+  const [studyTimeToday, setStudyTimeToday] = useState(0);
+  const [currentSessionMinutes, setCurrentSessionMinutes] = useState(0);
   const [loading, setLoading] = useState(true);
   const [weeklyProgress, setWeeklyProgress] = useState([]);
 
@@ -123,7 +124,6 @@ function Dashboard() {
       try {
         setLoading(true);
 
-        // Load user statistics
         const userResponse = await getUserStatistics();
         if (userResponse.success) {
           const user = userResponse.data;
@@ -137,7 +137,6 @@ function Dashboard() {
           });
         }
 
-        // Load weekly progress
         const weekResponse = await getWeekStudyMinutes();
         if (weekResponse.success) {
           const days = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
@@ -148,7 +147,6 @@ function Dashboard() {
           setWeeklyProgress(progress);
         }
 
-        // Load today's study time
         await loadStudyTime();
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
@@ -159,7 +157,6 @@ function Dashboard() {
 
     fetchUserData();
 
-    // Update session time mỗi giây
     const interval = setInterval(() => {
       const sessionMinutes = studyTimeTracker.getCurrentMinutes();
       setCurrentSessionMinutes(sessionMinutes);
@@ -170,7 +167,6 @@ function Dashboard() {
 
   if (!userData) return <div>Loading...</div>;
 
-  // Tính tổng thời gian học hôm nay (đã lưu + session hiện tại)
   const totalMinutesToday = studyTimeToday + currentSessionMinutes;
   const hours = Math.floor(totalMinutesToday / 60);
   const minutes = totalMinutesToday % 60;
@@ -184,161 +180,165 @@ function Dashboard() {
     <div className={cx("wrapper")}>
       <main className={cx("main")}>
         <div className={cx("container")}>
-          {/* Header */}
-          <div className={cx("header")}>
-            <div className={cx("header-left")}>
+          {/* Hero */}
+          <div className={cx("hero")}>
+            <div className={cx("heroContent")}>
               <img
                 src={userData.avatar || "/placeholder.svg"}
                 alt={userData.name}
-                className={cx("avatar")}
+                className={cx("heroAvatar")}
               />
               <div>
-                <h1 className={cx("title")}>{userData.name}</h1>
-                <div className={cx("meta-row")}>
-                  <span className={cx("badge", "badge-level")}>
+                <h1 className={cx("heroName")}>{userData.name}</h1>
+                <div className={cx("heroMeta")}>
+                  <span className={cx("heroBadge")}>
                     {userData.level}
                   </span>
-                  <span className={cx("joined")}>
+                  <span className={cx("heroJoined")}>
                     Tham gia {userData.joinedDate}
                   </span>
                 </div>
               </div>
             </div>
-            <Button outline href="/dashboard/settings">
-              Cài đặt
-            </Button>
+            <div className={cx("heroActions")}>
+              <Button
+                href="/dashboard/settings"
+                className={cx("heroBtn")}
+                leftIcon={<FontAwesomeIcon icon={faGear} />}
+              >
+                Cài đặt
+              </Button>
+            </div>
           </div>
 
           {/* Stats Grid */}
-          <div className={cx("stats-grid")}>
-            <Card className={cx("stat-card")}>
-              <div className={cx("stat-inner")}>
-                <div className={cx("stat-icon-wrap")}>
-                  <FontAwesomeIcon
-                    icon={faCalendarDays}
-                    className={cx("stat-icon")}
-                  />
+          <div className={cx("statsGrid")}>
+            <div className={cx("statCard")}>
+              <div className={cx("statInner")}>
+                <div className={cx("statIconWrap")}>
+                  <FontAwesomeIcon icon={faCalendarDays} className={cx("statIcon")} />
                 </div>
-                <div>
-                  <p className={cx("stat-value")}>
+                <div className={cx("statContent")}>
+                  <p className={cx("statValue")}>
                     {userData.stats.studyDays}
                   </p>
-                  <p className={cx("stat-label")}>Ngày học</p>
+                  <p className={cx("statLabel")}>Ngày học</p>
                 </div>
               </div>
-            </Card>
+            </div>
 
-            <Card className={cx("stat-card")}>
-              <div className={cx("stat-inner")}>
-                <div className={cx("stat-icon-wrap", "stat-icon-orange")}>
-                  <FontAwesomeIcon icon={faFire} className={cx("stat-icon")} />
+            <div className={cx("statCard")}>
+              <div className={cx("statInner")}>
+                <div className={cx("statIconWrap", "statIconOrange")}>
+                  <FontAwesomeIcon icon={faFire} className={cx("statIcon")} />
                 </div>
-                <div>
-                  <p className={cx("stat-value")}>
+                <div className={cx("statContent")}>
+                  <p className={cx("statValue")}>
                     {userData.stats.currentStreak}
                   </p>
-                  <p className={cx("stat-label")}>Chuỗi ngày</p>
+                  <p className={cx("statLabel")}>Chuỗi ngày</p>
                 </div>
               </div>
-            </Card>
+            </div>
 
-            <Card className={cx("stat-card")}>
-              <div className={cx("stat-inner")}>
-                <div className={cx("stat-icon-wrap")}>
-                  <FontAwesomeIcon icon={faClock} className={cx("stat-icon")} />
+            <div className={cx("statCard")}>
+              <div className={cx("statInner")}>
+                <div className={cx("statIconWrap")}>
+                  <FontAwesomeIcon icon={faClock} className={cx("statIcon")} />
                 </div>
-                <div>
-                  <p className={cx("stat-value")}>
+                <div className={cx("statContent")}>
+                  <p className={cx("statValue")}>
                     {hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`}
                   </p>
-                  <p className={cx("stat-label")}>Thời gian học hôm nay</p>
+                  <p className={cx("statLabel")}>Thời gian học hôm nay</p>
                 </div>
               </div>
-            </Card>
+            </div>
 
-            <Card className={cx("stat-card")}>
-              <div className={cx("stat-inner")}>
-                <div className={cx("stat-icon-wrap")}>
-                  <FontAwesomeIcon
-                    icon={faTrophy}
-                    className={cx("stat-icon")}
-                  />
+            <div className={cx("statCard")}>
+              <div className={cx("statInner")}>
+                <div className={cx("statIconWrap")}>
+                  <FontAwesomeIcon icon={faTrophy} className={cx("statIcon")} />
                 </div>
-                <div>
-                  <p className={cx("stat-value")}>
+                <div className={cx("statContent")}>
+                  <p className={cx("statValue")}>
                     {userData.stats.averageScore.toFixed(2)}
                   </p>
-                  <p className={cx("stat-label")}>Điểm thi JLPT TB</p>
+                  <p className={cx("statLabel")}>Điểm thi JLPT TB</p>
                 </div>
               </div>
-            </Card>
+            </div>
           </div>
 
+          {/* Layout */}
           <div className={cx("layout")}>
             {/* Main column */}
-            <div className={cx("main-col")}>
-              {/* Weekly progress */}
-              <Card className={cx("card")}>
-                <div className={cx("card-header")}>
-                  <h2 className={cx("card-title")}>Tiến độ tuần này</h2>
-                  <span className={cx("badge", "badge-trend")}>
-                    <FontAwesomeIcon
-                      icon={faArrowTrendUp}
-                      className={cx("badge-icon")}
-                    />
+            <div className={cx("mainCol")}>
+              {/* Weekly chart */}
+              <div className={cx("section")}>
+                <div className={cx("sectionHeader")}>
+                  <h2 className={cx("sectionTitle")}>
+                    <FontAwesomeIcon icon={faChartSimple} className={cx("sectionTitleIcon")} />
+                    Tiến độ tuần này
+                  </h2>
+                  <span className={cx("badgeTrend")}>
+                    <FontAwesomeIcon icon={faArrowTrendUp} className={cx("badgeIcon")} />
                     +15%
                   </span>
                 </div>
 
-                <div className={cx("weekly-chart")}>
+                <div className={cx("weeklyChart")}>
                   {weeklyProgress.map((day) => {
                     const height = (day.minutes / maxMinutes) * 100;
                     return (
-                      <div key={day.day} className={cx("weekly-item")}>
-                        <div className={cx("bar-wrapper")}>
+                      <div key={day.day} className={cx("weeklyItem")}>
+                        <div className={cx("barWrapper")}>
                           <div
                             className={cx("bar", {
-                              "bar-active": day.minutes > 0,
+                              barActive: day.minutes > 0,
                             })}
                             style={{ height: `${height}%` }}
                           />
                         </div>
-                        <div className={cx("bar-labels")}>
-                          <p className={cx("bar-day")}>{day.day}</p>
-                          <p className={cx("bar-minutes")}>{day.minutes}m</p>
+                        <div className={cx("barLabels")}>
+                          <p className={cx("barDay")}>{day.day}</p>
+                          <p className={cx("barMinutes")}>{day.minutes}m</p>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              </Card>
+              </div>
 
               {/* Goals */}
-              <Card className={cx("card")}>
-                <div className={cx("card-header")}>
-                  <h2 className={cx("card-title")}>Mục tiêu tuần này</h2>
+              <div className={cx("section")}>
+                <div className={cx("sectionHeader")}>
+                  <h2 className={cx("sectionTitle")}>
+                    <FontAwesomeIcon icon={faBullseye} className={cx("sectionTitleIcon")} />
+                    Mục tiêu tuần này
+                  </h2>
                   <Button
                     outline
                     href="/dashboard/goals"
-                    className={cx("small-btn")}
+                    className={cx("sectionAction")}
                   >
                     Xem tất cả
                   </Button>
                 </div>
-                <div className={cx("goals-list")}>
+                <div className={cx("goalsList")}>
                   {mockUserData.goals.map((goal) => {
                     const progress = (goal.current / goal.target) * 100;
                     return (
-                      <div key={goal.id} className={cx("goal-item")}>
-                        <div className={cx("goal-header")}>
-                          <p className={cx("goal-title")}>{goal.title}</p>
-                          <span className={cx("goal-value")}>
+                      <div key={goal.id} className={cx("goalItem")}>
+                        <div className={cx("goalHeader")}>
+                          <p className={cx("goalTitle")}>{goal.title}</p>
+                          <span className={cx("goalValue")}>
                             {goal.current}/{goal.target} {goal.unit}
                           </span>
                         </div>
-                        <div className={cx("progress")}>
+                        <div className={cx("goalTrack")}>
                           <div
-                            className={cx("progress-bar")}
+                            className={cx("goalBar")}
                             style={{ width: `${progress}%` }}
                           />
                         </div>
@@ -346,61 +346,46 @@ function Dashboard() {
                     );
                   })}
                 </div>
-              </Card>
+              </div>
 
               {/* Recent activity */}
-              <Card className={cx("card")}>
-                <h2 className={cx("card-title", "mb-6")}>Hoạt động gần đây</h2>
-                <div className={cx("activity-list")}>
+              <div className={cx("section")}>
+                <h2 className={cx("sectionTitle")}>
+                  <FontAwesomeIcon icon={faStar} className={cx("sectionTitleIcon")} />
+                  Hoạt động gần đây
+                </h2>
+                <div className={cx("activityList")}>
                   {mockUserData.recentActivity.map((activity, index) => (
-                    <div
-                      key={index}
-                      className={cx("activity-item", {
-                        "activity-last":
-                          index === mockUserData.recentActivity.length - 1,
-                      })}
-                    >
+                    <div key={index} className={cx("activityItem")}>
                       <div
-                        className={cx("activity-icon-wrap", {
-                          "activity-test": activity.type === "test",
-                          "activity-dict": activity.type === "dictionary",
-                          "activity-chat": activity.type === "chat",
-                          "activity-community": activity.type === "community",
+                        className={cx("activityDot", {
+                          activityTest: activity.type === "test",
+                          activityDict: activity.type === "dictionary",
+                          activityChat: activity.type === "chat",
+                          activityCommunity: activity.type === "community",
                         })}
                       >
                         {activity.type === "test" && (
-                          <FontAwesomeIcon
-                            icon={faTrophy}
-                            className={cx("activity-icon")}
-                          />
+                          <FontAwesomeIcon icon={faTrophy} />
                         )}
                         {activity.type === "dictionary" && (
-                          <FontAwesomeIcon
-                            icon={faBookOpen}
-                            className={cx("activity-icon")}
-                          />
+                          <FontAwesomeIcon icon={faBookOpen} />
                         )}
                         {activity.type === "chat" && (
-                          <FontAwesomeIcon
-                            icon={faStar}
-                            className={cx("activity-icon")}
-                          />
+                          <FontAwesomeIcon icon={faStar} />
                         )}
                         {activity.type === "community" && (
-                          <FontAwesomeIcon
-                            icon={faMedal}
-                            className={cx("activity-icon")}
-                          />
+                          <FontAwesomeIcon icon={faMedal} />
                         )}
                       </div>
-                      <div className={cx("activity-body")}>
-                        <p className={cx("activity-title")}>{activity.title}</p>
-                        <div className={cx("activity-meta")}>
+                      <div className={cx("activityContent")}>
+                        <p className={cx("activityTitle")}>{activity.title}</p>
+                        <div className={cx("activityMeta")}>
                           <span>{activity.date}</span>
                           {activity.score && (
                             <>
-                              <span className={cx("dot")}>•</span>
-                              <span className={cx("activity-score")}>
+                              <span>•</span>
+                              <span className={cx("activityScore")}>
                                 Điểm: {activity.score}%
                               </span>
                             </>
@@ -410,87 +395,81 @@ function Dashboard() {
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
             </div>
 
             {/* Sidebar */}
             <aside className={cx("sidebar")}>
               {/* Learning stats */}
-              <Card className={cx("card")}>
-                <h3 className={cx("side-title")}>Thống kê học tập</h3>
-                <div className={cx("side-stats")}>
-                  <div className={cx("side-stat-row")}>
-                    <div className={cx("side-stat-label")}>
-                      <FontAwesomeIcon
-                        icon={faBookOpen}
-                        className={cx("side-stat-icon")}
-                      />
+              <div className={cx("sideCard")}>
+                <h3 className={cx("sideTitle")}>
+                  <FontAwesomeIcon icon={faChartSimple} className={cx("sideTitleIcon")} />
+                  Thống kê học tập
+                </h3>
+                <div className={cx("sideStats")}>
+                  <div className={cx("sideRow")}>
+                    <div className={cx("sideLabel")}>
+                      <FontAwesomeIcon icon={faBookOpen} className={cx("sideIcon")} />
                       <span>Từ vựng</span>
                     </div>
-                    <span className={cx("side-stat-value")}>
+                    <span className={cx("sideValue")}>
                       {userData.stats.wordsLearned}
                     </span>
                   </div>
 
-                  <div className={cx("side-stat-row")}>
-                    <div className={cx("side-stat-label")}>
-                      <FontAwesomeIcon
-                        icon={faBullseye}
-                        className={cx("side-stat-icon")}
-                      />
+                  <div className={cx("sideRow")}>
+                    <div className={cx("sideLabel")}>
+                      <FontAwesomeIcon icon={faBullseye} className={cx("sideIcon")} />
                       <span>Kanji</span>
                     </div>
-                    <span className={cx("side-stat-value")}>
+                    <span className={cx("sideValue")}>
                       {userData.stats.kanjiLearned}
                     </span>
                   </div>
 
-                  <div className={cx("side-stat-row")}>
-                    <div className={cx("side-stat-label")}>
-                      <FontAwesomeIcon
-                        icon={faTrophy}
-                        className={cx("side-stat-icon")}
-                      />
+                  <div className={cx("sideRow")}>
+                    <div className={cx("sideLabel")}>
+                      <FontAwesomeIcon icon={faTrophy} className={cx("sideIcon")} />
                       <span>Đề thi</span>
                     </div>
-                    <span className={cx("side-stat-value")}>
+                    <span className={cx("sideValue")}>
                       {userData.stats.testsCompleted}
                     </span>
                   </div>
 
-                  <div className={cx("side-stat-row")}>
-                    <div className={cx("side-stat-label")}>
-                      <FontAwesomeIcon
-                        icon={faFire}
-                        className={cx("side-stat-icon", "orange")}
-                      />
+                  <div className={cx("sideRow")}>
+                    <div className={cx("sideLabel")}>
+                      <FontAwesomeIcon icon={faFire} className={cx("sideIcon", "sideIconOrange")} />
                       <span>Chuỗi dài nhất</span>
                     </div>
-                    <span className={cx("side-stat-value")}>
+                    <span className={cx("sideValue")}>
                       {userData.stats.longestStreak} ngày
                     </span>
                   </div>
                 </div>
-              </Card>
+              </div>
 
               {/* Achievements */}
-              <Card className={cx("card")}>
-                <div className={cx("card-header")}>
-                  <h3 className={cx("side-title")}>Thành tích</h3>
+              <div className={cx("sideCard")}>
+                <div className={cx("sideHeader")}>
+                  <h3 className={cx("sideTitle")}>
+                    <FontAwesomeIcon icon={faTrophy} className={cx("sideTitleIcon")} />
+                    Thành tích
+                  </h3>
                   <Button
                     outline
                     href="/dashboard/achievements"
-                    className={cx("small-btn")}
+                    className={cx("sectionAction")}
                   >
                     Xem tất cả
                   </Button>
                 </div>
-                <div className={cx("achievements-grid")}>
+                <div className={cx("achievementsGrid")}>
                   {mockUserData.achievements.map((a) => (
                     <div
                       key={a.id}
                       className={cx("achievement", {
-                        unlocked: a.unlocked,
+                        achievementUnlocked: a.unlocked,
                       })}
                       title={a.description}
                     >
@@ -498,21 +477,21 @@ function Dashboard() {
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
 
               {/* Quick actions */}
-              <Card className={cx("card")}>
-                <h3 className={cx("side-title")}>Hành động nhanh</h3>
-                <div className={cx("quick-actions")}>
+              <div className={cx("sideCard")}>
+                <h3 className={cx("sideTitle")}>
+                  <FontAwesomeIcon icon={faStar} className={cx("sideTitleIcon")} />
+                  Hành động nhanh
+                </h3>
+                <div className={cx("quickActions")}>
                   <Button
                     primary
                     href="/practice"
-                    className={cx("quick-btn")}
+                    className={cx("quickBtn")}
                     leftIcon={
-                      <FontAwesomeIcon
-                        icon={faTrophy}
-                        className={cx("quick-icon")}
-                      />
+                      <FontAwesomeIcon icon={faTrophy} className={cx("quickIcon")} />
                     }
                   >
                     Luyện thi JLPT
@@ -521,12 +500,9 @@ function Dashboard() {
                   <Button
                     outline
                     href="/dictionary"
-                    className={cx("quick-btn")}
+                    className={cx("quickBtn")}
                     leftIcon={
-                      <FontAwesomeIcon
-                        icon={faBookOpen}
-                        className={cx("quick-icon")}
-                      />
+                      <FontAwesomeIcon icon={faBookOpen} className={cx("quickIcon")} />
                     }
                   >
                     Tra từ điển
@@ -535,18 +511,15 @@ function Dashboard() {
                   <Button
                     outline
                     href="/chat-ai"
-                    className={cx("quick-btn")}
+                    className={cx("quickBtn")}
                     leftIcon={
-                      <FontAwesomeIcon
-                        icon={faStar}
-                        className={cx("quick-icon")}
-                      />
+                      <FontAwesomeIcon icon={faStar} className={cx("quickIcon")} />
                     }
                   >
                     Chat với AI
                   </Button>
                 </div>
-              </Card>
+              </div>
             </aside>
           </div>
         </div>

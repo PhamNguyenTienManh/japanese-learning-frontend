@@ -1,20 +1,19 @@
-import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
+import classNames from "classnames/bind";
+import { faLanguage } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
+import styles from "./SelectionIcon.module.scss";
+
+const cx = classNames.bind(styles);
 
 export default function SelectionIcon({ selection, onClick }) {
     if (!selection) return null;
 
+    const minLeft = window.scrollX + 12;
+    const maxLeft = window.scrollX + window.innerWidth - 52;
     const style = {
-        position: "absolute",
-        top: selection.rect.top - 35,
-        left: selection.rect.right + 5,
-        zIndex: 999999,
-        cursor: "pointer",
-        background: "#fff",
-        border: "1px solid #ccc",
-        borderRadius: "50%",
-        padding: "6px",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+        top: Math.max(selection.rect.top - 46, window.scrollY + 12),
+        left: Math.min(Math.max(selection.rect.right + 8, minLeft), maxLeft),
     };
 
     const handleMouseDown = (e) => {
@@ -24,8 +23,16 @@ export default function SelectionIcon({ selection, onClick }) {
     };
 
     return (
-        <div style={style} onMouseDown={handleMouseDown}>
-            <FontAwesomeIcon icon={faMagnifyingGlass} />
-        </div>
+        <button
+            type="button"
+            className={cx("trigger")}
+            style={style}
+            onMouseDown={handleMouseDown}
+            title="Dịch nhanh"
+            aria-label="Dịch nhanh đoạn đã chọn"
+        >
+            <FontAwesomeIcon icon={faLanguage} />
+            <span className={cx("label")}>Dịch nhanh</span>
+        </button>
     );
 }
