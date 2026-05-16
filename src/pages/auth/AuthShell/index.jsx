@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 
+import logoImage from "~/assets/images/javi-logo.png";
 import styles from "./AuthShell.module.scss";
 
 const cx = classNames.bind(styles);
@@ -18,7 +19,7 @@ function AuthShell({
     subtitle,
     backTo = "/",
     backLabel = "Quay lại trang chủ",
-    brandTitle = "Học tiếng Nhật cùng cộng đồng yêu Nihongo.",
+    brandTitle = "Học tiếng Nhật cùng cộng đồng JAVI.",
     brandSub = "Flashcard, ngữ pháp, hán tự và AI luyện nói — tất cả ở một nơi.",
     features = DEFAULT_FEATURES,
     children,
@@ -32,13 +33,13 @@ function AuthShell({
 
                 <div className={cx("brandTop")}>
                     <span className={cx("brandLogo")}>
-                        日本語<span className={cx("brandLogoAccent")}>Learn</span>
+                        <img src={logoImage} alt="JAVI" />
                     </span>
                 </div>
 
                 <div className={cx("brandMain")}>
                     <div className={cx("brandHero")}>
-                        日本語<span className={cx("brandHeroAccent")}>。</span>
+                        JAVI<span className={cx("brandHeroAccent")}>.</span>
                     </div>
                     <h2 className={cx("brandTitle")}>{brandTitle}</h2>
                     <p className={cx("brandSub")}>{brandSub}</p>
@@ -54,7 +55,7 @@ function AuthShell({
                 </div>
 
                 <div className={cx("brandFooter")}>
-                    © {new Date().getFullYear()} 日本語Learn
+                    © {new Date().getFullYear()} JAVI
                 </div>
             </aside>
 

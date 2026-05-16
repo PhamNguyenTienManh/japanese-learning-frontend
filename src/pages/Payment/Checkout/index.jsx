@@ -182,7 +182,7 @@ export default function Checkout() {
                 <p style={{ fontSize: 14, color: 'var(--grey-low)', margin: 0 }}>
                   Bạn sẽ được chuyển đến trang thanh toán <strong>Stripe</strong>{" "}
                   để nhập thông tin thẻ. Thông tin thẻ không lưu trên hệ thống của
-                  JLearn — Stripe xử lý theo chuẩn PCI DSS.
+                  JAVI — Stripe xử lý theo chuẩn PCI DSS.
                 </p>
               </div>
             )}
@@ -232,7 +232,7 @@ export default function Checkout() {
               <div className={styles.summaryHeaderTop}>
                 <div>
                   <div className={styles.summaryPlanLabel}>Gói đã chọn</div>
-                  <div className={styles.summaryPlanName}>JLearn {plan}</div>
+                  <div className={styles.summaryPlanName}>JAVI {plan}</div>
                 </div>
                 <span className={styles.popularBadge}>Phổ biến</span>
               </div>
@@ -341,7 +341,7 @@ export default function Checkout() {
                     <a href="#" onClick={(e) => e.preventDefault()} className={styles.agreeLink}>Điều khoản dịch vụ</a>{" "}
                     và{" "}
                     <a href="#" onClick={(e) => e.preventDefault()} className={styles.agreeLink}>Chính sách bảo mật</a>{" "}
-                    của JLearn.
+                    của JAVI.
                   </span>
                 </label>
               )}

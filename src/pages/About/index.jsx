@@ -143,7 +143,7 @@ function About() {
                     variants={container}
                 >
                     <motion.div className={cx("heroBadge")} variants={fadeUp}>
-                        Về 日本語Learn
+                        Về JAVI
                     </motion.div>
                     <motion.h1 className={cx("heroTitle")} variants={fadeUp}>
                         Học tiếng Nhật{" "}
