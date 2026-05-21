@@ -28,6 +28,114 @@ export async function createSession() {
   return response.json();
 }
 
+export async function getUserSessions() {
+  const response = await fetch(`${BASE_URL}/ai-chat/user/sessions`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error fetching sessions: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function getTodayAiUsage() {
+  const response = await fetch(`${BASE_URL}/ai-chat/usage/today`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error fetching AI usage: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function getSessionHistory(sessionId) {
+  const response = await fetch(`${BASE_URL}/ai-chat/${sessionId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error fetching session: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function updateSession(sessionId, payload) {
+  const response = await fetch(`${BASE_URL}/ai-chat/${sessionId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to update session: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function deleteSession(sessionId) {
+  const response = await fetch(`${BASE_URL}/ai-chat/${sessionId}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete session: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function confirmNotebookAdd(sessionId, payload) {
+  const response = await fetch(
+    `${BASE_URL}/ai-chat/${sessionId}/notebook-actions/add-items`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => null);
+    const err = new Error(
+      errorPayload?.message ||
+        `Failed to confirm notebook action: ${response.statusText}`,
+    );
+    err.code = errorPayload?.code;
+    err.usage = errorPayload?.usage;
+    throw err;
+  }
+
+  return response.json();
+}
+
 // Gửi tin nhắn trong session
 export async function sendMessage(sessionId, message) {
   const response = await fetch(`${BASE_URL}/ai-chat/${sessionId}/message`, {
@@ -68,9 +176,14 @@ export async function streamMessage(
   );
 
   if (!response.ok || !response.body) {
-    throw new Error(
-      `Failed to stream message: ${response.status} ${response.statusText}`,
+    const payload = await response.json().catch(() => null);
+    const err = new Error(
+      payload?.message ||
+        `Failed to stream message: ${response.status} ${response.statusText}`,
     );
+    err.code = payload?.code;
+    err.usage = payload?.usage;
+    throw err;
   }
 
   const reader = response.body.getReader();
@@ -110,10 +223,13 @@ export async function streamMessage(
           onChunk?.(event.text ?? "");
         } else if (event.type === "action") {
           onAction?.(event.action);
-        } else if (event.type === "done") {
+        } else if (event.type === "done" || event.type === "aborted") {
           onDone?.(event);
         } else if (event.type === "error") {
-          onError?.(new Error(event.message || "Stream error"));
+          const err = new Error(event.message || "Stream error");
+          err.code = event.code;
+          err.usage = event.usage;
+          onError?.(err);
         }
       }
     }
@@ -128,7 +244,7 @@ export async function streamMessage(
 
 // Lấy lịch sử chat cuối cùng của user hiện tại
 export async function getUserLastSession() {
-  const response = await fetch(`${BASE_URL}/ai-chat/user/sessions`, {
+  const response = await fetch(`${BASE_URL}/ai-chat/user/sessions/last`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
