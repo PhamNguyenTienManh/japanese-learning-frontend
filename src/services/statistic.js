@@ -38,3 +38,15 @@ export async function getStatistics() {
     return response.json();
 }
 
+export async function getAdminDashboardStatistics() {
+    const response = await fetch(`${BASE_URL}/statistic/admin-dashboard`, {
+        headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to get admin dashboard: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+

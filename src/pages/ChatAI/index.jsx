@@ -55,6 +55,41 @@ function unwrap(response) {
   return response?.success ? response.data : response;
 }
 
+function filterVisibleActions(actions) {
+  const visibleActions = Array.isArray(actions)
+    ? actions.filter((action) => !action?.consumed)
+    : [];
+  const viewNotebookIds = new Set(
+    visibleActions
+      .filter(
+        (action) =>
+          action?.type === "view_notebook" &&
+          action.label === "Xem sổ tay đã cập nhật" &&
+          action.notebookId,
+      )
+      .map((action) => action.notebookId),
+  );
+
+  if (viewNotebookIds.size === 0) return visibleActions;
+
+  return visibleActions.filter((action) => {
+    if (
+      action?.type !== "confirm_add_to_notebook" &&
+      action?.type !== "select_notebook_for_add"
+    ) {
+      return true;
+    }
+
+    if (action.notebookId && viewNotebookIds.has(action.notebookId)) {
+      return false;
+    }
+
+    return !action.candidates?.some((candidate) =>
+      viewNotebookIds.has(candidate.id),
+    );
+  });
+}
+
 function formatMessages(session) {
   return (session?.messages || [])
     .filter((message) => message?.content)
@@ -63,9 +98,7 @@ function formatMessages(session) {
       role: message.role === "ai" ? "assistant" : message.role,
       content: message.content,
       timestamp: message.timestamp ? new Date(message.timestamp) : new Date(),
-      actions: Array.isArray(message.actions)
-        ? message.actions.filter((action) => !action?.consumed)
-        : [],
+      actions: filterVisibleActions(message.actions),
     }));
 }
 
@@ -80,9 +113,7 @@ function formatMessage(message, fallbackRole = "assistant") {
     role,
     content: message?.content || "",
     timestamp: message?.timestamp ? new Date(message.timestamp) : new Date(),
-    actions: Array.isArray(message?.actions)
-      ? message.actions.filter((action) => !action?.consumed)
-      : [],
+    actions: filterVisibleActions(message?.actions),
   };
 }
 
@@ -637,8 +668,21 @@ function ChatAI() {
           );
           return exists
             ? message
-            : { ...message, actions: [...existing, action] };
+            : {
+                ...message,
+                actions: filterVisibleActions([...existing, action]),
+              };
         }),
+      );
+    };
+
+    const syncAssistantActions = (actions) => {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === assistantId
+            ? { ...message, actions: filterVisibleActions(actions) }
+            : message,
+        ),
       );
     };
 
@@ -669,7 +713,7 @@ function ChatAI() {
           }
 
           if (Array.isArray(event?.actions)) {
-            event.actions.forEach(appendAction);
+            syncAssistantActions(event.actions);
           }
         },
         onError: (error) => {
