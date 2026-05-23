@@ -1,14 +1,9 @@
 const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 
-// Lấy token JWT từ localStorage
-function getToken() {
-    return localStorage.getItem("token") || "";
-}
-
-// Lấy headers Authorization
+// Lấy token JWT từ cookie
+// Lấy headers cookie
 function getAuthHeaders() {
-    const token = getToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return {};
 }
 
 /**
@@ -16,6 +11,7 @@ function getAuthHeaders() {
  */
 export async function getUserStatistics() {
     const response = await fetch(`${BASE_URL}/statistic/user`, {
+        credentials: "include",
         headers: getAuthHeaders(),
     });
 
@@ -28,6 +24,7 @@ export async function getUserStatistics() {
 
 export async function getStatistics() {
     const response = await fetch(`${BASE_URL}/statistic`, {
+        credentials: "include",
         headers: getAuthHeaders(),
     });
 

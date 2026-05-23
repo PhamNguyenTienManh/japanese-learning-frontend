@@ -80,11 +80,7 @@ function Register() {
 
     const handleVerifyOTP = async (otpCode) => {
         try {
-            const data = await authService.verifyRegister(formData.email, otpCode);
-
-            if (data.data?.access_token) {
-                authService.saveToken(data.data.access_token);
-            }
+            await authService.verifyRegister(formData.email, otpCode);
 
             addToast("Đăng ký thành công!", "success");
             setShowOTPModal(false);

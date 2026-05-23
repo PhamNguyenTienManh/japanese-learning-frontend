@@ -5,6 +5,7 @@ const API_URL = process.env.REACT_APP_BASE_URL_API;
 // Tạo axios instance với config mặc định
 const apiClient = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -14,11 +15,7 @@ const apiClient = axios.create({
 // Request interceptor - có thể thêm token vào đây
 apiClient.interceptors.request.use(
   (config) => {
-    // Có thể thêm token từ localStorage
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // Có thể thêm token từ cookie
     return config;
   },
   (error) => {

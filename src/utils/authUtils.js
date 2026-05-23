@@ -1,9 +1,10 @@
 // ~/utils/authUtils.js
 import { useLocation, Navigate } from "react-router-dom";
 import decodeToken from "~/services/pairToken";
+import { useAuth } from "~/context/AuthContext";
 
 export function getToken() {
-    return localStorage.getItem("token");
+    return null;
 }
 
 export function decodeUser() {
@@ -56,10 +57,12 @@ export function getAuthInfo() {
     };
 }
 export const AdminGuard = ({ children }) => {
-    const payload = decodeToken(localStorage.getItem('token'))
+    const { role, isLoading } = useAuth();
     const location = useLocation();
     
-    if (!payload || payload.role !== "admin") {
+    if (isLoading) return null;
+
+    if (role !== "admin") {
     return (
       <Navigate
         to="/login"

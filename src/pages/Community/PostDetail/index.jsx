@@ -120,7 +120,7 @@ function PostDetail() {
         setPost({ ...postData, isLiked: likedArray.includes(currentUserId) });
         setCountComment(response.data.countComment);
         setIsOwner(currentUserId === postData.profile_id.userId);
-        if (localStorage.getItem("token")) await getMe(currentUserId);
+        if (isLoggedIn) await getMe(currentUserId);
         await fetchComments();
       } catch (err) {
         setError("Không thể tải bài viết. Vui lòng thử lại sau.");
@@ -130,7 +130,7 @@ function PostDetail() {
       }
     };
     if (id) fetchPostDetail();
-  }, [id, currentUserId]);
+  }, [id, currentUserId, isLoggedIn]);
 
 
   const handleLike = async () => {
@@ -210,10 +210,9 @@ function PostDetail() {
   const uploadPostImage = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
-    const token = localStorage.getItem("token") || "";
     const response = await fetch(`${process.env.REACT_APP_BASE_URL_API}/posts/image`, {
       method: "POST",
-      headers: { Authorization: token ? `Bearer ${token}` : "" },
+      credentials: "include",
       body: formData,
     });
     if (!response.ok) throw new Error(`Failed to upload image: ${response.statusText}`);

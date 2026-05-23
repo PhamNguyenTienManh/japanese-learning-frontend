@@ -1,14 +1,9 @@
 const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 
-// Lấy token JWT từ localStorage
-function getToken() {
-    return localStorage.getItem("token") || "";
-}
-
-// Hàm lấy headers Authorization
+// Lấy token JWT từ cookie
+// Hàm lấy headers cookie
 function getAuthHeaders() {
-    const token = getToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return {};
 }
 
 /**
@@ -17,6 +12,7 @@ function getAuthHeaders() {
 export async function addStudyTime(minutes) {
     const response = await fetch(`${BASE_URL}/study-day/add`, {
         method: "POST",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             ...getAuthHeaders(),
@@ -33,6 +29,7 @@ export async function addStudyTime(minutes) {
  */
 export async function getTodayStudyTime() {
     const response = await fetch(`${BASE_URL}/study-day/today`, {
+        credentials: "include",
         headers: getAuthHeaders(),
     });
 
@@ -45,6 +42,7 @@ export async function getTodayStudyTime() {
  */
 export async function getWeekStudyTime() {
     const response = await fetch(`${BASE_URL}/study-day/week`, {
+        credentials: "include",
         headers: getAuthHeaders(),
     });
 
@@ -57,6 +55,7 @@ export async function getWeekStudyTime() {
  */
 export async function getMonthStudyTime() {
     const response = await fetch(`${BASE_URL}/study-day/month`, {
+        credentials: "include",
         headers: getAuthHeaders(),
     });
 
@@ -69,6 +68,7 @@ export async function getMonthStudyTime() {
  */
 export async function getWeekStudyMinutes() {
     const response = await fetch(`${BASE_URL}/study-day/week-time`, {
+        credentials: "include",
         headers: getAuthHeaders(),
     });
 

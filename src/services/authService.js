@@ -8,6 +8,7 @@ class AuthService {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -27,25 +28,67 @@ class AuthService {
     }
   }
 
-  // Lưu token vào localStorage
+  // Token is set by the backend as an HttpOnly cookie.
   saveToken(token) {
-    localStorage.setItem("token", token);
+    return token;
   }
 
-  // Lấy token từ localStorage
+  // JavaScript cannot read the HttpOnly auth cookie.
   getToken() {
-    return localStorage.getItem("token");
+    return null;
   }
 
   // Xóa token (logout)
   removeToken() {
-    localStorage.removeItem("token");
     localStorage.removeItem("study_login_time");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("userAvatar");
+    localStorage.removeItem("isPremium");
   }
 
   // Kiểm tra đã đăng nhập chưa
   isAuthenticated() {
-    return !!this.getToken();
+    return false;
+  }
+
+  async getSession() {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (res.status === 401) {
+      return null;
+    }
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || "Không thể lấy phiên đăng nhập");
+    }
+
+    return data.data || data;
+  }
+
+  async logout() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok && res.status !== 401) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Đăng xuất thất bại");
+      }
+    } finally {
+      this.removeToken();
+    }
   }
 
   // Đăng ký tài khoản mới
@@ -53,6 +96,7 @@ class AuthService {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -77,6 +121,7 @@ class AuthService {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/verify-register`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -101,6 +146,7 @@ class AuthService {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -125,6 +171,7 @@ class AuthService {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -152,18 +199,19 @@ class AuthService {
   // Xử lý callback từ Google (lấy token từ URL params)
   handleGoogleCallback() {
     const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
+    const isGoogleSuccess = params.get("google") === "success";
 
-    if (token) {
-      this.saveToken(token);
+    if (isGoogleSuccess) {
       // Xóa token khỏi URL
       window.history.replaceState({}, document.title, window.location.pathname);
-      return token;
+      return true;
     }
 
-    return null;
+    return false;
   }
 }
 
 // Export instance để sử dụng như singleton
-export default new AuthService();
+const authService = new AuthService();
+
+export default authService;

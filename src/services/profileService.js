@@ -1,20 +1,16 @@
 const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 
-// Lấy token từ localStorage
-function getToken() {
-    return localStorage.getItem("token") || "";
-}
-
-// Hàm lấy headers Authorization
+// Lấy token từ cookie
+// Hàm lấy headers cookie
 function getAuthHeaders() {
-    const token = getToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return {};
 }
 
 // Tạo session mới hoặc lấy session cuối cùng
 export async function getProfile() {
     const response = await fetch(`${BASE_URL}/profiles/me`, {
         method: "GET",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             ...getAuthHeaders(),
@@ -32,6 +28,7 @@ export async function getProfile() {
 export async function updateProfile(data) {
     const response = await fetch(`${BASE_URL}/profiles/me/update`, {
         method: "PUT",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             ...getAuthHeaders(),
@@ -56,6 +53,7 @@ export async function updateAvatar(file) {
 
     const response = await fetch(`${BASE_URL}/profiles/avatar`, {
         method: "PUT",
+        credentials: "include",
         headers: {
             ...getAuthHeaders(),
         },

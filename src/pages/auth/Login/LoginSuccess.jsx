@@ -6,10 +6,9 @@ function LoginSuccess() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
+    const isGoogleSuccess = params.get("google") === "success";
 
-    if (token) {
-      localStorage.setItem("token", token);
+    if (isGoogleSuccess) {
       navigate("/");
     } else {
       navigate("/login");

@@ -5,6 +5,7 @@ const API_URL = process.env.REACT_APP_BASE_URL_API;
 // Tạo axios instance với interceptor để tự động thêm token
 const axiosInstance = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -13,10 +14,6 @@ const axiosInstance = axios.create({
 // Interceptor để thêm token vào mọi request
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
     return config;
   },
   (error) => {

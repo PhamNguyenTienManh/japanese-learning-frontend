@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import decodeToken from "~/services/pairToken";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import authService from "~/services/authService";
 import { getProfile } from "~/services/profileService";
 
 const AuthContext = createContext(null);
@@ -15,39 +15,29 @@ const EMPTY_AUTH = {
   avatar: null,
 };
 
-function readAuthFromStorage() {
-  if (typeof window === "undefined") return EMPTY_AUTH;
-  const token = localStorage.getItem("token");
-  if (!token) return EMPTY_AUTH;
-  try {
-    const payload = decodeToken(token);
-    if (!payload) return EMPTY_AUTH;
-    const isExpired = payload.exp ? payload.exp * 1000 < Date.now() : false;
-    return {
-      isLoggedIn: !isExpired,
-      userId: payload.sub || null,
-      role: payload.role || null,
-      email: payload.email || null,
-      exp: payload.exp || null,
-      isPremium: localStorage.getItem("isPremium") === "true",
-      name: localStorage.getItem("userName") || null,
-      avatar: localStorage.getItem("userAvatar") || null,
-    };
-  } catch (err) {
-    console.error("Token decode failed:", err);
-    return EMPTY_AUTH;
-  }
+function buildAuthFromSession(session) {
+  if (!session) return EMPTY_AUTH;
+
+  const isExpired = session.exp ? session.exp * 1000 < Date.now() : false;
+  if (isExpired) return EMPTY_AUTH;
+
+  return {
+    isLoggedIn: true,
+    userId: session.sub || null,
+    role: session.role || null,
+    email: session.email || null,
+    exp: session.exp || null,
+    isPremium: localStorage.getItem("isPremium") === "true",
+    name: localStorage.getItem("userName") || null,
+    avatar: localStorage.getItem("userAvatar") || null,
+  };
 }
 
 export function AuthProvider({ children }) {
-  const [auth, setAuth] = useState(readAuthFromStorage);
-
-  const loadAuth = useCallback(() => {
-    setAuth(readAuthFromStorage());
-  }, []);
+  const [auth, setAuth] = useState(EMPTY_AUTH);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchUserProfile = useCallback(async () => {
-    if (!localStorage.getItem("token")) return;
     try {
       const profile = await getProfile();
       const data = profile?.data;
@@ -55,8 +45,8 @@ export function AuthProvider({ children }) {
 
       const name = data.name || "";
       const avatar = data.image_url || "";
-      localStorage.setItem("userName", name);
-      localStorage.setItem("userAvatar", avatar);
+      if (name) localStorage.setItem("userName", name);
+      if (avatar) localStorage.setItem("userAvatar", avatar);
 
       setAuth((prev) => ({ ...prev, name, avatar }));
     } catch (err) {
@@ -64,15 +54,27 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const refreshAuth = useCallback(() => {
-    loadAuth();
-    fetchUserProfile();
-  }, [loadAuth, fetchUserProfile]);
+  const loadAuth = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const session = await authService.getSession();
+      setAuth(buildAuthFromSession(session));
+    } catch (err) {
+      console.error("Failed to load auth session:", err);
+      setAuth(EMPTY_AUTH);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const logout = () => {
-    localStorage.clear();
-    loadAuth();
-  };
+  const refreshAuth = useCallback(async () => {
+    await loadAuth();
+  }, [loadAuth]);
+
+  const logout = useCallback(async () => {
+    await authService.logout();
+    setAuth(EMPTY_AUTH);
+  }, []);
 
   const isAdmin = () => auth.role === "admin";
   const hasRole = (role) => auth.role === role;
@@ -85,18 +87,17 @@ export function AuthProvider({ children }) {
     };
   }, [loadAuth]);
 
-  // Fetch profile whenever we transition into a logged-in state
   useEffect(() => {
-    if (auth.isLoggedIn && (!auth.name || !auth.avatar)) {
+    if (auth.isLoggedIn && (auth.name === null || auth.avatar === null)) {
       fetchUserProfile();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.isLoggedIn]);
+  }, [auth.isLoggedIn, auth.name, auth.avatar, fetchUserProfile]);
 
   return (
     <AuthContext.Provider
       value={{
         ...auth,
+        isLoading,
         refreshAuth,
         refreshProfile: fetchUserProfile,
         logout,

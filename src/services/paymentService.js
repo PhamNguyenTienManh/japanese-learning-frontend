@@ -1,13 +1,13 @@
 const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 
 function getAuthHeaders() {
-  const token = localStorage.getItem("token") || "";
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return {};
 }
 
 async function postJson(path, body) {
   const res = await fetch(`${BASE_URL}${path}`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -37,6 +37,7 @@ export async function createStripePayment({ cycle }) {
 
 export async function getMyPayments() {
   const res = await fetch(`${BASE_URL}/payments/me`, {
+    credentials: "include",
     headers: getAuthHeaders(),
   });
   const json = await res.json().catch(() => ({}));

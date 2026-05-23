@@ -121,6 +121,7 @@ function DictionaryAdmin() {
         try {
             const resp = await fetch(`${BASE_URL}/jlpt-word`, {
                 method: "POST",
+                credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
@@ -138,6 +139,7 @@ function DictionaryAdmin() {
         try {
             const resp = await fetch(`${BASE_URL}/jlpt-grammar`, {
                 method: "POST",
+                credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
@@ -155,6 +157,7 @@ function DictionaryAdmin() {
         try {
             const resp = await fetch(`${BASE_URL}/jlpt-kanji`, {
                 method: "POST",
+                credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });

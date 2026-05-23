@@ -47,7 +47,7 @@ function AdminLayout({ children }) {
       await logout();
     } catch (e) {
       // fallback nếu logout API lỗi
-      localStorage.removeItem("token");
+      localStorage.removeItem("study_login_time");
     }
     navigate("/login", { replace: true });
   };
