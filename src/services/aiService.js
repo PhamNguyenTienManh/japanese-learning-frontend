@@ -1,20 +1,16 @@
 const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 
-// Lấy token từ localStorage
-function getToken() {
-  return localStorage.getItem("token") || "";
-}
-
-// Hàm lấy headers Authorization
+// Lấy token từ cookie
+// Hàm lấy headers cookie
 function getAuthHeaders() {
-  const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return {};
 }
 
 // Tạo session mới hoặc lấy session cuối cùng
 export async function createSession() {
   const response = await fetch(`${BASE_URL}/ai-chat`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -140,6 +136,7 @@ export async function confirmNotebookAdd(sessionId, payload) {
 export async function sendMessage(sessionId, message) {
   const response = await fetch(`${BASE_URL}/ai-chat/${sessionId}/message`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -165,6 +162,7 @@ export async function streamMessage(
     `${BASE_URL}/ai-chat/${sessionId}/message/stream`,
     {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         Accept: "text/event-stream",
@@ -246,6 +244,7 @@ export async function streamMessage(
 export async function getUserLastSession() {
   const response = await fetch(`${BASE_URL}/ai-chat/user/sessions/last`, {
     method: "GET",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(), // gắn token nếu cần

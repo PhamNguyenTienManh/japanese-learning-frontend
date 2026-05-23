@@ -28,17 +28,14 @@ function LoginPage() {
         e.preventDefault();
         setIsLoading(true);
         try {
-            const data = await authService.login(email, password);
+            await authService.login(email, password);
 
-            if (data.data.access_token) {
-                authService.saveToken(data.data.access_token);
-                refreshAuth();
-                studyTimeTracker.startTracking();
-                await updateUserStreak();
+            await refreshAuth();
+            studyTimeTracker.startTracking();
+            await updateUserStreak();
 
                 addToast("Đăng nhập thành công!", "success");
-                setTimeout(() => navigate("/"), 500);
-            }
+            setTimeout(() => navigate("/"), 500);
         } catch (error) {
             addToast(error.message, "error");
         } finally {
@@ -51,8 +48,9 @@ function LoginPage() {
     };
 
     useEffect(() => {
-        const token = authService.handleGoogleCallback();
-        if (token) {
+        const isGoogleSuccess = authService.handleGoogleCallback();
+        if (isGoogleSuccess) {
+            refreshAuth();
             updateUserStreak()
                 .then(() => {
                     window.location.href = "/";
@@ -62,7 +60,7 @@ function LoginPage() {
                     window.location.href = "/";
                 });
         }
-    }, []);
+    }, [refreshAuth]);
 
     return (
         <AuthShell

@@ -1,8 +1,11 @@
 // src/services/kantanService.js
 
+const DEFAULT_API_BASE_URL =
+    process.env.REACT_APP_BASE_URL_API;
+
 class KantanService {
-    constructor(baseUrl = 'https://japanese-learning-backend-5qez.onrender.com/api') {
-        this.baseUrl = baseUrl;
+    constructor(baseUrl = DEFAULT_API_BASE_URL) {
+        this.baseUrl = baseUrl.replace(/\/$/, '');
     }
 
     async searchKanji(params) {

@@ -1,20 +1,16 @@
 const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 
-// Lấy token từ localStorage
-function getToken() {
-  return localStorage.getItem("token") || "";
-}
-
-// Hàm lấy headers Authorization
+// Lấy token từ cookie
+// Hàm lấy headers cookie
 function getAuthHeaders() {
-  const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return {};
 }
 
 // Lấy số lượng đề thi theo level
 export async function getExamCountByLevel() {
   const response = await fetch(`${BASE_URL}/exams/count-by-level`, {
     method: "GET",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -30,6 +26,7 @@ export async function getExamCountByLevel() {
 export async function getExamsByLevel(level) {
   const response = await fetch(`${BASE_URL}/exams/level/${level}`, {
     method: "GET",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -47,6 +44,7 @@ export async function getExamsByLevel(level) {
 export async function getExamDetail(id) {
   const response = await fetch(`${BASE_URL}/exams/${id}`, {
     method: "GET",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -63,6 +61,7 @@ export async function getExamDetail(id) {
 export async function startExam(examId) {
   const response = await fetch(`${BASE_URL}/exam-results/start`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -81,6 +80,7 @@ export async function startExam(examId) {
 export async function submitExam(examResultId) {
   const response = await fetch(`${BASE_URL}/exam-results/submit`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -100,6 +100,7 @@ export async function submitExam(examResultId) {
 export async function resumeExam(examResultId) {
   const response = await fetch(`${BASE_URL}/exam-results/resume/${examResultId}`, {
     method: "GET",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -135,6 +136,7 @@ export async function resumeExam(examResultId) {
 export async function saveAnswers(body) {
   const response = await fetch(`${BASE_URL}/exam-user-answers`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(), // gửi token JWT
@@ -153,6 +155,7 @@ export async function saveAnswers(body) {
 export async function checkExamStatus(examId) {
   const response = await fetch(`${BASE_URL}/exam-results/status/${examId}`, {
     method: "GET",
+    credentials: "include",
     headers: {
       ...getAuthHeaders(),
       "Content-Type": "application/json"
@@ -170,6 +173,7 @@ export async function checkExamStatus(examId) {
 export async function checkExamResult(examId) {
   const response = await fetch(`${BASE_URL}/exam-results/${examId}`, {
     method: "GET",
+    credentials: "include",
     headers: {
       ...getAuthHeaders(),
       "Content-Type": "application/json"
@@ -186,6 +190,7 @@ export async function checkExamResult(examId) {
 export async function comparisonUserAnswerWithResult(examId) {
   const response = await fetch(`${BASE_URL}/exam-results/comparison/${examId}`, {
     method: "GET",
+    credentials: "include",
     headers: {
       ...getAuthHeaders(),
       "Content-Type": "application/json"
@@ -203,6 +208,7 @@ export async function comparisonUserAnswerWithResult(examId) {
 export async function saveProgress(examResultId, elapsed) {
   const response = await fetch(`${BASE_URL}/exam-results/save-progress`, {
     method: 'PATCH',
+    credentials: "include",
     headers: {
       'Content-Type': 'application/json',
       ...getAuthHeaders(),
@@ -221,6 +227,7 @@ export async function saveProgress(examResultId, elapsed) {
 export async function createExam(data) {
   const response = await fetch(`${BASE_URL}/exams`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -239,6 +246,7 @@ export async function createExam(data) {
 export async function updateExam(id, data) {
   const response = await fetch(`${BASE_URL}/exams/${id}`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -259,6 +267,7 @@ export async function updateExam(id, data) {
 export async function createExamQuestion(partId, data) {
   const response = await fetch(`${BASE_URL}/exam-questions/${partId}`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -278,6 +287,7 @@ export async function createExamQuestion(partId, data) {
 export async function updateExamQuestion(questionId, data) {
   const response = await fetch(`${BASE_URL}/exam-questions/update/${questionId}`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -297,6 +307,7 @@ export async function updateExamQuestion(questionId, data) {
 export async function deleteExamQuestion(questionId) {
   const response = await fetch(`${BASE_URL}/exam-questions/${questionId}`, {
     method: "DELETE",
+    credentials: "include",
     headers: {
       ...getAuthHeaders(),
     },

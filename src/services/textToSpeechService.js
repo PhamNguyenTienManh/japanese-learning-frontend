@@ -1,21 +1,10 @@
 const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 
-// Lấy token từ localStorage
-function getToken() {
-    return localStorage.getItem("token") || "";
-}
-
-// Hàm lấy headers Authorization
-function getAuthHeaders() {
-    const token = getToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-
 export async function uploadVoice(text, speaker = 6) {
     try {
         const response = await fetch(`${BASE_URL}/text_to_speech/upload`, {
             method: "POST",
+            credentials: "include",
             headers: {
                 "Content-Type": "application/json",
             },

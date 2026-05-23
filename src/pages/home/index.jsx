@@ -13,9 +13,9 @@ import WordCard from "~/components/WordCard";
 import styles from "./Home.module.scss";
 import SearchInput from "~/components/searchInput/searchInput";
 import searchHistoryService from "~/services/searchHistoryService";
-import decodeToken from "~/services/pairToken";
 import trendingWordsService from "~/services/homeService";
 import handlePlayAudio from "~/services/handlePlayAudio";
+import { useAuth } from "~/context/AuthContext";
 
 const cx = classNames.bind(styles);
 
@@ -101,15 +101,17 @@ function Home() {
     const [searchHistory, setSearchHistory] = useState([]);
     const [trendingWords, setTrendingWords] = useState([]);
     const [isLoadingTrending, setIsLoadingTrending] = useState(true);
-
-    const payload = decodeToken(localStorage.getItem("token"));
-    const userId = payload?.sub;
+    const { userId } = useAuth();
 
     useEffect(() => {
-        fetchSearchHistory();
+        if (userId) {
+            fetchSearchHistory();
+        } else {
+            setSearchHistory([]);
+        }
         fetchTrendingWords();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [userId]);
 
     const fetchSearchHistory = async () => {
         try {

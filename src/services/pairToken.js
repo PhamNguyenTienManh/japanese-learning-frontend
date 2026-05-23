@@ -14,7 +14,6 @@ function decodeToken(token) {
     const isExpired = jsonPayload?.exp ? jsonPayload.exp * 1000 < Date.now() : false;
 
     if (isExpired) {
-      localStorage.removeItem("token");
       return null;
     }
     

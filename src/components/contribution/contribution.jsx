@@ -134,10 +134,8 @@ const CommentSection = ({ kanjiId, kanjiChar, totalComments: initialTotal }) => 
         setCurrentPage(1);
 
         try {
-            const token = localStorage.getItem("token");
             await ContributionService.addComment(
-                { kanjiId, content: newComment },
-                token
+                { kanjiId, content: newComment }
             );
         } catch (err) {
             console.error('Error submitting comment:', err);

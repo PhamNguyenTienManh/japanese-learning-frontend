@@ -100,10 +100,9 @@ function NewPost() {
   const uploadPostImage = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
-    const token = localStorage.getItem("token") || "";
     const response = await fetch(`${process.env.REACT_APP_BASE_URL_API}/posts/image`, {
       method: "POST",
-      headers: { Authorization: token ? `Bearer ${token}` : "" },
+      credentials: "include",
       body: formData,
     });
     if (!response.ok) throw new Error(`Failed to upload image: ${response.statusText}`);

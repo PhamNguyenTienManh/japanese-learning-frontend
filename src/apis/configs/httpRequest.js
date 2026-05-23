@@ -3,6 +3,7 @@ import axios from "axios";
 // Tạo instance axios
 const request = axios.create({
   baseURL: process.env.REACT_APP_BASE_URL,
+  withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
 

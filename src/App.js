@@ -3,7 +3,7 @@ import { privateRouter, publicRouter, requireAuthRouter } from "./routes";
 import { DefaultLayout, AdminLayout } from "~/layouts";
 import { Fragment } from "react/jsx-runtime";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useStudyTimeTracker } from "./hooks/useStudyTimeTracker";
 import { AdminGuard } from "./utils/authUtils";
 import useTextSelection from "./hooks/useTextSelection";
@@ -16,21 +16,6 @@ function AnimatedRoutes() {
   const location = useLocation();
 
   useStudyTimeTracker();
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
-
-    if (token) {
-      localStorage.setItem("token", token);
-
-      // Xóa token khỏi URL để sạch sẽ
-      window.history.replaceState({}, document.title, window.location.pathname);
-
-      // Chuyển về trang chủ
-      window.location.href = "/";
-    }
-  }, []);
 
   // Tách admin routes để gom dưới 1 parent route → AdminLayout không remount
   // khi chuyển giữa các tab admin (sidebar giữ state, không bị flash trắng).

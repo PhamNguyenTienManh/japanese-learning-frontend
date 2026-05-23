@@ -1,13 +1,8 @@
 const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 
-// Lấy token từ localStorage
-function getToken() {
-    return localStorage.getItem("token") || "";
-}
-
+// Lấy token từ cookie
 function getAuthHeaders() {
-    const token = getToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return {};
 }
 
 /**
@@ -16,6 +11,7 @@ function getAuthHeaders() {
 export async function updateUserStreak() {
     const response = await fetch(`${BASE_URL}/streak/update`, {
         method: "POST",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             ...getAuthHeaders(),
@@ -35,6 +31,7 @@ export async function updateUserStreak() {
 export async function getCurrentStreak() {
     const response = await fetch(`${BASE_URL}/streak/current`, {
         method: "GET",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             ...getAuthHeaders(),
@@ -54,6 +51,7 @@ export async function getCurrentStreak() {
 export async function getLongestStreak() {
     const response = await fetch(`${BASE_URL}/streak/longest`, {
         method: "GET",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             ...getAuthHeaders(),
@@ -73,6 +71,7 @@ export async function getLongestStreak() {
 export async function getStreakHistory() {
     const response = await fetch(`${BASE_URL}/streak/history`, {
         method: "GET",
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
             ...getAuthHeaders(),

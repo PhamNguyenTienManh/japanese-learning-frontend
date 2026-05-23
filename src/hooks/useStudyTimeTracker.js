@@ -23,21 +23,11 @@ export function useStudyTimeTracker() {
 
             if (minutes > 0) {
                 // Sử dụng sendBeacon để đảm bảo request được gửi
-                const token = localStorage.getItem('token');
                 const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 
                 const data = JSON.stringify({ minutes });
                 const blob = new Blob([data], { type: 'application/json' });
-
-                // Gửi request với token trong body
-                // Lưu ý: Backend cần hỗ trợ lấy token từ body cho endpoint này
-                const dataWithAuth = JSON.stringify({
-                    minutes,
-                    token // Gửi token trong body vì sendBeacon không support custom headers
-                });
-                const blobWithAuth = new Blob([dataWithAuth], { type: 'application/json' });
-
-                navigator.sendBeacon(`${BASE_URL}/study-day/add`, blobWithAuth);
+                navigator.sendBeacon(`${BASE_URL}/study-day/add`, blob);
 
                 console.log('Study time saved via sendBeacon:', minutes, 'minutes');
             }

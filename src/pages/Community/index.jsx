@@ -9,25 +9,9 @@ import CommunityStats from "~/components/CommunityStats";
 import CommunitySearch from "~/components/CommunitySearch";
 import CommunitySidebar from "~/components/CommunitySidebar/CommunitySidebar";
 import PostList from "~/components/PostList/PostList";
+import { useAuth } from "~/context/AuthContext";
 
 const cx = classNames.bind(styles);
-
-function decodeToken(token) {
-  try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error("Error decoding token:", error);
-    return null;
-  }
-}
 
 function Community() {
   const [posts, setPosts] = useState([]);
@@ -45,16 +29,7 @@ function Community() {
   });
   const [categories, setCategories] = useState([]);
 
-  const getLoggedInUserId = () => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      const decoded = decodeToken(token);
-      return decoded?.sub;
-    }
-    return null;
-  };
-
-  const currentUserId = getLoggedInUserId();
+  const { userId: currentUserId } = useAuth();
 
   const fetchPosts = async (page, sort = "popular", category = null) => {
     setLoading(true);
@@ -129,7 +104,7 @@ function Community() {
     fetchPosts(1, "popular");
     fetchStats();
     fetchCategories();
-  }, []);
+  }, [currentUserId]);
 
   const handleTabChange = (value) => {
     setActiveTab(value);

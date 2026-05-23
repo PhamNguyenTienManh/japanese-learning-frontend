@@ -7,6 +7,7 @@ export async function getJlptWords(page = 1, limit = 9, level = "N4") {
         `${BASE_URL}/jlpt-word?page=${page}&limit=${limit}&level=${level}`,
         {
             method: "GET",
+            credentials: "include",
             headers: {
                 "Content-Type": "application/json",
             },
@@ -27,6 +28,7 @@ export async function getJlptKanji(page = 1, limit = 9, level = "N5") {
         `${BASE_URL}/jlpt-kanji?page=${page}&limit=${limit}&level=${level}`,
         {
             method: "GET",
+            credentials: "include",
             headers: {
                 "Content-Type": "application/json",
             },
@@ -47,6 +49,7 @@ export async function getJlptGrammar(page = 1, limit = 9, level = "N4") {
         `${BASE_URL}/jlpt-grammar?page=${page}&limit=${limit}&level=${level}`,
         {
             method: "GET",
+            credentials: "include",
             headers: {
                 "Content-Type": "application/json",
             },
@@ -64,7 +67,7 @@ export async function getJlptGrammar(page = 1, limit = 9, level = "N4") {
 export async function getJlptWordsAdmin(page = 1, limit = 20, level = "", q = "", includeDeleted = true) {
     const response = await fetch(
         `${BASE_URL}/jlpt-word/admin?page=${page}&limit=${limit}&level=${level}&q=${q}&includeDeleted=${includeDeleted}`,
-        { method: "GET", headers: { "Content-Type": "application/json" } }
+        { method: "GET", credentials: "include", headers: { "Content-Type": "application/json" } }
     );
     if (!response.ok) throw new Error("Failed to fetch admin words");
     return response.json();
@@ -74,6 +77,7 @@ export async function getJlptWordsAdmin(page = 1, limit = 20, level = "", q = ""
 export async function updateJlptWord(id, data) {
     const response = await fetch(`${BASE_URL}/jlpt-word/${id}`, {
         method: "PUT",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
     });
@@ -85,6 +89,7 @@ export async function updateJlptWord(id, data) {
 export async function deleteJlptWord(id) {
     const response = await fetch(`${BASE_URL}/jlpt-word/${id}`, {
         method: "DELETE",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
     });
     if (!response.ok) throw new Error("Failed to delete word");
@@ -95,7 +100,7 @@ export async function deleteJlptWord(id) {
 export async function getJlptKanjiAdmin(page = 1, limit = 20, level = "", q = "", includeDeleted = true) {
     const response = await fetch(
         `${BASE_URL}/jlpt-kanji/admin?page=${page}&limit=${limit}&level=${level}&q=${q}&includeDeleted=${includeDeleted}`,
-        { method: "GET", headers: { "Content-Type": "application/json" } }
+        { method: "GET", credentials: "include", headers: { "Content-Type": "application/json" } }
     );
     if (!response.ok) throw new Error("Failed to fetch admin kanji");
     return response.json();
@@ -105,6 +110,7 @@ export async function getJlptKanjiAdmin(page = 1, limit = 20, level = "", q = ""
 export async function updateJlptKanji(id, data) {
     const response = await fetch(`${BASE_URL}/jlpt-kanji/${id}`, {
         method: "PUT",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
     });
@@ -116,6 +122,7 @@ export async function updateJlptKanji(id, data) {
 export async function deleteJlptKanji(id) {
     const response = await fetch(`${BASE_URL}/jlpt-kanji/${id}`, {
         method: "DELETE",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
     });
     if (!response.ok) throw new Error("Failed to delete kanji");
@@ -126,7 +133,7 @@ export async function deleteJlptKanji(id) {
 export async function getJlptGrammarAdmin(page = 1, limit = 20, level = "", q = "", includeDeleted = true) {
     const response = await fetch(
         `${BASE_URL}/jlpt-grammar/admin?page=${page}&limit=${limit}&level=${level}&q=${q}&includeDeleted=${includeDeleted}`,
-        { method: "GET", headers: { "Content-Type": "application/json" } }
+        { method: "GET", credentials: "include", headers: { "Content-Type": "application/json" } }
     );
     if (!response.ok) throw new Error("Failed to fetch admin grammar");
     return response.json();
@@ -136,6 +143,7 @@ export async function getJlptGrammarAdmin(page = 1, limit = 20, level = "", q = 
 export async function updateJlptGrammar(id, data) {
     const response = await fetch(`${BASE_URL}/jlpt-grammar/${id}`, {
         method: "PUT",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
     });
@@ -147,6 +155,7 @@ export async function updateJlptGrammar(id, data) {
 export async function deleteJlptGrammar(id) {
     const response = await fetch(`${BASE_URL}/jlpt-grammar/${id}`, {
         method: "DELETE",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
     });
     if (!response.ok) throw new Error("Failed to delete grammar");

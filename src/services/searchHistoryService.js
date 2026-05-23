@@ -5,6 +5,7 @@ import axios from "axios";
 const API_BASE_URL = `${process.env.REACT_APP_BASE_URL_API}/search-history`;
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -12,10 +13,6 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
     return config;
   },
   (error) => {
@@ -61,8 +58,7 @@ const searchHistoryService = {
 
       });
 
-      const result = await response.json();
-      return result;
+      return response.data;
     } catch (error) {
       console.error("Error adding search history:", error);
       return {
