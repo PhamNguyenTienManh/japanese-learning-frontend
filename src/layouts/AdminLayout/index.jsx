@@ -10,6 +10,7 @@ import {
   faFileLines,
   faComments,
   faBookReader,
+  faCommentDots,
   faTriangleExclamation,
   faArrowLeft,
   faChevronLeft,
@@ -36,6 +37,7 @@ const navItems = [
   { to: "/admin/posts", icon: faComments, label: "Bài viết" },
   { to: "/admin/violations", icon: faTriangleExclamation, label: "Báo cáo vi phạm" },
   { to: "/admin/reading", icon: faBookReader, label: "Luyện đọc" },
+  { to: "/admin/conversation", icon: faCommentDots, label: "Hội thoại" },
 ];
 
 function AdminLayout({ children }) {

@@ -15,6 +15,7 @@ const routes = {
   test: "/practice/:level/test/:testId",
   results: "/practice/:level/results/:testId",
   resultDetail: "/practice/:level/results/detail/:testId",
+  conversationPractice: "/conversation",
   chatAI: "/chat-ai",
   community: "/community",
   postDetail: "/community/:id",
@@ -36,6 +37,7 @@ const routes = {
   adminPosts: "/admin/posts",
   adminViolations: "/admin/violations",
   adminReading: "/admin/reading",
+  adminConversation: "/admin/conversation",
   translate: "/translate"
   ,
   payment: "/payment"

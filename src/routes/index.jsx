@@ -24,6 +24,7 @@ import KanjiLookup from "~/pages/KanjiLookup";
 import ResetPassword from "~/pages/auth/ResetPass";
 import JLPT from "~/pages/Dictionary/JLPT";
 import Reading from "~/pages/Reading";
+import ConversationPractice from "~/pages/ConversationPractice";
 import ExamReview from "~/pages/ExamReview/ExamReview";
 import JLPTFlashcard from "~/pages/Dictionary/JLPT/Flashcards";
 import Translate from "~/pages/Translate";
@@ -38,6 +39,7 @@ import CreateTest from "~/pages/Admin/AdminTest/CreateTest";
 import AdminPosts from "~/pages/Admin/AdminPosts";
 import Violations from "~/pages/Admin/Violations";
 import AdminReading from "~/pages/Admin/AdminReading";
+import AdminConversation from "~/pages/Admin/AdminConversation";
 import EditTest from "~/pages/Admin/AdminTest/UpdateTest";
 
 export const publicRouter = [
@@ -53,6 +55,7 @@ export const publicRouter = [
   { path: config.routes.flashcards, component: Flashcards },
   { path: config.routes.notebookDetail, component: NotebookDetail },
   { path: config.routes.practice, component: Practice },
+  { path: config.routes.conversationPractice, component: ConversationPractice },
   { path: config.routes.level, component: TestPage },
   { path: config.routes.test, component: TestRunner },
   { path: config.routes.results, component: Results },
@@ -81,6 +84,7 @@ export const publicRouter = [
   { path: config.routes.adminPosts, component: AdminPosts },
   { path: config.routes.adminViolations, component: Violations },
   { path: config.routes.adminReading, component: AdminReading },
+  { path: config.routes.adminConversation, component: AdminConversation },
   { path: config.routes.jlptFlashcard, component: JLPTFlashcard },
   { path: config.routes.updateTest, component: EditTest },
 
