@@ -10,6 +10,7 @@ import {
   faFileLines,
   faComments,
   faBookReader,
+  faTriangleExclamation,
   faArrowLeft,
   faChevronLeft,
   faRightFromBracket,
@@ -33,6 +34,7 @@ const navItems = [
   { to: "/admin/dictionary", icon: faBookOpen, label: "Từ điển" },
   { to: "/admin/tests", icon: faFileLines, label: "Đề thi" },
   { to: "/admin/posts", icon: faComments, label: "Bài viết" },
+  { to: "/admin/violations", icon: faTriangleExclamation, label: "Báo cáo vi phạm" },
   { to: "/admin/reading", icon: faBookReader, label: "Luyện đọc" },
 ];
 

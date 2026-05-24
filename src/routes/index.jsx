@@ -36,6 +36,7 @@ import DictionaryAdmin from "~/pages/Admin/Dictionary";
 import AdminTest from "~/pages/Admin/AdminTest";
 import CreateTest from "~/pages/Admin/AdminTest/CreateTest";
 import AdminPosts from "~/pages/Admin/AdminPosts";
+import Violations from "~/pages/Admin/Violations";
 import AdminReading from "~/pages/Admin/AdminReading";
 import EditTest from "~/pages/Admin/AdminTest/UpdateTest";
 
@@ -78,6 +79,7 @@ export const publicRouter = [
   { path: config.routes.adminTest, component: AdminTest },
   { path: config.routes.createTest, component: CreateTest },
   { path: config.routes.adminPosts, component: AdminPosts },
+  { path: config.routes.adminViolations, component: Violations },
   { path: config.routes.adminReading, component: AdminReading },
   { path: config.routes.jlptFlashcard, component: JLPTFlashcard },
   { path: config.routes.updateTest, component: EditTest },

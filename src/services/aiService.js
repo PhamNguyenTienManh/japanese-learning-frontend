@@ -27,6 +27,7 @@ export async function createSession() {
 export async function getUserSessions() {
   const response = await fetch(`${BASE_URL}/ai-chat/user/sessions`, {
     method: "GET",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -43,6 +44,7 @@ export async function getUserSessions() {
 export async function getTodayAiUsage() {
   const response = await fetch(`${BASE_URL}/ai-chat/usage/today`, {
     method: "GET",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -59,6 +61,7 @@ export async function getTodayAiUsage() {
 export async function getSessionHistory(sessionId) {
   const response = await fetch(`${BASE_URL}/ai-chat/${sessionId}`, {
     method: "GET",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -75,6 +78,7 @@ export async function getSessionHistory(sessionId) {
 export async function updateSession(sessionId, payload) {
   const response = await fetch(`${BASE_URL}/ai-chat/${sessionId}`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -92,6 +96,7 @@ export async function updateSession(sessionId, payload) {
 export async function deleteSession(sessionId) {
   const response = await fetch(`${BASE_URL}/ai-chat/${sessionId}`, {
     method: "DELETE",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -110,6 +115,7 @@ export async function confirmNotebookAdd(sessionId, payload) {
     `${BASE_URL}/ai-chat/${sessionId}/notebook-actions/add-items`,
     {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
         ...getAuthHeaders(),

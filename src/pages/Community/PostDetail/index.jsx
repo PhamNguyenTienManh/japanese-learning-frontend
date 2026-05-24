@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./PostDetail.module.scss";
 
@@ -25,7 +25,14 @@ const cx = classNames.bind(styles);
 function PostDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isLoggedIn, userId: currentUserId } = useAuth();
+  const adminReturnTo = location.state?.fromAdminViolations
+    ? location.state?.returnTo || "/admin/violations"
+    : "";
+  const backLabel = adminReturnTo
+    ? "Quay lại báo cáo vi phạm"
+    : "Quay lại cộng đồng";
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -114,8 +121,13 @@ function PostDetail() {
       setLoading(true);
       setError(null);
       try {
-        const response = await postService.getPostById(id);
+        const response = adminReturnTo
+          ? await postService.getAdminPostById(id)
+          : await postService.getPostById(id);
         const postData = response.data.data;
+        if (!postData) {
+          throw new Error("Post not found");
+        }
         const likedArray = Array.isArray(postData.liked) ? postData.liked : [];
         setPost({ ...postData, isLiked: likedArray.includes(currentUserId) });
         setCountComment(response.data.countComment);
@@ -130,7 +142,7 @@ function PostDetail() {
       }
     };
     if (id) fetchPostDetail();
-  }, [id, currentUserId, isLoggedIn]);
+  }, [id, currentUserId, isLoggedIn, adminReturnTo]);
 
 
   const handleLike = async () => {
@@ -168,7 +180,7 @@ function PostDetail() {
     }
   };
 
-  const handleBack = () => navigate("/community");
+  const handleBack = () => navigate(adminReturnTo || "/community");
 
 
   const handleEdit = () => {
@@ -372,7 +384,7 @@ function PostDetail() {
           <div className={cx("container")}>
             <div className={cx("error-card")}>
               <p className={cx("error-message")}>{error || "Không tìm thấy bài viết"}</p>
-              <Button outline onClick={handleBack}>Quay lại cộng đồng</Button>
+              <Button outline onClick={handleBack}>{backLabel}</Button>
             </div>
           </div>
         </main>
@@ -386,8 +398,14 @@ function PostDetail() {
         <div className={cx("container")}>
           <button type="button" onClick={handleBack} className={cx("back-link")}>
             <FontAwesomeIcon icon={faArrowLeft} className={cx("back-icon")} />
-            <span>Quay lại cộng đồng</span>
+            <span>{backLabel}</span>
           </button>
+
+          {adminReturnTo && post?.status === 0 && (
+            <div className={cx("admin-deleted-notice")}>
+              Bài viết này đã bị xóa bởi vì vi phạm tiêu chuẩn cộng đồng.
+            </div>
+          )}
 
           <article className={cx("post-card")}>
             <PostHeader

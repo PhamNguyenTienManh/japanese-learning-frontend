@@ -181,12 +181,6 @@ function Admin() {
   const paymentProviders = payments.providers30d || [];
   const ai = dashboard?.ai || {};
   const aiUsage = ai.usage30d;
-  const aiStatusLabel = {
-    fresh: "Mới từ Langfuse",
-    cached: "Cache backend",
-    stale: "Cache cũ",
-    unavailable: "Chưa sẵn sàng",
-  }[ai.status] || "Chưa sẵn sàng";
 
   const cards = [
     {
@@ -562,7 +556,6 @@ function Admin() {
                 </article>
               </div>
               <div className={cx("ai-meta")}>
-                <span>{aiStatusLabel}</span>
                 <span>Cập nhật {formatDateTime(ai.fetchedAt)}</span>
                 <span>Tỷ giá {formatNumber(aiUsage.usdToVndRate)} VND/USD</span>
               </div>
