@@ -1,5 +1,5 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCheck, faShield, faLock, faArrowLeft,
@@ -11,6 +11,8 @@ import {
   createStripePayment,
   createZalopayPayment,
 } from "~/services/paymentService";
+import { useAuth } from "~/context/AuthContext";
+import { formatPremiumExpiry } from "~/utils/premium";
 
 /* ── Brand logo badges ─────────────────────────────────────── */
 const BrandVisa = () => (
@@ -57,6 +59,7 @@ export default function Checkout() {
   const plan = searchParams.get("plan") || "Pro";
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { isPremium, premiumExpiredDate } = useAuth();
 
   const [method, setMethod] = useState("zalopay");
   const [loading, setLoading] = useState(false);
@@ -65,12 +68,20 @@ export default function Checkout() {
   const [agree, setAgree] = useState(true);
 
   const isFree = plan === "Miễn phí";
+  const alreadyPremium = isPremium && !isFree;
+  const premiumExpiry = formatPremiumExpiry(premiumExpiredDate);
   const subtotal = cycle === "monthly" ? MONTHLY_PRICE : YEARLY_PRICE;
   const yearlyDiscount = cycle === "yearly" ? MONTHLY_PRICE * 12 - YEARLY_PRICE : 0;
-  const total = isFree ? 0 : subtotal;
+  const total = isFree || alreadyPremium ? 0 : subtotal;
+
+  useEffect(() => {
+    if (alreadyPremium) {
+      addToast("Tài khoản của bạn đã có Premium. Không cần thanh toán lại.", "info");
+    }
+  }, [alreadyPremium, addToast]);
 
   const handleProceed = async () => {
-    if (!agree && !isFree) return;
+    if (!agree && !isFree && !alreadyPremium) return;
 
     if (isFree) {
       addToast("Bạn đã ở gói Miễn phí.", "info");
@@ -79,6 +90,12 @@ export default function Checkout() {
     }
 
     // Tất cả phương thức đều redirect sang cổng thanh toán thật do BE tạo.
+    if (alreadyPremium) {
+      addToast("Tài khoản của bạn đã có Premium. Không thể mua lại khi gói còn hiệu lực.", "info");
+      navigate("/dashboard");
+      return;
+    }
+
     const creators = {
       zalopay: createZalopayPayment,
       card: createStripePayment,
@@ -117,6 +134,20 @@ export default function Checkout() {
       </div>
 
       {/* ── Stepper ── */}
+      {alreadyPremium && (
+        <div className={styles.activeNotice}>
+          <FontAwesomeIcon icon={faCheck} />
+          <div>
+            <strong>Bạn đã có Premium.</strong>
+            <span>
+              {premiumExpiry
+                ? ` Gói Pro đang hoạt động đến ${premiumExpiry}.`
+                : " Gói Pro đang hoạt động trên tài khoản này."}
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className={styles.stepper}>
         {[
           { n: 1, label: "Chọn gói", done: true },
@@ -149,6 +180,7 @@ export default function Checkout() {
                   key={m.id}
                   className={`${styles.methodItem} ${method === m.id ? styles.methodSelected : ""}`}
                   onClick={() => setMethod(m.id)}
+                  disabled={alreadyPremium}
                 >
                   <span className={`${styles.radioCircle} ${method === m.id ? styles.radioActive : ""}`}>
                     {method === m.id && <span className={styles.radioDot} />}
@@ -193,7 +225,7 @@ export default function Checkout() {
           <div className={styles.sectionCard} style={{ marginTop: 20 }}>
             <h2 className={styles.sectionTitle}>Hoá đơn điện tử</h2>
             <p className={styles.sectionSub}>Chúng tôi sẽ gửi xác nhận và hoá đơn về email này.</p>
-            <input className={styles.input} defaultValue="nguyenvana@email.com" style={{ width: '100%' }} />
+            <input className={styles.input} defaultValue="nguyenvana@email.com" disabled={alreadyPremium} style={{ width: '100%' }} />
           </div>
         </div>
 
@@ -211,7 +243,7 @@ export default function Checkout() {
               </div>
 
               {/* Cycle toggle */}
-              {!isFree && (
+              {!isFree && !alreadyPremium && (
                 <div className={styles.cycleToggle}>
                   {[
                     { id: "monthly", label: "Hằng tháng" },
@@ -221,6 +253,7 @@ export default function Checkout() {
                       key={c.id}
                       className={`${styles.cycleBtn} ${cycle === c.id ? styles.cycleBtnActive : ""}`}
                       onClick={() => setCycle(c.id)}
+                      disabled={alreadyPremium}
                     >
                       {c.label}
                       {c.save && (
@@ -249,7 +282,7 @@ export default function Checkout() {
               </div>
 
               {/* Coupon */}
-              {!isFree && (
+              {!isFree && !alreadyPremium && (
                 <div className={styles.couponRow}>
                   <div className={styles.couponInputWrap}>
                     <FontAwesomeIcon icon={faTag} className={styles.couponIcon} />
@@ -258,9 +291,10 @@ export default function Checkout() {
                       placeholder="Mã giảm giá"
                       value={coupon}
                       onChange={(e) => setCoupon(e.target.value)}
+                      disabled={alreadyPremium}
                     />
                   </div>
-                  <button className={styles.couponBtn}>Áp dụng</button>
+                  <button className={styles.couponBtn} disabled={alreadyPremium}>Áp dụng</button>
                 </div>
               )}
 
@@ -268,7 +302,7 @@ export default function Checkout() {
               <div className={styles.breakdown}>
                 <div className={styles.breakdownRow}>
                   <span>Tạm tính</span>
-                  <span>{formatVND(subtotal)}</span>
+                  <span>{formatVND(alreadyPremium ? 0 : subtotal)}</span>
                 </div>
                 {yearlyDiscount > 0 && (
                   <div className={`${styles.breakdownRow} ${styles.breakdownDiscount}`}>
@@ -296,7 +330,7 @@ export default function Checkout() {
               </div>
 
               {/* Renewal note */}
-              {!isFree && (
+              {!isFree && !alreadyPremium && (
                 <div className={styles.renewalNote}>
                   <FontAwesomeIcon icon={faArrowsRotate} style={{ flexShrink: 0 }} />
                   <span>Tự động gia hạn ngày 09/06/2026. Bạn có thể huỷ bất kỳ lúc nào.</span>
@@ -304,16 +338,21 @@ export default function Checkout() {
               )}
 
               {/* Agreement */}
-              {!isFree && (
-                <label className={styles.agreeRow} onClick={() => setAgree((a) => !a)}>
+              {!isFree && !alreadyPremium && (
+                <label
+                  className={styles.agreeRow}
+                  onClick={() => {
+                    if (!alreadyPremium) setAgree((a) => !a);
+                  }}
+                >
                   <span className={`${styles.checkbox} ${agree ? styles.checkboxChecked : ""}`}>
                     {agree && <FontAwesomeIcon icon={faCheck} style={{ fontSize: 9, color: '#fff' }} />}
                   </span>
                   <span>
                     Tôi đồng ý với{" "}
-                    <a href="#" onClick={(e) => e.preventDefault()} className={styles.agreeLink}>Điều khoản dịch vụ</a>{" "}
+                    <button type="button" className={styles.agreeLink}>Điều khoản dịch vụ</button>{" "}
                     và{" "}
-                    <a href="#" onClick={(e) => e.preventDefault()} className={styles.agreeLink}>Chính sách bảo mật</a>{" "}
+                    <button type="button" className={styles.agreeLink}>Chính sách bảo mật</button>{" "}
                     của JAVI.
                   </span>
                 </label>
@@ -323,9 +362,13 @@ export default function Checkout() {
               <button
                 className={styles.ctaBtn}
                 onClick={handleProceed}
-                disabled={loading || (!agree && !isFree)}
+                disabled={loading || alreadyPremium || (!agree && !isFree)}
               >
-                {loading ? "Đang xử lý..." : `Thanh toán ${formatVND(total)}`}
+                {alreadyPremium
+                  ? "Đã kích hoạt Premium"
+                  : loading
+                    ? "Đang xử lý..."
+                    : `Thanh toán ${formatVND(total)}`}
                 {!loading && <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: 13 }} />}
               </button>
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import classNames from "classnames/bind";
-import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faCrown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import Button from "~/components/Button";
@@ -19,7 +19,7 @@ function getInitial(name, email) {
 
 function Header() {
   const [openMenu, setOpenMenu] = useState(null);
-  const { logout, isAdmin, name, avatar, email, isLoggedIn } = useAuth();
+  const { logout, isAdmin, name, avatar, email, isLoggedIn, isPremium } = useAuth();
   const navigate = useNavigate();
 
   const toggleMenu = (menuName) => {
@@ -149,12 +149,19 @@ function Header() {
                 onMouseLeave={() => toggleMenu(null)}
               >
                 <button type="button" className={cx("userTrigger")}>
-                  <span className={cx("avatar")}>
-                    {avatar ? (
-                      <img src={avatar} alt={name || "Avatar"} />
-                    ) : (
-                      <span className={cx("avatarFallback")}>
-                        {getInitial(name, email)}
+                  <span className={cx("avatarWrap")}>
+                    <span className={cx("avatar")}>
+                      {avatar ? (
+                        <img src={avatar} alt={name || "Avatar"} />
+                      ) : (
+                        <span className={cx("avatarFallback")}>
+                          {getInitial(name, email)}
+                        </span>
+                      )}
+                    </span>
+                    {isPremium && (
+                      <span className={cx("premiumBadge")} title="Premium">
+                        <FontAwesomeIcon icon={faCrown} />
                       </span>
                     )}
                   </span>
@@ -165,12 +172,19 @@ function Header() {
                 </button>
                 <div className={cx("dropdown-menu", "right")}>
                   <div className={cx("userMenuHeader")}>
-                    <span className={cx("userMenuAvatar")}>
-                      {avatar ? (
-                        <img src={avatar} alt={name || "Avatar"} />
-                      ) : (
-                        <span className={cx("userMenuAvatarFallback")}>
-                          {getInitial(name, email)}
+                    <span className={cx("userMenuAvatarWrap")}>
+                      <span className={cx("userMenuAvatar")}>
+                        {avatar ? (
+                          <img src={avatar} alt={name || "Avatar"} />
+                        ) : (
+                          <span className={cx("userMenuAvatarFallback")}>
+                            {getInitial(name, email)}
+                          </span>
+                        )}
+                      </span>
+                      {isPremium && (
+                        <span className={cx("premiumBadge", "menu")} title="Premium">
+                          <FontAwesomeIcon icon={faCrown} />
                         </span>
                       )}
                     </span>

@@ -38,6 +38,10 @@
     transform: scale(1.05);
     z-index: 1;
   }
+
+  &.current {
+    border-color: #f0b429;
+  }
 }
 
 .plan-card .badge {
@@ -72,6 +76,19 @@
   font-weight: 700;
   margin-bottom: 20px;
   color: var(--primary);
+  text-align: center;
+}
+
+.plan-card .current-note {
+  min-height: 38px;
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #fff8db;
+  color: #7a5200;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
   text-align: center;
 }
 

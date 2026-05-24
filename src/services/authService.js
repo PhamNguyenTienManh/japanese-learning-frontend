@@ -44,6 +44,8 @@ class AuthService {
     localStorage.removeItem("userName");
     localStorage.removeItem("userAvatar");
     localStorage.removeItem("isPremium");
+    localStorage.removeItem("premiumDate");
+    localStorage.removeItem("premiumExpiredDate");
   }
 
   // Kiểm tra đã đăng nhập chưa
