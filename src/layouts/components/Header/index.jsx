@@ -84,6 +84,9 @@ function Header() {
               <Button to="/reading" text>
                 Luyện đọc
               </Button>
+              <Button to="/conversation" text>
+                Luyện hội thoại
+              </Button>
             </div>
           </div>
 
