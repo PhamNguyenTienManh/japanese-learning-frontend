@@ -1,18 +1,15 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import Button from "~/components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faCreditCard, faMobile, faWallet, faBuilding,
   faCheck, faShield, faLock, faArrowLeft,
   faChevronRight, faArrowsRotate, faTag,
 } from "@fortawesome/free-solid-svg-icons";
 import styles from "./Checkout.module.scss";
 import { useToast } from "~/context/ToastContext";
 import {
-  createMomoPayment,
   createStripePayment,
-  createVnpayPayment,
+  createZalopayPayment,
 } from "~/services/paymentService";
 
 /* ── Brand logo badges ─────────────────────────────────────── */
@@ -32,17 +29,13 @@ const BrandJCB = () => (
     <div style={{ flex: 1, background: '#0a8744', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 7, fontWeight: 800 }}>B</div>
   </div>
 );
-const BrandMoMo = () => (
-  <div style={{ width: 38, height: 24, borderRadius: 4, background: '#a50064', color: '#fff', fontWeight: 800, fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>MoMo</div>
-);
-const BrandVNPay = () => (
-  <div style={{ width: 38, height: 24, borderRadius: 4, background: '#005baa', color: '#fff', fontWeight: 800, fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>VNPay</div>
+const BrandZaloPay = () => (
+  <div style={{ width: 54, height: 24, borderRadius: 4, background: '#0068ff', color: '#fff', fontWeight: 800, fontSize: 9, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ZaloPay</div>
 );
 
 const METHODS = [
   { id: "card", label: "Thẻ tín dụng / ghi nợ", sub: "Visa · Mastercard · JCB", logos: [BrandVisa, BrandMC, BrandJCB] },
-  { id: "momo", label: "Ví MoMo", sub: "Quét QR thanh toán", logos: [BrandMoMo] },
-  { id: "vnpay", label: "VNPay", sub: "Liên kết tài khoản hoặc QR", logos: [BrandVNPay] },
+  { id: "zalopay", label: "ZaloPay", sub: "Quét QR hoặc thanh toán qua ví ZaloPay", logos: [BrandZaloPay] },
 ];
 
 const PLAN_FEATURES = [
@@ -65,7 +58,7 @@ export default function Checkout() {
   const navigate = useNavigate();
   const { addToast } = useToast();
 
-  const [method, setMethod] = useState("card");
+  const [method, setMethod] = useState("zalopay");
   const [loading, setLoading] = useState(false);
   const [cycle, setCycle] = useState("monthly");
   const [coupon, setCoupon] = useState("");
@@ -87,8 +80,7 @@ export default function Checkout() {
 
     // Tất cả phương thức đều redirect sang cổng thanh toán thật do BE tạo.
     const creators = {
-      momo: createMomoPayment,
-      vnpay: createVnpayPayment,
+      zalopay: createZalopayPayment,
       card: createStripePayment,
     };
     const create = creators[method];
@@ -187,30 +179,11 @@ export default function Checkout() {
               </div>
             )}
 
-            {/* MoMo QR */}
-            {method === "momo" && (
+            {/* ZaloPay redirect */}
+            {method === "zalopay" && (
               <div className={styles.subPanel}>
-                <div className={styles.qrBox}>
-                  <div className={styles.qrGrid}>
-                    {Array.from({ length: 144 }).map((_, i) => {
-                      const seed = (i * 9301 + 49297) % 233280;
-                      const dark = seed / 233280 > 0.5;
-                      const r = Math.floor(i / 12), c = i % 12;
-                      const corner = (r < 3 && c < 3) || (r < 3 && c > 8) || (r > 8 && c < 3);
-                      return <div key={i} className={dark || corner ? styles.qrDark : styles.qrLight} />;
-                    })}
-                  </div>
-                  <p className={styles.qrNote}>Quét QR bằng app <strong>MoMo</strong></p>
-                  <p className={styles.qrHint}>Mã hết hạn sau 4:59 · tự động xác nhận</p>
-                </div>
-              </div>
-            )}
-
-            {/* VNPay redirect */}
-            {method === "vnpay" && (
-              <div className={styles.subPanel}>
-                <p style={{ fontSize: 14, color: 'var(--grey-low)' }}>
-                  Bạn sẽ được chuyển đến <strong>VNPay</strong> để hoàn tất giao dịch sau khi nhấn <strong>Thanh toán</strong>.
+                <p style={{ fontSize: 14, color: 'var(--grey-low)', margin: 0 }}>
+                  Bạn sẽ được chuyển đến <strong>ZaloPay</strong> để quét QR hoặc thanh toán bằng ví ZaloPay sau khi nhấn <strong>Thanh toán</strong>.
                 </p>
               </div>
             )}

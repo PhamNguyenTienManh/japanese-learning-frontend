@@ -23,12 +23,8 @@ async function postJson(path, body) {
   return json.data ?? json;
 }
 
-export async function createMomoPayment({ cycle }) {
-  return postJson("/payments/momo/create", { cycle });
-}
-
-export async function createVnpayPayment({ cycle, bankCode }) {
-  return postJson("/payments/vnpay/create", { cycle, bankCode });
+export async function createZalopayPayment({ cycle }) {
+  return postJson("/payments/zalopay/create", { cycle });
 }
 
 export async function createStripePayment({ cycle }) {

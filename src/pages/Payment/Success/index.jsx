@@ -12,8 +12,8 @@ import styles from "./Success.module.scss";
 
 const PROVIDER_LABELS = {
   card: "Thẻ tín dụng / ghi nợ",
-  momo: "Ví MoMo",
-  vnpay: "VNPay",
+  stripe: "Thẻ tín dụng / ghi nợ",
+  zalopay: "ZaloPay",
 };
 
 const CYCLE_LABELS = {
