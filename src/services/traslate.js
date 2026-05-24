@@ -1,4 +1,6 @@
 const BASE_URL = process.env.REACT_APP_BASE_URL_API;
+
+const ARGOS_SERVER = process.env.ARGOS_SERVER;
 export async function translateText(text, source, target) {
     const response = await fetch(`${BASE_URL}/translate`, {
         method: "POST",
