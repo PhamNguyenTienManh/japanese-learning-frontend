@@ -44,6 +44,17 @@ const postService = {
     }
   },
 
+  getAdminPostById: async (id) => {
+    try {
+      const response = await axiosInstance.get(`${API_BASE_URL}/posts/admin/post/${id}`);
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching admin post:', error);
+      throw error;
+    }
+  },
+
   searchPosts: async (query, page = 1, limit = 5) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/posts/search`, {

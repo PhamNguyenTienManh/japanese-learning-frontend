@@ -37,6 +37,7 @@ export async function getStatistics() {
 
 export async function getAdminDashboardStatistics() {
     const response = await fetch(`${BASE_URL}/statistic/admin-dashboard`, {
+        credentials: "include",
         headers: getAuthHeaders(),
     });
 

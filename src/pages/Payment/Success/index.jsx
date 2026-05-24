@@ -8,6 +8,7 @@ import {
   faRotateLeft,
 } from "@fortawesome/free-solid-svg-icons";
 import { useToast } from "~/context/ToastContext";
+import { useAuth } from "~/context/AuthContext";
 import styles from "./Success.module.scss";
 
 const PROVIDER_LABELS = {
@@ -46,19 +47,19 @@ export default function PaymentSuccess() {
 
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { refreshAuth } = useAuth();
   const toastedRef = useRef(false);
 
   useEffect(() => {
     if (toastedRef.current) return;
     toastedRef.current = true;
     if (isSuccess) {
-      localStorage.setItem("isPremium", "true");
-      window.dispatchEvent(new StorageEvent("storage", { key: "isPremium", newValue: "true" }));
+      refreshAuth();
       addToast("Chào mừng bạn đến với Pro!", "success");
     } else {
       addToast("Thanh toán không thành công. Vui lòng thử lại.", "error");
     }
-  }, [isSuccess, addToast]);
+  }, [isSuccess, addToast, refreshAuth]);
 
   return (
     <section className={styles.wrap}>

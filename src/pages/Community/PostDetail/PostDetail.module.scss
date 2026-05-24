@@ -52,6 +52,18 @@
   transform: translateX(-2px);
 }
 
+.admin-deleted-notice {
+  margin-bottom: 18px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 /* Post card */
 .post-card {
   padding: 28px 32px;

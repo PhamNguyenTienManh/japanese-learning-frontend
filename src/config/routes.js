@@ -34,6 +34,7 @@ const routes = {
   createTest: "/admin/tests/create",
   updateTest: "/admin/tests/update/:id",
   adminPosts: "/admin/posts",
+  adminViolations: "/admin/violations",
   adminReading: "/admin/reading",
   translate: "/translate"
   ,

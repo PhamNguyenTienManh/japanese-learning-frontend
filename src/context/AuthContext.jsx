@@ -11,6 +11,7 @@ const EMPTY_AUTH = {
   email: null,
   exp: null,
   isPremium: false,
+  premiumExpiredDate: null,
   name: null,
   avatar: null,
 };
@@ -27,7 +28,8 @@ function buildAuthFromSession(session) {
     role: session.role || null,
     email: session.email || null,
     exp: session.exp || null,
-    isPremium: localStorage.getItem("isPremium") === "true",
+    isPremium: Boolean(session.isPremium),
+    premiumExpiredDate: session.premiumExpiredDate || null,
     name: localStorage.getItem("userName") || null,
     avatar: localStorage.getItem("userAvatar") || null,
   };
