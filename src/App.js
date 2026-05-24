@@ -9,6 +9,7 @@ import { AdminGuard } from "./utils/authUtils";
 import useTextSelection from "./hooks/useTextSelection";
 import SelectionIcon from "./components/SelectionIcon";
 import TranslateModal from "./components/TranslateModal";
+import FloatingAIChatIcon from "./components/FloatingAIChatIcon";
 import { translateArgos } from "./services/traslate";
 // import { RequireAuth, RequireAdmin } from "~/components/Auth";
 
@@ -216,6 +217,7 @@ function App() {
     <Router>
       <div className="App">
         <AnimatedRoutes />
+        <FloatingAIChatIcon />
         {!modalState.isOpen && (
           <SelectionIcon selection={selection} onClick={handleLookup} />
         )}

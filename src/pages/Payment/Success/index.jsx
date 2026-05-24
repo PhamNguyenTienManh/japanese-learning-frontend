@@ -13,8 +13,8 @@ import styles from "./Success.module.scss";
 
 const PROVIDER_LABELS = {
   card: "Thẻ tín dụng / ghi nợ",
-  momo: "Ví MoMo",
-  vnpay: "VNPay",
+  stripe: "Thẻ tín dụng / ghi nợ",
+  zalopay: "ZaloPay",
 };
 
 const CYCLE_LABELS = {
@@ -54,6 +54,8 @@ export default function PaymentSuccess() {
     if (toastedRef.current) return;
     toastedRef.current = true;
     if (isSuccess) {
+      localStorage.setItem("isPremium", "true");
+      window.dispatchEvent(new StorageEvent("storage", { key: "isPremium", newValue: "true" }));
       refreshAuth();
       addToast("Chào mừng bạn đến với Pro!", "success");
     } else {
