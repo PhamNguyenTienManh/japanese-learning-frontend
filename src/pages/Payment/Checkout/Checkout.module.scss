@@ -45,6 +45,31 @@
 
 .accent { color: var(--primary); }
 
+.activeNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  background: #fff8db;
+  color: #7a5200;
+  font-size: 14px;
+  line-height: 1.45;
+
+  svg {
+    margin-top: 2px;
+    color: #b7791f;
+    flex-shrink: 0;
+  }
+
+  strong {
+    display: block;
+    color: #5f3d00;
+  }
+}
+
 /* ── Stepper ─────────────────────────────────── */
 .stepper {
   display: flex;
@@ -160,6 +185,11 @@
   transition: all 0.15s ease;
 
   &:hover { border-color: var(--primary); }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
 }
 
 .methodSelected {
@@ -270,6 +300,11 @@
   }
 
   &::placeholder { color: #bbb; }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
 }
 
 .inputSlot {
@@ -396,6 +431,11 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
 }
 
 .cycleBtnActive {
@@ -480,6 +520,11 @@
 
   &:focus { border-color: var(--primary); }
   &::placeholder { color: #bbb; }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
 }
 
 .couponBtn {
@@ -496,6 +541,11 @@
   transition: background 0.15s;
 
   &:hover { background: var(--background); }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
 }
 
 /* Breakdown */
@@ -604,6 +654,11 @@
 .agreeLink {
   color: var(--primary);
   text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
 
   &:hover { text-decoration: underline; }
 }

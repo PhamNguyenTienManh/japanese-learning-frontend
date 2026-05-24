@@ -6,6 +6,8 @@ import {
   faArrowLeft, faGem, faRobot, faGraduationCap,
   faChartLine, faComments, faHeadset, faBookOpen,
 } from "@fortawesome/free-solid-svg-icons";
+import { useAuth } from "~/context/AuthContext";
+import { formatPremiumExpiry } from "~/utils/premium";
 import styles from "./Payment.module.scss";
 
 const FREE_FEATURES = [
@@ -29,15 +31,24 @@ function Payment() {
   const [searchParams] = useSearchParams();
   const plan = searchParams.get("plan") || "Pro";
   const navigate = useNavigate();
+  const { isPremium, premiumExpiredDate } = useAuth();
   const isFree = plan === "Miễn phí";
+  const alreadyPremium = isPremium && !isFree;
+  const premiumExpiry = formatPremiumExpiry(premiumExpiredDate);
   const features = isFree ? FREE_FEATURES : PRO_FEATURES;
 
   const handleContinue = () => {
     if (isFree) {
       navigate("/");
-    } else {
-      navigate(`/payment/checkout?plan=${encodeURIComponent(plan)}`);
+      return;
     }
+
+    if (alreadyPremium) {
+      navigate("/dashboard");
+      return;
+    }
+
+    navigate(`/payment/checkout?plan=${encodeURIComponent(plan)}`);
   };
 
   return (
@@ -54,7 +65,6 @@ function Payment() {
       </div>
 
       <div className={styles.layout}>
-        {/* Left – Plan details */}
         <div className={styles.planCard}>
           <div className={styles.planHeader}>
             <div className={styles.planIconWrap} data-free={isFree}>
@@ -66,14 +76,32 @@ function Payment() {
                 {isFree ? "Hoàn hảo để bắt đầu hành trình" : "Tối ưu cho học viên nghiêm túc"}
               </p>
             </div>
-            {!isFree && <span className={styles.popularBadge}>Phổ biến</span>}
+            {!isFree && (
+              <span className={styles.popularBadge}>
+                {alreadyPremium ? "Đang dùng" : "Phổ biến"}
+              </span>
+            )}
           </div>
+
+          {alreadyPremium && (
+            <div className={styles.premiumNotice}>
+              <FontAwesomeIcon icon={faCheck} />
+              <div>
+                <strong>Bạn đã có Premium.</strong>
+                <span>
+                  {premiumExpiry
+                    ? ` Gói Pro đang hoạt động đến ${premiumExpiry}.`
+                    : " Gói Pro đang hoạt động trên tài khoản này."}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className={styles.priceRow}>
             <span className={styles.priceAmount}>{isFree ? "0 ₫" : "249.000 ₫"}</span>
             <div className={styles.priceDetail}>
               <span className={styles.pricePer}>/ tháng</span>
-              {!isFree && (
+              {!isFree && !alreadyPremium && (
                 <span className={styles.billingNote}>Thanh toán hằng tháng · Hủy bất cứ lúc nào</span>
               )}
             </div>
@@ -94,7 +122,6 @@ function Payment() {
           </div>
         </div>
 
-        {/* Right – Order summary */}
         <div className={styles.summaryCard}>
           <h3 className={styles.summaryHeading}>Tóm tắt đơn hàng</h3>
 
@@ -103,10 +130,16 @@ function Payment() {
             <span>{isFree ? "0 ₫" : "249.000 ₫"}</span>
           </div>
           <div className={styles.summaryItem}>
+            <span>Trạng thái</span>
+            <span className={alreadyPremium ? styles.statusOk : styles.summaryMuted}>
+              {alreadyPremium ? "Đã kích hoạt" : "Chưa thanh toán"}
+            </span>
+          </div>
+          <div className={styles.summaryItem}>
             <span>Chu kỳ thanh toán</span>
             <span className={styles.summaryMuted}>Hằng tháng</span>
           </div>
-          {!isFree && (
+          {!isFree && !alreadyPremium && (
             <div className={styles.summaryItem}>
               <span>Thuế &amp; phí</span>
               <span className={styles.summaryMuted}>0 ₫</span>
@@ -117,16 +150,25 @@ function Payment() {
 
           <div className={`${styles.summaryItem} ${styles.summaryTotal}`}>
             <span>Tổng hôm nay</span>
-            <span>{isFree ? "0 ₫" : "249.000 ₫"}</span>
+            <span>{isFree || alreadyPremium ? "0 ₫" : "249.000 ₫"}</span>
           </div>
 
-          <Button full primary={!isFree} outline={isFree} onClick={handleContinue}>
-            {isFree ? "Bắt đầu miễn phí" : "Tiếp tục thanh toán"}
+          <Button
+            full
+            primary={!isFree && !alreadyPremium}
+            outline={isFree || alreadyPremium}
+            onClick={handleContinue}
+          >
+            {alreadyPremium
+              ? "Vào bảng điều khiển"
+              : isFree
+                ? "Bắt đầu miễn phí"
+                : "Tiếp tục thanh toán"}
           </Button>
 
           <div className={styles.securityRow}>
             <span><FontAwesomeIcon icon={faShield} /> Bảo mật SSL</span>
-            <span><FontAwesomeIcon icon={faLock} /> Mã hoá 256‑bit</span>
+            <span><FontAwesomeIcon icon={faLock} /> Mã hoá 256-bit</span>
           </div>
         </div>
       </div>

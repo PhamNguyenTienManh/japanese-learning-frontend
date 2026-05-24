@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import authService from "~/services/authService";
 import { getProfile } from "~/services/profileService";
+import { extractPremiumState } from "~/utils/premium";
 
 const AuthContext = createContext(null);
 
@@ -11,6 +12,8 @@ const EMPTY_AUTH = {
   email: null,
   exp: null,
   isPremium: false,
+  premiumDate: null,
+  premiumExpiredDate: null,
   name: null,
   avatar: null,
 };
@@ -21,26 +24,54 @@ function buildAuthFromSession(session) {
   const isExpired = session.exp ? session.exp * 1000 < Date.now() : false;
   if (isExpired) return EMPTY_AUTH;
 
+  const cachedPremium = {
+    isPremium: localStorage.getItem("isPremium") === "true",
+    premiumDate: localStorage.getItem("premiumDate") || null,
+    premiumExpiredDate: localStorage.getItem("premiumExpiredDate") || null,
+  };
+  const premiumState = extractPremiumState(session, cachedPremium);
+
   return {
     isLoggedIn: true,
     userId: session.sub || null,
     role: session.role || null,
     email: session.email || null,
     exp: session.exp || null,
-    isPremium: localStorage.getItem("isPremium") === "true",
+    ...premiumState,
     name: localStorage.getItem("userName") || null,
     avatar: localStorage.getItem("userAvatar") || null,
   };
 }
 
+function persistPremiumState({ isPremium, premiumDate, premiumExpiredDate }) {
+  if (isPremium) {
+    localStorage.setItem("isPremium", "true");
+  } else {
+    localStorage.removeItem("isPremium");
+  }
+
+  if (premiumDate) {
+    localStorage.setItem("premiumDate", premiumDate);
+  } else {
+    localStorage.removeItem("premiumDate");
+  }
+
+  if (premiumExpiredDate) {
+    localStorage.setItem("premiumExpiredDate", premiumExpiredDate);
+  } else {
+    localStorage.removeItem("premiumExpiredDate");
+  }
+}
+
 export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(EMPTY_AUTH);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   const fetchUserProfile = useCallback(async () => {
     try {
       const profile = await getProfile();
-      const data = profile?.data;
+      const data = profile?.data ?? profile;
       if (!data) return;
 
       const name = data.name || "";
@@ -48,17 +79,28 @@ export function AuthProvider({ children }) {
       if (name) localStorage.setItem("userName", name);
       if (avatar) localStorage.setItem("userAvatar", avatar);
 
-      setAuth((prev) => ({ ...prev, name, avatar }));
+      setAuth((prev) => {
+        const premiumState = extractPremiumState(data, prev);
+        persistPremiumState(premiumState);
+        return { ...prev, ...premiumState, name, avatar };
+      });
     } catch (err) {
       console.error("Failed to load user profile:", err);
+    } finally {
+      setProfileLoaded(true);
     }
   }, []);
 
   const loadAuth = useCallback(async () => {
     setIsLoading(true);
+    setProfileLoaded(false);
     try {
       const session = await authService.getSession();
-      setAuth(buildAuthFromSession(session));
+      const nextAuth = buildAuthFromSession(session);
+      if (nextAuth.isLoggedIn) {
+        persistPremiumState(nextAuth);
+      }
+      setAuth(nextAuth);
     } catch (err) {
       console.error("Failed to load auth session:", err);
       setAuth(EMPTY_AUTH);
@@ -74,6 +116,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     await authService.logout();
     setAuth(EMPTY_AUTH);
+    setProfileLoaded(false);
   }, []);
 
   const isAdmin = () => auth.role === "admin";
@@ -88,10 +131,10 @@ export function AuthProvider({ children }) {
   }, [loadAuth]);
 
   useEffect(() => {
-    if (auth.isLoggedIn && (auth.name === null || auth.avatar === null)) {
+    if (auth.isLoggedIn && !profileLoaded) {
       fetchUserProfile();
     }
-  }, [auth.isLoggedIn, auth.name, auth.avatar, fetchUserProfile]);
+  }, [auth.isLoggedIn, profileLoaded, fetchUserProfile]);
 
   return (
     <AuthContext.Provider

@@ -32,7 +32,13 @@ function Button({
     Comp = "a";
   }
 
-  //⭐ Auto detect button chỉ có icon
+  if (disabled) {
+    props["aria-disabled"] = true;
+    if (!to && !href) {
+      props.disabled = true;
+    }
+  }
+
   const isIconOnly = (leftIcon || rightIcon) && !children;
 
   const classes = cx("wrapper", {
