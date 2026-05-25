@@ -1,11 +1,18 @@
 import classNames from "classnames/bind";
 import styles from "./PostHeader.module.scss";
 import formatDateVN from "~/services/formatDate";
-import ActionBtn from "~/components/ActionBtnInCommunity";
+import PostActionsMenu from "~/components/PostActionsMenu/PostActionsMenu";
 
 const cx = classNames.bind(styles);
 
-function PostHeader({ post, isOwner, isEditing, onEdit, onDelete }) {
+function PostHeader({
+  post,
+  isOwner,
+  isEditing,
+  isLoggedIn,
+  onEdit,
+  onDelete,
+}) {
   return (
     <div className={cx("post-header")}>
       <img
@@ -35,9 +42,14 @@ function PostHeader({ post, isOwner, isEditing, onEdit, onDelete }) {
             {post.category_id.name || "Từ vựng"}
           </span>
         )}
-        {isOwner && !isEditing && (
-          <ActionBtn onEdit={onEdit} onDelete={onDelete} />
-        )}
+        <PostActionsMenu
+          postId={post._id}
+          isOwner={isOwner}
+          isLoggedIn={isLoggedIn}
+          isEditing={isEditing}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       </div>
     </div>
   );

@@ -44,6 +44,17 @@ const postService = {
     }
   },
 
+  getAccessiblePostById: async (id) => {
+    try {
+      const response = await axiosInstance.get(`${API_BASE_URL}/posts/post/${id}/accessible`);
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching accessible post:', error);
+      throw error;
+    }
+  },
+
   getAdminPostById: async (id) => {
     try {
       const response = await axiosInstance.get(`${API_BASE_URL}/posts/admin/post/${id}`);

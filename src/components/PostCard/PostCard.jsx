@@ -1,3 +1,4 @@
+import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faMessage,
@@ -8,16 +9,40 @@ import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
 import classNames from "classnames/bind";
 import styles from "./PostCard.module.scss";
 import formatDateVN from "~/services/formatDate";
+import { useAuth } from "~/context/AuthContext";
+import { useToast } from "~/context/ToastContext";
+import postService from "~/services/postService";
+import PostActionsMenu from "~/components/PostActionsMenu/PostActionsMenu";
 
 const cx = classNames.bind(styles);
 
 function PostCard({ post, commentCount }) {
+  const navigate = useNavigate();
+  const { addToast } = useToast();
+  const { isLoggedIn, userId: currentUserId } = useAuth();
   const authorName = post.profile_id?.name || "Anonymous";
   const avatarUrl = post.profile_id?.image_url || "/placeholder.svg";
   const hasImage = Boolean(post.image_url);
+  const postId = post._id || post.id;
+  const isOwner = Boolean(currentUserId && post.profile_id?.userId === currentUserId);
+
+  const handleEdit = () => {
+    navigate(`/community/new?edit=${postId}`);
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa bài viết này?")) return;
+    try {
+      await postService.deletePost(postId);
+      addToast("Đã xóa bài viết thành công", "success");
+      window.location.reload();
+    } catch (err) {
+      addToast("Không thể xóa bài viết. Vui lòng thử lại.", "error");
+    }
+  };
 
   return (
-    <a href={`/community/${post._id}`} className={cx("post-card")}>
+    <article className={cx("post-card")}>
       <div className={cx("post-main", { "has-image": hasImage })}>
         <div className={cx("post-body")}>
           <div className={cx("post-header")}>
@@ -31,10 +56,20 @@ function PostCard({ post, commentCount }) {
             {post.category_id && (
               <span className={cx("post-category")}>{post.category_id.name}</span>
             )}
+            <PostActionsMenu
+              postId={postId}
+              isOwner={isOwner}
+              isLoggedIn={isLoggedIn}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              compact
+            />
           </div>
 
-          <h3 className={cx("post-title")}>{post.title}</h3>
-          <p className={cx("post-excerpt")}>{post.excerpt || post.content}</p>
+          <Link to={`/community/${postId}`} className={cx("post-link")}>
+            <h3 className={cx("post-title")}>{post.title}</h3>
+            <p className={cx("post-excerpt")}>{post.excerpt || post.content}</p>
+          </Link>
 
           <div className={cx("post-footer")}>
             <div className={cx("post-stats")}>
@@ -49,19 +84,19 @@ function PostCard({ post, commentCount }) {
                 {commentCount || 0}
               </span>
             </div>
-            <span className={cx("read-more")}>
+            <Link to={`/community/${postId}`} className={cx("read-more")}>
               Đọc tiếp <FontAwesomeIcon icon={faArrowRight} />
-            </span>
+            </Link>
           </div>
         </div>
 
         {hasImage && (
-          <div className={cx("post-thumb-wrap")}>
+          <Link to={`/community/${postId}`} className={cx("post-thumb-wrap")}>
             <img className={cx("post-thumb")} src={post.image_url} alt="" />
-          </div>
+          </Link>
         )}
       </div>
-    </a>
+    </article>
   );
 }
 

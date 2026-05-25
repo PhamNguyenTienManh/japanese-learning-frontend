@@ -63,10 +63,11 @@ function NewPost() {
   const fetchPostData = async (id) => {
     try {
       setLoading(true);
-      const data = await postService.getPostById(id);
+      const response = await postService.getPostById(id);
+      const data = response?.data?.data || response?.data || response;
       setTitle(data.title || "");
       setContent(data.content || "");
-      setCategoryId(data.category_id || "");
+      setCategoryId(data.category_id?._id || data.category_id || "");
       setImagePreview(data.image_url || null);
     } catch {
       alert("Không thể tải dữ liệu bài viết!");
@@ -132,8 +133,6 @@ function NewPost() {
         title: title.trim(),
         content: content.trim(),
         category_id: categoryId,
-        image_url: "",
-        image_publicId: "",
       };
 
       if (uploadedImageData) {
