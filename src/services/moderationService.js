@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL = process.env.REACT_APP_BASE_URL_API;
+export const MODERATION_COUNTS_REFRESH_EVENT = "moderation-counts-refresh";
 
 const moderationClient = axios.create({
   baseURL: `${API_BASE_URL}/moderation`,
@@ -11,10 +12,20 @@ const moderationClient = axios.create({
 });
 
 const moderationService = {
-  getCases: async ({ status = "pending", targetType = "", page = 1, limit = 20 } = {}) => {
+  getCases: async ({ status = "pending", targetType = "", source = "", page = 1, limit = 20 } = {}) => {
     const response = await moderationClient.get("/cases", {
-      params: { status, targetType, page, limit },
+      params: { status, targetType, source, page, limit },
     });
+    return response.data;
+  },
+
+  reportPost: async (postId, payload) => {
+    const response = await moderationClient.post(`/reports/posts/${postId}`, payload);
+    return response.data;
+  },
+
+  getCaseCounts: async () => {
+    const response = await moderationClient.get("/cases/counts");
     return response.data;
   },
 

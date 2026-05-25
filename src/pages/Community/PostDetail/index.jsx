@@ -26,7 +26,7 @@ function PostDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn, userId: currentUserId } = useAuth();
+  const { isLoggedIn, userId: currentUserId, role } = useAuth();
   const adminReturnTo = location.state?.fromAdminViolations
     ? location.state?.returnTo || "/admin/violations"
     : "";
@@ -121,9 +121,12 @@ function PostDetail() {
       setLoading(true);
       setError(null);
       try {
-        const response = adminReturnTo
-          ? await postService.getAdminPostById(id)
-          : await postService.getPostById(id);
+        const response =
+          adminReturnTo || role === "admin"
+            ? await postService.getAdminPostById(id)
+            : isLoggedIn
+              ? await postService.getAccessiblePostById(id)
+              : await postService.getPostById(id);
         const postData = response.data.data;
         if (!postData) {
           throw new Error("Post not found");
@@ -131,7 +134,7 @@ function PostDetail() {
         const likedArray = Array.isArray(postData.liked) ? postData.liked : [];
         setPost({ ...postData, isLiked: likedArray.includes(currentUserId) });
         setCountComment(response.data.countComment);
-        setIsOwner(currentUserId === postData.profile_id.userId);
+        setIsOwner(currentUserId === postData.profile_id?.userId);
         if (isLoggedIn) await getMe(currentUserId);
         await fetchComments();
       } catch (err) {
@@ -142,7 +145,7 @@ function PostDetail() {
       }
     };
     if (id) fetchPostDetail();
-  }, [id, currentUserId, isLoggedIn, adminReturnTo]);
+  }, [id, currentUserId, isLoggedIn, adminReturnTo, role]);
 
 
   const handleLike = async () => {
@@ -401,7 +404,7 @@ function PostDetail() {
             <span>{backLabel}</span>
           </button>
 
-          {adminReturnTo && post?.status === 0 && (
+          {post?.status === 0 && (adminReturnTo || role === "admin" || isOwner) && (
             <div className={cx("admin-deleted-notice")}>
               Bài viết này đã bị xóa bởi vì vi phạm tiêu chuẩn cộng đồng.
             </div>
@@ -412,6 +415,7 @@ function PostDetail() {
               post={post}
               isOwner={isOwner}
               isEditing={isEditing}
+              isLoggedIn={isLoggedIn}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />

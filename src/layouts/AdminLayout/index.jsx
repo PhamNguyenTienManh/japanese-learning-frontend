@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import PropTypes from "prop-types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -21,6 +21,9 @@ import {
 
 import styles from "./AdminLayout.module.scss";
 import { useAuth } from "~/context/AuthContext";
+import moderationService, {
+  MODERATION_COUNTS_REFRESH_EVENT,
+} from "~/services/moderationService";
 
 const cx = classNames.bind(styles);
 
@@ -42,9 +45,36 @@ const navItems = [
 
 function AdminLayout({ children }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [caseCounts, setCaseCounts] = useState({
+    actionableTotal: 0,
+  });
+
+  const loadCaseCounts = useCallback(async () => {
+    try {
+      const response = await moderationService.getCaseCounts();
+      const data = response?.success ? response.data : response;
+      setCaseCounts({
+        actionableTotal: Number(data?.actionableTotal) || 0,
+      });
+    } catch {
+      setCaseCounts({ actionableTotal: 0 });
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCaseCounts();
+  }, [loadCaseCounts, location.pathname]);
+
+  useEffect(() => {
+    window.addEventListener(MODERATION_COUNTS_REFRESH_EVENT, loadCaseCounts);
+    return () => {
+      window.removeEventListener(MODERATION_COUNTS_REFRESH_EVENT, loadCaseCounts);
+    };
+  }, [loadCaseCounts]);
 
   const handleLogout = async () => {
     try {
@@ -102,6 +132,14 @@ function AdminLayout({ children }) {
               {!collapsed && (
                 <span className={cx("nav-label")}>{item.label}</span>
               )}
+              {item.to === "/admin/violations" &&
+                caseCounts.actionableTotal > 0 && (
+                  <span className={cx("nav-badge")}>
+                    {caseCounts.actionableTotal > 99
+                      ? "99+"
+                      : caseCounts.actionableTotal}
+                  </span>
+                )}
             </NavLink>
           ))}
         </nav>

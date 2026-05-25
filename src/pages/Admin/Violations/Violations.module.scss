@@ -224,6 +224,9 @@
   padding: 4px;
 
   button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     border: 0;
     background: transparent;
     border-radius: 6px;
@@ -242,7 +245,29 @@
   .active {
     background: #0f766e;
     color: #ffffff;
+
+    .tabBadge {
+      background: #ffffff;
+      color: #0f766e;
+      border-color: rgba(255, 255, 255, 0.55);
+    }
   }
+}
+
+.tabBadge {
+  min-width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .cases {
@@ -312,6 +337,15 @@
 
 .reason {
   color: #334155;
+}
+
+.reportDetail {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #334155;
+  line-height: 1.5;
 }
 
 .viewLink,

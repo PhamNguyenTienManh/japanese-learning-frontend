@@ -11,15 +11,37 @@ import {
   Trash2,
 } from "lucide-react";
 
-import moderationService from "~/services/moderationService";
+import moderationService, {
+  MODERATION_COUNTS_REFRESH_EVENT,
+} from "~/services/moderationService";
 import styles from "./Violations.module.scss";
 
 const cx = classNames.bind(styles);
 
 const statusTabs = [
-  { value: "pending", label: "Chờ duyệt" },
-  { value: "auto_deleted", label: "Đã tự động xóa" },
-  { value: "handled", label: "Đã xử lý" },
+  {
+    value: "pending",
+    label: "Chờ duyệt",
+    status: "pending",
+    source: "automated",
+    countKey: "automatedPending",
+  },
+  {
+    value: "auto_deleted",
+    label: "AI tự động xóa",
+    status: "auto_deleted",
+    source: "automated",
+    countKey: "automatedAutoDeleted",
+  },
+  {
+    value: "user_report_posts",
+    label: "Bài viết bị người dùng báo cáo",
+    status: "pending",
+    source: "user_report",
+    targetType: "post",
+    countKey: "userReportPostsPending",
+  },
+  { value: "handled", label: "Đã xử lý", status: "handled", source: "" },
 ];
 
 const PAGE_SIZE = 10;
@@ -61,6 +83,11 @@ function getPostLink(item) {
   return postId ? `/community/${postId}` : "";
 }
 
+function getLatestReport(item) {
+  const reports = Array.isArray(item.userReports) ? item.userReports : [];
+  return reports[reports.length - 1] || null;
+}
+
 function Violations() {
   const [cases, setCases] = useState([]);
   const [settings, setSettings] = useState(null);
@@ -75,6 +102,12 @@ function Violations() {
     limit: PAGE_SIZE,
     totalPage: 1,
   });
+  const [caseCounts, setCaseCounts] = useState({
+    automatedPending: 0,
+    automatedAutoDeleted: 0,
+    userReportPostsPending: 0,
+    actionableTotal: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
@@ -85,9 +118,12 @@ function Violations() {
     try {
       setLoading(true);
       setError("");
+      const activeTab = statusTabs.find((tab) => tab.value === activeStatus) || statusTabs[0];
+      const effectiveTargetType = activeTab.targetType || targetType;
       const response = await moderationService.getCases({
-        status: activeStatus,
-        targetType,
+        status: activeTab.status,
+        targetType: effectiveTargetType,
+        source: activeTab.source,
         page: currentPage,
         limit: PAGE_SIZE,
       });
@@ -138,9 +174,33 @@ function Violations() {
     }
   }, []);
 
+  const loadCaseCounts = useCallback(async () => {
+    try {
+      const response = await moderationService.getCaseCounts();
+      const data = unwrap(response);
+      setCaseCounts({
+        automatedPending: Number(data?.automatedPending) || 0,
+        automatedAutoDeleted: Number(data?.automatedAutoDeleted) || 0,
+        userReportPostsPending: Number(data?.userReportPostsPending) || 0,
+        actionableTotal: Number(data?.actionableTotal) || 0,
+      });
+    } catch {
+      setCaseCounts({
+        automatedPending: 0,
+        automatedAutoDeleted: 0,
+        userReportPostsPending: 0,
+        actionableTotal: 0,
+      });
+    }
+  }, []);
+
   useEffect(() => {
     loadCases();
   }, [loadCases]);
+
+  useEffect(() => {
+    loadCaseCounts();
+  }, [loadCaseCounts]);
 
   useEffect(() => {
     loadSettings();
@@ -148,13 +208,16 @@ function Violations() {
 
   const counts = useMemo(
     () => ({
-      total: cases.length,
+      total: pagination.total,
       ai: cases.filter(
         (item) => item.source === "ai" || item.source === "rulebase",
       ).length,
-      userReports: 0,
+      userReports: cases.reduce(
+        (sum, item) => sum + (Number(item.reportCount) || 0),
+        0,
+      ),
     }),
-    [cases],
+    [cases, pagination.total],
   );
 
   const handleAction = async (action, id) => {
@@ -169,6 +232,8 @@ function Violations() {
       } else {
         await loadCases();
       }
+      await loadCaseCounts();
+      window.dispatchEvent(new Event(MODERATION_COUNTS_REFRESH_EVENT));
     } catch (err) {
       setError(err?.response?.data?.message || "Không thể cập nhật báo cáo.");
     } finally {
@@ -233,6 +298,7 @@ function Violations() {
 
   const handleStatusChange = (status) => {
     setActiveStatus(status);
+    if (status === "user_report_posts") setTargetType("");
     setCurrentPage(1);
   };
 
@@ -244,6 +310,7 @@ function Violations() {
   const totalPage = Math.max(pagination.totalPage || 1, 1);
   const canGoPrevious = currentPage > 1 && !loading;
   const canGoNext = currentPage < totalPage && !loading;
+  const isUserReportTab = activeStatus === "user_report_posts";
 
   return (
     <div className={cx("page")}>
@@ -371,13 +438,21 @@ function Violations() {
               className={cx({ active: activeStatus === tab.value })}
               onClick={() => handleStatusChange(tab.value)}
             >
-              {tab.label}
+              <span>{tab.label}</span>
+              {tab.countKey && caseCounts[tab.countKey] > 0 && (
+                <span className={cx("tabBadge")}>
+                  {caseCounts[tab.countKey] > 99
+                    ? "99+"
+                    : caseCounts[tab.countKey]}
+                </span>
+              )}
             </button>
           ))}
         </div>
         <select
           value={targetType}
           onChange={(event) => handleTargetTypeChange(event.target.value)}
+          disabled={isUserReportTab}
         >
           <option value="">Tất cả nội dung</option>
           <option value="post">Bài viết</option>
@@ -394,10 +469,17 @@ function Violations() {
         ) : (
           cases.map((item) => {
             const id = getId(item._id);
+            const isUserReport = item.source === "user_report";
+            const latestReport = getLatestReport(item);
+            const confidenceNumber = Number(item.confidence);
+            const hasKnownConfidence =
+              item.confidence !== null &&
+              item.confidence !== undefined &&
+              Number.isFinite(confidenceNumber);
             const confidence =
-              item.confidence === null || item.confidence === undefined
+              !hasKnownConfidence
                 ? "-"
-                : Number(item.confidence).toLocaleString("vi-VN", {
+                : confidenceNumber.toLocaleString("vi-VN", {
                     style: "percent",
                     maximumFractionDigits: 1,
                   });
@@ -409,9 +491,13 @@ function Violations() {
                   <div>
                     <div className={cx("badges")}>
                       <span>{targetTypeLabels[item.targetType]}</span>
-                      <span>AI</span>
+                      <span>{isUserReport ? "Người dùng báo cáo" : "AI"}</span>
                       <span>{categoryLabels[item.category] || "Chưa phân loại"}</span>
-                      <span>Confidence {confidence}</span>
+                      {isUserReport ? (
+                        <span>{Number(item.reportCount) || 0} lượt báo cáo</span>
+                      ) : (
+                        <span>Confidence {confidence}</span>
+                      )}
                     </div>
                     <h2>{item.title || "Nội dung bình luận"}</h2>
                     <p>
@@ -439,6 +525,15 @@ function Violations() {
                 <div className={cx("reason")}>
                   <strong>Lý do:</strong> {item.reason || "-"}
                 </div>
+
+                {isUserReport && latestReport && (
+                  <div className={cx("reportDetail")}>
+                    <strong>Báo cáo gần nhất:</strong>{" "}
+                    {latestReport.reporterName || "Người dùng"} ·{" "}
+                    {latestReport.subcategory || "Chưa rõ mục con"}
+                    {latestReport.description ? ` · ${latestReport.description}` : ""}
+                  </div>
+                )}
 
                 {item.matchedTerms?.length > 0 && (
                   <div className={cx("terms")}>

@@ -42,6 +42,12 @@
   }
 }
 
+.post-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
 .post-main {
   display: flex;
   gap: 18px;
@@ -165,6 +171,7 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--grey);
+  text-decoration: none;
   transition: gap 0.18s ease, color 0.18s ease;
 
   svg {
@@ -174,6 +181,7 @@
 
 /* Thumb */
 .post-thumb-wrap {
+  display: block;
   flex-shrink: 0;
   width: 180px;
   border-radius: 14px;
