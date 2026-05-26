@@ -4,6 +4,7 @@ import classNames from "classnames/bind";
 import {
   Activity,
   Bot,
+  ChevronDown,
   Clock3,
   Coins,
   FileCheck2,
@@ -25,6 +26,7 @@ import {
 } from "recharts";
 
 import config from "~/config";
+import moderationService from "~/services/moderationService";
 import { getAdminDashboardStatistics } from "~/services/statistic";
 import styles from "./Admin.module.scss";
 
@@ -75,6 +77,14 @@ function formatPercent(value) {
   return value === null || value === undefined
     ? "-"
     : `${Number(value).toLocaleString("vi-VN")}%`;
+}
+
+function formatMetricPercent(value) {
+  return value === null || value === undefined
+    ? "-"
+    : `${(Number(value) * 100).toLocaleString("vi-VN", {
+        maximumFractionDigits: 1,
+      })}%`;
 }
 
 function formatScore(value) {
@@ -141,9 +151,36 @@ function EmptyState({ children }) {
   return <div className={cx("empty-state")}>{children}</div>;
 }
 
+const aiMetricRangeOptions = [
+  { value: "30d", label: "30 ngày" },
+  { value: "90d", label: "3 tháng" },
+  { value: "180d", label: "6 tháng" },
+  { value: "365d", label: "1 năm" },
+  { value: "all", label: "Toàn bộ" },
+];
+
+function ThresholdPointLabel({ x, y, payload }) {
+  if (!payload || x === undefined || y === undefined) return null;
+  return (
+    <text
+      x={x}
+      y={y - 10}
+      className={cx("threshold-label")}
+      textAnchor="middle"
+    >
+      {formatMetricPercent(payload.threshold)}
+    </text>
+  );
+}
+
 function Admin() {
   const [dashboard, setDashboard] = useState(null);
   const [dashboardError, setDashboardError] = useState("");
+  const [aiMetricRange, setAiMetricRange] = useState("30d");
+  const [aiMetrics, setAiMetrics] = useState(null);
+  const [aiMetricsLoading, setAiMetricsLoading] = useState(true);
+  const [aiMetricsError, setAiMetricsError] = useState("");
+  const [aiMetricMenuOpen, setAiMetricMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -165,9 +202,28 @@ function Admin() {
     }
   }, []);
 
+  const loadAiMetrics = useCallback(async (range = aiMetricRange) => {
+    try {
+      setAiMetricsLoading(true);
+      setAiMetricsError("");
+      const response = await moderationService.getPostAiMetrics(range);
+      setAiMetrics(unwrap(response));
+    } catch (error) {
+      setAiMetricsError(
+        error?.response?.data?.message || "Không thể tải metric AI duyệt bài viết.",
+      );
+    } finally {
+      setAiMetricsLoading(false);
+    }
+  }, [aiMetricRange]);
+
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
+
+  useEffect(() => {
+    loadAiMetrics(aiMetricRange);
+  }, [aiMetricRange, loadAiMetrics]);
 
   const summary = dashboard?.summary || {};
   const contentTotals = dashboard?.content?.totals || {};
@@ -181,6 +237,15 @@ function Admin() {
   const paymentProviders = payments.providers30d || [];
   const ai = dashboard?.ai || {};
   const aiUsage = ai.usage30d;
+  const aiMetricCounts = aiMetrics?.counts || {};
+  const aiMetricScores = aiMetrics?.scores || {};
+  const aiMetricCurve = (aiMetrics?.curve || []).filter(
+    (point) => point.precision !== null && point.recall !== null,
+  );
+  const hasAiMetricData = Number(aiMetricCounts.evaluated || 0) > 0;
+  const aiMetricRangeLabel =
+    aiMetricRangeOptions.find((option) => option.value === aiMetricRange)
+      ?.label || "30 ngày";
 
   const cards = [
     {
@@ -257,8 +322,9 @@ function Admin() {
             type="button"
             onClick={() => {
               loadDashboard({ background: !!dashboard });
+              loadAiMetrics(aiMetricRange);
             }}
-            disabled={loading || refreshing}
+            disabled={loading || refreshing || aiMetricsLoading}
           >
             <RefreshCw size={16} className={cx({ spinning: refreshing })} />
             <span>{refreshing ? "Đang tải" : "Làm mới"}</span>
@@ -340,6 +406,141 @@ function Admin() {
           )}
         </Panel>
       </section>
+
+      <Panel
+        title="Post Moderation Analytics"
+        subtitle="Precision, recall, F1 và Precision-Recall Curve"
+        className="ai-metrics-panel"
+        action={
+          <div
+            className={cx("range-dropdown")}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) {
+                setAiMetricMenuOpen(false);
+              }
+            }}
+          >
+            <button
+              type="button"
+              className={cx("range-trigger", { open: aiMetricMenuOpen })}
+              onClick={() => setAiMetricMenuOpen((open) => !open)}
+              disabled={aiMetricsLoading}
+              aria-haspopup="listbox"
+              aria-expanded={aiMetricMenuOpen}
+            >
+              <span>{aiMetricRangeLabel}</span>
+              <ChevronDown size={16} />
+            </button>
+            {aiMetricMenuOpen && (
+              <div className={cx("range-menu")} role="listbox">
+                {aiMetricRangeOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={cx({
+                      selected: option.value === aiMetricRange,
+                    })}
+                    onClick={() => {
+                      setAiMetricRange(option.value);
+                      setAiMetricMenuOpen(false);
+                    }}
+                    role="option"
+                    aria-selected={option.value === aiMetricRange}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        }
+      >
+        {aiMetricsError && (
+          <div className={cx("inline-error", "metric-error")}>
+            {aiMetricsError}
+          </div>
+        )}
+        {aiMetricsLoading && !aiMetrics ? (
+          <Skeleton className="chart-skeleton" />
+        ) : !hasAiMetricData ? (
+          <EmptyState>Chưa đủ dữ liệu admin đã xử lý để tính metric.</EmptyState>
+        ) : (
+          <div className={cx("ai-metrics-layout")}>
+            <div className={cx("ai-metric-score-grid")}>
+              {[
+                ["Precision", formatMetricPercent(aiMetricScores.precision)],
+                ["Recall", formatMetricPercent(aiMetricScores.recall)],
+                ["F1 score", formatMetricPercent(aiMetricScores.f1)],
+              ].map(([label, value]) => (
+                <article key={label}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </article>
+              ))}
+            </div>
+
+            <div className={cx("ai-pr-chart")}>
+              {aiMetricCurve.length === 0 ? (
+                <EmptyState>Chưa có điểm curve hợp lệ.</EmptyState>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={aiMetricCurve}
+                    margin={{ top: 12, right: 18, left: 8, bottom: 22 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="recall"
+                      type="number"
+                      domain={[0, 1]}
+                      tickFormatter={formatMetricPercent}
+                      label={{
+                        value: "Recall (bắt được bao nhiêu %)",
+                        position: "insideBottom",
+                        offset: -4,
+                      }}
+                    />
+                    <YAxis
+                      type="number"
+                      domain={[0, 1]}
+                      tickFormatter={formatMetricPercent}
+                      label={{
+                        value: "Precision (xoá đúng bao nhiêu %)",
+                        angle: -90,
+                        position: "insideLeft",
+                        offset: 10,
+                        dy: 42,
+                      }}
+                    />
+                    <Tooltip
+                      formatter={(value) => [
+                        formatMetricPercent(value),
+                        "Precision",
+                      ]}
+                      labelFormatter={(_, payload) => {
+                        const point = payload?.[0]?.payload || {};
+                        return `Threshold ${formatMetricPercent(point.threshold)} · Recall ${formatMetricPercent(point.recall)}`;
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="precision"
+                      stroke="#0f766e"
+                      strokeWidth={3}
+                      dot={{ r: 3 }}
+                      label={
+                        aiMetricCurve.length <= 8
+                          ? <ThresholdPointLabel />
+                          : false
+                      }
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+        )}
+      </Panel>
 
       <section className={cx("content-grid")}>
         <Panel

@@ -29,6 +29,13 @@ const moderationService = {
     return response.data;
   },
 
+  getPostAiMetrics: async (range = "30d") => {
+    const response = await moderationClient.get("/metrics/post-ai", {
+      params: { range },
+    });
+    return response.data;
+  },
+
   deleteCase: async (id) => {
     const response = await moderationClient.patch(`/cases/${id}/delete`);
     return response.data;
