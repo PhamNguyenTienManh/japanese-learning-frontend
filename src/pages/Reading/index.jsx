@@ -735,7 +735,6 @@ export default function Reading() {
                                     className={cx("toolButton", "toolPrimary")}
                                     onClick={handleOpenPractice}
                                 >
-                                    <FontAwesomeIcon icon={faMicrophone} />
                                     Luyện đọc
                                 </button>
                             </div>
@@ -817,7 +816,7 @@ function PracticeModal({
             <div className={cx("practiceModal")}>
                 <div className={cx("practiceHeader")}>
                     <div>
-                        <h2 className={cx("practiceTitle")}>Luyện đọc 🎤</h2>
+                        <h2 className={cx("practiceTitle")}>Luyện đọc</h2>
                         <p className={cx("practiceSubtitle")}>{article?.title}</p>
                     </div>
                     <button

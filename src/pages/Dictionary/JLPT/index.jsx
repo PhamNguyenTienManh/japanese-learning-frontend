@@ -43,10 +43,10 @@ const initialDisplayOptions = {
 };
 
 const jlptTabs = [
-    { icon: "🎴", label: "FlashCard", key: "flashcard", requireLogin: true },
-    { icon: "⚡", label: "Quiz", key: "quizz", href: "/quizz" },
-    { icon: "🗣️", label: "Luyện nói, viết", key: "speaking", href: "/speaking" },
-    { icon: "📝", label: "Mini Test", key: "minitest", href: "/mini-test" },
+    { icon: "", label: "FlashCard", key: "flashcard", requireLogin: true },
+    { icon: "", label: "Quiz", key: "quizz", href: "/quizz" },
+    { icon: "", label: "Luyện nói, viết", key: "speaking", href: "/speaking" },
+    { icon: "", label: "Mini Test", key: "minitest", href: "/mini-test" },
 ];
 
 
