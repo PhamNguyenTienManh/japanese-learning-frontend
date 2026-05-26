@@ -22,6 +22,19 @@ export async function getUserStatistics() {
     return response.json();
 }
 
+export async function getWeeklyStudyLeaderboard(limit = 10) {
+    const response = await fetch(`${BASE_URL}/statistic/leaderboard?limit=${limit}`, {
+        credentials: "include",
+        headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to get weekly study leaderboard: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
 export async function getStatistics() {
     const response = await fetch(`${BASE_URL}/statistic`, {
         credentials: "include",
