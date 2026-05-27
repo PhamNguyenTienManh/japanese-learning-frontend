@@ -31,6 +31,8 @@ const routes = {
   admin: "/admin",
   user: "/admin/users",
   dictionaryAdmin: "/admin/dictionary",
+  dictionaryAdminAdd: "/admin/dictionary/:resource/add",
+  dictionaryAdminUpdate: "/admin/dictionary/:resource/update/:id",
   adminTest: "/admin/tests",
   createTest: "/admin/tests/create",
   updateTest: "/admin/tests/update/:id",

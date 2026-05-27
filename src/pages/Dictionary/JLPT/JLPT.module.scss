@@ -339,11 +339,11 @@ $yellow-deep: #d4a93f;
 /* ================== GRID + CARDS ================== */
 .grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
 
   &.kanjiGrid {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
   &.grammarGrid {
@@ -354,9 +354,9 @@ $yellow-deep: #d4a93f;
 .card {
   background: #fff;
   border: 2px solid $soft-border;
-  border-radius: 20px;
-  padding: 18px 20px;
-  min-height: 168px;
+  border-radius: 16px;
+  padding: 14px 14px;
+  min-height: 132px;
   position: relative;
   box-shadow: 0 4px 0 rgba(15, 42, 42, 0.04);
   display: flex;
@@ -376,9 +376,9 @@ $yellow-deep: #d4a93f;
 }
 
 .speakerBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
   background: var(--primary);
   color: #fff;
   display: inline-flex;
@@ -394,9 +394,9 @@ $yellow-deep: #d4a93f;
 }
 
 .addBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
   background: transparent;
   color: var(--orange);
   border: 2px solid rgba(252, 95, 0, 0.25);
@@ -404,7 +404,7 @@ $yellow-deep: #d4a93f;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
   transition: all 0.15s;
 
@@ -417,45 +417,45 @@ $yellow-deep: #d4a93f;
 
 .kanji {
   font-family: 'Noto Sans JP', sans-serif;
-  font-size: 40px;
+  font-size: 32px;
   font-weight: 700;
   color: $ink;
   letter-spacing: -1px;
-  margin-top: 14px;
+  margin-top: 10px;
   line-height: 1.05;
   word-break: break-word;
 }
 
 .hiragana {
   font-family: 'Noto Sans JP', sans-serif;
-  font-size: 13px;
+  font-size: 11px;
   color: $ink-soft;
-  margin-top: 10px;
+  margin-top: 8px;
   font-weight: 500;
 }
 
 .meaning {
-  font-size: 15px;
+  font-size: 13px;
   color: $ink;
   font-weight: 600;
-  margin-top: 6px;
+  margin-top: 5px;
 }
 
 /* Kanji-mode tighter card */
 .kanjiCard {
-  min-height: 140px;
+  min-height: 118px;
   align-items: center;
   text-align: center;
   cursor: pointer;
-  padding: 18px 12px;
+  padding: 14px 10px;
 
   .kanji {
-    font-size: 44px;
-    margin-top: 6px;
+    font-size: 38px;
+    margin-top: 4px;
   }
 
   .meaning {
-    font-size: 13px;
+    font-size: 12px;
     margin-top: 6px;
   }
 }
@@ -568,10 +568,10 @@ $yellow-deep: #d4a93f;
   }
 
   .grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 
     &.kanjiGrid {
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 }
@@ -589,7 +589,7 @@ $yellow-deep: #d4a93f;
     grid-template-columns: 1fr;
 
     &.kanjiGrid {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 

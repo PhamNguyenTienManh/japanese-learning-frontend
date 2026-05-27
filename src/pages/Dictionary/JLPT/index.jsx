@@ -129,7 +129,7 @@ function JLPT() {
     }, [toast.show]);
 
 
-    const itemsPerPage = 9;
+    const itemsPerPage = selectedType === "Hán tự" ? 18 : 10;
 
     const handleAddWord = async (newWord, type, selectedNotebook) => {
         try {
@@ -209,7 +209,7 @@ function JLPT() {
                     selectedType === "Hán tự" ? "kanji" :
                         "word";
 
-            const url = `${process.env.REACT_APP_BASE_URL_API}/pdf/jlpt?page=${currentPage}&limit=9&level=${selectedLevel}&type=${typeParam}`;
+            const url = `${process.env.REACT_APP_BASE_URL_API}/pdf/jlpt?page=${currentPage}&limit=${itemsPerPage}&level=${selectedLevel}&type=${typeParam}`;
 
             const response = await fetch(url);
             const blob = await response.blob();
