@@ -34,6 +34,7 @@ import PaymentSuccess from "~/pages/Payment/Success";
 import Admin from "~/pages/Admin";
 import User from "~/pages/Admin/User";
 import DictionaryAdmin from "~/pages/Admin/Dictionary";
+import DictionaryForm from "~/pages/Admin/Dictionary/Form";
 import AdminTest from "~/pages/Admin/AdminTest";
 import CreateTest from "~/pages/Admin/AdminTest/CreateTest";
 import AdminPosts from "~/pages/Admin/AdminPosts";
@@ -79,6 +80,8 @@ export const publicRouter = [
   { path: config.routes.admin, component: Admin },
   { path: config.routes.user, component: User },
   { path: config.routes.dictionaryAdmin, component: DictionaryAdmin },
+  { path: config.routes.dictionaryAdminAdd, component: DictionaryForm },
+  { path: config.routes.dictionaryAdminUpdate, component: DictionaryForm },
   { path: config.routes.adminTest, component: AdminTest },
   { path: config.routes.createTest, component: CreateTest },
   { path: config.routes.adminPosts, component: AdminPosts },

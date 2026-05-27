@@ -65,11 +65,39 @@ export async function getJlptGrammar(page = 1, limit = 9, level = "N4") {
 
 // Lấy danh sách đầy đủ cho admin
 export async function getJlptWordsAdmin(page = 1, limit = 20, level = "", q = "", includeDeleted = true) {
+    const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        level,
+        q,
+        includeDeleted: String(includeDeleted),
+    });
     const response = await fetch(
-        `${BASE_URL}/jlpt-word/admin?page=${page}&limit=${limit}&level=${level}&q=${q}&includeDeleted=${includeDeleted}`,
+        `${BASE_URL}/jlpt-word/admin?${params.toString()}`,
         { method: "GET", credentials: "include", headers: { "Content-Type": "application/json" } }
     );
     if (!response.ok) throw new Error("Failed to fetch admin words");
+    return response.json();
+}
+
+export async function getJlptWordAdminById(id) {
+    const response = await fetch(`${BASE_URL}/jlpt-word/admin/${id}`, {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) throw new Error("Failed to fetch admin word detail");
+    return response.json();
+}
+
+export async function createJlptWord(data) {
+    const response = await fetch(`${BASE_URL}/jlpt-word`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error("Failed to create word");
     return response.json();
 }
 
@@ -98,11 +126,39 @@ export async function deleteJlptWord(id) {
 
 // Lấy danh sách đầy đủ cho admin
 export async function getJlptKanjiAdmin(page = 1, limit = 20, level = "", q = "", includeDeleted = true) {
+    const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        level,
+        q,
+        includeDeleted: String(includeDeleted),
+    });
     const response = await fetch(
-        `${BASE_URL}/jlpt-kanji/admin?page=${page}&limit=${limit}&level=${level}&q=${q}&includeDeleted=${includeDeleted}`,
+        `${BASE_URL}/jlpt-kanji/admin?${params.toString()}`,
         { method: "GET", credentials: "include", headers: { "Content-Type": "application/json" } }
     );
     if (!response.ok) throw new Error("Failed to fetch admin kanji");
+    return response.json();
+}
+
+export async function getJlptKanjiAdminById(id) {
+    const response = await fetch(`${BASE_URL}/jlpt-kanji/admin/${id}`, {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) throw new Error("Failed to fetch admin kanji detail");
+    return response.json();
+}
+
+export async function createJlptKanji(data) {
+    const response = await fetch(`${BASE_URL}/jlpt-kanji`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error("Failed to create kanji");
     return response.json();
 }
 
@@ -131,11 +187,39 @@ export async function deleteJlptKanji(id) {
 
 // Lấy danh sách đầy đủ cho admin
 export async function getJlptGrammarAdmin(page = 1, limit = 20, level = "", q = "", includeDeleted = true) {
+    const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        level,
+        q,
+        includeDeleted: String(includeDeleted),
+    });
     const response = await fetch(
-        `${BASE_URL}/jlpt-grammar/admin?page=${page}&limit=${limit}&level=${level}&q=${q}&includeDeleted=${includeDeleted}`,
+        `${BASE_URL}/jlpt-grammar/admin?${params.toString()}`,
         { method: "GET", credentials: "include", headers: { "Content-Type": "application/json" } }
     );
     if (!response.ok) throw new Error("Failed to fetch admin grammar");
+    return response.json();
+}
+
+export async function getJlptGrammarAdminById(id) {
+    const response = await fetch(`${BASE_URL}/jlpt-grammar/admin/${id}`, {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) throw new Error("Failed to fetch admin grammar detail");
+    return response.json();
+}
+
+export async function createJlptGrammar(data) {
+    const response = await fetch(`${BASE_URL}/jlpt-grammar`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error("Failed to create grammar");
     return response.json();
 }
 
