@@ -102,17 +102,6 @@ const postService = {
     }
   },
 
-
-  getCommunityStats: async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/posts/stats`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching community stats:', error);
-      throw error;
-    }
-  },
-
   getCategories: async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/post-categories`);

@@ -5,7 +5,6 @@ import Tabs, { TabsList, TabsTrigger, TabsContent } from "~/components/Tabs";
 
 import postService from "~/services/postService";
 import CommunityHeader from "~/components/CommunityHeader";
-import CommunityStats from "~/components/CommunityStats";
 import CommunitySearch from "~/components/CommunitySearch";
 import CommunitySidebar from "~/components/CommunitySidebar/CommunitySidebar";
 import PostList from "~/components/PostList/PostList";
@@ -22,11 +21,6 @@ function Community() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [stats, setStats] = useState({
-    totalPosts: 234,
-    totalMembers: "1.2K",
-    totalLikes: "3.4K",
-  });
   const [categories, setCategories] = useState([]);
 
   const { userId: currentUserId } = useAuth();
@@ -66,19 +60,6 @@ function Community() {
     }
   };
 
-  const fetchStats = async () => {
-    try {
-      const data = await postService.getCommunityStats();
-      setStats({
-        totalPosts: data.data.totalPosts || 234,
-        totalMembers: data.data.totalMembers || "6",
-        totalLikes: data.data.totalLikes || "0",
-      });
-    } catch (err) {
-      console.error("Error fetching stats:", err);
-    }
-  };
-
   const fetchCategories = async () => {
     try {
       const data = await postService.getCategories();
@@ -102,7 +83,6 @@ function Community() {
 
   useEffect(() => {
     fetchPosts(1, "popular");
-    fetchStats();
     fetchCategories();
   }, [currentUserId]);
 
@@ -176,7 +156,6 @@ function Community() {
       <main className={cx("main")}>
         <div className={cx("container")}>
           <CommunityHeader />
-          <CommunityStats stats={stats} />
 
           <div className={cx("content")}>
             <div className={cx("main-col")}>
