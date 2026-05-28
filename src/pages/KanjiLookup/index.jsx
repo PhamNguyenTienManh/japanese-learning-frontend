@@ -16,6 +16,18 @@ const KanjiLookupInterface = () => {
   const [selectedVocab, setSelectedVocab] = useState('');
 
   useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const kanjiFromUrl = queryParams.get('kanji') || queryParams.get('q');
+
+    if (kanjiFromUrl?.trim()) {
+      const nextKanji = kanjiFromUrl.trim();
+      setActiveTab('kanji');
+      setSearchKeyword(nextKanji);
+      setSelectedKanji(nextKanji);
+      setSelectedVocab('');
+      return;
+    }
+
     if (location.state) {
       const { searchQuery, tab } = location.state;
 
@@ -23,15 +35,19 @@ const KanjiLookupInterface = () => {
         setActiveTab(tab);
       }
 
-      if (searchQuery) {
-        setSearchKeyword(searchQuery);
-        setTimeout(() => {
-          handleSearch(searchQuery);
-        }, 100);
+      if (searchQuery?.trim()) {
+        const nextKeyword = searchQuery.trim();
+        setSearchKeyword(nextKeyword);
+        if ((tab || activeTab) === 'vocab') {
+          setSelectedVocab('');
+          setSelectedKanji('');
+        } else {
+          setSelectedKanji(nextKeyword);
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state]);
+  }, [location.search, location.state]);
 
   const handleSearch = (keyword) => {
     setSearchKeyword(keyword);

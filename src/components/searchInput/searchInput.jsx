@@ -11,7 +11,7 @@ const SearchInput = ({ value, onSearch, placeholder = "日本、nihon, Nhật B�
   const [recognizedResults, setRecognizedResults] = useState([]);
 
   useEffect(() => {
-    if (value) setSearchQuery(value);
+    setSearchQuery(value || '');
   }, [value]);
 
   useEffect(() => {
