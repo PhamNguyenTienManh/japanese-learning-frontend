@@ -12,6 +12,9 @@ function CommentList({
   editingCommentId,
   editedCommentContent,
   savingComment,
+  isLoggedIn,
+  isAdminContext,
+  highlightedCommentId,
   isCommentOwner,
   onLike,
   onEdit,
@@ -42,10 +45,12 @@ function CommentList({
             <CommentItem
               key={commentId}
               comment={c}
-              isOwner={isCommentOwner(c)}
+              isOwner={isAdminContext || isCommentOwner(c)}
               isEditing={editingCommentId === commentId}
               editedContent={editedCommentContent}
               savingComment={savingComment}
+              isLoggedIn={isLoggedIn}
+              isHighlighted={String(highlightedCommentId || "") === String(commentId)}
               onLike={onLike}
               onEdit={onEdit}
               onDelete={onDelete}

@@ -46,7 +46,7 @@ export const REPORT_REASONS = [
   },
 ];
 
-function ReportPostModal({ postId, onClose }) {
+function ReportPostModal({ postId, commentId, targetLabel = "bài viết", onClose }) {
   const { addToast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
@@ -80,12 +80,17 @@ function ReportPostModal({ postId, onClose }) {
     try {
       setSubmitting(true);
       setError("");
-      await moderationService.reportPost(postId, {
+      const payload = {
         category: selectedCategory,
         subcategory: selectedSubcategory,
         description: description.trim(),
-      });
-      addToast("Báo cáo bài viết thành công", "success");
+      };
+      if (commentId) {
+        await moderationService.reportComment(commentId, payload);
+      } else {
+        await moderationService.reportPost(postId, payload);
+      }
+      addToast(`Báo cáo ${targetLabel} thành công`, "success");
       onClose();
     } catch (err) {
       setError(err?.response?.data?.message || "Không thể gửi báo cáo. Vui lòng thử lại.");
@@ -155,7 +160,7 @@ function ReportPostModal({ postId, onClose }) {
                 value={description}
                 maxLength={500}
                 onChange={(event) => setDescription(event.target.value)}
-                placeholder="Bạn có thể ghi thêm chi tiết để admin kiểm tra nhanh hơn."
+                placeholder={`Bạn có thể ghi thêm chi tiết để admin kiểm tra ${targetLabel} nhanh hơn.`}
               />
             </label>
             {error && <div className={cx("error")}>{error}</div>}
