@@ -15,9 +15,11 @@ import {
   faChartSimple,
 } from "@fortawesome/free-solid-svg-icons";
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getWeeklyStudyLeaderboard, getUserStatistics } from "~/services/statistic";
 import { getTodayStudyTime, getWeekStudyMinutes } from "~/services/userStudy";
 import { studyTimeTracker } from "~/utils/studyTimeTracker";
+import { getRecentUserActivities } from "~/services/userActivityService";
 
 const LEADERBOARD_STEP = 10;
 const tw = {
@@ -106,16 +108,19 @@ const tw = {
   goalBar: "h-full rounded-full bg-[linear-gradient(90deg,var(--primary),var(--primary-hover))] shadow-[0_1px_4px_rgba(0,135,154,0.2)] transition",
   activityList: "flex flex-col",
   activityItem:
-    "relative flex gap-3.5 pb-4 last:pb-0 [&:not(:last-child)::after]:absolute [&:not(:last-child)::after]:bottom-0 [&:not(:last-child)::after]:left-[15px] [&:not(:last-child)::after]:top-8 [&:not(:last-child)::after]:w-0.5 [&:not(:last-child)::after]:bg-[#e8edf0] [&:not(:last-child)::after]:content-['']",
+    "group relative flex w-full gap-3.5 rounded-lg px-1.5 pb-4 pt-1 text-left transition hover:bg-[#f8fafb] focus:outline-none focus:ring-2 focus:ring-primary/20 last:pb-1 [&:not(:last-child)::after]:absolute [&:not(:last-child)::after]:bottom-0 [&:not(:last-child)::after]:left-[21px] [&:not(:last-child)::after]:top-9 [&:not(:last-child)::after]:w-0.5 [&:not(:last-child)::after]:bg-[#e8edf0] [&:not(:last-child)::after]:content-['']",
   activityDot: "relative z-[1] flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[13px]",
+  activityStudy: "border border-primary/20 bg-[linear-gradient(135deg,rgba(0,135,154,0.15),rgba(0,135,154,0.05))] text-primary",
   activityTest: "border border-emerald-500/20 bg-[linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.05))] text-emerald-500",
   activityDict: "border border-blue-500/20 bg-[linear-gradient(135deg,rgba(59,130,246,0.15),rgba(59,130,246,0.05))] text-blue-500",
   activityChat: "border border-violet-500/20 bg-[linear-gradient(135deg,rgba(139,92,246,0.15),rgba(139,92,246,0.05))] text-violet-500",
   activityCommunity: "border border-orange/20 bg-[linear-gradient(135deg,rgba(252,95,0,0.15),rgba(252,95,0,0.05))] text-orange",
   activityContent: "min-w-0 flex-1",
   activityTitle: "mb-0.5 text-sm font-semibold leading-[1.4] text-text-high",
+  activityDescription: "mb-1 text-xs leading-5 text-grey",
   activityMeta: "flex flex-wrap items-center gap-1.5 text-xs text-grey",
   activityScore: "text-xs font-bold text-emerald-500",
+  activityHint: "text-[11px] font-semibold text-primary opacity-0 transition group-hover:opacity-100",
   sideCard: "rounded-[14px] border border-[#eef2f4] bg-white p-5 shadow-card",
   sideTitle: "mb-3.5 flex items-center gap-2 text-[15px] font-bold text-text-high",
   sideTitleIcon: "text-sm text-primary",
@@ -152,21 +157,6 @@ const cx = (...args) =>
   );
 
 const mockUserData = {
-  recentActivity: [
-    {
-      type: "test",
-      title: "Hoàn thành đề thi N5 - Đề số 3",
-      score: 88,
-      date: "Hôm nay",
-    },
-    { type: "dictionary", title: "Tra cứu 15 từ mới", date: "Hôm nay" },
-    { type: "chat", title: "Luyện hội thoại với AI", date: "Hôm qua" },
-    {
-      type: "community",
-      title: "Đăng bài về ngữ pháp て形",
-      date: "2 ngày trước",
-    },
-  ],
   achievements: [
     {
       id: 1,
@@ -240,11 +230,59 @@ const formatStudyDuration = (value) => {
   return `${minutes}m`;
 };
 
+const formatActivityDate = (value) => {
+  if (!value) return "Vừa xong";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Vừa xong";
+
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMinutes < 1) return "Vừa xong";
+  if (diffMinutes < 60) return `${diffMinutes} phút trước`;
+  if (diffHours < 24) return `${diffHours} giờ trước`;
+  if (diffDays < 7) return `${diffDays} ngày trước`;
+
+  return date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
+const getActivityTone = (type) => {
+  if (type === "exam_completed") return "activityTest";
+  if (type === "post_created" || type === "comment_created") return "activityCommunity";
+  if (type === "notebook_created" || type === "notebook_item_added") return "activityDict";
+  if (type === "study_time_added") return "activityStudy";
+  return "activityChat";
+};
+
+const getActivityIcon = (type) => {
+  if (type === "exam_completed") return faTrophy;
+  if (type === "post_created" || type === "comment_created") return faMedal;
+  if (type === "notebook_created" || type === "notebook_item_added") return faBookOpen;
+  if (type === "study_time_added") return faClock;
+  return faStar;
+};
+
+const getActivityScore = (activity) => {
+  const score = Number(activity?.metadata?.score);
+  return Number.isFinite(score) ? score : null;
+};
+
 function Dashboard() {
+  const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [studyTimeToday, setStudyTimeToday] = useState(0);
   const [currentSessionMinutes, setCurrentSessionMinutes] = useState(0);
   const [weeklyProgress, setWeeklyProgress] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [recentActivitiesLoading, setRecentActivitiesLoading] = useState(false);
+  const [recentActivitiesError, setRecentActivitiesError] = useState("");
   const [leaderboard, setLeaderboard] = useState({
     entries: [],
     currentUserRank: null,
@@ -293,6 +331,22 @@ function Dashboard() {
     return false;
   }, []);
 
+  const loadRecentActivities = useCallback(async () => {
+    try {
+      setRecentActivitiesLoading(true);
+      const activitiesResponse = await getRecentUserActivities(8);
+      if (activitiesResponse.success) {
+        setRecentActivities(activitiesResponse.data || []);
+        setRecentActivitiesError("");
+      }
+    } catch (error) {
+      console.error("Failed to load recent activities:", error);
+      setRecentActivitiesError("Không tải được hoạt động gần đây.");
+    } finally {
+      setRecentActivitiesLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     async function fetchUserData() {
       try {
@@ -320,6 +374,7 @@ function Dashboard() {
         }
 
         await loadLeaderboard(LEADERBOARD_STEP);
+        await loadRecentActivities();
 
         await loadStudyTime();
       } catch (err) {
@@ -335,7 +390,7 @@ function Dashboard() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [loadLeaderboard, loadStudyTime]);
+  }, [loadLeaderboard, loadRecentActivities, loadStudyTime]);
 
   if (!userData) return <div>Loading...</div>;
 
@@ -355,6 +410,12 @@ function Dashboard() {
     const loaded = await loadLeaderboard(nextLimit);
     if (loaded) {
       setLeaderboardLimit(nextLimit);
+    }
+  };
+
+  const handleActivityClick = (activity) => {
+    if (activity?.href) {
+      navigate(activity.href);
     }
   };
 
@@ -637,47 +698,56 @@ function Dashboard() {
                   <FontAwesomeIcon icon={faStar} className={cx("sectionTitleIcon")} />
                   Hoạt động gần đây
                 </h2>
-                <div className={cx("activityList")}>
-                  {mockUserData.recentActivity.map((activity, index) => (
-                    <div key={index} className={cx("activityItem")}>
-                      <div
-                        className={cx("activityDot", {
-                          activityTest: activity.type === "test",
-                          activityDict: activity.type === "dictionary",
-                          activityChat: activity.type === "chat",
-                          activityCommunity: activity.type === "community",
-                        })}
-                      >
-                        {activity.type === "test" && (
-                          <FontAwesomeIcon icon={faTrophy} />
-                        )}
-                        {activity.type === "dictionary" && (
-                          <FontAwesomeIcon icon={faBookOpen} />
-                        )}
-                        {activity.type === "chat" && (
-                          <FontAwesomeIcon icon={faStar} />
-                        )}
-                        {activity.type === "community" && (
-                          <FontAwesomeIcon icon={faMedal} />
-                        )}
-                      </div>
-                      <div className={cx("activityContent")}>
-                        <p className={cx("activityTitle")}>{activity.title}</p>
-                        <div className={cx("activityMeta")}>
-                          <span>{activity.date}</span>
-                          {activity.score && (
-                            <>
-                              <span>•</span>
-                              <span className={cx("activityScore")}>
-                                Điểm: {activity.score}%
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {recentActivitiesLoading ? (
+                  <div className={cx("emptyState")}>Đang tải hoạt động gần đây...</div>
+                ) : recentActivitiesError ? (
+                  <div className={cx("emptyState")}>{recentActivitiesError}</div>
+                ) : recentActivities.length === 0 ? (
+                  <div className={cx("emptyState")}>
+                    Chưa có hoạt động nào. Khi bạn học, làm bài thi hoặc tham gia cộng đồng, lịch sử sẽ hiển thị tại đây.
+                  </div>
+                ) : (
+                  <div className={cx("activityList")}>
+                    {recentActivities.map((activity) => {
+                      const score = getActivityScore(activity);
+
+                      return (
+                        <button
+                          key={activity.id}
+                          type="button"
+                          className={cx("activityItem")}
+                          onClick={() => handleActivityClick(activity)}
+                          aria-label={`Mở hoạt động: ${activity.title}`}
+                        >
+                          <div className={cx("activityDot", getActivityTone(activity.type))}>
+                            <FontAwesomeIcon icon={getActivityIcon(activity.type)} />
+                          </div>
+                          <div className={cx("activityContent")}>
+                            <p className={cx("activityTitle")}>{activity.title}</p>
+                            {activity.description && (
+                              <p className={cx("activityDescription")}>
+                                {activity.description}
+                              </p>
+                            )}
+                            <div className={cx("activityMeta")}>
+                              <span>{formatActivityDate(activity.createdAt)}</span>
+                              {score !== null && (
+                                <>
+                                  <span>-</span>
+                                  <span className={cx("activityScore")}>
+                                    Điểm: {score}
+                                  </span>
+                                </>
+                              )}
+                              <span>-</span>
+                              <span className={cx("activityHint")}>Mở</span>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 

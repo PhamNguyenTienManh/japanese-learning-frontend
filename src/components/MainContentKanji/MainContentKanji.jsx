@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import classNames from "classnames/bind";
 import HanziWriter from "../hanzi_writer/hanzi_writer";
 import Contribution from "../contribution/contribution";
 import { faVolumeHigh } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { logKanjiLookupActivity } from "~/services/userActivityService";
 import styles from "./mainContent.module.scss";
 
 const cx = classNames.bind(styles);
@@ -12,6 +13,7 @@ const MainContent = ({ selectedKanji }) => {
     const [kanjiData, setKanjiData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const lastLoggedKanjiRef = useRef("");
 
     useEffect(() => {
         if (!selectedKanji) {
@@ -39,7 +41,23 @@ const MainContent = ({ selectedKanji }) => {
                 const data = await res.json();
 
                 if (data && data.results && data.results.length > 0) {
-                    setKanjiData(data.results[0]);
+                    const nextKanjiData = data.results[0];
+                    setKanjiData(nextKanjiData);
+
+                    const logKey = `${nextKanjiData.kanji || selectedKanji}:${nextKanjiData.mobileId || ""}`;
+                    if (logKey !== lastLoggedKanjiRef.current) {
+                        lastLoggedKanjiRef.current = logKey;
+                        logKanjiLookupActivity({
+                            kanji: nextKanjiData.kanji || selectedKanji,
+                            keyword: selectedKanji,
+                            mean: nextKanjiData.mean,
+                            onyomi: nextKanjiData.on,
+                            kunyomi: nextKanjiData.kun,
+                            strokeCount: nextKanjiData.stroke_count,
+                            mobileId: nextKanjiData.mobileId,
+                            level: nextKanjiData.level,
+                        });
+                    }
                 } else {
                     throw new Error('Không tìm thấy dữ liệu kanji');
                 }
