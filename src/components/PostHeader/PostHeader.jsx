@@ -28,6 +28,12 @@ function PostHeader({
         </div>
         <div className={cx("author-meta")}>
           <span>{post.created_at ? formatDateVN(post.created_at) : "Vừa xong"}</span>
+          {post.edited_at && (
+            <>
+              <span className={cx("dot")}>•</span>
+              <span className={cx("edited-badge")}>Đã sửa</span>
+            </>
+          )}
           {(post.author?.posts || post.authorPosts) && (
             <>
               <span className={cx("dot")}>•</span>

@@ -1,17 +1,19 @@
+import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faEdit,
-  faTrash,
   faSave,
   faTimes,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
+import { Edit3, Flag, MoreHorizontal, Trash2 } from "lucide-react";
 import classNames from "classnames/bind";
 import styles from "./CommentItem.module.scss";
 import Button from "~/components/Button";
 import formatDateVN from "~/services/formatDate";
+import ReportPostModal from "~/components/ReportPostModal/ReportPostModal";
+import { useToast } from "~/context/ToastContext";
 
 const cx = classNames.bind(styles);
 
@@ -21,6 +23,8 @@ function CommentItem({
   isEditing,
   editedContent,
   savingComment,
+  isLoggedIn,
+  isHighlighted,
   onLike,
   onEdit,
   onDelete,
@@ -28,10 +32,40 @@ function CommentItem({
   onSaveEdit,
   onCancelEdit,
 }) {
+  const { addToast } = useToast();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const menuRef = useRef(null);
   const commentId = comment._id || comment.id || comment.commentId;
+  const isDeleted = comment.isDeleted === true || Number(comment.status) === 0;
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+
+    const handleOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [menuOpen]);
+
+  const handleReport = () => {
+    setMenuOpen(false);
+    if (!isLoggedIn) {
+      addToast("Vui lòng đăng nhập để báo cáo bình luận", "warning");
+      return;
+    }
+    setShowReportModal(true);
+  };
 
   return (
-    <div className={cx("comment-item")}>
+    <div
+      className={cx("comment-item", { highlighted: isHighlighted })}
+      data-comment-id={commentId}
+    >
       <img
         src={
           comment.profileId?.image_url ||
@@ -86,26 +120,52 @@ function CommentItem({
                 <span className={cx("comment-time")}>
                   • {formatDateVN(comment.createdAt)}
                 </span>
-                {isOwner && (
-                  <div className={cx("comment-owner-actions")}>
-                    <button
-                      type="button"
-                      className={cx("comment-action-btn")}
-                      onClick={() => onEdit(comment)}
-                      title="Chỉnh sửa"
-                    >
-                      <FontAwesomeIcon icon={faEdit} />
-                    </button>
-                    <button
-                      type="button"
-                      className={cx("comment-action-btn", "delete")}
-                      onClick={() => onDelete(commentId)}
-                      title="Xóa"
-                    >
-                      <FontAwesomeIcon icon={faTrash} />
-                    </button>
-                  </div>
-                )}
+                {comment.edited_at && <span className={cx("edited-badge")}>Đã sửa</span>}
+                {isDeleted && <span className={cx("deleted-badge")}>Đã xóa mềm</span>}
+                <div className={cx("comment-menu-wrap")} ref={menuRef}>
+                  <button
+                    type="button"
+                    className={cx("comment-menu-trigger")}
+                    onClick={() => setMenuOpen((value) => !value)}
+                    aria-label="Mở menu bình luận"
+                  >
+                    <MoreHorizontal size={16} />
+                  </button>
+                  {menuOpen && (
+                    <div className={cx("comment-menu")}>
+                      {isOwner ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMenuOpen(false);
+                              onEdit(comment);
+                            }}
+                          >
+                            <Edit3 size={15} />
+                            <span>Chỉnh sửa</span>
+                          </button>
+                          <button
+                            type="button"
+                            className={cx("danger")}
+                            onClick={() => {
+                              setMenuOpen(false);
+                              onDelete(commentId);
+                            }}
+                          >
+                            <Trash2 size={15} />
+                            <span>Xóa</span>
+                          </button>
+                        </>
+                      ) : (
+                        <button type="button" onClick={handleReport}>
+                          <Flag size={15} />
+                          <span>Báo cáo vi phạm</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
               <p className={cx("comment-text")}>
                 {(comment.content || "").split("\n").map((line, i, arr) => (
@@ -132,6 +192,13 @@ function CommentItem({
           </>
         )}
       </div>
+      {showReportModal && (
+        <ReportPostModal
+          commentId={commentId}
+          targetLabel="bình luận"
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
     </div>
   );
 }
