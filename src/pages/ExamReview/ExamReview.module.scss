@@ -12,6 +12,90 @@ $wrong: #e53e3e;
 $wrong-soft: #fde2e2;
 $wrong-border: #ffc1c1;
 
+@mixin rich-html-content($cell-align: left) {
+  p,
+  div {
+    margin: 0 0 10px;
+    line-height: 1.75;
+    white-space: normal;
+  }
+
+  p:empty,
+  div:empty {
+    min-height: 1.75em;
+  }
+
+  p:empty::before,
+  div:empty::before {
+    content: "\00a0";
+  }
+
+  p:last-child,
+  div:last-child {
+    margin-bottom: 0;
+  }
+
+  ul,
+  ol {
+    margin: 0 0 10px 20px;
+    padding: 0;
+  }
+
+  li {
+    margin-bottom: 6px;
+    line-height: 1.7;
+  }
+
+  table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    margin: 12px 0;
+    background: #fff;
+  }
+
+  caption {
+    margin-bottom: 8px;
+    font-weight: 700;
+    color: $ink;
+    text-align: left;
+  }
+
+  th,
+  td {
+    border: 1px solid #cfe3de;
+    padding: 8px 10px;
+    color: inherit;
+    line-height: 1.65;
+    text-align: $cell-align;
+    vertical-align: top;
+    word-break: keep-all;
+  }
+
+  th {
+    background: #f4fbf8;
+    font-weight: 700;
+  }
+
+  tr:nth-child(even) td {
+    background: #fbfefd;
+  }
+
+  u {
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+
+  ruby {
+    ruby-position: over;
+  }
+
+  rt {
+    color: $ink-soft;
+    font-size: 0.72em;
+  }
+}
+
 .wrapper {
   min-height: 100vh;
   background: $soft-bg;
@@ -289,8 +373,9 @@ $wrong-border: #ffc1c1;
   color: $ink-soft;
   margin: 0 0 14px;
   line-height: 1.65;
-  white-space: pre-line;
   font-weight: 500;
+
+  @include rich-html-content(left);
 }
 
 .generalInfo {
@@ -327,9 +412,11 @@ $wrong-border: #ffc1c1;
   font-size: 14px;
   color: #78350f;
   line-height: 1.75;
-  white-space: pre-line;
   margin: 0;
   padding-right: 30px;
+  overflow-x: auto;
+
+  @include rich-html-content(center);
 }
 
 .questionImage {
@@ -349,11 +436,16 @@ $wrong-border: #ffc1c1;
 .questionText {
   font-size: 17px;
   font-weight: 700;
-  white-space: pre-line;
   line-height: 1.65;
   color: $ink;
   letter-spacing: -0.2px;
   margin: 0;
+}
+
+.questionTextValue {
+  overflow-x: auto;
+
+  @include rich-html-content(left);
 }
 
 /* ============ ANSWER OPTIONS ============ */
@@ -430,6 +522,9 @@ $wrong-border: #ffc1c1;
   color: $ink;
   font-size: 14px;
   line-height: 1.5;
+  overflow-x: auto;
+
+  @include rich-html-content(left);
 }
 
 .answerLabel {
@@ -515,7 +610,12 @@ $wrong-border: #ffc1c1;
   line-height: 1.75;
   font-size: 14px;
   margin: 0;
-  white-space: pre-line;
+}
+
+.explainTextValue {
+  overflow-x: auto;
+
+  @include rich-html-content(left);
 }
 
 /* ============ NAV ============ */
@@ -687,37 +787,24 @@ $wrong-border: #ffc1c1;
   padding: 13px 16px;
   font-size: 14px;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--orange), #ff8a4c);
+  background: var(--primary);
   color: #fff;
-  border: none;
+  border: 1.5px solid var(--primary);
   border-radius: 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 8px 18px -8px rgba(252, 95, 0, 0.55);
+  box-shadow: 0 8px 18px -10px rgba(0, 135, 154, 0.45);
   margin-bottom: 12px;
-  position: relative;
-  overflow: hidden;
+  transition: background 0.18s ease, border-color 0.18s ease,
+    box-shadow 0.18s ease, transform 0.18s ease;
 
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      120deg,
-      transparent 35%,
-      rgba(255, 255, 255, 0.35) 50%,
-      transparent 65%
-    );
-    transform: translateX(-120%);
-    transition: transform 0.7s ease;
-    pointer-events: none;
-  }
-
-  &:hover::after {
-    transform: translateX(120%);
+  &:hover {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+    box-shadow: 0 10px 20px -12px rgba(0, 135, 154, 0.55);
   }
 
   svg {

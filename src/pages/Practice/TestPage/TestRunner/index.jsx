@@ -1,5 +1,5 @@
 // TestRunner.jsx
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import classNames from "classnames/bind";
 import { motion } from "framer-motion";
@@ -10,8 +10,6 @@ import {
   faClock,
   faChevronLeft,
   faChevronRight,
-  faPlay,
-  faPause,
   faPaperPlane,
   faSave,
   faAngleRight,
@@ -28,79 +26,112 @@ import PopupModal from "~/components/Popup";
 const cx = classNames.bind(styles);
 
 const easeOut = [0.22, 1, 0.36, 1];
+const SAFE_HTML_TAGS = new Set([
+  "B",
+  "BR",
+  "CAPTION",
+  "DIV",
+  "EM",
+  "I",
+  "LI",
+  "OL",
+  "P",
+  "RB",
+  "RP",
+  "RT",
+  "RUBY",
+  "SPAN",
+  "STRONG",
+  "TABLE",
+  "TBODY",
+  "TD",
+  "TFOOT",
+  "TH",
+  "THEAD",
+  "TR",
+  "U",
+  "UL",
+]);
+const BLOCKED_HTML_TAGS = new Set([
+  "SCRIPT",
+  "STYLE",
+  "IFRAME",
+  "OBJECT",
+  "EMBED",
+  "LINK",
+  "META",
+]);
+const SAFE_HTML_ATTRIBUTES = {
+  TABLE: new Set(["colspan", "rowspan"]),
+  TD: new Set(["colspan", "rowspan"]),
+  TH: new Set(["colspan", "rowspan", "scope"]),
+};
+
+function sanitizeExamHtml(value) {
+  const raw = value === null || value === undefined ? "" : String(value);
+  if (!raw.trim()) return "";
+
+  if (typeof DOMParser === "undefined") {
+    return raw
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "");
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(raw, "text/html");
+
+  const cleanNode = (node) => {
+    Array.from(node.childNodes).forEach((child) => {
+      if (child.nodeType !== Node.ELEMENT_NODE) return;
+
+      const element = child;
+      const tagName = element.tagName;
+
+      if (tagName === "RT" || tagName === "RP") {
+        element.remove();
+        return;
+      }
+
+      if (BLOCKED_HTML_TAGS.has(tagName)) {
+        element.remove();
+        return;
+      }
+
+      cleanNode(element);
+
+      if (!SAFE_HTML_TAGS.has(tagName)) {
+        element.replaceWith(...Array.from(element.childNodes));
+        return;
+      }
+
+      const allowedAttributes = SAFE_HTML_ATTRIBUTES[tagName] || new Set();
+      Array.from(element.attributes).forEach((attr) => {
+        if (!allowedAttributes.has(attr.name.toLowerCase())) {
+          element.removeAttribute(attr.name);
+        }
+      });
+    });
+  };
+
+  cleanNode(doc.body);
+  return doc.body.innerHTML;
+}
+
+function SafeHtml({ as: Component = "div", className, value }) {
+  return (
+    <Component
+      className={className}
+      dangerouslySetInnerHTML={{ __html: sanitizeExamHtml(value) }}
+    />
+  );
+}
 
 function AudioPlayer({ src }) {
-  const audioRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handleLoadedMetadata = () => setDuration(audio.duration);
-    const handleEnded = () => setIsPlaying(false);
-
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("ended", handleEnded);
-
-    return () => {
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("ended", handleEnded);
-    };
-  }, []);
-
-  const togglePlay = () => {
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
-  };
-
-  const handleSeek = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = x / rect.width;
-    audioRef.current.currentTime = percentage * duration;
-  };
-
-  const formatTime = (time) => {
-    const mins = Math.floor(time / 60);
-    const secs = Math.floor(time % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
   return (
     <div className={cx("audio-player")}>
-      <audio ref={audioRef} src={src} />
-      <div className={cx("audio-controls")}>
-        <motion.button
-          onClick={togglePlay}
-          className={cx("audio-play-btn")}
-          whileHover={{ scale: 1.06 }}
-          whileTap={{ scale: 0.94 }}
-        >
-          <FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />
-        </motion.button>
-        <div className={cx("audio-progress-wrapper")}>
-          <div className={cx("audio-progress-bar")} onClick={handleSeek}>
-            <div
-              className={cx("audio-progress-fill")}
-              style={{ width: `${(currentTime / duration) * 100 || 0}%` }}
-            />
-          </div>
-          <div className={cx("audio-time")}>
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
-          </div>
-        </div>
-      </div>
+      <audio controls preload="metadata" src={src}>
+        Trình duyệt của bạn không hỗ trợ phát audio.
+      </audio>
     </div>
   );
 }
@@ -626,26 +657,6 @@ function TestRunner() {
             <span className={cx("breadcrumb-current")}>{examTitle}</span>
           </motion.div>
 
-          {/* Progress strip */}
-          <motion.div
-            className={cx("progress-strip")}
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: easeOut, delay: 0.05 }}
-          >
-            <div className={cx("progress-track")}>
-              <motion.div
-                className={cx("progress-fill")}
-                initial={{ width: 0 }}
-                animate={{ width: `${progressPct}%` }}
-                transition={{ duration: 0.4, ease: easeOut }}
-              />
-            </div>
-            <span className={cx("progress-label")}>
-              {totalAnswered}/{totalQuestions} câu
-            </span>
-          </motion.div>
-
           {/* Section Tabs */}
           <motion.div
             className={cx("section-tabs")}
@@ -699,9 +710,10 @@ function TestRunner() {
                       </span>
                     )}
                   </div>
-                  <h2 className={cx("question-text")}>
-                    {currentQuestion.title}
-                  </h2>
+                  <SafeHtml
+                    className={cx("question-text")}
+                    value={currentQuestion.title}
+                  />
                 </div>
 
                 {currentQuestion.general?.audio && (
@@ -710,7 +722,7 @@ function TestRunner() {
 
                 {currentPartIndex === 1 && currentQuestion.general?.txt_read && (
                   <div className={cx("text-read-box")}>
-                    <p>{currentQuestion.general.txt_read}</p>
+                    <SafeHtml value={currentQuestion.general.txt_read} />
                   </div>
                 )}
 
@@ -728,12 +740,15 @@ function TestRunner() {
 
                   return (
                     <div key={contentIndex} className={cx("content-section")}>
-                      <p className={cx("content-question")}>
+                      <div className={cx("content-question")}>
                         <span className={cx("content-num")}>
                           {currentQuestionIndex + 1}.{contentIndex + 1}
-                        </span>{" "}
-                        {content.question}
-                      </p>
+                        </span>
+                        <SafeHtml
+                          className={cx("content-question-text")}
+                          value={content.question}
+                        />
+                      </div>
 
                       {content.image && (
                         <div className={cx("content-image")}>
@@ -782,12 +797,11 @@ function TestRunner() {
                                     />
                                   )}
                                 </div>
-                                <span className={cx("option-letter")}>
-                                  {String.fromCharCode(65 + optionIndex)}
-                                </span>
-                                <span className={cx("option-label")}>
-                                  {answer}
-                                </span>
+                                <SafeHtml
+                                  as="div"
+                                  className={cx("option-label")}
+                                  value={answer}
+                                />
                               </div>
                             </motion.button>
                           );
@@ -844,8 +858,8 @@ function TestRunner() {
                   critical: isCriticalTime,
                 })}
               >
-                <p className={cx("time-label")}>Thời gian còn lại</p>
                 <div className={cx("time-row")}>
+                  <p className={cx("time-label")}>Thời gian làm bài</p>
                   <FontAwesomeIcon icon={faClock} className={cx("time-icon")} />
                   <span className={cx("time-value")}>
                     {formatTime(timeRemaining)}

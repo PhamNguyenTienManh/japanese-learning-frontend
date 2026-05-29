@@ -352,6 +352,10 @@ $soft-tint: #e6f7f2;
   border-radius: 16px;
   overflow: hidden;
 
+  > * {
+    margin: 0;
+  }
+
   &::before {
     content: "";
     position: absolute;

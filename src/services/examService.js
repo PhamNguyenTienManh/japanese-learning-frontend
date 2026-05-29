@@ -321,4 +321,23 @@ export async function deleteExamQuestion(questionId) {
   return response.json();
 }
 
+// Delete multiple exam questions
+export async function deleteExamQuestions(questionIds) {
+  const response = await fetch(`${BASE_URL}/exam-questions/batch`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ questionIds }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Failed to delete exam questions: ${err}`);
+  }
+
+  return response.json();
+}
 

@@ -16,9 +16,13 @@ function FloatingAIChatIcon() {
   const [isTracking, setIsTracking] = useState(false);
 
   const isAdminPage = location.pathname.startsWith(config.routes.admin);
+  const isTestRunnerPage = /^\/practice\/[^/]+\/test\/[^/]+\/?$/.test(
+    location.pathname,
+  );
+  const shouldHide = isAdminPage || isTestRunnerPage;
 
   useEffect(() => {
-    if (isAdminPage) return undefined;
+    if (shouldHide) return undefined;
 
     const handlePointerMove = (event) => {
       const icon = iconRef.current;
@@ -51,9 +55,9 @@ function FloatingAIChatIcon() {
       window.removeEventListener("pointermove", handlePointerMove);
       window.clearTimeout(idleTimerRef.current);
     };
-  }, [isAdminPage]);
+  }, [shouldHide]);
 
-  if (isAdminPage) {
+  if (shouldHide) {
     return null;
   }
 
