@@ -9,7 +9,7 @@ const SidebarItem = ({ kanji, hanviet, isActive, onClick }) => (
     className={classNames(
       "group flex items-center gap-3 py-2.5 px-3 rounded-xl border-none cursor-pointer text-left transition-[background,transform] duration-200 ease-out",
       isActive
-        ? "bg-gradient-to-r from-primary/[0.16] to-primary/[0.04]"
+        ? "bg-[linear-gradient(90deg,rgba(0,135,154,0.16),rgba(0,135,154,0.04))]"
         : "bg-transparent hover:bg-primary/[0.06] hover:translate-x-0.5"
     )}
   >
