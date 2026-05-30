@@ -4,6 +4,7 @@ import HanziWriter from "../hanzi_writer/hanzi_writer";
 import Contribution from "../contribution/contribution";
 import { faVolumeHigh } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { fetchKanjiDetail as getKanjiDetail } from "~/services/kanjiService";
 import { logKanjiLookupActivity } from "~/services/userActivityService";
 import styles from "./mainContent.module.scss";
 
@@ -25,23 +26,9 @@ const MainContent = ({ selectedKanji }) => {
             setLoading(true);
             setError(null);
             try {
-                const res = await fetch('https://mazii.net/api/search/kanji', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        dict: 'javi',
-                        type: 'kanji',
-                        query: selectedKanji,
-                        page: 1,
-                    }),
-                });
+                const nextKanjiData = await getKanjiDetail(selectedKanji);
 
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
-                const data = await res.json();
-
-                if (data && data.results && data.results.length > 0) {
-                    const nextKanjiData = data.results[0];
+                if (nextKanjiData) {
                     setKanjiData(nextKanjiData);
 
                     const logKey = `${nextKanjiData.kanji || selectedKanji}:${nextKanjiData.mobileId || ""}`;
@@ -54,7 +41,7 @@ const MainContent = ({ selectedKanji }) => {
                             onyomi: nextKanjiData.on,
                             kunyomi: nextKanjiData.kun,
                             strokeCount: nextKanjiData.stroke_count,
-                            mobileId: nextKanjiData.mobileId,
+                            mobileId: nextKanjiData.mobileId || nextKanjiData._id,
                             level: nextKanjiData.level,
                         });
                     }
@@ -205,7 +192,7 @@ const MainContent = ({ selectedKanji }) => {
                 </div>
             )}
 
-            <Contribution kanjiId={kanjiData.mobileId} kanjiChar={kanjiData.kanji} />
+            <Contribution kanjiId={kanjiData.mobileId || kanjiData._id || kanjiData.kanji} kanjiChar={kanjiData.kanji} />
         </>
     );
 };
