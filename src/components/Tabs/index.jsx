@@ -1,8 +1,4 @@
 import { useState } from "react";
-import styles from "./Tabs.module.scss";
-import classNames from "classnames/bind";
-
-const cx = classNames.bind(styles);
 
 function Tabs({ children, defaultValue = "", active, onChange }) {
   const [value, setValue] = useState(defaultValue || active);
@@ -13,7 +9,7 @@ function Tabs({ children, defaultValue = "", active, onChange }) {
   };
 
   return (
-    <div className={cx("tabs")}>
+    <div className="flex w-full flex-col">
       {Array.isArray(children)
         ? children.map((child) => {
             if (!child) return null;
@@ -38,7 +34,7 @@ function Tabs({ children, defaultValue = "", active, onChange }) {
 
 function TabsList({ children, active, onChange }) {
   return (
-    <div className={cx("tabs-list")}>
+    <div className="mb-3 flex gap-1.5 rounded-[10px] bg-[#ddd5d7]">
       {children.map((child) =>
         child.type.displayName === "TabsTrigger" ? (
           <child.type
@@ -60,7 +56,12 @@ function TabsTrigger({ value, children, active, onChange }) {
   const isActive = active === value;
   return (
     <button
-      className={cx("tabs-trigger", { active: isActive })}
+      className={[
+        "m-1 flex-1 cursor-pointer rounded-lg border-0 px-3 py-1.5 text-sm transition",
+        isActive
+          ? "bg-[var(--white)] font-semibold text-[var(--black)]"
+          : "bg-transparent font-medium text-[#777]",
+      ].join(" ")}
       onClick={() => onChange && onChange(value)}
     >
       {children}
@@ -71,7 +72,7 @@ TabsTrigger.displayName = "TabsTrigger";
 
 function TabsContent({ value, active, children }) {
   if (value !== active) return null;
-  return <div className={cx("tabs-content")}>{children}</div>;
+  return <div className="pt-1">{children}</div>;
 }
 TabsContent.displayName = "TabsContent";
 
