@@ -1,8 +1,4 @@
 import Button from "~/components/Button";
-import classNames from "classnames/bind";
-import styles from "./Pagination.module.scss";
-
-const cx = classNames.bind(styles);
 
 function Pagination({ currentPage, totalPages, onPageChange }) {
   if (totalPages <= 1) return null;
@@ -18,29 +14,36 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
   const pageNumbers = [];
   for (let i = startPage; i <= endPage; i++) pageNumbers.push(i);
 
+  const numberClass =
+    "flex h-10 min-w-10 cursor-pointer items-center justify-center rounded-lg border border-[#ddd] bg-white font-medium text-[#333] transition hover:border-[#ff6b35] hover:bg-[#f5f5f5]";
+
   return (
-    <div className={cx("pagination")}>
+    <div className="mt-8 flex items-center justify-center gap-2 py-4">
       <Button
         outline
-        className={cx("pagination-btn")}
+        className="min-w-20 disabled:cursor-not-allowed disabled:opacity-50"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
       >
         ← Trước
       </Button>
 
-      <div className={cx("pagination-numbers")}>
+      <div className="flex items-center gap-1">
         {startPage > 1 && (
           <>
-            <button className={cx("pagination-number")} onClick={() => onPageChange(1)}>1</button>
-            {startPage > 2 && <span className={cx("pagination-dots")}>...</span>}
+            <button className={numberClass} onClick={() => onPageChange(1)}>1</button>
+            {startPage > 2 && <span className="px-2 text-[#999]">...</span>}
           </>
         )}
 
         {pageNumbers.map((page) => (
           <button
             key={page}
-            className={cx("pagination-number", { active: page === currentPage })}
+            className={
+              page === currentPage
+                ? "flex h-10 min-w-10 cursor-pointer items-center justify-center rounded-lg border border-[#ff6b35] bg-[#ff6b35] font-medium text-white transition"
+                : numberClass
+            }
             onClick={() => onPageChange(page)}
           >
             {page}
@@ -49,8 +52,8 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
 
         {endPage < totalPages && (
           <>
-            {endPage < totalPages - 1 && <span className={cx("pagination-dots")}>...</span>}
-            <button className={cx("pagination-number")} onClick={() => onPageChange(totalPages)}>
+            {endPage < totalPages - 1 && <span className="px-2 text-[#999]">...</span>}
+            <button className={numberClass} onClick={() => onPageChange(totalPages)}>
               {totalPages}
             </button>
           </>
@@ -59,7 +62,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
 
       <Button
         outline
-        className={cx("pagination-btn")}
+        className="min-w-20 disabled:cursor-not-allowed disabled:opacity-50"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
       >

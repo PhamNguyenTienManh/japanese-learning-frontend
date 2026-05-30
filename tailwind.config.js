@@ -22,11 +22,16 @@ module.exports = {
       },
       animation: {
         "fade-up": "fadeUp 0.5s ease-out",
+        "shift-gradient": "shiftGradient 6s ease-in-out infinite",
       },
       keyframes: {
         fadeUp: {
           from: { opacity: "0", transform: "translateY(12px)" },
           to: { opacity: "1", transform: "translateY(0)" },
+        },
+        shiftGradient: {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
         },
       },
       boxShadow: {
