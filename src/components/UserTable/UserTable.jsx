@@ -1,27 +1,36 @@
-import classNames from "classnames/bind";
-import styles from "./UserTable.module.scss";
-import Card from "~/components/Card";
 import UserTableRow from "../UserTableRow/UserTableRow";
-
-const cx = classNames.bind(styles);
 
 function UserTable({ users, onToggleStatus, onChangeRole }) {
   return (
-    <Card className={cx("usersCard")}>
-      <div className={cx("tableWrapper")}>
-        <table className={cx("table")}>
-          <thead className={cx("thead")}>
+    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[860px] border-collapse">
+          <thead className="bg-slate-50">
             <tr>
-              <th className={cx("th")}>Người dùng</th>
-              <th className={cx("th")}>Vai trò</th>
-              <th className={cx("th")}>Trạng thái</th>
-              <th className={cx("th")}>Premium</th>
-              <th className={cx("th")}>Provider</th>
-              <th className={cx("th")}>Ngày đăng ký</th>
-              <th className={cx("th", "thRight")}>Hành động</th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-normal text-slate-500">
+                Người dùng
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-normal text-slate-500">
+                Vai trò
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-normal text-slate-500">
+                Trạng thái
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-normal text-slate-500">
+                Premium
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-normal text-slate-500">
+                Provider
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-normal text-slate-500">
+                Ngày đăng ký
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-normal text-slate-500">
+                Hành động
+              </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {users.map((user) => (
               <UserTableRow
                 key={user._id}
@@ -32,7 +41,10 @@ function UserTable({ users, onToggleStatus, onChangeRole }) {
             ))}
             {users.length === 0 && (
               <tr>
-                <td className={cx("tdEmpty")} colSpan={7}>
+                <td
+                  colSpan={7}
+                  className="px-4 py-14 text-center text-sm font-semibold text-slate-500"
+                >
                   Không tìm thấy người dùng nào phù hợp
                 </td>
               </tr>
@@ -40,7 +52,7 @@ function UserTable({ users, onToggleStatus, onChangeRole }) {
           </tbody>
         </table>
       </div>
-    </Card>
+    </section>
   );
 }
 
