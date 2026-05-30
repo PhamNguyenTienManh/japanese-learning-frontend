@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBan, faCircleCheck, faLock, faLockOpen } from "@fortawesome/free-solid-svg-icons";
+import { faBan, faCircleCheck, faCrown, faLock, faLockOpen } from "@fortawesome/free-solid-svg-icons";
 import classNames from "classnames/bind";
 import styles from "./UserTableRow.module.scss";
 import Button from "~/components/Button";
@@ -9,6 +9,13 @@ const cx = classNames.bind(styles);
 
 function UserTableRow({ user, onToggleStatus, onChangeRole }) {
   const isBanned = user.status === USER_STATUS.BANNED;
+  const premiumExpiredAt = user.premium_expired_date
+    ? new Date(user.premium_expired_date)
+    : null;
+  const isPremium =
+    premiumExpiredAt &&
+    !Number.isNaN(premiumExpiredAt.getTime()) &&
+    premiumExpiredAt > new Date();
 
   return (
     <tr className={cx("row")}>
@@ -52,6 +59,23 @@ function UserTableRow({ user, onToggleStatus, onChangeRole }) {
             <span>Hoạt động</span>
           </span>
         )}
+      </td>
+
+      {/* Premium */}
+      <td className={cx("td")}>
+        <div className={cx("premiumCell")}>
+          <span className={cx("badge", isPremium ? "badgePremium" : "badgeFree")}>
+            {isPremium && (
+              <FontAwesomeIcon icon={faCrown} className={cx("badgeIcon")} />
+            )}
+            <span>{isPremium ? "Premium" : "Thường"}</span>
+          </span>
+          {isPremium && (
+            <span className={cx("premiumExpire")}>
+              Hết hạn {premiumExpiredAt.toLocaleDateString("vi-VN")}
+            </span>
+          )}
+        </div>
       </td>
 
       {/* Provider */}

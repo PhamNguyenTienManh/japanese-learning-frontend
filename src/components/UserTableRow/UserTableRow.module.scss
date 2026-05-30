@@ -89,8 +89,33 @@ $soft-tint: #e6f7f2;
   text-transform: capitalize;
 }
 
+.badgePremium {
+  background: linear-gradient(135deg, #fff4d6, #f8d46a);
+  color: #8a5a00;
+}
+
+.badgeFree {
+  background: #eef2f7;
+  color: #64748b;
+}
+
 .badgeIcon {
   font-size: 10px;
+}
+
+.premiumCell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 108px;
+}
+
+.premiumExpire {
+  color: $ink-soft;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* ============ ROLE SELECT ============ */
