@@ -38,6 +38,7 @@ const routes = {
   updateTest: "/admin/tests/update/:id",
   adminPosts: "/admin/posts",
   adminViolations: "/admin/violations",
+  adminTransactions: "/admin/transactions",
   adminReading: "/admin/reading",
   adminConversation: "/admin/conversation",
   translate: "/translate"

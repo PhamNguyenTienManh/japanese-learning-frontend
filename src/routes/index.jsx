@@ -39,6 +39,7 @@ import AdminTest from "~/pages/Admin/AdminTest";
 import CreateTest from "~/pages/Admin/AdminTest/CreateTest";
 import AdminPosts from "~/pages/Admin/AdminPosts";
 import Violations from "~/pages/Admin/Violations";
+import AdminTransactions from "~/pages/Admin/AdminTransactions";
 import AdminReading from "~/pages/Admin/AdminReading";
 import AdminConversation from "~/pages/Admin/AdminConversation";
 import EditTest from "~/pages/Admin/AdminTest/UpdateTest";
@@ -86,6 +87,7 @@ export const publicRouter = [
   { path: config.routes.createTest, component: CreateTest },
   { path: config.routes.adminPosts, component: AdminPosts },
   { path: config.routes.adminViolations, component: Violations },
+  { path: config.routes.adminTransactions, component: AdminTransactions },
   { path: config.routes.adminReading, component: AdminReading },
   { path: config.routes.adminConversation, component: AdminConversation },
   { path: config.routes.jlptFlashcard, component: JLPTFlashcard },

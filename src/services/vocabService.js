@@ -1,68 +1,91 @@
-import axios from 'axios';
+const BASE_URL = (process.env.REACT_APP_BASE_URL_API || "").replace(/\/$/, "");
 
-const JDICT_API_URL = 'https://api.jdict.net/api/v1';
+const normalizeVocabRecord = (record) => {
+    if (!record) return null;
 
-const vocabService = {
-  // Lấy gợi ý từ vựng
-  getSuggestions: async (keyword, keywordPosition = 'start', type = 'word') => {
-    try {
-      const encodedKeyword = encodeURIComponent(keyword);
-      
-      const response = await axios.get(
-        `${JDICT_API_URL}/suggest`,
-        {
-          params: {
-            keyword: keyword,
-            keyword_position: keywordPosition,
-            type: type,
-          },
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
-      throw error;
-    }
-  },
+    const phonetic = Array.isArray(record.phonetic)
+        ? record.phonetic
+        : record.phonetic
+            ? [record.phonetic]
+            : [];
 
-  // Lấy chi tiết từ vựng
-  getWordDetail: async (slug, getRelate = 0) => {
-    
-    try {
-      const response = await axios.get(
-        `${JDICT_API_URL}/words/${slug}`,
-        {
-          params: {
-            get_relate: getRelate,
-          },
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching word detail:', error);
-      throw error;
-    }
-  },
+    const meanings = Array.isArray(record.meanings) ? record.meanings : [];
 
-  // Tìm kiếm từ vựng (nếu cần thêm)
-  searchWords: async (keyword, page = 1, limit = 20) => {
-    try {
-      const response = await axios.get(
-        `${JDICT_API_URL}/words/search`,
-        {
-          params: {
-            keyword: keyword,
-            page: page,
-            limit: limit,
-          },
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error searching words:', error);
-      throw error;
-    }
-  },
+    return {
+        ...record,
+        phonetic,
+        meanings,
+        mobileId: record.mobileId || record._id || record.id || record.word,
+    };
 };
 
-export default vocabService;
+const requestJson = async (url) => {
+    const response = await fetch(url, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+
+    if (response.status === 404) {
+        return null;
+    }
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response.json();
+};
+
+const unwrapApiData = (payload) => {
+    if (payload && payload.success === true && Object.prototype.hasOwnProperty.call(payload, "data")) {
+        return payload.data;
+    }
+
+    return payload;
+};
+
+export const fetchVocabDetail = async (query) => {
+    const keyword = query?.trim();
+    if (!keyword) return null;
+
+    try {
+        const params = new URLSearchParams({ word: keyword });
+        const data = unwrapApiData(
+            await requestJson(`${BASE_URL}/jlpt-word/detail?${params.toString()}`)
+        );
+        return normalizeVocabRecord(data);
+    } catch (error) {
+        console.error("Error fetching vocab:", error);
+        return null;
+    }
+};
+
+export const searchVocabList = async (query, limit = 30) => {
+    const keyword = query?.trim();
+    if (!keyword) {
+        return {
+            data: [],
+            total: 0,
+            totalPages: 0,
+            currentPage: 1,
+        };
+    }
+
+    const params = new URLSearchParams({
+        q: keyword,
+        limit: String(limit),
+    });
+
+    const data = unwrapApiData(
+        await requestJson(`${BASE_URL}/jlpt-word/search?${params.toString()}`)
+    );
+    const records = Array.isArray(data?.data) ? data.data : [];
+
+    return {
+        ...data,
+        data: records.map(normalizeVocabRecord).filter(Boolean),
+    };
+};

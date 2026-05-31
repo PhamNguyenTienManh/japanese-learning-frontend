@@ -1,18 +1,10 @@
 import { useState, useEffect } from "react";
-import classNames from "classnames/bind";
-import { motion } from "framer-motion";
+import { RefreshCw } from "lucide-react";
 
-import Button from "~/components/Button";
 import { userApi } from "~/services/userService";
-
-import styles from "./User.module.scss";
 import UserHeader from "~/components/UserHeader/UserHeader";
 import UserFilters from "~/components/UserFilters/UserFilters";
 import UserTable from "~/components/UserTable/UserTable";
-
-const cx = classNames.bind(styles);
-
-const easeOut = [0.22, 1, 0.36, 1];
 
 function User() {
   const [users, setUsers] = useState([]);
@@ -77,76 +69,43 @@ function User() {
       !q ||
       (user.profile?.name || "").toLowerCase().includes(q) ||
       (user.email || "").toLowerCase().includes(q);
-    const matchStatus =
-      statusFilter === "all" || user.status === statusFilter;
+    const matchStatus = statusFilter === "all" || user.status === statusFilter;
     const matchRole = roleFilter === "all" || user.role === roleFilter;
     return matchSearch && matchStatus && matchRole;
   });
 
-  if (loading) {
-    return (
-      <div className={cx("wrapper")}>
-        <main className={cx("main")}>
-          <div className={cx("inner")}>
-            <div className={cx("loading")}>
-              <div className={cx("loadingRing")} />
-              <p>Đang tải danh sách người dùng...</p>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={cx("wrapper")}>
-        <main className={cx("main")}>
-          <div className={cx("inner")}>
-            <div className={cx("errorState")}>
-              <p>{error}</p>
-              <Button primary onClick={fetchUsers}>
-                Thử lại
-              </Button>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   return (
-    <div className={cx("wrapper")}>
-      <motion.div
-        className={cx("blob1")}
-        animate={{ y: [0, -22, 0], x: [0, 12, 0] }}
-        transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className={cx("blob2")}
-        animate={{ y: [0, 18, 0], x: [0, -14, 0] }}
-        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-      />
+    <div className="min-h-[calc(100vh-56px)] bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-5">
+        <UserHeader
+          total={users.length}
+          filteredCount={filteredUsers.length}
+          page="người dùng"
+        />
 
-      <main className={cx("main")}>
-        <div className={cx("inner")}>
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: easeOut }}
-          >
-            <UserHeader
-              total={users.length}
-              filteredCount={filteredUsers.length}
-              page="người dùng"
-            />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: easeOut, delay: 0.1 }}
-          >
+        {loading ? (
+          <div className="grid min-h-[260px] place-items-center rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="flex flex-col items-center gap-3 text-sm font-semibold text-slate-500">
+              <RefreshCw size={22} className="animate-spin" aria-hidden="true" />
+              Đang tải danh sách người dùng...
+            </div>
+          </div>
+        ) : error ? (
+          <div className="grid min-h-[260px] place-items-center rounded-lg border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <p className="m-0 text-sm font-semibold text-rose-700">{error}</p>
+              <button
+                type="button"
+                onClick={fetchUsers}
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+              >
+                <RefreshCw size={16} aria-hidden="true" />
+                Thử lại
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
             <UserFilters
               searchQuery={searchQuery}
               statusFilter={statusFilter}
@@ -155,23 +114,18 @@ function User() {
               onStatusChange={setStatusFilter}
               onRoleChange={setRoleFilter}
             />
-          </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: easeOut, delay: 0.18 }}
-          >
             <UserTable
               users={filteredUsers}
               onToggleStatus={handleToggleStatus}
               onChangeRole={handleChangeRole}
             />
-          </motion.div>
-        </div>
-      </main>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
 export default User;
+

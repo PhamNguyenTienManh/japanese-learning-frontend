@@ -42,3 +42,42 @@ export async function getMyPayments() {
   }
   return json.data ?? json;
 }
+
+export async function getAdminTransactions({
+  page = 1,
+  limit = 10,
+  status = "all",
+  q = "",
+} = {}) {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+    status,
+  });
+
+  if (q?.trim()) {
+    params.set("q", q.trim());
+  }
+
+  const res = await fetch(`${BASE_URL}/payments/admin?${params.toString()}`, {
+    credentials: "include",
+    headers: getAuthHeaders(),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || json.success === false) {
+    throw new Error(json.message || `Request failed: ${res.status}`);
+  }
+  return json.data ?? json;
+}
+
+export async function getAdminTransactionDetail(id) {
+  const res = await fetch(`${BASE_URL}/payments/admin/${encodeURIComponent(id)}`, {
+    credentials: "include",
+    headers: getAuthHeaders(),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || json.success === false) {
+    throw new Error(json.message || `Request failed: ${res.status}`);
+  }
+  return json.data ?? json;
+}
