@@ -9,13 +9,8 @@ import Logo from "~/components/Logo";
 import { useAuth } from "~/context/AuthContext";
 import NotificationDropdown from "~/components/NotificationDropdown";
 import { useNavigate } from "react-router-dom";
+import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
 const cx = classNames.bind(styles);
-
-function getInitial(name, email) {
-  const source = (name || email || "").trim();
-  if (!source) return "?";
-  return source.charAt(0).toUpperCase();
-}
 
 function Header() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -154,13 +149,11 @@ function Header() {
                 <button type="button" className={cx("userTrigger")}>
                   <span className={cx("avatarWrap")}>
                     <span className={cx("avatar")}>
-                      {avatar ? (
-                        <img src={avatar} alt={name || "Avatar"} />
-                      ) : (
-                        <span className={cx("avatarFallback")}>
-                          {getInitial(name, email)}
-                        </span>
-                      )}
+                      <img
+                        src={getAvatarUrl(avatar)}
+                        alt={name || "Avatar"}
+                        onError={handleAvatarError}
+                      />
                     </span>
                     {isPremium && (
                       <span className={cx("premiumBadge")} title="Premium">
@@ -177,13 +170,11 @@ function Header() {
                   <div className={cx("userMenuHeader")}>
                     <span className={cx("userMenuAvatarWrap")}>
                       <span className={cx("userMenuAvatar")}>
-                        {avatar ? (
-                          <img src={avatar} alt={name || "Avatar"} />
-                        ) : (
-                          <span className={cx("userMenuAvatarFallback")}>
-                            {getInitial(name, email)}
-                          </span>
-                        )}
+                        <img
+                          src={getAvatarUrl(avatar)}
+                          alt={name || "Avatar"}
+                          onError={handleAvatarError}
+                        />
                       </span>
                       {isPremium && (
                         <span className={cx("premiumBadge", "menu")} title="Premium">

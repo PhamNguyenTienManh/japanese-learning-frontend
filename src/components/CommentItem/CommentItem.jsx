@@ -14,6 +14,7 @@ import Button from "~/components/Button";
 import formatDateVN from "~/services/formatDate";
 import ReportPostModal from "~/components/ReportPostModal/ReportPostModal";
 import { useToast } from "~/context/ToastContext";
+import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
 
 const cx = classNames.bind(styles);
 
@@ -67,12 +68,10 @@ function CommentItem({
       data-comment-id={commentId}
     >
       <img
-        src={
-          comment.profileId?.image_url ||
-          "https://img.tripi.vn/cdn-cgi/image/width=700,height=700/https://gcs.tripi.vn/public-tripi/tripi-feed/img/482752AXp/anh-mo-ta.png"
-        }
+        src={getAvatarUrl(comment.profileId?.image_url)}
         alt={comment.profileId?.name}
         className={cx("comment-avatar")}
+        onError={handleAvatarError}
       />
       <div className={cx("comment-body")}>
         {isEditing ? (

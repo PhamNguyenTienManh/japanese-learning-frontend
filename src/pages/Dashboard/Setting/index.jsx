@@ -16,6 +16,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { getProfile, updateProfile, updateAvatar } from "~/services/profileService";
 import { useAuth } from "~/context/AuthContext";
+import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
 
 const cx = classNames.bind(styles);
 
@@ -267,13 +268,12 @@ function Setting() {
                       <label className={cx("label")}>Ảnh đại diện</label>
                       <div className={cx("avatar-upload")}>
                         <div className={cx("avatar-preview")}>
-                          {avatarPreview ? (
-                            <img src={avatarPreview} alt="Avatar" className={cx("avatar-img")} />
-                          ) : (
-                            <div className={cx("avatar-placeholder")}>
-                              <FontAwesomeIcon icon={faUser} className={cx("avatar-icon")} />
-                            </div>
-                          )}
+                          <img
+                            src={getAvatarUrl(avatarPreview)}
+                            alt="Avatar"
+                            className={cx("avatar-img")}
+                            onError={handleAvatarError}
+                          />
                         </div>
                         <div className={cx("avatar-actions")}>
                           <input
