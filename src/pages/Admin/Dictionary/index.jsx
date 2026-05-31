@@ -7,6 +7,9 @@ import {
     faChevronDown,
     faChevronLeft,
     faChevronRight,
+    faDownload,
+    faFileExport,
+    faUpload,
     faMagnifyingGlass,
     faPenToSquare,
     faPlus,
@@ -28,6 +31,15 @@ import {
     getJlptGrammarAdmin,
     updateJlptGrammar,
     deleteJlptGrammar,
+    importJlptWordExcel,
+    importJlptKanjiExcel,
+    importJlptGrammarExcel,
+    downloadJlptWordTemplate,
+    downloadJlptKanjiTemplate,
+    downloadJlptGrammarTemplate,
+    exportJlptWordExcel,
+    exportJlptKanjiExcel,
+    exportJlptGrammarExcel,
 } from "~/services/jlptService";
 import styles from "./DictionaryAdmin.module.scss";
 
@@ -105,6 +117,29 @@ function unwrapAdminResponse(resJson) {
     return { data, total, totalPages, currentPage };
 }
 
+function unwrapServicePayload(resJson) {
+    return resJson?.data?.data || resJson?.data || resJson || null;
+}
+
+function downloadBase64File(report) {
+    if (!report?.base64) return;
+
+    const byteCharacters = atob(report.base64);
+    const byteNumbers = Array.from(byteCharacters, (char) => char.charCodeAt(0));
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], {
+        type: report.contentType || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = report.filename || "import-errors.xlsx";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+}
+
 function listText(value, separator = ", ") {
     if (Array.isArray(value)) {
         return value.filter(Boolean).join(separator) || "-";
@@ -129,6 +164,14 @@ function formatDate(value) {
         hour: "2-digit",
         minute: "2-digit",
     }).format(new Date(value));
+}
+
+function normalizeDetailText(value) {
+    return String(value || "")
+        .replace(/\\n/g, "\n")
+        .replace(/\r\n?/g, "\n")
+        .replace(/\n{2,}/g, "\n")
+        .trim();
 }
 
 function getItemId(item) {
@@ -274,6 +317,10 @@ function DictionaryAdmin() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [formState, setFormState] = useState({});
     const [formError, setFormError] = useState("");
+    const [excelStatus, setExcelStatus] = useState(null);
+    const [isImporting, setIsImporting] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+    const importInputRef = useRef(null);
 
     const tabLabel = TAB_META[activeTab].noun;
     const activeResource = RESOURCE_BY_TAB[activeTab];
@@ -394,8 +441,92 @@ function DictionaryAdmin() {
         setEditingItem(null);
         setDeleteTarget(null);
         setFormError("");
+        setExcelStatus(null);
         setShowAddForm(false);
         setItems([]);
+    }
+
+    function getActiveExcelHandlers() {
+        if (activeTab === "words") {
+            return {
+                importExcel: importJlptWordExcel,
+                downloadTemplate: downloadJlptWordTemplate,
+                exportExcel: exportJlptWordExcel,
+            };
+        }
+        if (activeTab === "grammar") {
+            return {
+                importExcel: importJlptGrammarExcel,
+                downloadTemplate: downloadJlptGrammarTemplate,
+                exportExcel: exportJlptGrammarExcel,
+            };
+        }
+        return {
+            importExcel: importJlptKanjiExcel,
+            downloadTemplate: downloadJlptKanjiTemplate,
+            exportExcel: exportJlptKanjiExcel,
+        };
+    }
+
+    function buildImportMessage(summary) {
+        return `Import xong: thêm ${summary.inserted || 0}, bỏ qua ${summary.skipped || 0}, lỗi ${summary.invalid || 0} trên ${summary.total || 0} dòng.`;
+    }
+
+    async function handleDownloadTemplate() {
+        try {
+            setExcelStatus(null);
+            await getActiveExcelHandlers().downloadTemplate();
+        } catch (error) {
+            console.error("Download dictionary template error:", error);
+            setExcelStatus({
+                type: "error",
+                message: "Không tải được file mẫu. Vui lòng thử lại.",
+            });
+        }
+    }
+
+    async function handleExportExcel() {
+        try {
+            setIsExporting(true);
+            setExcelStatus(null);
+            await getActiveExcelHandlers().exportExcel();
+        } catch (error) {
+            console.error("Export dictionary Excel error:", error);
+            setExcelStatus({
+                type: "error",
+                message: "Không export được Excel. Vui lòng thử lại.",
+            });
+        } finally {
+            setIsExporting(false);
+        }
+    }
+
+    async function handleImportFileChange(event) {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        if (!file) return;
+
+        try {
+            setIsImporting(true);
+            setExcelStatus(null);
+            const response = await getActiveExcelHandlers().importExcel(file);
+            const summary = unwrapServicePayload(response) || {};
+            setExcelStatus({
+                type: summary.invalid > 0 ? "warning" : "success",
+                message: buildImportMessage(summary),
+                errorReport: summary.errorReport || null,
+            });
+            setCurrentPage(1);
+            requestReload();
+        } catch (error) {
+            console.error("Import dictionary Excel error:", error);
+            setExcelStatus({
+                type: "error",
+                message: error?.message || "Import Excel thất bại.",
+            });
+        } finally {
+            setIsImporting(false);
+        }
     }
 
     async function createWord(payload) {
@@ -536,7 +667,7 @@ function DictionaryAdmin() {
         const payload = {
             kanji: formState.kanji.trim(),
             mean: formState.mean.trim(),
-            detail: formState.detail || "",
+            detail: normalizeDetailText(formState.detail),
             kun: formState.kun || "",
             on: formState.on || "",
             stroke_count: formState.stroke_count || "",
@@ -706,7 +837,7 @@ function DictionaryAdmin() {
             setFormState({
                 kanji: item.kanji || "",
                 mean: item.mean || "",
-                detail: item.detail || "",
+                detail: normalizeDetailText(item.detail),
                 kun: listText(item.kun, ", ").replace(/^-$/, ""),
                 on: listText(item.on, ", ").replace(/^-$/, ""),
                 stroke_count: item.stroke_count || "",
@@ -914,20 +1045,56 @@ function DictionaryAdmin() {
                                     ))}
                                 </div>
 
+                                <div className={cx("excelActions")}>
+                                    <button
+                                        type="button"
+                                        className={cx("secondaryBtn")}
+                                        onClick={handleDownloadTemplate}
+                                    >
+                                        <FontAwesomeIcon icon={faDownload} />
+                                        <span>Tải mẫu</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={cx("secondaryBtn")}
+                                        disabled={isImporting}
+                                        onClick={() => importInputRef.current?.click()}
+                                    >
+                                        <FontAwesomeIcon icon={faUpload} />
+                                        <span>{isImporting ? "Đang import..." : "Import"}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={cx("secondaryBtn")}
+                                        disabled={isExporting}
+                                        onClick={handleExportExcel}
+                                    >
+                                        <FontAwesomeIcon icon={faFileExport} />
+                                        <span>{isExporting ? "Đang export..." : "Export"}</span>
+                                    </button>
+                                    <input
+                                        ref={importInputRef}
+                                        type="file"
+                                        accept=".xlsx,.xls"
+                                        className={cx("hiddenFileInput")}
+                                        onChange={handleImportFileChange}
+                                    />
+                                </div>
+
                                 <motion.button
                                     type="button"
                                     className={cx("primaryBtn")}
                                     style={{
-                                        backgroundColor: "#2563eb",
+                                        backgroundColor: "#0f172a",
                                         color: "#fff",
-                                        borderColor: "transparent",
+                                        borderColor: "#0f172a",
                                     }}
                                     onClick={() => {
                                         navigate(
                                             `/admin/dictionary/${activeResource}/add?tab=${activeTab}`,
                                         );
                                     }}
-                                    whileHover={{ y: -1, backgroundColor: "#3b82f6" }}
+                                    whileHover={{ y: -1, backgroundColor: "#111827" }}
                                     whileTap={{ scale: 0.98 }}
                                 >
                                     <FontAwesomeIcon icon={faPlus} />
@@ -936,6 +1103,21 @@ function DictionaryAdmin() {
                             </div>
                         </div>
                     </motion.div>
+
+                    {excelStatus && (
+                        <div className={cx("excelNotice", excelStatus.type)}>
+                            <strong>{excelStatus.message}</strong>
+                            {excelStatus.errorReport && (
+                                <button
+                                    type="button"
+                                    className={cx("downloadErrorBtn")}
+                                    onClick={() => downloadBase64File(excelStatus.errorReport)}
+                                >
+                                    Tải file lỗi
+                                </button>
+                            )}
+                        </div>
+                    )}
 
                     <AnimatePresence>
                         {showAddForm && (
@@ -1528,7 +1710,7 @@ function DictionaryAdmin() {
                                             >
                                                 Hủy
                                             </Button>
-                                            <Button primary type="submit">
+                                            <Button primary type="submit" className={cx("blackSubmitBtn")}>
                                                 {editingItem ? "Cập nhật" : "Thêm"}
                                             </Button>
                                         </div>

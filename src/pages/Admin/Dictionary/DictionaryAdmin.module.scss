@@ -59,15 +59,15 @@ $n1-soft: #ffd9d9;
 }
 
 .title {
-  font-size: 1.8rem;
+  font-size: 28px;
   font-weight: 800;
-  letter-spacing: -0.4px;
-  line-height: 1.15;
+  letter-spacing: 0;
+  line-height: 1.2;
   margin: 0 0 6px;
   color: $ink;
 
   @media (max-width: 640px) {
-    font-size: 1.6rem;
+    font-size: 28px;
   }
 }
 
@@ -91,6 +91,106 @@ $n1-soft: #ffd9d9;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.excelActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.secondaryBtn {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 13px;
+  border-radius: 10px;
+  border: 1px solid $soft-border;
+  background: #fff;
+  color: $ink;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+  transition: background 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s;
+
+  svg {
+    font-size: 12px;
+    color: $ink;
+  }
+
+  &:hover:not(:disabled) {
+    background: $soft-tint;
+    border-color: #bfdbfe;
+    color: $admin-primary;
+    box-shadow: 0 8px 18px -16px rgba(15, 23, 42, 0.35);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.excelNotice {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 13px;
+  line-height: 1.45;
+
+  strong {
+    display: block;
+    font-weight: 800;
+  }
+
+  ul {
+    margin: 8px 0 0;
+    padding-left: 18px;
+  }
+
+  li + li {
+    margin-top: 4px;
+  }
+
+  &.warning {
+    border-color: #fde68a;
+    background: #fffbeb;
+    color: #92400e;
+  }
+
+  &.error {
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: $danger;
+  }
+}
+
+.downloadErrorBtn {
+  min-height: 34px;
+  margin-top: 10px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  background: #fff;
+  color: inherit;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.72);
+  }
 }
 
 .backBtn {
@@ -147,7 +247,7 @@ $n1-soft: #ffd9d9;
   }
 
   &.active {
-    background: $admin-primary;
+    background: #0f172a;
     color: #fff;
     box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12);
   }
@@ -163,9 +263,9 @@ button.primaryBtn {
   font-size: 13px;
   font-weight: 700;
   border-radius: 10px;
-  background-color: $admin-primary;
+  background-color: #0f172a;
   color: #fff;
-  border: 1px solid transparent;
+  border: 1px solid #0f172a;
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.12);
   position: relative;
@@ -182,8 +282,9 @@ button.primaryBtn {
   }
 
   &:hover {
-    background-color: #3b82f6;
-    box-shadow: 0 10px 22px -14px rgba(37, 99, 235, 0.55);
+    background-color: #111827;
+    border-color: #111827;
+    box-shadow: 0 10px 22px -14px rgba(15, 23, 42, 0.55);
   }
 }
 
@@ -507,6 +608,22 @@ button.primaryBtn {
   margin-top: 22px;
   padding-top: 16px;
   border-top: 1.5px dashed $soft-border;
+}
+
+.blackSubmitBtn {
+  background: #0f172a !important;
+  border: 1px solid #0f172a !important;
+  color: #fff !important;
+
+  span,
+  svg {
+    color: inherit !important;
+  }
+
+  &:hover:not(:disabled) {
+    background: #111827 !important;
+    border-color: #111827 !important;
+  }
 }
 
 /* ============ FILTER ============ */
@@ -1339,6 +1456,14 @@ button.primaryBtn {
 
   .headerRight {
     width: 100%;
+  }
+
+  .excelActions {
+    width: 100%;
+  }
+
+  .secondaryBtn {
+    flex: 1 1 110px;
   }
 
   .tabs {

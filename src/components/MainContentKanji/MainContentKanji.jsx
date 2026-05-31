@@ -9,6 +9,14 @@ import styles from "./mainContent.module.scss";
 
 const cx = classNames.bind(styles);
 
+function normalizeDetailText(value) {
+    return String(value || "")
+        .replace(/\\n/g, "\n")
+        .replace(/\r\n?/g, "\n")
+        .replace(/\n{2,}/g, "\n")
+        .trim();
+}
+
 const MainContent = ({ selectedKanji }) => {
     const [kanjiData, setKanjiData] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -109,8 +117,9 @@ const MainContent = ({ selectedKanji }) => {
         );
     }
 
-    const meaningParts = kanjiData.detail
-        ? kanjiData.detail.split('##').map((p) => p.replace('$', '').trim()).filter(Boolean)
+    const normalizedDetail = normalizeDetailText(kanjiData.detail);
+    const meaningParts = normalizedDetail
+        ? normalizedDetail.split('##').map((p) => p.replace('$', '').trim()).filter(Boolean)
         : [];
 
     return (

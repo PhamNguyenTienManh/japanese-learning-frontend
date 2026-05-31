@@ -245,3 +245,78 @@ export async function deleteJlptGrammar(id) {
     if (!response.ok) throw new Error("Failed to delete grammar");
     return response.json();
 }
+
+async function importExcel(endpoint, file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+        throw new Error(body?.message || "Failed to import Excel file");
+    }
+    return body;
+}
+
+async function downloadExcel(endpoint, fallbackFilename) {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+        method: "GET",
+        credentials: "include",
+    });
+    if (!response.ok) {
+        throw new Error("Failed to download Excel file");
+    }
+
+    const blob = await response.blob();
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const filenameMatch = disposition.match(/filename="?([^"]+)"?/i);
+    const filename = filenameMatch?.[1] || fallbackFilename;
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+}
+
+export function importJlptWordExcel(file) {
+    return importExcel("/jlpt-word/import-file", file);
+}
+
+export function importJlptKanjiExcel(file) {
+    return importExcel("/jlpt-kanji/import-file", file);
+}
+
+export function importJlptGrammarExcel(file) {
+    return importExcel("/jlpt-grammar/import-file", file);
+}
+
+export function downloadJlptWordTemplate() {
+    return downloadExcel("/jlpt-word/template", "jlpt-word-template.xlsx");
+}
+
+export function downloadJlptKanjiTemplate() {
+    return downloadExcel("/jlpt-kanji/template", "jlpt-kanji-template.xlsx");
+}
+
+export function downloadJlptGrammarTemplate() {
+    return downloadExcel("/jlpt-grammar/template", "jlpt-grammar-template.xlsx");
+}
+
+export function exportJlptWordExcel() {
+    return downloadExcel("/jlpt-word/export", "jlpt-word-export.xlsx");
+}
+
+export function exportJlptKanjiExcel() {
+    return downloadExcel("/jlpt-kanji/export", "jlpt-kanji-export.xlsx");
+}
+
+export function exportJlptGrammarExcel() {
+    return downloadExcel("/jlpt-grammar/export", "jlpt-grammar-export.xlsx");
+}

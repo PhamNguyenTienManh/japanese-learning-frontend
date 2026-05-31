@@ -1,8 +1,8 @@
-$admin-primary: #2563eb;
-$admin-primary-dark: #1d4ed8;
+$admin-primary: #0f172a;
+$admin-primary-dark: #111827;
 $ink: #111827;
 $ink-soft: #6b7280;
-$page-bg: #f3f6fa;
+$page-bg: #f7f8fb;
 $soft-border: #dbe2ea;
 $soft-panel: #ffffff;
 $danger: #dc2626;
@@ -67,13 +67,13 @@ $success-soft: #ecfdf3;
 
     &:hover {
       background: #f8fafc;
-      color: $admin-primary;
+      color: #0f172a;
     }
 
     &.active {
-      background: $admin-primary;
+      background: #0f172a;
       color: #fff;
-      box-shadow: 0 10px 22px -18px rgba(37, 99, 235, 0.9);
+      box-shadow: 0 10px 22px -18px rgba(15, 23, 42, 0.9);
     }
   }
 }
@@ -102,12 +102,12 @@ $success-soft: #ecfdf3;
 }
 
 .primaryBtn {
-  background: $admin-primary;
+  background: #0f172a;
   color: #fff;
-  box-shadow: 0 12px 24px -18px rgba(37, 99, 235, 0.9);
+  box-shadow: 0 12px 24px -18px rgba(15, 23, 42, 0.9);
 
   &:hover:not(:disabled) {
-    background: $admin-primary-dark;
+    background: #111827;
   }
 }
 
