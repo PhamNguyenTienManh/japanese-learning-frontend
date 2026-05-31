@@ -18,6 +18,8 @@ const EMPTY_AUTH = {
   avatar: null,
 };
 
+const SESSION_REFRESH_THRESHOLD_MS = 60 * 1000;
+
 function buildAuthFromSession(session) {
   if (!session) return EMPTY_AUTH;
 
@@ -91,8 +93,11 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const loadAuth = useCallback(async () => {
-    setIsLoading(true);
+  const loadAuth = useCallback(async (options = {}) => {
+    const { showLoading = true } = options;
+    if (showLoading) {
+      setIsLoading(true);
+    }
     setProfileLoaded(false);
     try {
       const session = await authService.getSession();
@@ -105,7 +110,9 @@ export function AuthProvider({ children }) {
       console.error("Failed to load auth session:", err);
       setAuth(EMPTY_AUTH);
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -129,6 +136,22 @@ export function AuthProvider({ children }) {
       window.removeEventListener("storage", loadAuth);
     };
   }, [loadAuth]);
+
+  useEffect(() => {
+    if (!auth.isLoggedIn || !auth.exp) return undefined;
+
+    const expiresAt = auth.exp * 1000;
+    const refreshDelay = Math.max(
+      0,
+      expiresAt - Date.now() - SESSION_REFRESH_THRESHOLD_MS,
+    );
+
+    const timeoutId = window.setTimeout(() => {
+      loadAuth({ showLoading: false });
+    }, refreshDelay);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [auth.isLoggedIn, auth.exp, loadAuth]);
 
   useEffect(() => {
     if (auth.isLoggedIn && !profileLoaded) {

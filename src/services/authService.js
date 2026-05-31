@@ -1,6 +1,7 @@
 // src/services/authService.js
 
 const API_BASE_URL = process.env.REACT_APP_BASE_URL_API;
+const SESSION_REFRESH_THRESHOLD_MS = 60 * 1000;
 
 class AuthService {
   // Đăng nhập bằng email và password
@@ -53,9 +54,9 @@ class AuthService {
     return false;
   }
 
-  async getSession() {
-    const res = await fetch(`${API_BASE_URL}/auth/me`, {
-      method: "GET",
+  async refreshSession() {
+    const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
@@ -66,12 +67,53 @@ class AuthService {
       return null;
     }
 
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.message || "Khong the lam moi phien dang nhap");
+    }
+
+    return data;
+  }
+
+  async getSession(options = {}) {
+    const { allowRefresh = true } = options;
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (res.status === 401) {
+      if (allowRefresh) {
+        const refreshed = await this.refreshSession();
+        if (refreshed) {
+          return this.getSession({ allowRefresh: false });
+        }
+      }
+      return null;
+    }
+
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data.message || "Không thể lấy phiên đăng nhập");
     }
 
-    return data.data || data;
+    const session = data.data || data;
+    const expiresAt = session?.exp ? session.exp * 1000 : null;
+    if (
+      allowRefresh &&
+      expiresAt &&
+      expiresAt - Date.now() <= SESSION_REFRESH_THRESHOLD_MS
+    ) {
+      const refreshed = await this.refreshSession();
+      if (refreshed) {
+        return this.getSession({ allowRefresh: false });
+      }
+    }
+
+    return session;
   }
 
   async logout() {
