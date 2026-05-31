@@ -3,6 +3,8 @@ import { useLocation } from 'react-router-dom';
 import MainContent from '../../components/MainContentKanji/MainContentKanji';
 import SearchInput from '~/components/searchInput/searchInput';
 import SidebarItem from '~/components/SidebarItem/SidebarItem';
+import VocabSidebar from '~/components/VocabSidebar';
+import VocabContent from '~/components/VocabContent';
 import classNames from 'classnames/bind';
 import styles from './kanji_look_up.module.scss';
 
@@ -74,9 +76,11 @@ const KanjiLookupInterface = () => {
       <main className={cx('main')}>
         <div className={cx('container')}>
           <div className={cx('page-head')}>
-            <h1 className={cx('title')}>Tra cứu Kanji</h1>
+            <h1 className={cx('title')}>{activeTab === 'vocab' ? 'Tra cứu từ vựng' : 'Tra cứu Kanji'}</h1>
             <p className={cx('subtitle')}>
-              Tìm kiếm theo Hán tự, âm Hán Việt, kunyomi/onyomi hoặc viết tay trực tiếp.
+              {activeTab === 'vocab'
+                ? 'Tìm kiếm từ vựng JLPT theo từ, cách đọc hoặc nghĩa tiếng Việt.'
+                : 'Tìm kiếm theo Hán tự, âm Hán Việt, kunyomi/onyomi hoặc viết tay trực tiếp.'}
             </p>
           </div>
 
@@ -88,6 +92,13 @@ const KanjiLookupInterface = () => {
             >
               Tra Kanji
             </button>
+            <button
+              type="button"
+              className={cx('tab', { active: activeTab === 'vocab' })}
+              onClick={() => handleTabChange('vocab')}
+            >
+              Tra từ vựng
+            </button>
           </div>
 
           <SearchInput
@@ -98,15 +109,31 @@ const KanjiLookupInterface = () => {
           />
 
           <div className={cx('content-wrapper')}>
-            <SidebarItem
-              keyword={searchKeyword}
-              onSelectKanji={handleSelectKanji}
-              selectedKanji={selectedKanji}
-            />
+            {activeTab === 'vocab' ? (
+              <>
+                <VocabSidebar
+                  keyword={searchKeyword}
+                  onSelectVocab={setSelectedVocab}
+                  selectedVocab={selectedVocab}
+                />
 
-            <div className={cx('main-area')}>
-              <MainContent selectedKanji={selectedKanji} />
-            </div>
+                <div className={cx('main-area')}>
+                  <VocabContent selectedVocab={selectedVocab} />
+                </div>
+              </>
+            ) : (
+              <>
+                <SidebarItem
+                  keyword={searchKeyword}
+                  onSelectKanji={handleSelectKanji}
+                  selectedKanji={selectedKanji}
+                />
+
+                <div className={cx('main-area')}>
+                  <MainContent selectedKanji={selectedKanji} />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </main>
