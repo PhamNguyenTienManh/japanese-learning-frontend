@@ -449,11 +449,6 @@ function AdminTransactions() {
           <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_220px_130px]">
             <label className="relative block">
               <span className="sr-only">Tìm kiếm giao dịch</span>
-              <Search
-                size={18}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                aria-hidden="true"
-              />
               <input
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
