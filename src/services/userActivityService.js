@@ -17,6 +17,19 @@ export async function getRecentUserActivities(limit = 10) {
   return response.json();
 }
 
+export async function getAdminUserActivities(userId, limit = 50) {
+  const response = await fetch(`${BASE_URL}/user-activities/admin/users/${userId}?limit=${limit}`, {
+    credentials: "include",
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to get user activities: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
 export async function logKanjiLookupActivity(payload) {
   try {
     const response = await fetch(`${BASE_URL}/user-activities/kanji-lookup`, {

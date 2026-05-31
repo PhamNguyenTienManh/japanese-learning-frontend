@@ -1,11 +1,11 @@
-import { Lock, LockOpen } from "lucide-react";
+import { History, Lock, LockOpen } from "lucide-react";
 import {
   USER_ROLES,
   USER_STATUS,
   PROVIDER_LABELS,
 } from "~/services/userConstants";
 
-function UserTableRow({ user, onToggleStatus, onChangeRole }) {
+function UserTableRow({ user, onToggleStatus, onChangeRole, onViewActivity }) {
   const isBanned = user.status === USER_STATUS.BANNED;
   const premiumExpiredAt = user.premium_expired_date
     ? new Date(user.premium_expired_date)
@@ -17,7 +17,6 @@ function UserTableRow({ user, onToggleStatus, onChangeRole }) {
 
   return (
     <tr className="transition hover:bg-slate-50">
-      {/* User info */}
       <td className="px-4 py-4 align-middle">
         <div className="flex items-center gap-3">
           <img
@@ -36,7 +35,6 @@ function UserTableRow({ user, onToggleStatus, onChangeRole }) {
         </div>
       </td>
 
-      {/* Role */}
       <td className="px-4 py-4 align-middle">
         <select
           value={user.role || USER_ROLES.STUDENT}
@@ -48,7 +46,6 @@ function UserTableRow({ user, onToggleStatus, onChangeRole }) {
         </select>
       </td>
 
-      {/* Status */}
       <td className="px-4 py-4 align-middle">
         <span
           className={`inline-flex min-h-7 items-center rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${
@@ -61,7 +58,6 @@ function UserTableRow({ user, onToggleStatus, onChangeRole }) {
         </span>
       </td>
 
-      {/* Premium */}
       <td className="px-4 py-4 align-middle">
         <div className="flex flex-col items-start gap-1">
           <span
@@ -81,21 +77,27 @@ function UserTableRow({ user, onToggleStatus, onChangeRole }) {
         </div>
       </td>
 
-      {/* Provider */}
       <td className="px-4 py-4 align-middle">
         <span className="inline-flex min-h-7 items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold capitalize text-slate-700">
           {PROVIDER_LABELS[user.provider] || user.provider || "local"}
         </span>
       </td>
 
-      {/* Registered date */}
       <td className="whitespace-nowrap px-4 py-4 align-middle text-sm font-semibold text-slate-600">
-        {new Date(user.registeredAt || user.createdAt).toLocaleDateString(
-          "vi-VN",
-        )}
+        {new Date(user.registeredAt || user.createdAt).toLocaleDateString("vi-VN")}
       </td>
 
-      {/* Actions */}
+      <td className="px-4 py-4 align-middle">
+        <button
+          type="button"
+          onClick={() => onViewActivity(user)}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950"
+        >
+          <History size={14} aria-hidden="true" />
+          Xem lịch sử
+        </button>
+      </td>
+
       <td className="px-4 py-4 text-right align-middle">
         <button
           type="button"
