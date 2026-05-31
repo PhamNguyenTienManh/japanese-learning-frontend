@@ -104,6 +104,14 @@ function normalizeKanjiExamples(examples) {
     }));
 }
 
+function normalizeDetailText(value) {
+    return String(value || "")
+        .replace(/\\n/g, "\n")
+        .replace(/\r\n?/g, "\n")
+        .replace(/\n{2,}/g, "\n")
+        .trim();
+}
+
 function defaultForm(resource) {
     if (resource === "jlpt_word") {
         return {
@@ -228,7 +236,7 @@ function DictionaryForm() {
         setFormState({
             kanji: item.kanji || "",
             mean: item.mean || "",
-            detail: item.detail || "",
+            detail: normalizeDetailText(item.detail),
             kun: item.kun || "",
             on: item.on || "",
             stroke_count: item.stroke_count || "",
@@ -330,7 +338,7 @@ function DictionaryForm() {
             payload: {
                 kanji: formState.kanji.trim(),
                 mean: formState.mean.trim(),
-                detail: formState.detail || "",
+                detail: normalizeDetailText(formState.detail),
                 kun: formState.kun || "",
                 on: formState.on || "",
                 stroke_count: formState.stroke_count || "",
@@ -684,7 +692,12 @@ function DictionaryForm() {
                                         <Button outline type="button" onClick={() => navigate(backUrl)}>
                                             Hủy
                                         </Button>
-                                        <Button primary type="submit" disabled={isSaving}>
+                                        <Button
+                                            primary
+                                            type="submit"
+                                            disabled={isSaving}
+                                            className={cx("blackSubmitBtn")}
+                                        >
                                             {isSaving ? "Đang lưu..." : isUpdate ? "Cập nhật" : "Thêm mới"}
                                         </Button>
                                     </div>

@@ -316,8 +316,6 @@ function Admin() {
           <p>Tổng quan người học, học liệu, đề thi, cộng đồng và dịch vụ Pro.</p>
         </div>
         <div className={cx("header-actions")}>
-          <Link to={config.routes.user}>Người dùng</Link>
-          <Link to={config.routes.dictionaryAdmin}>Từ điển</Link>
           <button
             type="button"
             onClick={() => {

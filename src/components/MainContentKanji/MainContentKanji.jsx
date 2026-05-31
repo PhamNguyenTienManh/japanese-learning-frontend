@@ -6,6 +6,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fetchKanjiDetail as getKanjiDetail } from "~/services/kanjiService";
 import { logKanjiLookupActivity } from "~/services/userActivityService";
 
+function normalizeDetailText(value) {
+    return String(value || "")
+        .replace(/\\n/g, "\n")
+        .replace(/\r\n?/g, "\n")
+        .replace(/\n{2,}/g, "\n")
+        .trim();
+}
+
 const MainContent = ({ selectedKanji }) => {
     const [kanjiData, setKanjiData] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -92,8 +100,9 @@ const MainContent = ({ selectedKanji }) => {
         );
     }
 
-    const meaningParts = kanjiData.detail
-        ? kanjiData.detail.split('##').map((p) => p.replace('$', '').trim()).filter(Boolean)
+    const normalizedDetail = normalizeDetailText(kanjiData.detail);
+    const meaningParts = normalizedDetail
+        ? normalizedDetail.split('##').map((p) => p.replace('$', '').trim()).filter(Boolean)
         : [];
 
     return (
@@ -143,7 +152,7 @@ const MainContent = ({ selectedKanji }) => {
             {meaningParts.length > 0 && (
                 <div className="bg-white border border-border rounded-[18px] py-6 px-7 shadow-[0_4px_16px_rgba(15,23,42,0.04)] max-[720px]:py-5 max-[720px]:px-[18px]">
                     <h2 className="flex items-center gap-2 text-base font-bold text-text-high mb-4 pl-2.5 border-l-[3px] border-primary">Nghĩa</h2>
-                    <div className="text-sm leading-[1.85] text-text-high bg-[#f1fbfb] rounded-xl py-4 px-[18px]">
+                    <div className="text-sm leading-[1.85] text-text-high bg-[#f1fbfb] rounded-xl py-4 px-[18px] whitespace-pre-line">
                         {meaningParts.map((para, idx) => (
                             <p key={idx} className="mb-2.5 last:mb-0">{para}</p>
                         ))}
