@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { RefreshCw } from "lucide-react";
 
 import { userApi } from "~/services/userService";
+import { getAdminUserActivities } from "~/services/userActivityService";
 import UserHeader from "~/components/UserHeader/UserHeader";
 import UserFilters from "~/components/UserFilters/UserFilters";
 import UserTable from "~/components/UserTable/UserTable";
+import UserActivityDrawer from "~/components/UserActivityDrawer/UserActivityDrawer";
 
 function User() {
   const [users, setUsers] = useState([]);
@@ -13,6 +15,11 @@ function User() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [activityDrawerOpen, setActivityDrawerOpen] = useState(false);
+  const [activityUser, setActivityUser] = useState(null);
+  const [userActivities, setUserActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [activitiesError, setActivitiesError] = useState("");
 
   useEffect(() => {
     fetchUsers();
@@ -61,6 +68,37 @@ function User() {
       console.error("Error updating role:", err);
       alert("Không thể cập nhật vai trò người dùng");
     }
+  };
+
+  const loadUserActivities = async (userId) => {
+    try {
+      setActivitiesLoading(true);
+      setActivitiesError("");
+      const response = await getAdminUserActivities(userId, 50);
+      const activities = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.data)
+          ? response.data
+          : [];
+      setUserActivities(activities);
+    } catch (err) {
+      console.error("Error fetching user activities:", err);
+      setActivitiesError("Không thể tải lịch sử hoạt động của người dùng");
+      setUserActivities([]);
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
+
+  const handleViewActivity = (user) => {
+    setActivityUser(user);
+    setActivityDrawerOpen(true);
+    setUserActivities([]);
+    loadUserActivities(user._id);
+  };
+
+  const handleRetryActivities = () => {
+    if (activityUser?._id) loadUserActivities(activityUser._id);
   };
 
   const filteredUsers = users.filter((user) => {
@@ -119,13 +157,23 @@ function User() {
               users={filteredUsers}
               onToggleStatus={handleToggleStatus}
               onChangeRole={handleChangeRole}
+              onViewActivity={handleViewActivity}
             />
           </>
         )}
       </div>
+
+      <UserActivityDrawer
+        open={activityDrawerOpen}
+        user={activityUser}
+        activities={userActivities}
+        loading={activitiesLoading}
+        error={activitiesError}
+        onClose={() => setActivityDrawerOpen(false)}
+        onRetry={handleRetryActivities}
+      />
     </div>
   );
 }
 
 export default User;
-
