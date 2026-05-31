@@ -4,6 +4,7 @@ import {
   USER_STATUS,
   PROVIDER_LABELS,
 } from "~/services/userConstants";
+import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
 
 function UserTableRow({ user, onToggleStatus, onChangeRole }) {
   const isBanned = user.status === USER_STATUS.BANNED;
@@ -21,9 +22,10 @@ function UserTableRow({ user, onToggleStatus, onChangeRole }) {
       <td className="px-4 py-4 align-middle">
         <div className="flex items-center gap-3">
           <img
-            src={user.profile?.image_url || "/placeholder.svg"}
+            src={getAvatarUrl(user.profile?.image_url)}
             alt={user.profile?.name || "User"}
             className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+            onError={handleAvatarError}
           />
           <div className="min-w-0">
             <p className="m-0 truncate text-sm font-bold text-slate-950">

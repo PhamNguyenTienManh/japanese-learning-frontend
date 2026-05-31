@@ -20,6 +20,7 @@ import { getWeeklyStudyLeaderboard, getUserStatistics } from "~/services/statist
 import { getTodayStudyTime, getWeekStudyMinutes } from "~/services/userStudy";
 import { studyTimeTracker } from "~/utils/studyTimeTracker";
 import { getRecentUserActivities } from "~/services/userActivityService";
+import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
 
 const LEADERBOARD_STEP = 10;
 const tw = {
@@ -427,9 +428,10 @@ function Dashboard() {
           <div className={cx("hero")}>
             <div className={cx("heroContent")}>
               <img
-                src={userData.avatar || "/placeholder.svg"}
+                src={getAvatarUrl(userData.avatar)}
                 alt={userData.name}
                 className={cx("heroAvatar")}
+                onError={handleAvatarError}
               />
               <div>
                 <h1 className={cx("heroName")}>{userData.name}</h1>
@@ -597,12 +599,10 @@ function Dashboard() {
                           </div>
 
                           <img
-                            src={entry.avatar || "/user.png"}
+                            src={getAvatarUrl(entry.avatar)}
                             alt={entry.name}
                             className={cx("leaderAvatar")}
-                            onError={(event) => {
-                              event.currentTarget.src = "/user.png";
-                            }}
+                            onError={handleAvatarError}
                           />
 
                           <div className={cx("leaderInfo")}>
