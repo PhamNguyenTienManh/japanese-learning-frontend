@@ -48,8 +48,27 @@ export async function getStatistics() {
     return response.json();
 }
 
-export async function getAdminDashboardStatistics() {
-    const response = await fetch(`${BASE_URL}/statistic/admin-dashboard`, {
+export async function getAdminDashboardStatistics(ranges = {}) {
+    const params = new URLSearchParams();
+
+    if (typeof ranges === "string") {
+        params.set("chartRange", ranges);
+    } else {
+        if (ranges.userGrowthRange) {
+            params.set("userGrowthRange", ranges.userGrowthRange);
+        }
+        if (ranges.learningActivityRange) {
+            params.set("learningActivityRange", ranges.learningActivityRange);
+        }
+        if (ranges.examActivityRange) {
+            params.set("examActivityRange", ranges.examActivityRange);
+        }
+        if (ranges.paymentRange) {
+            params.set("paymentRange", ranges.paymentRange);
+        }
+    }
+
+    const response = await fetch(`${BASE_URL}/statistic/admin-dashboard?${params.toString()}`, {
         credentials: "include",
         headers: getAuthHeaders(),
     });

@@ -105,7 +105,7 @@
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -140,6 +140,52 @@
     font-weight: 800;
     line-height: 1.15;
     overflow-wrap: anywhere;
+  }
+}
+
+.metric-sub {
+  display: block;
+}
+
+.metric-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: -51px;
+  min-height: 24px;
+  max-width: calc(100% + 51px);
+  padding: 3px 7px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+
+  span {
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+  }
+
+  svg {
+    flex: 0 0 auto;
+  }
+
+  &.positive {
+    background: #ecfdf5;
+    color: #047857;
+  }
+
+  &.negative {
+    background: #fff1f2;
+    color: #be123c;
+  }
+
+  &.neutral {
+    background: #f1f5f9;
+    color: #64748b;
   }
 }
 
@@ -548,6 +594,10 @@ tbody tr:hover {
   padding-bottom: 10px;
 }
 
+.payment-summary {
+  padding-bottom: 18px;
+}
+
 .ai-meta {
   display: flex;
   flex-wrap: wrap;
@@ -563,35 +613,6 @@ tbody tr:hover {
     color: #1d4ed8;
     font-size: 12px;
     font-weight: 800;
-  }
-}
-
-.provider-list {
-  display: grid;
-  gap: 8px;
-  padding: 0 18px 18px;
-
-  > span {
-    color: #607184;
-    font-size: 13px;
-  }
-
-  div {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    min-height: 36px;
-    padding: 0 11px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    color: #334155;
-    font-size: 13px;
-  }
-
-  span {
-    font-weight: 800;
-    text-transform: uppercase;
   }
 }
 
