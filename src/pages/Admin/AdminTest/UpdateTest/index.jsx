@@ -70,6 +70,33 @@ function createDefaultAudioScript() {
     };
 }
 
+function normalizeAudioScriptForSubmit(audioScript) {
+    if (!audioScript || !Array.isArray(audioScript.lines)) return null;
+
+    const lines = audioScript.lines
+        .map((line) => {
+            const text = String(line?.text || "").trim();
+            const speakerId = Number(line?.speakerId);
+
+            return {
+                speakerLabel: String(line?.speakerLabel || "").trim(),
+                speakerId: Number.isFinite(speakerId) ? speakerId : 1,
+                text,
+            };
+        })
+        .filter((line) => line.text);
+
+    if (lines.length === 0) return null;
+
+    const pauseMs = Number(audioScript.pauseMs);
+
+    return {
+        mode: audioScript.mode || (lines.length > 1 ? "dialogue" : "single"),
+        pauseMs: Number.isFinite(pauseMs) && pauseMs >= 0 ? pauseMs : 500,
+        lines,
+    };
+}
+
 function sanitizeExamHtml(value) {
     const raw = value === null || value === undefined ? "" : String(value);
     if (!raw.trim()) return "";
@@ -329,7 +356,7 @@ function EditTest() {
                                     explanation: subQ.explain || "",
                                     explainAll: subQ.explainAll || "",
                                     image: subQ.image || "",
-                                    score: subQ.score || 1,
+                                    score: q.scores?.[subIndex] || 1,
                                 }))
                             };
 
@@ -699,7 +726,7 @@ function EditTest() {
                             audio: question.audioPreview || "",
                             image: question.generalImage || "",
                             txt_read: question.listeningContent || "",
-                            audioScript: question.audioScript || null,
+                            audioScript: normalizeAudioScriptForSubmit(question.audioScript),
                         },
                         content: question.subQuestions.map(sub => ({
                             question: sub.question || "",
@@ -710,7 +737,8 @@ function EditTest() {
                             explainAll: sub.explainAll || "",
                             score: sub.score || 1
                         })),
-                        correct_answers: question.subQuestions.map(sub => sub.correctAnswer)
+                        correct_answers: question.subQuestions.map(sub => sub.correctAnswer),
+                        scores: question.subQuestions.map(sub => Number(sub.score) || 1)
                     };
 
                     if (question._id && (shouldUpdateAllExistingQuestions || dirtyQuestionLocalIds.includes(question.id))) {

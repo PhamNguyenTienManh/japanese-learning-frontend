@@ -321,9 +321,6 @@ function ExamReview() {
     (sum, p) => sum + p.questions.filter((q) => q.isCorrect).length,
     0,
   );
-  const accuracyPct = totalQuestions
-    ? Math.round((totalCorrect / totalQuestions) * 100)
-    : 0;
 
   return (
     <div className={cx("wrapper")}>
@@ -354,27 +351,6 @@ function ExamReview() {
             <Link to={`/practice/${level}/results/${testId}`}>Kết quả</Link>
             <FontAwesomeIcon icon={faAngleRight} />
             <span className={cx("breadcrumbCurrent")}>Xem đáp án</span>
-          </motion.div>
-
-          {/* Accuracy strip */}
-          <motion.div
-            className={cx("accuracyStrip")}
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: easeOut, delay: 0.05 }}
-          >
-            <div className={cx("accuracyTrack")}>
-              <motion.div
-                className={cx("accuracyFill")}
-                initial={{ width: 0 }}
-                animate={{ width: `${accuracyPct}%` }}
-                transition={{ duration: 1.1, ease: easeOut, delay: 0.2 }}
-              />
-            </div>
-            <span className={cx("accuracyLabel")}>
-              <strong>{totalCorrect}</strong>/{totalQuestions} đúng •{" "}
-              {accuracyPct}%
-            </span>
           </motion.div>
 
           {/* Section Tabs */}

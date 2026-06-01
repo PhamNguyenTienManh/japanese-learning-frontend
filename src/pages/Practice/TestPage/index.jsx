@@ -123,7 +123,9 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
         const statusPromises = mappedTests.map(async (test) => {
           try {
             const statusRes = await checkExamStatus(test.id);
-            const completed = statusRes?.data?.status === "completed";
+            const completed =
+              statusRes?.data?.status === "completed" ||
+              statusRes?.data?.hasCompletedResult === true;
             return { ...test, completed };
           } catch (e) {
             console.error(e);
