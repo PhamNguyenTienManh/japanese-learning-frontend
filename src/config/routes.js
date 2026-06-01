@@ -35,6 +35,7 @@ const routes = {
   dictionaryAdminUpdate: "/admin/dictionary/:resource/update/:id",
   adminTest: "/admin/tests",
   createTest: "/admin/tests/create",
+  adminTestStatistics: "/admin/tests/statistics/:examId",
   updateTest: "/admin/tests/update/:id",
   adminPosts: "/admin/posts",
   adminViolations: "/admin/violations",

@@ -296,14 +296,6 @@ function AdminTest() {
     }
   };
 
-  const handleViewStats = () => {
-    setToast({
-      show: true,
-      message: "Chức năng thống kê sẽ được bổ sung sau",
-      type: "info",
-    });
-  };
-
   return (
     <div className={cx("wrapper")}>
       <main className={cx("main")}>
@@ -478,7 +470,7 @@ function AdminTest() {
                                   className={cx("iconAction")}
                                   title="Xem thống kê"
                                   aria-label="Xem thống kê"
-                                  onClick={handleViewStats}
+                                  onClick={() => navigate(`/admin/tests/statistics/${exam._id}`)}
                                 >
                                   <FontAwesomeIcon icon={faChartLine} />
                                 </button>

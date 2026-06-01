@@ -43,6 +43,7 @@ import AdminTransactions from "~/pages/Admin/AdminTransactions";
 import AdminReading from "~/pages/Admin/AdminReading";
 import AdminConversation from "~/pages/Admin/AdminConversation";
 import EditTest from "~/pages/Admin/AdminTest/UpdateTest";
+import AdminTestStatistics from "~/pages/Admin/AdminTest/Statistics";
 
 export const publicRouter = [
   { path: config.routes.home, component: Home },
@@ -85,6 +86,7 @@ export const publicRouter = [
   { path: config.routes.dictionaryAdminUpdate, component: DictionaryForm },
   { path: config.routes.adminTest, component: AdminTest },
   { path: config.routes.createTest, component: CreateTest },
+  { path: config.routes.adminTestStatistics, component: AdminTestStatistics },
   { path: config.routes.adminPosts, component: AdminPosts },
   { path: config.routes.adminViolations, component: Violations },
   { path: config.routes.adminTransactions, component: AdminTransactions },
