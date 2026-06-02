@@ -63,6 +63,63 @@ export async function getJlptGrammar(page = 1, limit = 9, level = "N4") {
     return response.json();
 }
 
+export async function getJlptWordDetail(word) {
+    const response = await fetch(
+        `${BASE_URL}/jlpt-word/detail?word=${encodeURIComponent(word)}`,
+        {
+            method: "GET",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch JLPT word detail: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+export async function getJlptGrammarDetail(grammar) {
+    const response = await fetch(
+        `${BASE_URL}/jlpt-grammar/detail?grammar=${encodeURIComponent(grammar)}`,
+        {
+            method: "GET",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch JLPT grammar detail: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+export async function getJlptKanjiDetail(kanji) {
+    const response = await fetch(
+        `${BASE_URL}/jlpt-kanji/detail?kanji=${encodeURIComponent(kanji)}`,
+        {
+            method: "GET",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch JLPT kanji detail: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
 // Lấy danh sách đầy đủ cho admin
 export async function getJlptWordsAdmin(page = 1, limit = 20, level = "", q = "", includeDeleted = true) {
     const params = new URLSearchParams({

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useContext, createContext, useEffect } from "react";
+import { createPortal } from "react-dom";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCheckCircle, faExclamationCircle, faInfoCircle, faExclamationTriangle, faX } from "@fortawesome/free-solid-svg-icons";
@@ -16,10 +17,21 @@ export function ToastProvider({ children }) {
   }, []);
 
   const addToast = useCallback((message, type, duration = 3000) => {
-    const id = Date.now().toString();
-    const toast = { id, message, type, duration };
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const toast = { id, message, type: type || "info", duration };
     setToasts((prev) => [...prev, toast]);
   }, []);
+
+  useEffect(() => {
+    const handleAppToast = (event) => {
+      const { message, type = "info", duration = 3000 } = event.detail || {};
+      if (!message) return;
+      addToast(message, type, duration);
+    };
+
+    window.addEventListener("app-toast", handleAppToast);
+    return () => window.removeEventListener("app-toast", handleAppToast);
+  }, [addToast]);
 
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
@@ -36,36 +48,30 @@ export function useToast() {
 }
 
 function ToastContainer({ toasts, removeToast }) {
-  return (
+  return createPortal(
     <div className={cx("toast-container")}>
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
       ))}
-    </div>
+    </div>,
+    document.body
   );
 }
 
 function ToastItem({ toast, onClose }) {
   const [isExiting, setIsExiting] = useState(false);
-  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    let start = Date.now();
     const duration = toast.duration || 3000;
+    const hideTimer = setTimeout(() => {
+      setIsExiting(true);
+    }, duration);
+    const closeTimer = setTimeout(onClose, duration + 260);
 
-    const tick = () => {
-      const elapsed = Date.now() - start;
-      const percent = Math.min((elapsed / duration) * 100, 100);
-      setProgress(percent);
-      if (percent < 100) {
-        requestAnimationFrame(tick);
-      } else {
-        setIsExiting(true);
-        setTimeout(onClose, 300);
-      }
+    return () => {
+      clearTimeout(hideTimer);
+      clearTimeout(closeTimer);
     };
-
-    tick();
   }, [toast.duration, onClose]);
 
   const getIcon = (type) => {
@@ -89,7 +95,7 @@ function ToastItem({ toast, onClose }) {
       </button>
       <div
         className={cx("progress-bar")}
-        style={{ width: `${progress}%` }}
+        style={{ animationDuration: `${toast.duration || 3000}ms` }}
       />
     </div>
   );
