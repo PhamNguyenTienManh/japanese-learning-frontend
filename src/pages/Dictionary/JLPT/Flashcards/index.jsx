@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./Flashcards.module.scss";
@@ -24,6 +24,9 @@ export default function JLPTFlashcard() {
     const sourceType = searchParams.get("type");
     const sourceLevel = searchParams.get("level");
     const isJLPTMode = searchParams.get("source") === "jlpt";
+    const defaultLimit = sourceType === "kanji" ? 18 : 10;
+    const sourcePage = Math.max(parseInt(searchParams.get("page"), 10) || 1, 1);
+    const sourceLimit = Math.max(parseInt(searchParams.get("limit"), 10) || defaultLimit, 1);
 
     const [allCards, setAllCards] = useState([]);
     const [filteredCards, setFilteredCards] = useState([]);
@@ -39,20 +42,19 @@ export default function JLPTFlashcard() {
     const [error, setError] = useState(null);
 
 
-    const fetchJLPTData = async () => {
+    const fetchJLPTData = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
 
             let response;
-            const itemsPerPage = 1000;
 
             if (sourceType === "word") {
-                response = await getJlptWords(1, itemsPerPage, sourceLevel);
+                response = await getJlptWords(sourcePage, sourceLimit, sourceLevel);
             } else if (sourceType === "grammar") {
-                response = await getJlptGrammar(1, itemsPerPage, sourceLevel);
+                response = await getJlptGrammar(sourcePage, sourceLimit, sourceLevel);
             } else if (sourceType === "kanji") {
-                response = await getJlptKanji(1, itemsPerPage, sourceLevel);
+                response = await getJlptKanji(sourcePage, sourceLimit, sourceLevel);
             }
 
             if (response?.success) {
@@ -88,6 +90,9 @@ export default function JLPTFlashcard() {
                 });
 
                 setAllCards(transformedCards);
+                setCurrentIndex(0);
+                setIsFlipped(false);
+                setCompleted(0);
             }
         } catch (err) {
             console.error("Failed:", err);
@@ -95,22 +100,31 @@ export default function JLPTFlashcard() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [sourceType, sourceLevel, sourcePage, sourceLimit]);
 
 
     useEffect(() => {
         if (isJLPTMode && sourceType && sourceLevel) {
             fetchJLPTData();
         }
-    }, [sourceType, sourceLevel]);
+    }, [isJLPTMode, sourceType, sourceLevel, fetchJLPTData]);
 
 
     // FILTER CATEGORY (áp dụng cho Flashcard Notebook)
     useEffect(() => {
-        if (!allCards.length) return;
+        if (!allCards.length) {
+            setFilteredCards([]);
+            setCurrentIndex(0);
+            setIsFlipped(false);
+            setCompleted(0);
+            return;
+        }
 
         if (isJLPTMode) {
             setFilteredCards(allCards);
+            setCurrentIndex(0);
+            setIsFlipped(false);
+            setCompleted(0);
             return;
         }
 
@@ -122,8 +136,9 @@ export default function JLPTFlashcard() {
 
         setCurrentIndex(0);
         setIsFlipped(false);
+        setCompleted(0);
 
-    }, [selectedCategory, allCards]);
+    }, [selectedCategory, allCards, isJLPTMode]);
 
 
     const total = filteredCards.length;

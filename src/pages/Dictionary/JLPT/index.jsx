@@ -72,6 +72,7 @@ function JLPT() {
     const [showModal, setShowModal] = useState(false);
     const [selectedWord, setSelectedWord] = useState(null);
     const [toast, setToast] = useState({ show: false, message: '', type: '' });
+    const itemsPerPage = selectedType === "Hán tự" ? 18 : 10;
 
     useEffect(() => {
         fetchNotebooks();
@@ -80,7 +81,7 @@ function JLPT() {
     const getFlashcardLink = () => {
         const typeParam = selectedType === "Từ vựng" ? "word" :
             selectedType === "Ngữ pháp" ? "grammar" : "kanji";
-        return `flashcards?type=${typeParam}&level=${selectedLevel}&source=jlpt`;
+        return `flashcards?type=${typeParam}&level=${selectedLevel}&source=jlpt&page=${currentPage}&limit=${itemsPerPage}`;
     };
 
     const handleTabClick = (tab) => {
@@ -127,9 +128,6 @@ function JLPT() {
             return () => clearTimeout(timer);
         }
     }, [toast.show]);
-
-
-    const itemsPerPage = selectedType === "Hán tự" ? 18 : 10;
 
     const handleAddWord = async (newWord, type, selectedNotebook) => {
         try {
@@ -656,6 +654,7 @@ function JLPT() {
                     }}
                     pdfUrl={pdfUrl}
                     loading={pdfLoading}
+                    title={`Xem trước PDF: ${selectedType} ${selectedLevel} — Trang ${currentPage}`}
                 />
 
                 {/* Toast Notification */}
