@@ -3,15 +3,14 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./Flashcards.module.scss";
 import { getJlptWords, getJlptKanji, getJlptGrammar } from "~/services/jlptService";
-import Button from "~/components/Button";
-import Card from "~/components/Card";
-import Progress from "~/components/Progress";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faArrowLeft,
     faRotate,
+    faChevronLeft,
     faChevronRight,
     faVolumeUp,
+    faLayerGroup,
 } from "@fortawesome/free-solid-svg-icons";
 
 const cx = classNames.bind(styles);
@@ -31,12 +30,10 @@ export default function JLPTFlashcard() {
     const [allCards, setAllCards] = useState([]);
     const [filteredCards, setFilteredCards] = useState([]);
 
-    const [selectedCategory, setSelectedCategory] = useState("Tất cả");
-    const [showFilter, setShowFilter] = useState(false);
+    const selectedCategory = "Tất cả";
 
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isFlipped, setIsFlipped] = useState(false);
-    const [completed, setCompleted] = useState(0);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -92,7 +89,6 @@ export default function JLPTFlashcard() {
                 setAllCards(transformedCards);
                 setCurrentIndex(0);
                 setIsFlipped(false);
-                setCompleted(0);
             }
         } catch (err) {
             console.error("Failed:", err);
@@ -116,7 +112,6 @@ export default function JLPTFlashcard() {
             setFilteredCards([]);
             setCurrentIndex(0);
             setIsFlipped(false);
-            setCompleted(0);
             return;
         }
 
@@ -124,7 +119,6 @@ export default function JLPTFlashcard() {
             setFilteredCards(allCards);
             setCurrentIndex(0);
             setIsFlipped(false);
-            setCompleted(0);
             return;
         }
 
@@ -136,7 +130,6 @@ export default function JLPTFlashcard() {
 
         setCurrentIndex(0);
         setIsFlipped(false);
-        setCompleted(0);
 
     }, [selectedCategory, allCards, isJLPTMode]);
 
@@ -144,20 +137,29 @@ export default function JLPTFlashcard() {
     const total = filteredCards.length;
     const currentCard = filteredCards[currentIndex] ?? null;
     const progress = total > 0 ? Math.round(((currentIndex + 1) / total) * 100) : 0;
+    const typeLabel =
+        sourceType === "word" ? "Từ vựng" :
+            sourceType === "grammar" ? "Ngữ pháp" : "Hán tự";
+    const levelLabel = sourceLevel || "JLPT";
 
 
     const handleNext = () => {
         if (currentIndex < total - 1) {
             setCurrentIndex(i => i + 1);
             setIsFlipped(false);
-            setCompleted(c => c + 1);
+        }
+    };
+
+    const handlePrevious = () => {
+        if (currentIndex > 0) {
+            setCurrentIndex(i => i - 1);
+            setIsFlipped(false);
         }
     };
 
     const handleReset = () => {
         setCurrentIndex(0);
         setIsFlipped(false);
-        setCompleted(0);
     };
 
     const playAudio = (text) => {
@@ -165,11 +167,6 @@ export default function JLPTFlashcard() {
         u.lang = "ja-JP";
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(u);
-    };
-
-    const handleCategoryChange = (category) => {
-        setSelectedCategory(category);
-        setShowFilter(false);
     };
 
     const handleBack = () => {
@@ -181,16 +178,19 @@ export default function JLPTFlashcard() {
         error ? (
             <div className={cx("error-message")}>
                 <p>{error}</p>
-                <button onClick={() => setError(null)}>✕</button>
+                <button type="button" onClick={() => setError(null)} aria-label="Đóng thông báo lỗi">✕</button>
             </div>
         ) : null;
 
 
     const getDisplayTitle = () => {
-        const typeLabel =
-            sourceType === "word" ? "Từ vựng" :
-                sourceType === "grammar" ? "Ngữ pháp" : "Hán tự";
         return `JLPT ${sourceLevel} - ${typeLabel}`;
+    };
+
+    const normalizeDisplay = (value) => {
+        if (Array.isArray(value)) return value.filter(Boolean).join("; ");
+        if (value && typeof value === "object") return Object.values(value).filter(Boolean).join("; ");
+        return String(value || "").trim();
     };
 
 
@@ -198,28 +198,44 @@ export default function JLPTFlashcard() {
     return (
         <div className={cx("root")}>
             <div className={cx("inner")}>
-                <div className={cx("container")}>
-                    <ErrorMessage />
+                <ErrorMessage />
 
-                    <div className={cx("header")}>
-                        <Button
-                            onClick={handleBack}
-                            back
-                            leftIcon={<FontAwesomeIcon icon={faArrowLeft} />}
-                        >
-                            Quay lại
-                        </Button>
+                <header className={cx("header")}>
+                    <button type="button" className={cx("backBtn")} onClick={handleBack}>
+                        <FontAwesomeIcon icon={faArrowLeft} />
+                        <span>Quay lại JLPT</span>
+                    </button>
 
-                        <h1 className={cx("title")}>{getDisplayTitle()}</h1>
-                        <p className={cx("subtitle")}>
-                            {total > 0 ? `Thẻ ${currentIndex + 1} / ${total}` : "Không có thẻ nào"}
-                        </p>
+                    <div className={cx("hero")}>
+                        <div className={cx("heroText")}>
+                            <div className={cx("eyebrow")}>
+                                <FontAwesomeIcon icon={faLayerGroup} />
+                                <span>{levelLabel}</span>
+                                <span>{typeLabel}</span>
+                            </div>
+                            <h1 className={cx("title")}>{getDisplayTitle()}</h1>
+                            <p className={cx("subtitle")}>
+                                Lật thẻ để ghi nhớ nghĩa, nghe phát âm và đi qua từng mục trong bộ hiện tại.
+                            </p>
+                        </div>
+
+                        <div className={cx("stats")}>
+                            <div className={cx("stat")}>
+                                <span>Thẻ hiện tại</span>
+                                <strong>{total > 0 ? currentIndex + 1 : 0}</strong>
+                            </div>
+                            <div className={cx("stat")}>
+                                <span>Tổng thẻ</span>
+                                <strong>{total}</strong>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </header>
 
                 {loading && (
                     <div className={cx("loading")}>
-                        <p>Đang tải...</p>
+                        <div className={cx("loader")} />
+                        <p>Đang tải flashcard...</p>
                     </div>
                 )}
 
@@ -227,7 +243,13 @@ export default function JLPTFlashcard() {
                     <>
                         {total > 0 && (
                             <div className={cx("progress-wrap")}>
-                                <Progress value={progress} className={cx("progress")} />
+                                <div className={cx("progressMeta")}>
+                                    <span>Tiến độ bộ thẻ</span>
+                                    <strong>{progress}%</strong>
+                                </div>
+                                <div className={cx("progressTrack")} aria-label={`Tiến độ ${progress}%`}>
+                                    <span style={{ width: `${progress}%` }} />
+                                </div>
                             </div>
                         )}
 
@@ -235,61 +257,90 @@ export default function JLPTFlashcard() {
                             <div className={cx("flashcard-area")}>
                                 {currentCard ? (
                                     <>
-                                        <Card
+                                        <div
+                                            role="button"
+                                            tabIndex={0}
                                             className={cx("card", { flipped: isFlipped })}
                                             onClick={() => setIsFlipped(f => !f)}
+                                            onKeyDown={(event) => {
+                                                if (event.key === "Enter" || event.key === " ") {
+                                                    event.preventDefault();
+                                                    setIsFlipped(f => !f);
+                                                }
+                                            }}
                                         >
+                                            <div className={cx("cardTop")}>
+                                                <span>{typeLabel}</span>
+                                                <span>{currentIndex + 1} / {total}</span>
+                                            </div>
+
                                             {!isFlipped ? (
                                                 <div className={cx("front")}>
                                                     <h2 className={cx("kanji")}>{currentCard.name}</h2>
-                                                    <p className={cx("meta-hira")}>{currentCard.phonetic}</p>
+                                                    {currentCard.phonetic && (
+                                                        <p className={cx("meta-hira")}>{currentCard.phonetic}</p>
+                                                    )}
 
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
+                                                    <button
+                                                        type="button"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            playAudio(currentCard.phonetic || currentCard.mean);
+                                                            playAudio(currentCard.name || currentCard.phonetic);
                                                         }}
                                                         className={cx("audio-btn")}
+                                                        aria-label="Phát âm"
                                                     >
                                                         <FontAwesomeIcon icon={faVolumeUp} />
-                                                    </Button>
+                                                    </button>
                                                     <p className={cx("hint")}>Nhấn để xem nghĩa</p>
                                                 </div>
                                             ) : (
                                                 <div className={cx("back")}>
-                                                    <p className={cx("meaning")}>{currentCard.mean}</p>
+                                                    <p className={cx("meaning")}>{normalizeDisplay(currentCard.mean)}</p>
                                                     {currentCard.notes && (
-                                                        <p className={cx("note")}><strong>Ví dụ:</strong> {currentCard.notes}</p>
+                                                        <p className={cx("note")}><strong>Ví dụ</strong>{normalizeDisplay(currentCard.notes)}</p>
                                                     )}
                                                     <p className={cx("hint")}>Nhấn để quay lại</p>
                                                 </div>
                                             )}
-                                        </Card>
+                                        </div>
 
                                         <div className={cx("actions")}>
-                                            <Button outline onClick={handleReset} className={"orange"}
-                                                leftIcon={<FontAwesomeIcon icon={faRotate} />}
+                                            <button
+                                                type="button"
+                                                className={cx("controlBtn", "ghost")}
+                                                onClick={handleReset}
                                             >
+                                                <FontAwesomeIcon icon={faRotate} />
                                                 Bắt đầu lại
-                                            </Button>
+                                            </button>
 
-                                            <Button
+                                            <button
+                                                type="button"
+                                                className={cx("controlBtn")}
+                                                onClick={handlePrevious}
+                                                disabled={currentIndex <= 0}
+                                            >
+                                                <FontAwesomeIcon icon={faChevronLeft} />
+                                                Trước
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                className={cx("controlBtn", "primary")}
                                                 onClick={handleNext}
                                                 disabled={currentIndex >= total - 1}
-                                                primary
-                                                rightIcon={<FontAwesomeIcon icon={faChevronRight} />}
                                             >
                                                 Tiếp theo
-
-                                            </Button>
+                                                <FontAwesomeIcon icon={faChevronRight} />
+                                            </button>
                                         </div>
                                     </>
                                 ) : (
-                                    <Card className={cx("empty")}>
+                                    <div className={cx("empty")}>
                                         <h2>{total === 0 ? "Chưa có thẻ nào" : "Hoàn thành!"}</h2>
-                                    </Card>
+                                        <p>Không tìm thấy dữ liệu cho bộ flashcard này.</p>
+                                    </div>
                                 )}
                             </div>
                         </div>
