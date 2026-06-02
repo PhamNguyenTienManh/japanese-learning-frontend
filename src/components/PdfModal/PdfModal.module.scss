@@ -5,46 +5,96 @@
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+    z-index: 1000002;
     backdrop-filter: blur(4px);
 }
 
 .modal {
+    position: absolute;
+    top: 28px;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
     background: white;
     border-radius: 12px;
-    width: 90%;
-    max-width: 900px;
-    height: 90vh;
+    width: min(1024px, calc(100vw - 48px));
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.32);
     animation: modalSlideIn 0.3s ease-out;
 }
 
 @keyframes modalSlideIn {
     from {
         opacity: 0;
-        transform: translateY(-20px);
+        transform: translate(-50%, -12px);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translate(-50%, 0);
     }
 }
 
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 52px;
+    padding: 0 14px 0 18px;
+    border-bottom: 1px solid #dce2ea;
+    background: #ffffff;
+    flex-shrink: 0;
+
+    h2 {
+        margin: 0;
+        color: #102044;
+        font-size: 17px;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+}
+
+.iconCloseBtn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 34px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, color 0.15s ease;
+
+    &:hover {
+        background: #f1f5f9;
+        color: #111827;
+    }
+}
+
+.previewPane {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    background: #eef2f6;
+}
+
 .loaderWrapper {
+    position: absolute;
+    inset: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100%;
     gap: 20px;
     padding: 40px;
+    background: #eef2f6;
+    z-index: 1;
 
     p {
         color: #666;
@@ -74,27 +124,29 @@
 }
 
 .preview {
-    flex: 1;
     border: none;
     width: 100%;
+    height: 100%;
     background: #f5f5f5;
 }
 
 .actions {
     display: flex;
     gap: 12px;
-    padding: 20px;
-    border-top: 1px solid #e5e5e5;
-    background: #f9f9f9;
+    justify-content: flex-end;
+    padding: 12px;
+    border-top: 1px solid #dce2ea;
+    background: #ffffff;
+    flex-shrink: 0;
 }
 
 .closeBtn,
 .downloadBtn {
-    flex: 1;
+    width: min(200px, 32vw);
     padding: 12px 24px;
     border: none;
-    border-radius: 8px;
-    font-size: 16px;
+    border-radius: 7px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -135,18 +187,30 @@
 /* Responsive */
 @media (max-width: 768px) {
     .modal {
-        width: 95%;
-        height: 95vh;
+        top: 10px;
+        bottom: 10px;
+        width: calc(100vw - 16px);
         border-radius: 8px;
     }
 
+    .header {
+        min-height: 48px;
+        padding-left: 12px;
+
+        h2 {
+            font-size: 15px;
+        }
+    }
+
     .actions {
-        padding: 15px;
+        padding: 10px;
         gap: 10px;
     }
 
     .closeBtn,
     .downloadBtn {
+        flex: 1;
+        width: auto;
         padding: 10px 20px;
         font-size: 14px;
     }
