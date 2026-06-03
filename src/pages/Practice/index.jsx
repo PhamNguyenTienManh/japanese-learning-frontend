@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import classNames from "classnames/bind";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import styles from "./Practice.module.scss";
 
 import LevelCard from "~/components/LevelCard";
@@ -38,8 +39,58 @@ const statItem = {
   },
 };
 
+const LEVEL_META = [
+  {
+    level: "N5",
+    name: "Nền tảng",
+    description: "Khởi động với từ vựng, mẫu câu cơ bản và nghe hiểu tốc độ dễ theo dõi.",
+    duration: 90,
+    passScore: 80,
+    focus: "Từ vựng, ngữ pháp cơ bản, nghe ngắn",
+    colorClass: "n5",
+  },
+  {
+    level: "N4",
+    name: "Sơ cấp nâng cao",
+    description: "Củng cố ngữ pháp thường gặp, đọc đoạn ngắn và phản xạ nghe đời sống.",
+    duration: 115,
+    passScore: 90,
+    focus: "Câu thường dùng, đọc hiểu ngắn",
+    colorClass: "n4",
+  },
+  {
+    level: "N3",
+    name: "Trung cấp",
+    description: "Luyện nhịp đề trung cấp với bài đọc dài hơn và ngữ pháp nhiều sắc thái.",
+    duration: 140,
+    passScore: 95,
+    focus: "Đọc hiểu, ngữ pháp trung cấp",
+    colorClass: "n3",
+  },
+  {
+    level: "N2",
+    name: "Trung cấp nâng cao",
+    description: "Tăng độ chính xác trong đọc hiểu, từ vựng học thuật và nghe tình huống phức tạp.",
+    duration: 155,
+    passScore: 90,
+    focus: "Đọc dài, nghe hội thoại tự nhiên",
+    colorClass: "n2",
+  },
+  {
+    level: "N1",
+    name: "Nâng cao",
+    description: "Rèn sức bền với đề nâng cao, đọc hiểu chuyên sâu và nghe tốc độ tự nhiên.",
+    duration: 165,
+    passScore: 100,
+    focus: "Đọc chuyên sâu, nghe tốc độ cao",
+    colorClass: "n1",
+  },
+];
+
 export default function Practice() {
-  const [levels, setLevels] = useState([]);
+  const [levels, setLevels] = useState(() =>
+    LEVEL_META.map((level) => ({ ...level, totalTests: 0 })),
+  );
 
   useEffect(() => {
     async function fetchExamCounts() {
@@ -47,44 +98,10 @@ export default function Practice() {
         const data = await getExamCountByLevel();
         const counts = data.data || {};
 
-        const mappedLevels = [
-          {
-            level: "N5",
-            name: "Sơ cấp",
-            description: "Hiểu được tiếng Nhật cơ bản",
-            totalTests: counts.N5 || 0,
-            colorClass: "n5",
-          },
-          {
-            level: "N4",
-            name: "Sơ cấp nâng cao",
-            description: "Hiểu được tiếng Nhật cơ bản ở mức độ cao hơn",
-            totalTests: counts.N4 || 0,
-            colorClass: "n4",
-          },
-          {
-            level: "N3",
-            name: "Trung cấp",
-            description:
-              "Hiểu được tiếng Nhật sử dụng trong cuộc sống hàng ngày",
-            totalTests: counts.N3 || 0,
-            colorClass: "n3",
-          },
-          {
-            level: "N2",
-            name: "Trung cấp nâng cao",
-            description: "Hiểu được tiếng Nhật trong nhiều tình huống",
-            totalTests: counts.N2 || 0,
-            colorClass: "n2",
-          },
-          {
-            level: "N1",
-            name: "Cao cấp",
-            description: "Hiểu được tiếng Nhật trong nhiều tình huống phức tạp",
-            totalTests: counts.N1 || 0,
-            colorClass: "n1",
-          },
-        ];
+        const mappedLevels = LEVEL_META.map((level) => ({
+          ...level,
+          totalTests: counts[level.level] || 0,
+        }));
 
         setLevels(mappedLevels);
       } catch (err) {
@@ -99,54 +116,59 @@ export default function Practice() {
     (sum, lvl) => sum + (lvl.totalTests || 0),
     0,
   );
+  const activeLevels = levels.filter((lvl) => (lvl.totalTests || 0) > 0).length;
+  const averageDuration = Math.round(
+    levels.reduce((sum, lvl) => sum + (lvl.duration || 0), 0) / levels.length,
+  );
+  const lowestPassScore = Math.min(...levels.map((lvl) => lvl.passScore));
 
   const stats = [
     { icon: faTrophy, tone: "teal", value: totalExams, label: "Đề thi" },
-    { icon: faBookOpen, tone: "orange", value: 420, label: "Câu hỏi" },
-    { icon: faBullseye, tone: "mint", value: 12, label: "Đã hoàn thành" },
-    { icon: faClock, tone: "yellow", value: "85%", label: "Điểm TB" },
+    { icon: faBookOpen, tone: "orange", value: activeLevels, label: "Cấp có đề" },
+    { icon: faBullseye, tone: "mint", value: `${lowestPassScore}+`, label: "Điểm đạt" },
+    { icon: faClock, tone: "yellow", value: `${averageDuration}'`, label: "Thời lượng TB" },
   ];
 
   return (
     <div className={cx("root")}>
-      <motion.div
-        className={cx("blob1")}
-        animate={{ y: [0, -22, 0], x: [0, 12, 0] }}
-        transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className={cx("blob2")}
-        animate={{ y: [0, 20, 0], x: [0, -14, 0] }}
-        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className={cx("blob3")}
-        animate={{ y: [0, -18, 0], x: [0, 10, 0] }}
-        transition={{ duration: 17, repeat: Infinity, ease: "easeInOut" }}
-      />
-
       <div className={cx("container")}>
-        {/* Header */}
         <motion.div
           className={cx("header")}
           initial="hidden"
           animate="show"
           variants={stagger}
         >
-          <motion.span className={cx("hero-badge")} variants={fadeUp}>
-            JLPT • N5 → N1
-          </motion.span>
-          <motion.h1 className={cx("title")} variants={fadeUp}>
-            Luyện thi{" "}
-            <span className={cx("title-accent")}>JLPT</span>
-          </motion.h1>
-          <motion.p className={cx("subtitle")} variants={fadeUp}>
-            Hệ thống đề thi JLPT đầy đủ từ N5 đến N1, chấm điểm tự động và phân
-            tích kết quả chi tiết.
-          </motion.p>
+          <motion.section className={cx("hero")} variants={fadeUp}>
+            <div className={cx("hero-copy")}>
+              <span className={cx("eyebrow")}>JLPT practice suite</span>
+              <h1 className={cx("title")}>Luyện thi JLPT</h1>
+              <p className={cx("subtitle")}>
+                Chọn cấp độ phù hợp từ N5 đến N1. Bài làm được lưu tự động,
+                chấm điểm ngay sau khi nộp và có trang kết quả để xem lại.
+              </p>
+              <div className={cx("quick-levels")} aria-label="Chọn nhanh cấp độ JLPT">
+                {levels.map((lvl) => (
+                  <Link
+                    key={lvl.level}
+                    className={cx("quick-chip", lvl.colorClass)}
+                    to={`/practice/${lvl.level.toLowerCase()}`}
+                  >
+                    {lvl.level}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <div className={cx("hero-panel")}>
+              <span className={cx("panel-label")}>Lộ trình</span>
+              <strong className={cx("panel-value")}>N5 - N1</strong>
+              <p className={cx("panel-text")}>
+                Đi từ nền tảng đến nâng cao với cùng một trải nghiệm làm bài.
+              </p>
+            </div>
+          </motion.section>
         </motion.div>
 
-        {/* Stats */}
         <motion.div
           className={cx("stats-grid")}
           initial="hidden"
@@ -175,7 +197,6 @@ export default function Practice() {
           ))}
         </motion.div>
 
-        {/* Section heading */}
         <motion.div
           className={cx("section-head")}
           initial={{ opacity: 0, y: 18 }}
@@ -183,11 +204,12 @@ export default function Practice() {
           viewport={{ once: true, amount: 0.4 }}
           transition={{ duration: 0.5, ease: easeOut }}
         >
-          <span className={cx("section-label")}>Chọn cấp độ</span>
-          <h2 className={cx("section-title")}>Bắt đầu với cấp độ phù hợp</h2>
+          <div>
+            <span className={cx("section-label")}>Chọn cấp độ</span>
+            <h2 className={cx("section-title")}>Bắt đầu với cấp độ phù hợp</h2>
+          </div>
         </motion.div>
 
-        {/* Level cards */}
         <motion.div
           className={cx("levels")}
           initial="hidden"
@@ -205,7 +227,6 @@ export default function Practice() {
               <LevelCard
                 level={lvl}
                 startTo={`/practice/${lvl.level.toLowerCase()}`}
-                resultsTo={`/practice/${lvl.level.toLowerCase()}/results`}
               />
             </motion.div>
           ))}

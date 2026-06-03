@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import styles from "./NewPost.module.scss";
 
@@ -8,6 +9,7 @@ import postService from "~/services/postService";
 import NewPostHeader from "~/components/NewPostHeader/NewPostHeader";
 import NewPostForm from "~/components/NewPostForm/NewPostForm";
 import NewPostGuidelines from "~/components/NewPostGuideline/NewPostGuidelines";
+import { useToast } from "~/context/ToastContext";
 
 const cx = classNames.bind(styles);
 
@@ -21,6 +23,8 @@ const DEFAULT_CATEGORIES = [
 ];
 
 function NewPost() {
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -35,32 +39,16 @@ function NewPost() {
   const [imageChanged, setImageChanged] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  useEffect(() => {
-    fetchCategories();
-    checkEditMode();
-  }, []);
-
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const data = await postService.getCategories();
       setCategories(data);
     } catch {
       setCategories(DEFAULT_CATEGORIES);
     }
-  };
+  }, []);
 
-  const checkEditMode = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const editPostId = urlParams.get("edit");
-    if (editPostId) {
-      setIsEdit(true);
-      setPostId(editPostId);
-      fetchPostData(editPostId);
-    }
-  };
-
-  const fetchPostData = async (id) => {
+  const fetchPostData = useCallback(async (id) => {
     try {
       setLoading(true);
       const response = await postService.getPostById(id);
@@ -70,11 +58,26 @@ function NewPost() {
       setCategoryId(data.category_id?._id || data.category_id || "");
       setImagePreview(data.image_url || null);
     } catch {
-      alert("Không thể tải dữ liệu bài viết!");
+      addToast("Không thể tải dữ liệu bài viết!", "error");
     } finally {
       setLoading(false);
     }
-  };
+  }, [addToast]);
+
+  const checkEditMode = useCallback(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const editPostId = urlParams.get("edit");
+    if (editPostId) {
+      setIsEdit(true);
+      setPostId(editPostId);
+      fetchPostData(editPostId);
+    }
+  }, [fetchPostData]);
+
+  useEffect(() => {
+    fetchCategories();
+    checkEditMode();
+  }, [fetchCategories, checkEditMode]);
 
 
   const handleImageChange = (e) => {
@@ -113,7 +116,7 @@ function NewPost() {
 
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim() || !categoryId) {
-      alert("Vui lòng điền đầy đủ thông tin!");
+      addToast("Vui lòng điền đầy đủ thông tin!", "warning");
       return;
     }
 
@@ -145,16 +148,17 @@ function NewPost() {
 
       if (isEdit) {
         await postService.updatePost(postId, postData);
-        alert("Bài viết đã được cập nhật thành công!");
+        addToast("Bài viết đã được cập nhật thành công!", "success");
       } else {
         await postService.createPost(postData);
-        alert("Bài viết đã được tạo thành công!");
+        addToast("Bài viết đã được tạo thành công!", "success");
       }
 
-      window.location.href = "/community";
+      navigate("/community");
     } catch (err) {
-      setError(err.message || "Có lỗi xảy ra. Vui lòng thử lại.");
-      alert(`Lỗi: ${err.message}`);
+      const message = err.message || "Có lỗi xảy ra. Vui lòng thử lại.";
+      setError(message);
+      addToast(`Lỗi: ${message}`, "error");
     } finally {
       setLoading(false);
       setIsUploadingImage(false);

@@ -61,4 +61,54 @@ export async function updateNews(id, dto) {
     return response.json();
 }
 
+export async function getNewsEngagement() {
+    const response = await fetch(`${BASE_URL}/news/me/engagement`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch reading engagement: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+export async function toggleNewsFavorite(id) {
+    const response = await fetch(`${BASE_URL}/news/${id}/favorite`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to update reading favorite: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+export async function markNewsViewed(id) {
+    const response = await fetch(`${BASE_URL}/news/${id}/view`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to mark reading as viewed: ${response.statusText}`);
+    }
+
+    return response.json();
+}
 

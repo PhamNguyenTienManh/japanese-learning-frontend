@@ -359,7 +359,7 @@ function AdminTransactions() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-slate-50 px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-64px)] bg-[#f7f8fb] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-5">
         <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
