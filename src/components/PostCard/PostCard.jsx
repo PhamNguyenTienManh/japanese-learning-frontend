@@ -101,7 +101,7 @@ function PostCard({ post, commentCount }) {
   };
 
   return (
-    <article className="relative overflow-hidden rounded-[18px] border border-border bg-white px-6 py-[22px] text-inherit shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition hover:border-primary/30 hover:shadow-[0_12px_28px_rgba(15,23,42,0.08)] max-[640px]:rounded-2xl max-[640px]:px-[18px] max-[640px]:py-[18px]">
+    <article className="relative overflow-hidden rounded-[18px] border border-slate-200 bg-white px-6 py-[22px] text-inherit shadow-[0_6px_18px_rgba(15,23,42,0.08)] transition hover:border-primary/35 hover:shadow-[0_12px_28px_rgba(15,23,42,0.11)] max-[640px]:rounded-2xl max-[640px]:px-[18px] max-[640px]:py-[18px]">
       <div className="flex items-start gap-3">
         <img
           src={avatarUrl}
@@ -169,7 +169,6 @@ function PostCard({ post, commentCount }) {
             to={`/community/${postId}`}
             className="inline-flex items-center gap-1.5 text-grey no-underline transition hover:text-primary"
           >
-            <FontAwesomeIcon icon={faMessage} />
             {displayCommentCount} bình luận
           </Link>
         </div>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import PropTypes from "prop-types";
@@ -18,10 +18,12 @@ import {
   faRightFromBracket,
   faBars,
   faXmark,
+  faChevronDown,
 } from "@fortawesome/free-solid-svg-icons";
 
 import styles from "./AdminLayout.module.scss";
 import { useAuth } from "~/context/AuthContext";
+import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
 import moderationService, {
   MODERATION_COUNTS_REFRESH_EVENT,
 } from "~/services/moderationService";
@@ -48,9 +50,11 @@ const navItems = [
 function AdminLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, name, avatar, email } = useAuth();
+  const accountRef = useRef(null);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [caseCounts, setCaseCounts] = useState({
     actionableTotal: 0,
   });
@@ -77,6 +81,23 @@ function AdminLayout({ children }) {
       window.removeEventListener(MODERATION_COUNTS_REFRESH_EVENT, loadCaseCounts);
     };
   }, [loadCaseCounts]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!accountRef.current || accountRef.current.contains(event.target)) {
+        return;
+      }
+      setAccountOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleGoUserPage = () => {
+    setAccountOpen(false);
+    navigate("/");
+  };
 
   const handleLogout = async () => {
     try {
@@ -159,24 +180,6 @@ function AdminLayout({ children }) {
             />
             {!collapsed && <span>Thu gọn</span>}
           </button>
-
-          <button
-            className={cx("back-btn")}
-            onClick={() => navigate("/")}
-            title="Về trang người dùng"
-          >
-            <FontAwesomeIcon icon={faArrowLeft} />
-            {!collapsed && <span>Về trang người dùng</span>}
-          </button>
-
-          <button
-            className={cx("logout-btn")}
-            onClick={handleLogout}
-            title="Đăng xuất"
-          >
-            <FontAwesomeIcon icon={faRightFromBracket} />
-            {!collapsed && <span>Đăng xuất</span>}
-          </button>
         </div>
       </aside>
 
@@ -190,13 +193,72 @@ function AdminLayout({ children }) {
             <FontAwesomeIcon icon={faBars} />
           </button>
           <div className={cx("topbar-right")}>
-            <button
-              className={cx("topbar-back")}
-              onClick={() => navigate("/")}
-            >
-              <FontAwesomeIcon icon={faArrowLeft} />
-              <span>Trang người dùng</span>
-            </button>
+            <div className={cx("admin-account")} ref={accountRef}>
+              <button
+                type="button"
+                className={cx("admin-trigger", { open: accountOpen })}
+                onClick={() => setAccountOpen((value) => !value)}
+                aria-haspopup="menu"
+                aria-expanded={accountOpen}
+              >
+                <span className={cx("admin-avatar")}>
+                  <img
+                    src={getAvatarUrl(avatar)}
+                    alt={name || "Admin"}
+                    onError={handleAvatarError}
+                  />
+                </span>
+                <span className={cx("admin-name")}>
+                  {name || email || "Admin"}
+                </span>
+                <FontAwesomeIcon
+                  icon={faChevronDown}
+                  className={cx("admin-caret")}
+                />
+              </button>
+
+              {accountOpen && (
+                <div className={cx("admin-menu")} role="menu">
+                  <div className={cx("admin-menu-head")}>
+                    <span className={cx("admin-menu-avatar")}>
+                      <img
+                        src={getAvatarUrl(avatar)}
+                        alt={name || "Admin"}
+                        onError={handleAvatarError}
+                      />
+                    </span>
+                    <div className={cx("admin-menu-info")}>
+                      <p className={cx("admin-menu-name")}>
+                        {name || "Admin"}
+                      </p>
+                      {email && (
+                        <p className={cx("admin-menu-email")}>{email}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={cx("admin-menu-item")}
+                    onClick={handleGoUserPage}
+                    role="menuitem"
+                  >
+                    <FontAwesomeIcon icon={faArrowLeft} />
+                    <span>Về trang người dùng</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={cx("admin-menu-item", "danger")}
+                    onClick={handleLogout}
+                    role="menuitem"
+                  >
+                    <FontAwesomeIcon icon={faRightFromBracket} />
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 import { USER_ROLES, USER_STATUS } from "~/services/userConstants";
 
 function UserFilters({
@@ -8,17 +8,23 @@ function UserFilters({
   onSearchChange,
   onStatusChange,
   onRoleChange,
+  onRefresh,
 }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_200px_200px]">
+    <section className="rounded-[18px] border-[1.5px] border-slate-200 bg-white px-[18px] py-4 shadow-[0_4px_14px_-10px_rgba(0,135,154,0.25)]">
+      <div className="grid gap-3 md:grid-cols-[minmax(260px,1fr)_180px_170px_auto] md:items-center">
         <label className="relative block">
           <span className="sr-only">Tìm kiếm người dùng</span>
+          <Search
+            size={16}
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-600"
+          />
           <input
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Tìm kiếm theo tên hoặc email..."
-            className="h-11 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+            className="h-10 w-full rounded-xl border-[1.5px] border-slate-300 bg-white pl-10 pr-3 text-sm font-semibold text-slate-900 shadow-[0_1px_2px_rgba(16,24,40,0.04)] outline-none transition placeholder:text-slate-400 hover:border-blue-200 hover:bg-blue-50/30 focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-100"
           />
         </label>
 
@@ -27,7 +33,7 @@ function UserFilters({
           <select
             value={statusFilter}
             onChange={(e) => onStatusChange(e.target.value)}
-            className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+            className="h-10 w-full cursor-pointer rounded-xl border-[1.5px] border-slate-300 bg-white px-3 text-sm font-extrabold text-slate-900 shadow-[0_1px_2px_rgba(16,24,40,0.04)] outline-none transition hover:border-blue-200 hover:bg-blue-50/30 focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
           >
             <option value="all">Tất cả trạng thái</option>
             <option value={USER_STATUS.ACTIVE}>Đang hoạt động</option>
@@ -40,13 +46,22 @@ function UserFilters({
           <select
             value={roleFilter}
             onChange={(e) => onRoleChange(e.target.value)}
-            className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-100"
+            className="h-10 w-full cursor-pointer rounded-xl border-[1.5px] border-slate-300 bg-white px-3 text-sm font-extrabold text-slate-900 shadow-[0_1px_2px_rgba(16,24,40,0.04)] outline-none transition hover:border-blue-200 hover:bg-blue-50/30 focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
           >
             <option value="all">Tất cả vai trò</option>
             <option value={USER_ROLES.STUDENT}>Học viên</option>
             <option value={USER_ROLES.ADMIN}>Quản trị viên</option>
           </select>
         </label>
+
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border-[1.5px] border-slate-200 bg-white px-4 text-sm font-extrabold text-slate-900 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:-translate-y-px hover:border-blue-200 hover:bg-slate-100 hover:text-blue-600 hover:shadow-[0_10px_22px_-16px_rgba(0,135,154,0.45)]"
+        >
+          <RefreshCw size={14} aria-hidden="true" className="text-blue-600" />
+          Làm mới
+        </button>
       </div>
     </section>
   );

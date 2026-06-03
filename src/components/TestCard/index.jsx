@@ -5,18 +5,18 @@ import classNames from "classnames/bind";
 import styles from "./TestCard.module.scss";
 
 import Button from "~/components/Button";
-import Card from "~/components/Card";
 import Badge from "~/components/Badge";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faClock,
-  faBookOpen,
+  faBullseye,
   faPlay,
   faCheckCircle,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { startExam, checkExamStatus } from "~/services/examService";
 import { useAuth } from "~/context/AuthContext";
+import { useToast } from "~/context/ToastContext";
 const cx = classNames.bind(styles);
 
 export default function TestCard({
@@ -38,7 +38,7 @@ export default function TestCard({
   const [showResumeDialog, setShowResumeDialog] = useState(false);
   const [savedExamResultId, setSavedExamResultId] = useState(null);
   const { isLoggedIn } = useAuth();
-  console.log("test: ", test);
+  const { addToast } = useToast();
 
   const resultsLink = `${basePath}/results/${id}`;
 
@@ -68,7 +68,7 @@ export default function TestCard({
       await doStartNewExam();
     } catch (error) {
       console.error("Lỗi khi bắt đầu bài thi:", error);
-      alert("Có lỗi xảy ra khi bắt đầu bài thi. Vui lòng thử lại!");
+      addToast("Có lỗi xảy ra khi bắt đầu bài thi. Vui lòng thử lại!", "error");
     } finally {
       setIsLoading(false);
     }
@@ -87,7 +87,7 @@ export default function TestCard({
       await doStartNewExam();
     } catch (error) {
       console.error("Lỗi khi bắt đầu bài thi mới:", error);
-      alert("Có lỗi xảy ra. Vui lòng thử lại!");
+      addToast("Có lỗi xảy ra. Vui lòng thử lại!", "error");
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +117,7 @@ export default function TestCard({
   return (
     <>
     {resumeDialog}
-    <Card className={`${cx("root")} ${className}`}>
+    <article className={`${cx("root")} ${className}`}>
       <div className={cx("inner")}>
         <div className={cx("main")}>
           <div className={cx("top")}>
@@ -138,6 +138,7 @@ export default function TestCard({
             </div>
 
             <div className={cx("meta-item")}>
+              <FontAwesomeIcon icon={faBullseye} className={cx("meta-icon")} />
               <span>Điểm đạt: {pass_score} điểm</span>
             </div>
           </div>
@@ -148,7 +149,11 @@ export default function TestCard({
               {Array.isArray(sections) && sections.length > 0 ? (
                 sections.map((s, i) => (
                   <div key={i} className={cx("section-item")}>
-                    • {s.name} ({s.questions} điểm)
+                    <span className={cx("section-dot")} />
+                    <span className={cx("section-name")}>{s.name}</span>
+                    <strong className={cx("section-score")}>
+                      {s.questions} điểm
+                    </strong>
                   </div>
                 ))
               ) : (
@@ -162,14 +167,15 @@ export default function TestCard({
 
         <div className={cx("actions")}>
           {!isLoggedIn ?
-            <Button primary disabled>
-              Bạn cần đăng nhập để thực hiện bài thi
+            <Button primary disabled full className={cx("login-button")}>
+              Đăng nhập để làm bài
             </Button>
             :
             <Button
               onClick={handleStartExam}
               full
               primary
+              className={cx("start-button")}
               disabled={isLoading}
               leftIcon={
                 <FontAwesomeIcon
@@ -187,13 +193,13 @@ export default function TestCard({
             </Button>}
 
           {completed && (
-            <Button to={resultsLink} outline className={"orange"}>
+            <Button to={resultsLink} outline full className={cx("result-button")}>
               Xem kết quả
             </Button>
           )}
         </div>
       </div>
-    </Card>
+    </article>
     </>
   );
 }
