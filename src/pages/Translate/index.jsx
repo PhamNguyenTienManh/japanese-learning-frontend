@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import classNames from "classnames/bind";
+import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faVolumeHigh,
@@ -7,20 +6,13 @@ import {
     faRightLeft,
     faPen,
     faTrash,
-    faRotateLeft,
-    faXmark,
     faChevronDown,
     faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 
-import styles from "./Translate.module.scss";
 import { useToast } from "~/context/ToastContext";
-import {
-    recognizeJapaneseHandwriting,
-    translateText,
-} from "~/services/traslate";
-
-const cx = classNames.bind(styles);
+import { translateText } from "~/services/traslate";
+import HandwritingOverlay from "~/components/HandwritingOverlay";
 
 const languages = [
     { code: "ja", name: "Tiếng Nhật" },
@@ -28,11 +20,13 @@ const languages = [
 ];
 
 const langOptions = languages.map((l) => ({ value: l.code, label: l.name }));
-const CANVAS_SIZE = 360;
 const MAX_TRANSLATE_LENGTH = 5000;
 const getOppositeLang = (lang) => (lang === "ja" ? "vi" : "ja");
 const getLangName = (lang) =>
     languages.find((item) => item.code === lang)?.name || "";
+
+const iconButtonClass =
+    "inline-flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[10px] border border-[#dfe7ed] bg-[#f9fbfc] text-sm text-[#667985] transition-all duration-150 hover:not-disabled:-translate-y-px hover:not-disabled:border-primary/35 hover:not-disabled:bg-[#eefaf7] hover:not-disabled:text-primary disabled:cursor-not-allowed disabled:opacity-45";
 
 function TranslateLangSelect({ value, onChange, label }) {
     const [open, setOpen] = useState(false);
@@ -51,38 +45,43 @@ function TranslateLangSelect({ value, onChange, label }) {
     }, []);
 
     return (
-        <div className={cx("translateSelect")} ref={selectRef}>
+        <div className="relative w-full" ref={selectRef}>
             <button
                 type="button"
-                className={cx("translateSelectBtn", { open })}
+                className={`flex min-h-[38px] w-full cursor-pointer items-center justify-between gap-3 rounded-lg border border-transparent bg-[#eaf3ff] py-0 pr-3 pl-3.5 text-[15px] font-semibold text-[#0b63d8] transition-all duration-150 hover:bg-[#dfeeff] ${open ? "bg-[#dfeeff]" : ""}`}
                 onClick={() => setOpen((current) => !current)}
                 aria-label={label}
                 aria-expanded={open}
             >
                 <span>{selected?.label || "Chọn"}</span>
-                <FontAwesomeIcon className={cx("selectArrow")} icon={faChevronDown} />
+                <FontAwesomeIcon
+                    className={`text-xs text-[#0b63d8] transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+                    icon={faChevronDown}
+                />
             </button>
 
             {open && (
-                <div className={cx("translateSelectMenu")}>
-                    {langOptions.map((option) => (
-                        <button
-                            key={option.value}
-                            type="button"
-                            className={cx("translateSelectItem", {
-                                active: option.value === value,
-                            })}
-                            onClick={() => {
-                                onChange(option.value);
-                                setOpen(false);
-                            }}
-                        >
-                            <span>{option.label}</span>
-                            {option.value === value && (
-                                <FontAwesomeIcon className={cx("selectCheck")} icon={faCheck} />
-                            )}
-                        </button>
-                    ))}
+                <div className="absolute left-0 top-[calc(100%+8px)] z-10 w-full rounded-xl border border-[#d7e5f0] bg-white p-1.5 shadow-[0_14px_30px_rgba(15,42,42,0.12)]">
+                    {langOptions.map((option) => {
+                        const isActive = option.value === value;
+
+                        return (
+                            <button
+                                key={option.value}
+                                type="button"
+                                className={`flex min-h-[38px] w-full cursor-pointer items-center justify-between gap-3 rounded-[9px] bg-transparent py-0 pr-2.5 pl-3 text-[15px] font-semibold text-[#1f3f4d] transition-all duration-150 hover:bg-[#f2f7fb] hover:text-[#0b63d8] ${isActive ? "bg-[#eaf3ff] text-[#0b63d8]" : ""}`}
+                                onClick={() => {
+                                    onChange(option.value);
+                                    setOpen(false);
+                                }}
+                            >
+                                <span>{option.label}</span>
+                                {isActive && (
+                                    <FontAwesomeIcon className="shrink-0 text-[13px]" icon={faCheck} />
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
             )}
         </div>
@@ -96,243 +95,11 @@ function Translate() {
     const [targetLang, setTargetLang] = useState("vi");
     const [isTranslating, setIsTranslating] = useState(false);
     const [showHandwritingModal, setShowHandwritingModal] = useState(false);
-    const [isRecognizing, setIsRecognizing] = useState(false);
-    const [recognizedCandidates, setRecognizedCandidates] = useState([]);
-    const [selectedHandwritingText, setSelectedHandwritingText] = useState("");
-    const canvasRef = useRef(null);
-    const drawingRef = useRef(false);
-    const lastPointRef = useRef(null);
-    const strokesRef = useRef([]);
-    const activeStrokeRef = useRef(null);
-    const strokeStartTimeRef = useRef(0);
-    const recognitionTimerRef = useRef(null);
     const { addToast } = useToast();
-
-    const drawCanvasGuide = useCallback((ctx) => {
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
-        ctx.strokeStyle = "#e2e8f0";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(CANVAS_SIZE / 2, 0);
-        ctx.lineTo(CANVAS_SIZE / 2, CANVAS_SIZE);
-        ctx.moveTo(0, CANVAS_SIZE / 2);
-        ctx.lineTo(CANVAS_SIZE, CANVAS_SIZE / 2);
-        ctx.stroke();
-    }, []);
-
-    const resetCanvas = useCallback(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d");
-        drawCanvasGuide(ctx);
-        strokesRef.current = [];
-        activeStrokeRef.current = null;
-        setRecognizedCandidates([]);
-        setSelectedHandwritingText("");
-        if (recognitionTimerRef.current) {
-            clearTimeout(recognitionTimerRef.current);
-            recognitionTimerRef.current = null;
-        }
-    }, [drawCanvasGuide]);
-
-    useEffect(() => {
-        if (showHandwritingModal) {
-            requestAnimationFrame(resetCanvas);
-        }
-    }, [showHandwritingModal, resetCanvas]);
-
-    useEffect(() => {
-        return () => {
-            if (recognitionTimerRef.current) {
-                clearTimeout(recognitionTimerRef.current);
-            }
-        };
-    }, []);
-
-    const getCanvasPoint = (event) => {
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        return {
-            x: ((event.clientX - rect.left) / rect.width) * CANVAS_SIZE,
-            y: ((event.clientY - rect.top) / rect.height) * CANVAS_SIZE,
-        };
-    };
-
-    const addPointToActiveStroke = (point) => {
-        if (!activeStrokeRef.current) return;
-
-        const [xs, ys, ts] = activeStrokeRef.current;
-        xs.push(point.x);
-        ys.push(point.y);
-        ts.push(Date.now() - strokeStartTimeRef.current);
-    };
-
-    const drawStrokeSegment = (ctx, fromPoint, toPoint) => {
-        ctx.strokeStyle = "#3567d6";
-        ctx.lineWidth = 12;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.beginPath();
-        ctx.moveTo(fromPoint.x, fromPoint.y);
-        ctx.lineTo(toPoint.x, toPoint.y);
-        ctx.stroke();
-    };
-
-    const redrawCanvasFromStrokes = useCallback(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const ctx = canvas.getContext("2d");
-        drawCanvasGuide(ctx);
-
-        strokesRef.current.forEach(([xs, ys]) => {
-            if (!xs.length) return;
-            if (xs.length === 1) {
-                drawStrokeSegment(
-                    ctx,
-                    { x: xs[0], y: ys[0] },
-                    { x: xs[0] + 0.1, y: ys[0] + 0.1 }
-                );
-                return;
-            }
-
-            for (let index = 1; index < xs.length; index += 1) {
-                drawStrokeSegment(
-                    ctx,
-                    { x: xs[index - 1], y: ys[index - 1] },
-                    { x: xs[index], y: ys[index] }
-                );
-            }
-        });
-    }, [drawCanvasGuide]);
-
-    const finishActiveStroke = () => {
-        const activeStroke = activeStrokeRef.current;
-        activeStrokeRef.current = null;
-        if (!activeStroke || activeStroke[0].length === 0) return false;
-
-        strokesRef.current = [...strokesRef.current, activeStroke];
-        return true;
-    };
-
-    const handleCanvasPointerDown = (event) => {
-        event.preventDefault();
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        canvas.setPointerCapture?.(event.pointerId);
-        if (recognitionTimerRef.current) {
-            clearTimeout(recognitionTimerRef.current);
-            recognitionTimerRef.current = null;
-        }
-
-        drawingRef.current = true;
-        strokeStartTimeRef.current = Date.now();
-        activeStrokeRef.current = [[], [], []];
-        const point = getCanvasPoint(event);
-        addPointToActiveStroke(point);
-        lastPointRef.current = point;
-    };
-
-    const handleCanvasPointerMove = (event) => {
-        if (!drawingRef.current) return;
-        event.preventDefault();
-
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d");
-        const nextPoint = getCanvasPoint(event);
-        const lastPoint = lastPointRef.current || nextPoint;
-
-        drawStrokeSegment(ctx, lastPoint, nextPoint);
-        addPointToActiveStroke(nextPoint);
-
-        lastPointRef.current = nextPoint;
-    };
-
-    const recognizeHandwritingFromCanvas = useCallback(async ({ notifyEmpty = false } = {}) => {
-        if (!strokesRef.current.length) {
-            if (notifyEmpty) addToast("Vui lòng viết chữ Nhật trên khung trước", "info");
-            return "";
-        }
-
-        try {
-            setIsRecognizing(true);
-            const result = await recognizeJapaneseHandwriting({
-                ink: strokesRef.current,
-                width: CANVAS_SIZE,
-                height: CANVAS_SIZE,
-            });
-            const candidates = Array.isArray(result?.candidates)
-                ? result.candidates.filter(Boolean)
-                : [];
-            const text = String(result?.text || candidates[0] || "").trim();
-            const nextCandidates = text
-                ? Array.from(new Set([text, ...candidates]))
-                : candidates;
-
-            setRecognizedCandidates(nextCandidates);
-            setSelectedHandwritingText((current) =>
-                current && nextCandidates.includes(current) ? current : ""
-            );
-
-            if (!text && notifyEmpty) {
-                addToast("Chưa nhận diện được chữ viết tay", "warning");
-            }
-
-            return text || nextCandidates[0] || "";
-        } catch (error) {
-            console.error("Handwriting OCR failed:", error);
-            if (notifyEmpty) {
-                addToast("Lỗi nhận diện chữ viết tay", "error");
-            }
-            return "";
-        } finally {
-            setIsRecognizing(false);
-        }
-    }, [addToast]);
-
-    const scheduleHandwritingRecognition = useCallback(() => {
-        if (recognitionTimerRef.current) {
-            clearTimeout(recognitionTimerRef.current);
-        }
-
-        recognitionTimerRef.current = setTimeout(() => {
-            recognizeHandwritingFromCanvas();
-        }, 650);
-    }, [recognizeHandwritingFromCanvas]);
-
-    const handleCanvasPointerUp = (event) => {
-        event.preventDefault();
-        if (!drawingRef.current) return;
-        drawingRef.current = false;
-        lastPointRef.current = null;
-        if (finishActiveStroke()) {
-            scheduleHandwritingRecognition();
-        }
-    };
-
-    const handleUndoCanvas = () => {
-        if (!strokesRef.current.length) {
-            resetCanvas();
-            return;
-        }
-
-        strokesRef.current = strokesRef.current.slice(0, -1);
-        redrawCanvasFromStrokes();
-        setRecognizedCandidates([]);
-        setSelectedHandwritingText("");
-
-        if (strokesRef.current.length) {
-            scheduleHandwritingRecognition();
-        }
-    };
 
     const applyRecognizedText = (text) => {
         const value = String(text || "").trim();
         if (!value) return;
-        setSelectedHandwritingText(value);
         setSourceText(value);
         setSourceLang("ja");
         setTargetLang("vi");
@@ -368,13 +135,7 @@ function Translate() {
         await translateWithText(sourceText, sourceLang, targetLang);
     };
 
-    const handleTranslateHandwriting = async () => {
-        const text = selectedHandwritingText.trim();
-        if (!text) {
-            addToast("Vui lòng chọn một gợi ý trước khi dịch", "info");
-            return;
-        }
-
+    const handleTranslateHandwriting = async (text) => {
         applyRecognizedText(text);
 
         const translated = await translateWithText(text, "ja", targetLang);
@@ -432,20 +193,24 @@ function Translate() {
     };
 
     return (
-        <div className={cx("wrapper")}>
-            <div className={cx("container")}>
-                <div className={cx("hero")}>
+        <div className="relative min-h-screen bg-[#eef3f6] py-6 pb-14 text-[#0f2a2a] max-md:pt-[18px]">
+            <div className="relative z-[1] mx-auto max-w-[1180px] px-6 max-md:px-3.5">
+                <div className="mb-[18px] flex items-end justify-between gap-6 max-md:block">
                     <div>
-                        <span className={cx("eyebrow")}>JAVI Translator</span>
-                        <h1 className={cx("title")}>Dịch Nhật - Việt</h1>
+                        <span className="mb-1.5 block text-xs font-extrabold uppercase tracking-[1.2px] text-primary">
+                            JAVI Translator
+                        </span>
+                        <h1 className="m-0 text-3xl font-extrabold tracking-normal text-[#0f2a2a] max-md:text-[26px]">
+                            Dịch Nhật - Việt
+                        </h1>
                     </div>
                 </div>
 
-                <div className={cx("translatorCard")}>
-                    <div className={cx("panes")}>
-                        <section className={cx("pane", "sourcePane")}>
-                            <div className={cx("paneHeader")}>
-                                <div className={cx("langSelect")}>
+                <div className="relative">
+                    <div className="grid grid-cols-2 items-stretch gap-4 max-md:grid-cols-1 max-md:gap-[52px]">
+                        <section className="flex min-h-[420px] min-w-0 flex-col rounded-2xl border border-[#e3eaf0] bg-white py-[22px] pr-7 pl-6 shadow-[0_14px_34px_rgba(15,42,42,0.07)] max-md:min-h-[340px] max-md:p-[18px]">
+                            <div className="mb-2.5 flex min-h-[42px] items-center">
+                                <div className="w-[190px] max-w-full">
                                     <TranslateLangSelect
                                         label="Ngôn ngữ nguồn"
                                         value={sourceLang}
@@ -461,16 +226,16 @@ function Translate() {
                                     setTranslatedText("");
                                 }}
                                 placeholder={`Nhập ${getLangName(sourceLang).toLowerCase()} để dịch...`}
-                                className={cx("textarea")}
+                                className="min-h-[260px] w-full flex-1 resize-none border-0 bg-transparent p-0 text-[22px] leading-[1.6] text-[#0f2a2a] outline-none placeholder:font-semibold placeholder:text-[#9aa8b3] max-md:min-h-[190px] max-md:text-[19px]"
                                 maxLength={MAX_TRANSLATE_LENGTH}
                             />
 
-                            <div className={cx("paneFoot")}>
-                                <div className={cx("tools")}>
+                            <div className="mt-[18px] flex min-h-[46px] items-center justify-between gap-4 max-md:flex-col max-md:items-start">
+                                <div className="flex flex-wrap gap-2.5">
                                     {sourceLang === "ja" && (
                                         <button
                                             type="button"
-                                            className={cx("iconBtn")}
+                                            className={iconButtonClass}
                                             onClick={() => setShowHandwritingModal(true)}
                                             aria-label="Viết tay tiếng Nhật"
                                         >
@@ -479,7 +244,7 @@ function Translate() {
                                     )}
                                     <button
                                         type="button"
-                                        className={cx("iconBtn")}
+                                        className={iconButtonClass}
                                         onClick={() => handleSpeak(sourceText, sourceLang)}
                                         disabled={!sourceText.trim()}
                                         aria-label="Phát âm"
@@ -488,7 +253,7 @@ function Translate() {
                                     </button>
                                     <button
                                         type="button"
-                                        className={cx("iconBtn")}
+                                        className={iconButtonClass}
                                         onClick={() => handleCopy(sourceText)}
                                         disabled={!sourceText.trim()}
                                         aria-label="Sao chép"
@@ -497,7 +262,7 @@ function Translate() {
                                     </button>
                                     <button
                                         type="button"
-                                        className={cx("iconBtn")}
+                                        className={iconButtonClass}
                                         onClick={handleClear}
                                         disabled={!sourceText.trim() && !translatedText.trim()}
                                         aria-label="Xóa"
@@ -506,13 +271,13 @@ function Translate() {
                                     </button>
                                 </div>
 
-                                <div className={cx("sourceMeta")}>
-                                    <span className={cx("length")}>
+                                <div className="flex items-center gap-4 max-md:w-full max-md:justify-between">
+                                    <span className="whitespace-nowrap text-xs font-bold tabular-nums text-[#94a3ad]">
                                         {sourceText.length}/{MAX_TRANSLATE_LENGTH}
                                     </span>
                                     <button
                                         type="button"
-                                        className={cx("translateBtn")}
+                                        className="inline-flex min-h-[42px] min-w-[118px] cursor-pointer items-center justify-center rounded-[10px] bg-primary px-[22px] text-sm font-extrabold text-white shadow-[0_4px_0_var(--primary-hover)] transition-all duration-150 hover:not-disabled:-translate-y-px hover:not-disabled:bg-primary-hover hover:not-disabled:shadow-[0_5px_0_#006170] active:not-disabled:translate-y-0.5 active:not-disabled:shadow-[0_1px_0_#006170] disabled:cursor-not-allowed disabled:bg-[#d8e1e7] disabled:text-[#8ea0aa] disabled:shadow-none max-md:min-w-[120px]"
                                         onClick={handleTranslate}
                                         disabled={isTranslating || !sourceText.trim()}
                                     >
@@ -524,16 +289,16 @@ function Translate() {
 
                         <button
                             type="button"
-                            className={cx("swapBtn")}
+                            className="absolute left-1/2 top-1/2 z-[2] inline-flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-[6px] border-[#eef3f6] bg-white text-base text-[#0f2a2a] shadow-[0_10px_24px_rgba(15,42,42,0.12)] transition-all duration-150 hover:-translate-x-1/2 hover:-translate-y-1/2 hover:scale-105 hover:text-primary hover:shadow-[0_14px_28px_rgba(15,42,42,0.16)] active:scale-95 max-md:top-[calc(50%-2px)] max-md:-translate-x-1/2 max-md:-translate-y-1/2 max-md:rotate-90 max-md:hover:-translate-x-1/2 max-md:hover:-translate-y-1/2 max-md:hover:rotate-90 max-md:hover:scale-105 max-md:active:rotate-90 max-md:active:scale-95"
                             onClick={handleSwapLanguages}
                             aria-label="Đảo ngôn ngữ"
                         >
                             <FontAwesomeIcon icon={faRightLeft} />
                         </button>
 
-                        <section className={cx("pane", "resultPane")}>
-                            <div className={cx("paneHeader")}>
-                                <div className={cx("langSelect")}>
+                        <section className="flex min-h-[420px] min-w-0 flex-col rounded-2xl border border-[#e3eaf0] bg-white py-[22px] pr-6 pl-7 shadow-[0_14px_34px_rgba(15,42,42,0.07)] max-md:min-h-[340px] max-md:p-[18px]">
+                            <div className="mb-2.5 flex min-h-[42px] items-center">
+                                <div className="w-[190px] max-w-full">
                                     <TranslateLangSelect
                                         label="Ngôn ngữ đích"
                                         value={targetLang}
@@ -546,14 +311,14 @@ function Translate() {
                                 value={translatedText}
                                 readOnly
                                 placeholder={`Bản dịch ${getLangName(targetLang).toLowerCase()}...`}
-                                className={cx("textarea")}
+                                className="min-h-[260px] w-full flex-1 resize-none border-0 bg-transparent p-0 text-[22px] leading-[1.6] text-[#0f2a2a] outline-none placeholder:font-semibold placeholder:text-[#9aa8b3] max-md:min-h-[190px] max-md:text-[19px]"
                             />
 
-                            <div className={cx("paneFoot")}>
-                                <div className={cx("tools")}>
+                            <div className="mt-[18px] flex min-h-[46px] items-center justify-between gap-4 max-md:flex-col max-md:items-start">
+                                <div className="flex flex-wrap gap-2.5">
                                     <button
                                         type="button"
-                                        className={cx("iconBtn")}
+                                        className={iconButtonClass}
                                         onClick={() => handleSpeak(translatedText, targetLang)}
                                         disabled={!translatedText.trim()}
                                         aria-label="Phát âm"
@@ -562,7 +327,7 @@ function Translate() {
                                     </button>
                                     <button
                                         type="button"
-                                        className={cx("iconBtn")}
+                                        className={iconButtonClass}
                                         onClick={() => handleCopy(translatedText)}
                                         disabled={!translatedText.trim()}
                                         aria-label="Sao chép"
@@ -570,7 +335,7 @@ function Translate() {
                                         <FontAwesomeIcon icon={faCopy} />
                                     </button>
                                 </div>
-                                <span className={cx("length")}>
+                                <span className="whitespace-nowrap text-xs font-bold tabular-nums text-[#94a3ad]">
                                     {translatedText.length} ký tự
                                 </span>
                             </div>
@@ -579,96 +344,14 @@ function Translate() {
                 </div>
             </div>
 
-            {showHandwritingModal && (
-                <div className={cx("handwritingOverlay")}>
-                    <section className={cx("handwritingModal")}>
-                        <header className={cx("handwritingHeader")}>
-                            <h2>Nhận dạng nét vẽ</h2>
-                            <button
-                                type="button"
-                                className={cx("handwritingClose")}
-                                onClick={() => setShowHandwritingModal(false)}
-                                aria-label="Đóng"
-                            >
-                                <FontAwesomeIcon icon={faXmark} />
-                            </button>
-                        </header>
-
-                        <div className={cx("handwritingBody")}>
-                            <div className={cx("canvasPanel")}>
-                                <canvas
-                                    ref={canvasRef}
-                                    width={CANVAS_SIZE}
-                                    height={CANVAS_SIZE}
-                                    className={cx("handwritingCanvas")}
-                                    onPointerDown={handleCanvasPointerDown}
-                                    onPointerMove={handleCanvasPointerMove}
-                                    onPointerUp={handleCanvasPointerUp}
-                                    onPointerLeave={handleCanvasPointerUp}
-                                    onPointerCancel={handleCanvasPointerUp}
-                                />
-
-                                <div className={cx("handwritingActions")}>
-                                    <button
-                                        type="button"
-                                        className={cx("modalBtn", "danger")}
-                                        onClick={resetCanvas}
-                                    >
-                                        <FontAwesomeIcon icon={faTrash} />
-                                        <span>Xóa tất cả</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={cx("modalBtn")}
-                                        onClick={handleUndoCanvas}
-                                    >
-                                        <FontAwesomeIcon icon={faRotateLeft} />
-                                        <span>Hoàn tác</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={cx("modalBtn", "primary")}
-                                        onClick={handleTranslateHandwriting}
-                                        disabled={!selectedHandwritingText.trim() || isRecognizing || isTranslating}
-                                    >
-                                        <span>{isTranslating ? "Đang dịch..." : "Dịch"}</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <aside className={cx("resultPanel")}>
-                                <div className={cx("resultTitle")}>
-                                    <span>Kết quả gợi ý</span>
-                                    <span />
-                                </div>
-
-                                {recognizedCandidates.length > 0 ? (
-                                    <div className={cx("candidateList")}>
-                                        {recognizedCandidates.map((candidate) => (
-                                            <button
-                                                key={candidate}
-                                                type="button"
-                                                className={cx("candidate", {
-                                                    candidateActive: selectedHandwritingText === candidate,
-                                                })}
-                                                onClick={() => applyRecognizedText(candidate)}
-                                            >
-                                                {candidate}
-                                            </button>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className={cx("emptyResult")}>
-                                        {isRecognizing
-                                            ? "Đang nhận diện nét vẽ..."
-                                            : "Vẽ chữ Nhật để xem gợi ý."}
-                                    </p>
-                                )}
-                            </aside>
-                        </div>
-                    </section>
-                </div>
-            )}
+            <HandwritingOverlay
+                open={showHandwritingModal}
+                onClose={() => setShowHandwritingModal(false)}
+                onApply={handleTranslateHandwriting}
+                primaryLabel="Dịch"
+                primaryLoading={isTranslating}
+                loadingLabel="Đang dịch..."
+            />
         </div>
     );
 }
