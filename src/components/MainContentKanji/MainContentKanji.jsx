@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import HanziWriter from "../hanzi_writer/hanzi_writer";
+import KanjiStrokeOrder from "~/components/KanjiStrokeOrder";
 import Contribution from "../contribution/contribution";
 import { faVolumeHigh } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -144,8 +144,8 @@ const MainContent = ({ selectedKanji }) => {
                     </div>
                 </div>
 
-                <div className="shrink-0">
-                    <HanziWriter kanji={kanjiData.kanji} />
+                <div className="shrink-0 w-[292px] max-w-full">
+                    <KanjiStrokeOrder stroke={kanjiData.stroke} />
                 </div>
             </div>
 
