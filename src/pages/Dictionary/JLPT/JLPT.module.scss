@@ -736,122 +736,6 @@ $yellow-deep: #d4a93f;
   font-size: 14px;
 }
 
-.strokeOrderPanel {
-  display: flex;
-  justify-content: center;
-  padding: 12px;
-  border: 1px solid #e1e8ee;
-  border-radius: 16px;
-  background: #f8fbfc;
-}
-
-.strokeCanvasWrap {
-  width: min(260px, 100%);
-  aspect-ratio: 1;
-  border: 1px solid #dce4ea;
-  border-radius: 12px;
-  background: #fff;
-  overflow: hidden;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.07);
-}
-
-.strokeSideCard {
-  padding: 14px;
-}
-
-.strokeHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-
-  h3 {
-    margin: 0;
-  }
-
-  p {
-    margin: 4px 0 0;
-    color: $ink-soft;
-    font-size: 13px;
-    font-weight: 700;
-  }
-}
-
-.strokeReplayBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: 1px solid #dce4ea;
-  background: #fff;
-  color: $ink-soft;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-
-  &:hover {
-    color: var(--primary);
-    border-color: var(--primary-low);
-    background: #f7fffc;
-  }
-}
-
-.strokeCanvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.strokeGridBackground {
-  fill: #fff;
-}
-
-.strokeGridLine {
-  stroke: #d5e1ef;
-  stroke-width: 0.8;
-}
-
-.strokeGridDash {
-  stroke: #d5e1ef;
-  stroke-width: 0.8;
-  stroke-dasharray: 3 2;
-}
-
-.strokePathGhost,
-.strokePathActive {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.strokePathGhost {
-  stroke: #cbd5e1;
-  stroke-width: 3.2;
-  opacity: 0.28;
-}
-
-.strokePathActive {
-  stroke-width: 4.2;
-}
-
-.strokePathCurrent {
-  stroke-dasharray: 180;
-  stroke-dashoffset: 180;
-  animation: drawStroke 0.55s ease-out forwards;
-}
-
-.strokeNumber {
-  font-family: Arial, sans-serif;
-  font-size: 8px;
-  font-weight: 800;
-  paint-order: stroke;
-  stroke: #fff;
-  stroke-width: 2.4;
-  dominant-baseline: central;
-}
-
 .strokeControls {
   display: flex;
   align-items: center;
@@ -1269,15 +1153,6 @@ $yellow-deep: #d4a93f;
   .detailActions {
     align-self: flex-start;
   }
-
-  .strokeOrderPanel {
-    grid-template-columns: 1fr;
-  }
-
-  .strokeCanvasWrap {
-    max-width: 220px;
-    margin: 0 auto;
-  }
 }
 
 /* ================== MODAL (preserved) ================== */
@@ -1367,12 +1242,6 @@ $yellow-deep: #d4a93f;
   to {
     opacity: 1;
     transform: scale(1);
-  }
-}
-
-@keyframes drawStroke {
-  to {
-    stroke-dashoffset: 0;
   }
 }
 
