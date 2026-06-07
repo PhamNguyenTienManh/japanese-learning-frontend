@@ -8,7 +8,6 @@ import {
     faChevronLeft,
     faChevronRight,
     faXmark,
-    faRotateRight,
 } from "@fortawesome/free-solid-svg-icons";
 
 import styles from "./JLPT.module.scss";
@@ -28,7 +27,7 @@ import { useAuth } from "~/context/AuthContext";
 import { useToast } from "~/context/ToastContext";
 import handlePlayAudio from "~/services/handlePlayAudio";
 import PdfModal from "~/components/PdfModal/PdfModal";
-
+import KanjiStrokeOrder from "~/components/KanjiStrokeOrder";
 
 const cx = classNames.bind(styles);
 
@@ -70,76 +69,18 @@ const initialDisplayOptions = {
     ],
 };
 
-const strokeColors = [
-    "#2563eb",
-    "#ef4444",
-    "#111827",
-    "#22c55e",
-    "#f59e0b",
-    "#a855f7",
-    "#ec4899",
-    "#0ea5e9",
-    "#f97316",
-    "#334155",
-];
-
-function getStrokeStartPoint(pathD) {
-    const match = String(pathD || "").match(/[Mm]\s*(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/);
-    if (!match) return null;
-    return {
-        x: Number(match[1]),
-        y: Number(match[2]),
-    };
-}
-
-function parseKanjiStrokeSvg(svgContent) {
-    if (!svgContent) return { viewBox: "0 0 109 109", paths: [] };
-
-    const viewBox = svgContent.match(/viewBox="([^"]+)"/)?.[1] || "0 0 109 109";
-    const byStrokeId = (path) => /-s\d+\b/.test(path.id || "");
-
-    if (typeof DOMParser !== "undefined") {
-        try {
-            const doc = new DOMParser().parseFromString(svgContent, "image/svg+xml");
-            const parsedPaths = Array.from(doc.querySelectorAll("path"));
-            const strokePaths = parsedPaths.filter(byStrokeId);
-            const paths = (strokePaths.length ? strokePaths : parsedPaths)
-                .map((path) => {
-                    const d = path.getAttribute("d");
-                    return d
-                        ? {
-                            id: path.getAttribute("id") || "",
-                            d,
-                            start: getStrokeStartPoint(d),
-                        }
-                        : null;
-                })
-                .filter(Boolean);
-
-            return { viewBox, paths };
-        } catch (err) {
-            console.warn("Cannot parse kanji stroke SVG:", err);
-        }
-    }
-
-    const paths = Array.from(svgContent.matchAll(/<path\b[^>]*\bd="([^"]+)"[^>]*>/g))
-        .map((match, index) => ({
-            id: `stroke-${index + 1}`,
-            d: match[1],
-            start: getStrokeStartPoint(match[1]),
-        }));
-
-    return { viewBox, paths };
-}
-
-
 function JLPT() {
     const location = useLocation();
+    const navigate = useNavigate();
+    const { isLoggedIn } = useAuth();
+    const { addToast } = useToast();
+
     const initialFilters = parseFiltersFromSearch(location.search);
     const tourParam = useMemo(
         () => new URLSearchParams(location.search).get("tour"),
         [location.search]
     );
+
     const [selectedType, setSelectedType] = useState(initialFilters.type || "Từ vựng");
     const [selectedLevel, setSelectedLevel] = useState(initialFilters.level || "N5");
     const [displaySettings, setDisplaySettings] = useState(initialDisplayOptions);
@@ -153,21 +94,20 @@ function JLPT() {
     const [showPdfModal, setShowPdfModal] = useState(false);
     const [pdfUrl, setPdfUrl] = useState("");
     const [pdfLoading, setPdfLoading] = useState(false);
-
-    const navigate = useNavigate();
-    const { isLoggedIn } = useAuth();
-    const { addToast } = useToast();
     const [detailOpen, setDetailOpen] = useState(false);
     const [detailItem, setDetailItem] = useState(null);
     const [detailType, setDetailType] = useState("Từ vựng");
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState(null);
     const [showNotebookPicker, setShowNotebookPicker] = useState(false);
+
+    // --- Tour/learning-path refs (from feat branch) ---
     const [flashcardTourStep, setFlashcardTourStep] = useState("card");
     const firstCardTourRef = useRef(null);
     const flashcardButtonRef = useRef(null);
     const flashcardTourTimerRef = useRef(null);
     const writingButtonRef = useRef(null);
+
     const itemsPerPage = selectedType === "Hán tự" ? 18 : 10;
     const flashcardTourActive = tourParam === "flashcard";
     const flashcardTourLabel =
@@ -178,22 +118,26 @@ function JLPT() {
                 : "Từ vựng";
     const detailTourLabel =
         selectedType === "Hán tự" ? "kanji" : flashcardTourLabel.toLowerCase();
+
     const learningPathParams = useMemo(() => {
         const params = new URLSearchParams(location.search);
-
         return {
             lpSkill: params.get("lpSkill"),
             lpOrder: params.get("lpOrder"),
         };
     }, [location.search]);
+
     const learningPathTourScope =
         [learningPathParams.lpSkill, learningPathParams.lpOrder].filter(Boolean).join("-") || "default";
     const flashcardTourSessionKey = `${tourParam || "none"}-${learningPathTourScope}`;
+
+    // --- Effects ---
 
     useEffect(() => {
         fetchNotebooks();
     }, []);
 
+    // Reset tour step when session scope changes
     useEffect(() => {
         window.clearTimeout(flashcardTourTimerRef.current);
         setFlashcardTourStep("card");
@@ -203,6 +147,7 @@ function JLPT() {
         return () => window.clearTimeout(flashcardTourTimerRef.current);
     }, []);
 
+    // Sync filters from URL changes
     useEffect(() => {
         const nextFilters = parseFiltersFromSearch(location.search);
         if (nextFilters.type) {
@@ -215,9 +160,54 @@ function JLPT() {
         }
     }, [location.search]);
 
+    // Fetch JLPT data
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            setError(null);
+
+            try {
+                const response = selectedType === "Từ vựng"
+                    ? await getJlptWords(currentPage, itemsPerPage, selectedLevel)
+                    : selectedType === "Ngữ pháp"
+                        ? await getJlptGrammar(currentPage, itemsPerPage, selectedLevel)
+                        : await getJlptKanji(currentPage, itemsPerPage, selectedLevel);
+
+                const payload = response?.success ? response.data : response;
+                const nextData = payload?.data || payload?.items || payload?.results || [];
+                const nextTotalPages = payload?.totalPages || payload?.totalPage || payload?.pagination?.totalPages || 1;
+
+                setData(Array.isArray(nextData) ? nextData : []);
+                setTotalPages(nextTotalPages || 1);
+            } catch (err) {
+                console.error("Error fetching JLPT data:", err);
+                setData([]);
+                setTotalPages(1);
+                setError("Không thể tải dữ liệu JLPT.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [selectedType, selectedLevel, currentPage, itemsPerPage]);
+
+    // --- Helpers ---
+
+    const fetchNotebooks = async () => {
+        try {
+            const nextNotebooks = await notebookService.getNotebooks();
+            setNotebooks(Array.isArray(nextNotebooks) ? nextNotebooks : []);
+        } catch (err) {
+            console.error("Error fetching notebooks:", err);
+        }
+    };
+
     const getFlashcardLink = () => {
-        const typeParam = selectedType === "Từ vựng" ? "word" :
+        const typeParam =
+            selectedType === "Từ vựng" ? "word" :
             selectedType === "Ngữ pháp" ? "grammar" : "kanji";
+
         const params = new URLSearchParams({
             type: typeParam,
             level: selectedLevel,
@@ -233,15 +223,14 @@ function JLPT() {
     };
 
     const handleFlashcardClick = () => {
-        const href = getFlashcardLink();
         if (!isLoggedIn) {
             setShowAuthModal(true);
             return;
         }
-
-        window.location.href = "/jlpt/" + href;
+        window.location.href = `/jlpt/${getFlashcardLink()}`;
     };
 
+    // Tour dismiss handlers
     const handleCardTourDismiss = () => {
         window.clearTimeout(flashcardTourTimerRef.current);
         flashcardTourTimerRef.current = window.setTimeout(() => {
@@ -255,208 +244,30 @@ function JLPT() {
         setFlashcardTourStep("done");
     };
 
-    const fetchNotebooks = async () => {
-        try {
-            const data = await notebookService.getNotebooks();
-            setNotebooks(data);
-        } catch (err) {
-            console.log('Không thể tải danh sách sổ tay');
-        }
-    };
-
-    const formatPhonetic = (value) => {
-        if (Array.isArray(value)) return value.filter(Boolean).join(" ");
-        return value || "";
-    };
-
-    const formatMeanings = (value) => {
-        if (Array.isArray(value)) {
-            return value
-                .map((item) => item?.meaning || item)
-                .filter(Boolean)
-                .join(", ");
-        }
-        return value || "";
-    };
-
-    const getKanjiReading = (item) => {
-        return item?.reading || [item?.kun, item?.on].filter(Boolean).join(" ");
-    };
-
-    const getDetailLabel = (item, type = selectedType) => {
-        if (!item) return "";
-        if (type === "Từ vựng") return item.word;
-        if (type === "Ngữ pháp") return item.title;
-        return item.kanji;
-    };
-
-    const handleOpenDetail = async (item) => {
-        const type = selectedType;
-        setDetailType(type);
-        setDetailItem(item);
-        setDetailOpen(true);
-        setDetailLoading(true);
-        setDetailError(null);
-        setShowNotebookPicker(false);
-
-        try {
-            let response;
-            if (type === "Từ vựng") {
-                response = await getJlptWordDetail(item.word);
-            } else if (type === "Ngữ pháp") {
-                response = await getJlptGrammarDetail(item.title);
-            } else {
-                response = await getJlptKanjiDetail(item.kanji);
-            }
-
-            setDetailItem(response?.data || response);
-        } catch (err) {
-            console.error("Failed to fetch JLPT detail:", err);
-            setDetailError("Không thể tải chi tiết. Vui lòng thử lại.");
-        } finally {
-            setDetailLoading(false);
-        }
-    };
-
-    const handleCloseDetail = () => {
-        setDetailOpen(false);
-        setDetailItem(null);
-        setDetailError(null);
-        setShowNotebookPicker(false);
-    };
-
-    const handleAddWord = async (newWord, type, selectedNotebook) => {
-        try {
-            setLoading(true);
-            let wordData;
-            if (type === "Từ vựng") {
-                wordData = {
-                    name: newWord.word,
-                    phonetic: formatPhonetic(newWord.phonetic),
-                    mean: formatMeanings(newWord.meanings),
-                    notes: "",
-                    type: "word",
-                };
-            }
-            else if (type === "Ngữ pháp") {
-                wordData = {
-                    name: newWord.title,
-                    mean: newWord.mean,
-                    notes: "",
-                    type: "grammar",
-                }
-            } else {
-                wordData = {
-                    name: newWord.kanji,
-                    phonetic: getKanjiReading(newWord),
-                    mean: newWord.mean,
-                    notes: "",
-                    type: "kanji",
-                }
-            }
-
-            const response = await notebookService.addWord(
-                selectedNotebook._id,
-                wordData
-            );
-            if (response.success === true) {
-                setShowNotebookPicker(false);
-                addToast('Đã thêm vào sổ tay thành công!', 'success');
-            } else {
-                addToast(response.message, 'error');
-            }
-        } catch (err) {
-            console.error('Failed to add word:', err);
-            addToast(err.message || 'Không thể thêm từ. Vui lòng thử lại.', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
-
+    // PDF preview (fetches real PDF from API — feat branch behavior)
     const handlePreviewPdf = async () => {
-        if (selectedType === "Ngữ pháp") {
-            addToast('Bạn không thể download file Ngữ pháp', 'error');
-            return;
-        }
-
         try {
             setPdfLoading(true);
             setShowPdfModal(true);
 
             const typeParam =
                 selectedType === "Từ vựng" ? "word" :
-                    selectedType === "Hán tự" ? "kanji" :
-                        "word";
+                selectedType === "Hán tự" ? "kanji" : "grammar";
 
             const url = `${process.env.REACT_APP_BASE_URL_API}/pdf/jlpt?page=${currentPage}&limit=${itemsPerPage}&level=${selectedLevel}&type=${typeParam}`;
 
             const response = await fetch(url, { credentials: "include" });
-            if (!response.ok) {
-                throw new Error("PDF request failed");
-            }
-            const blob = await response.blob();
+            if (!response.ok) throw new Error("PDF request failed");
 
-            const pdfPreviewUrl = URL.createObjectURL(blob);
-            setPdfUrl(pdfPreviewUrl);
+            const blob = await response.blob();
+            setPdfUrl(URL.createObjectURL(blob));
         } catch (err) {
             console.error(err);
             setShowPdfModal(false);
-            addToast('Không thể tải PDF. Vui lòng thử lại.', 'error');
+            addToast("Không thể tải PDF. Vui lòng thử lại.", "error");
         } finally {
             setPdfLoading(false);
         }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, [selectedType, selectedLevel, currentPage]);
-
-    const fetchData = async () => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            let response;
-
-            if (selectedType === "Từ vựng") {
-                response = await getJlptWords(currentPage, itemsPerPage, selectedLevel);
-            } else if (selectedType === "Ngữ pháp") {
-                response = await getJlptGrammar(currentPage, itemsPerPage, selectedLevel);
-            } else if (selectedType === "Hán tự") {
-                response = await getJlptKanji(currentPage, itemsPerPage, selectedLevel);
-            }
-
-            if (response?.success) {
-                setData(response.data.data || []);
-                setTotalPages(response.data.totalPages || 0);
-            }
-        } catch (err) {
-            setError(err.message);
-            console.error("Error fetching data:", err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleToggleDisplayOption = (label) => {
-        setDisplaySettings((prev) => ({
-            ...prev,
-            [selectedType]: prev[selectedType].map((opt) =>
-                opt.label === label ? { ...opt, checked: !opt.checked } : opt
-            ),
-        }));
-    };
-
-    const isShown = (label) => {
-        const options = displaySettings[selectedType];
-        return options?.find((o) => o.label === label)?.checked;
-    };
-
-    const currentDisplayOptions = displaySettings[selectedType] || [];
-
-    const handlePageChange = (pageNumber) => {
-        setCurrentPage(pageNumber);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleTypeChange = (type) => {
@@ -469,131 +280,202 @@ function JLPT() {
         setCurrentPage(1);
     };
 
-    const getPageNumbers = () => {
-        const pages = [];
+    const toggleDisplayOption = (label) => {
+        setDisplaySettings((current) => ({
+            ...current,
+            [selectedType]: current[selectedType].map((option) =>
+                option.label === label ? { ...option, checked: !option.checked } : option
+            ),
+        }));
+    };
 
-        if (totalPages <= 6) {
-            for (let i = 1; i <= totalPages; i++) {
-                pages.push(i);
-            }
-        } else {
-            pages.push(1);
+    const isDisplayEnabled = (label) => {
+        return displaySettings[selectedType]?.find((option) => option.label === label)?.checked;
+    };
 
-            if (currentPage <= 3) {
-                for (let i = 2; i <= 4; i++) {
-                    pages.push(i);
-                }
-                pages.push('...');
-                pages.push(totalPages);
-            } else if (currentPage >= totalPages - 2) {
-                pages.push('...');
-                for (let i = totalPages - 3; i <= totalPages; i++) {
-                    pages.push(i);
-                }
-            } else {
-                pages.push('...');
-                for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                    pages.push(i);
-                }
-                pages.push('...');
-                pages.push(totalPages);
-            }
+    const getDetailLabel = (item, type = selectedType) => {
+        if (!item) return "";
+        if (type === "Từ vựng") return item.word || item.title || item.kanji || "";
+        if (type === "Ngữ pháp") return item.title || item.pattern || item.word || "";
+        return item.kanji || item.word || item.title || "";
+    };
+
+    const formatPhonetic = (value) => {
+        if (Array.isArray(value)) return value.filter(Boolean).join("、 ");
+        return String(value || "").trim();
+    };
+
+    const formatMeanings = (value) => {
+        if (Array.isArray(value)) {
+            return value
+                .map((entry) => typeof entry === "string" ? entry : entry?.meaning)
+                .filter(Boolean)
+                .join(", ");
+        }
+        return String(value || "").trim();
+    };
+
+    const getMeaning = (item) => {
+        return item?.mean || item?.meaning || formatMeanings(item?.meanings) || "";
+    };
+
+    const fetchDetail = async (item) => {
+        const label = getDetailLabel(item);
+        if (!label) return;
+
+        setDetailOpen(true);
+        setDetailType(selectedType);
+        setDetailItem(item);
+        setDetailError(null);
+        setDetailLoading(true);
+        setShowNotebookPicker(false);
+
+        try {
+            const detail = selectedType === "Từ vựng"
+                ? await getJlptWordDetail(label)
+                : selectedType === "Ngữ pháp"
+                    ? await getJlptGrammarDetail(label)
+                    : await getJlptKanjiDetail(label);
+
+            setDetailItem(detail?.data || detail || item);
+        } catch (err) {
+            console.error("Error fetching JLPT detail:", err);
+            setDetailError("Không thể tải chi tiết.");
+        } finally {
+            setDetailLoading(false);
+        }
+    };
+
+    const closeDetail = () => {
+        setDetailOpen(false);
+        setShowNotebookPicker(false);
+    };
+
+    const buildNotebookPayload = (item = detailItem, type = detailType) => {
+        if (!item) return null;
+        const title = getDetailLabel(item, type);
+        return {
+            word: title,
+            kanji: type === "Hán tự" ? title : item.kanji,
+            phonetic: formatPhonetic(item.phonetic || item.kun || item.on),
+            meaning: getMeaning(item),
+            mean: getMeaning(item),
+            type,
+            level: item.level || selectedLevel,
+            source: "jlpt",
+            referenceId: item._id || item.id || item.mobileId,
+        };
+    };
+
+    const handleAddToNotebook = async (notebook, item = detailItem, type = detailType) => {
+        if (!isLoggedIn) {
+            setShowAuthModal(true);
+            return;
         }
 
-        return pages;
+        const payload = buildNotebookPayload(item, type);
+        if (!payload) return;
+
+        try {
+            await notebookService.addWord(notebook._id, payload);
+            addToast("Đã thêm vào sổ tay", "success");
+            setShowNotebookPicker(false);
+        } catch (err) {
+            console.error("Error adding notebook item:", err);
+            addToast(err.message || "Không thể thêm vào sổ tay", "error");
+        }
     };
+
+    const openNotebookPickerForCard = (event, item) => {
+        event.stopPropagation();
+        if (!isLoggedIn) {
+            setShowAuthModal(true);
+            return;
+        }
+
+        setDetailItem(item);
+        setDetailType(selectedType);
+        setShowNotebookPicker(true);
+        setDetailOpen(true);
+        setDetailLoading(false);
+        setDetailError(null);
+    };
+
+    const handleAuthConfirm = () => {
+        setShowAuthModal(false);
+        navigate("/login");
+    };
+
+    // --- Render card ---
 
     const renderCard = (item, index) => {
         const cardTourRef = flashcardTourActive && index === 0 ? firstCardTourRef : undefined;
+        const title = getDetailLabel(item);
+        const meaning = getMeaning(item);
+        const phonetic = formatPhonetic(item.phonetic || item.hiragana || item.kana);
 
-        if (selectedType === "Từ vựng") {
+        if (selectedType === "Ngữ pháp") {
             return (
-                <div
+                <article
                     ref={cardTourRef}
-                    key={index}
-                    className={cx("card", "clickableCard")}
-                    onClick={() => handleOpenDetail(item)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") handleOpenDetail(item);
-                    }}
-                >
-                    <div className={cx("cardTop")}>
-                        <button
-                            type="button"
-                            className={cx("speakerBtn")}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handlePlayAudio(item.phonetic);
-                            }}
-                            aria-label="Nghe phát âm"
-                        >
-                            <FontAwesomeIcon icon={faVolumeHigh} />
-                        </button>
-                    </div>
-                    {isShown("Từ vựng") && (
-                        <div className={cx("kanji")}>{item.word}</div>
-                    )}
-                    {isShown("Phiên âm") && (
-                        <div className={cx("hiragana")}>{item.phonetic}</div>
-                    )}
-                    {isShown("Nghĩa") && (
-                        <div className={cx("meaning")}>{item.meanings}</div>
-                    )}
-                </div>
-            );
-        } else if (selectedType === "Ngữ pháp") {
-            return (
-                <div
-                    ref={cardTourRef}
-                    key={item._id}
                     className={cx("card", "grammarCard", "clickableCard")}
-                    onClick={() => handleOpenDetail(item)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") handleOpenDetail(item);
-                    }}
+                    onClick={() => fetchDetail(item)}
                 >
                     <div className={cx("grammarBody")}>
-                        {isShown("Từ vựng") && (
-                            <div className={cx("grammarPattern")}>{item.title}</div>
-                        )}
-                        {isShown("Nghĩa") && (
-                            <div className={cx("grammarMeaning")}>{item.mean}</div>
-                        )}
+                        {isDisplayEnabled("Từ vựng") && <div className={cx("grammarPattern")}>{title}</div>}
+                        {isDisplayEnabled("Nghĩa") && <div className={cx("grammarMeaning")}>{meaning}</div>}
                     </div>
-                </div>
-            );
-        } else if (selectedType === "Hán tự") {
-            return (
-                <div
-                    ref={cardTourRef}
-                    key={item._id}
-                    className={cx("card", "kanjiCard", "clickableCard")}
-                    onClick={() => handleOpenDetail(item)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") handleOpenDetail(item);
-                    }}
-                >
-                    {isShown("Từ vựng") && (
-                        <div className={cx("kanji")}>{item.kanji}</div>
-                    )}
-                    {isShown("Nghĩa") && (
-                        <div className={cx("meaning")}>{item.mean}</div>
-                    )}
-                </div>
+                    <button
+                        type="button"
+                        className={cx("addBtn")}
+                        onClick={(event) => openNotebookPickerForCard(event, item)}
+                        aria-label="Thêm vào sổ tay"
+                    >
+                        <FontAwesomeIcon icon={faPlus} />
+                    </button>
+                </article>
             );
         }
+
+        return (
+            <article
+                ref={cardTourRef}
+                className={cx("card", "clickableCard", { kanjiCard: selectedType === "Hán tự" })}
+                onClick={() => fetchDetail(item)}
+            >
+                <div className={cx("cardTop")}>
+                    <button
+                        type="button"
+                        className={cx("speakerBtn")}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            handlePlayAudio(selectedType === "Từ vựng" ? phonetic || title : title);
+                        }}
+                        aria-label="Nghe phát âm"
+                    >
+                        <FontAwesomeIcon icon={faVolumeHigh} />
+                    </button>
+                    <button
+                        type="button"
+                        className={cx("addBtn")}
+                        onClick={(event) => openNotebookPickerForCard(event, item)}
+                        aria-label="Thêm vào sổ tay"
+                    >
+                        <FontAwesomeIcon icon={faPlus} />
+                    </button>
+                </div>
+
+                {isDisplayEnabled("Từ vựng") && <div className={cx("kanji")}>{title}</div>}
+                {selectedType === "Từ vựng" && isDisplayEnabled("Phiên âm") && phonetic && (
+                    <div className={cx("hiragana")}>{phonetic}</div>
+                )}
+                {isDisplayEnabled("Nghĩa") && meaning && <div className={cx("meaning")}>{meaning}</div>}
+            </article>
+        );
     };
 
-    const gridClass = cx("grid", {
-        kanjiGrid: selectedType === "Hán tự",
-        grammarGrid: selectedType === "Ngữ pháp",
-    });
+    // --- Tour computed values ---
+
     const tourKeyScope = `${selectedLevel}-${flashcardTourLabel}-${learningPathTourScope}`;
     const showFlashcardTour =
         flashcardTourActive &&
@@ -615,45 +497,39 @@ function JLPT() {
     const handleActiveFlashcardTourDismiss =
         flashcardTourStep === "flashcard" ? handleFlashcardTourDismiss : handleCardTourDismiss;
 
+    // --- Render ---
+
     return (
         <div className={cx("wrapper")}>
-            <div className={cx("blob1")} />
-            <div className={cx("blob2")} />
+            <span className={cx("blob1")} />
+            <span className={cx("blob2")} />
 
             <div className={cx("inner")}>
-                {/* Hero */}
-                <div className={cx("hero")}>
+                <header className={cx("hero")}>
                     <div className={cx("heroLeft")}>
                         <div className={cx("heroBadge")}>{selectedLevel}</div>
                         <div>
-                            <h1 className={cx("title")}>Học JLPT</h1>
+                            <h1 className={cx("title")}>JLPT Dictionary</h1>
                             <div className={cx("subtitle")}>
-                                <span className={cx("chip")}>{selectedType}</span>
-                                <span className={cx("dot")}>·</span>
-                                <span>Cấp độ {selectedLevel}</span>
+                                <span>{selectedType}</span>
+                                <span className={cx("dot")}>•</span>
+                                <span className={cx("chip")}>{selectedLevel}</span>
                             </div>
                         </div>
                     </div>
-                </div>
+                </header>
 
                 <div className={cx("layout")}>
                     <aside className={cx("sidebar")}>
-                        <div className={cx("sideTitle")}>Loại từ</div>
+                        <h2 className={cx("sideTitle")}>Loại nội dung</h2>
                         <div className={cx("radioGroup")}>
                             {vocabularyTypes.map((type) => (
-                                <label
-                                    key={type}
-                                    className={cx("radioRow", {
-                                        radioActive: selectedType === type,
-                                    })}
-                                >
+                                <label key={type} className={cx("radioRow", { radioActive: selectedType === type })}>
                                     <input
                                         type="radio"
-                                        name="vocab-type"
-                                        value={type}
-                                        checked={selectedType === type}
-                                        onChange={(e) => handleTypeChange(e.target.value)}
                                         className={cx("radioInput")}
+                                        checked={selectedType === type}
+                                        onChange={() => handleTypeChange(type)}
                                     />
                                     <span className={cx("radioDot")} />
                                     <span>{type}</span>
@@ -663,22 +539,15 @@ function JLPT() {
 
                         <div className={cx("divider")} />
 
-                        <div className={cx("sideTitle")}>Cấp độ</div>
+                        <h2 className={cx("sideTitle")}>Cấp độ</h2>
                         <div className={cx("radioGroup")}>
                             {jlptLevels.map((level) => (
-                                <label
-                                    key={level}
-                                    className={cx("radioRow", {
-                                        radioActive: selectedLevel === level,
-                                    })}
-                                >
+                                <label key={level} className={cx("radioRow", { radioActive: selectedLevel === level })}>
                                     <input
                                         type="radio"
-                                        name="level"
-                                        value={level}
-                                        checked={selectedLevel === level}
-                                        onChange={(e) => handleLevelChange(e.target.value)}
                                         className={cx("radioInput")}
+                                        checked={selectedLevel === level}
+                                        onChange={() => handleLevelChange(level)}
                                     />
                                     <span className={cx("radioDot")} />
                                     <span>{level}</span>
@@ -687,23 +556,16 @@ function JLPT() {
                         </div>
                     </aside>
 
-                    <div className={cx("content")}>
-                        <div className={cx("toolbar")}>
+                    <main className={cx("content")}>
+                        <section className={cx("toolbar")}>
                             <div className={cx("displayOptions")}>
-                                {currentDisplayOptions.map((option) => (
-                                    <label
-                                        key={option.label}
-                                        className={cx("displayOption", {
-                                            displayOptionChecked: option.checked,
-                                        })}
-                                    >
+                                {displaySettings[selectedType].map((option) => (
+                                    <label key={option.label} className={cx("displayOption", { displayOptionChecked: option.checked })}>
                                         <input
                                             type="checkbox"
-                                            checked={option.checked}
-                                            onChange={() =>
-                                                handleToggleDisplayOption(option.label)
-                                            }
                                             className={cx("checkbox")}
+                                            checked={option.checked}
+                                            onChange={() => toggleDisplayOption(option.label)}
                                         />
                                         <span>{option.label}</span>
                                     </label>
@@ -729,7 +591,7 @@ function JLPT() {
                                     Tải file viết tay
                                 </button>
                             </div>
-                        </div>
+                        </section>
 
                         {showFlashcardTour && (
                             <GuidedCoachmark
@@ -751,224 +613,82 @@ function JLPT() {
                             />
                         )}
 
-                        {loading && (
-                            <div className={cx("loading")}>Đang tải dữ liệu...</div>
+                        {loading && <div className={cx("emptyState")}>Đang tải dữ liệu...</div>}
+                        {!loading && error && <div className={cx("emptyState")}>{error}</div>}
+                        {!loading && !error && data.length === 0 && <div className={cx("emptyState")}>Chưa có dữ liệu.</div>}
+
+                        {!loading && !error && data.length > 0 && (
+                            <div className={cx("grid", {
+                                kanjiGrid: selectedType === "Hán tự",
+                                grammarGrid: selectedType === "Ngữ pháp",
+                            })}>
+                                {data.map((item, index) => {
+                                    const title = getDetailLabel(item);
+                                    const cardKey = item._id || item.id || item.mobileId || `${title}-${index}`;
+                                    return (
+                                        <React.Fragment key={cardKey}>
+                                            {renderCard(item, index)}
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </div>
                         )}
 
-                        {error && (
-                            <div className={cx("error")}>Lỗi: {error}</div>
-                        )}
-
-                        {!loading && !error && (
-                            <>
-                                {data.length > 0 ? (
-                                    <div className={gridClass}>
-                                        {data.map((item, index) => renderCard(item, index))}
-                                    </div>
-                                ) : (
-                                    <div className={cx("noData")}>Không có dữ liệu</div>
-                                )}
-                            </>
-                        )}
-
-                        {!loading && !error && totalPages > 1 && (
-                            <div className={cx("pagination")}>
+                        {totalPages > 1 && (
+                            <nav className={cx("pagination")} aria-label="Phân trang JLPT">
                                 <button
-                                    className={cx("pagBtn", {
-                                        pagDisabled: currentPage === 1,
-                                    })}
-                                    onClick={() => handlePageChange(currentPage - 1)}
-                                    disabled={currentPage === 1}
-                                    aria-label="Trang trước"
+                                    type="button"
+                                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                                    disabled={currentPage <= 1}
                                 >
                                     <FontAwesomeIcon icon={faChevronLeft} />
                                 </button>
-
-                                {getPageNumbers().map((page, index) =>
-                                    page === "..." ? (
-                                        <span
-                                            key={`ellipsis-${index}`}
-                                            className={cx("pagEllipsis")}
-                                        >
-                                            ...
-                                        </span>
-                                    ) : (
-                                        <button
-                                            key={page}
-                                            className={cx("pagBtn", {
-                                                pagActive: currentPage === page,
-                                            })}
-                                            onClick={() => handlePageChange(page)}
-                                        >
-                                            {page}
-                                        </button>
-                                    )
-                                )}
-
+                                <span>{currentPage} / {totalPages}</span>
                                 <button
-                                    className={cx("pagBtn", {
-                                        pagDisabled: currentPage === totalPages,
-                                    })}
-                                    onClick={() => handlePageChange(currentPage + 1)}
-                                    disabled={currentPage === totalPages}
-                                    aria-label="Trang sau"
+                                    type="button"
+                                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                                    disabled={currentPage >= totalPages}
                                 >
                                     <FontAwesomeIcon icon={faChevronRight} />
                                 </button>
-                            </div>
+                            </nav>
                         )}
-                    </div>
+                    </main>
                 </div>
-
-                <JLPTDetailModal
-                    show={detailOpen}
-                    item={detailItem}
-                    type={detailType}
-                    loading={detailLoading}
-                    error={detailError}
-                    notebooks={notebooks}
-                    showNotebookPicker={showNotebookPicker}
-                    onToggleNotebookPicker={() => setShowNotebookPicker((value) => !value)}
-                    onClose={handleCloseDetail}
-                    onPlayAudio={handlePlayAudio}
-                    onAddToNotebook={(note) => handleAddWord(detailItem, detailType, note)}
-                    formatPhonetic={formatPhonetic}
-                    formatMeanings={formatMeanings}
-                    getDetailLabel={getDetailLabel}
-                />
-
-                {/* Modal hiển thị bản xem trước file Pdf */}
-                <PdfModal
-                    show={showPdfModal}
-                    onClose={() => {
-                        setShowPdfModal(false);
-                        setPdfUrl("");
-                    }}
-                    pdfUrl={pdfUrl}
-                    loading={pdfLoading}
-                    title={`Xem trước PDF: ${selectedType} ${selectedLevel} — Trang ${currentPage}`}
-                />
-
-                {/* Auth required modal */}
-                <AuthRequiredModal
-                    isOpen={showAuthModal}
-                    onClose={() => setShowAuthModal(false)}
-                    onConfirm={() => {
-                        setShowAuthModal(false);
-                        navigate("/login");
-                    }}
-                />
             </div>
+
+            <JLPTDetailModal
+                show={detailOpen}
+                item={detailItem}
+                type={detailType}
+                loading={detailLoading}
+                error={detailError}
+                notebooks={notebooks}
+                showNotebookPicker={showNotebookPicker}
+                onToggleNotebookPicker={() => setShowNotebookPicker((show) => !show)}
+                onClose={closeDetail}
+                onPlayAudio={handlePlayAudio}
+                onAddToNotebook={(notebook) => handleAddToNotebook(notebook)}
+                formatPhonetic={formatPhonetic}
+                formatMeanings={formatMeanings}
+                getDetailLabel={getDetailLabel}
+            />
+
+            <AuthRequiredModal
+                isOpen={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+                onConfirm={handleAuthConfirm}
+                message="Bạn cần đăng nhập để sử dụng chức năng này."
+            />
+
+            <PdfModal
+                show={showPdfModal}
+                onClose={() => setShowPdfModal(false)}
+                pdfUrl={pdfUrl}
+                loading={pdfLoading}
+                title={`Tài liệu JLPT ${selectedLevel}`}
+            />
         </div>
-    );
-}
-
-function KanjiStrokeOrder({ stroke }) {
-    const { viewBox, paths } = useMemo(
-        () => parseKanjiStrokeSvg(stroke?.svgContent),
-        [stroke?.svgContent]
-    );
-    const [activeStep, setActiveStep] = useState(0);
-    const [playKey, setPlayKey] = useState(0);
-    const total = paths.length;
-
-    useEffect(() => {
-        if (!total) {
-            setActiveStep(0);
-            return undefined;
-        }
-
-        setActiveStep(1);
-        if (total === 1) return undefined;
-
-        let step = 1;
-        const timer = setInterval(() => {
-            step += 1;
-            setActiveStep(step);
-
-            if (step >= total) {
-                clearInterval(timer);
-            }
-        }, 650);
-
-        return () => clearInterval(timer);
-    }, [total, stroke?.svgContent, playKey]);
-
-    if (!stroke?.svgContent || !total) {
-        return (
-            <section className={cx("detailSideCard", "strokeSideCard")}>
-                <h3>Thứ tự nét</h3>
-                <p className={cx("mutedText")}>Chưa có dữ liệu thứ tự nét.</p>
-            </section>
-        );
-    }
-
-    const safeStep = Math.min(Math.max(activeStep, 0), total);
-
-    return (
-        <section className={cx("detailSideCard", "strokeSideCard")}>
-            <div className={cx("strokeHeader")}>
-                <div>
-                    <h3>Thứ tự nét</h3>
-                    <p>{safeStep ? `Nét ${safeStep} / ${total}` : "Đang chuẩn bị..."}</p>
-                </div>
-                <button
-                    type="button"
-                    className={cx("strokeReplayBtn")}
-                    onClick={() => setPlayKey((key) => key + 1)}
-                    aria-label="Phát lại thứ tự nét"
-                >
-                    <FontAwesomeIcon icon={faRotateRight} />
-                </button>
-            </div>
-
-            <div className={cx("strokeOrderPanel")}>
-                <div className={cx("strokeCanvasWrap")}>
-                    <svg className={cx("strokeCanvas")} viewBox={viewBox} aria-label="Thứ tự nét Hán tự">
-                        <rect className={cx("strokeGridBackground")} x="0" y="0" width="109" height="109" />
-                        <line className={cx("strokeGridLine")} x1="54.5" y1="0" x2="54.5" y2="109" />
-                        <line className={cx("strokeGridLine")} x1="0" y1="54.5" x2="109" y2="54.5" />
-                        <line className={cx("strokeGridDash")} x1="0" y1="0" x2="109" y2="109" />
-                        <line className={cx("strokeGridDash")} x1="109" y1="0" x2="0" y2="109" />
-
-                        {paths.map((path, index) => (
-                            <path
-                                key={`ghost-${path.id || index}`}
-                                className={cx("strokePathGhost")}
-                                d={path.d}
-                            />
-                        ))}
-
-                        {paths.slice(0, safeStep).map((path, index) => (
-                            <path
-                                key={`active-${playKey}-${path.id || index}`}
-                                className={cx("strokePathActive", {
-                                    strokePathCurrent: index === safeStep - 1,
-                                })}
-                                d={path.d}
-                                style={{
-                                    stroke: strokeColors[index % strokeColors.length],
-                                }}
-                            />
-                        ))}
-
-                        {paths.slice(0, safeStep).map((path, index) => path.start && (
-                            <text
-                                key={`number-${playKey}-${path.id || index}`}
-                                className={cx("strokeNumber")}
-                                x={path.start.x}
-                                y={path.start.y}
-                                style={{
-                                    fill: strokeColors[index % strokeColors.length],
-                                }}
-                            >
-                                {index + 1}
-                            </text>
-                        ))}
-                    </svg>
-                </div>
-            </div>
-        </section>
     );
 }
 
@@ -1250,7 +970,6 @@ function JLPTDetailModal({
                             <h3>Thông tin</h3>
                             {renderMeta()}
                         </section>
-
                     </aside>
                 </div>
 
