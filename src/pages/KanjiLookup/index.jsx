@@ -103,9 +103,9 @@ const KanjiLookupInterface = () => {
 
           <SearchInput
             value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
             onSearch={handleSearch}
             placeholder={activeTab === 'vocab' ? 'Tìm từ vựng...' : '日本、nihon, Nhật Bản'}
+            suggestionType={activeTab}
           />
 
           <div className={cx('content-wrapper')}>
