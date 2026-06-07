@@ -1,0 +1,254 @@
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: auto;
+}
+
+.spotlight {
+  position: fixed;
+  z-index: 1;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 9999px rgba(9, 25, 32, 0.42),
+    0 20px 60px rgba(0, 126, 143, 0.2);
+  outline: 3px solid rgba(14, 165, 184, 0.98);
+  outline-offset: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  animation: pulse 1.6s ease-in-out infinite;
+  transition:
+    left 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    top 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 2;
+  width: min(320px, calc(100vw - 32px));
+  padding: 13px 16px 12px;
+  border: 1px solid rgba(14, 165, 184, 0.18);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 20px 54px rgba(5, 61, 71, 0.22);
+  color: #10272d;
+  backdrop-filter: blur(16px);
+  transition:
+    left 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    top 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tooltip.right,
+.tooltip.left {
+  width: min(260px, calc(100vw - 32px));
+  padding: 11px 13px 10px;
+}
+
+.tooltip::before {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: inherit;
+  border: inherit;
+  transform: rotate(45deg);
+}
+
+.tooltip.bottom::before {
+  top: -8px;
+  left: calc(50% - 7px);
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.tooltip.top::before {
+  bottom: -8px;
+  left: calc(50% - 7px);
+  border-left: 0;
+  border-top: 0;
+}
+
+.tooltip.left::before {
+  right: -8px;
+  top: calc(50% - 7px);
+  border-left: 0;
+  border-bottom: 0;
+}
+
+.tooltip.right::before {
+  left: -26px;
+  top: calc(50% - 7px);
+  width: 18px;
+  height: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(14, 165, 184, 0.88);
+  transform: none;
+}
+
+.tooltip.right::after {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: calc(50% - 7px);
+  width: 14px;
+  height: 14px;
+  background: inherit;
+  border: inherit;
+  border-right: 0;
+  border-top: 0;
+  transform: rotate(45deg);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #e8fbfd;
+  color: #007d8d;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.tooltip p {
+  margin: 9px 0 6px;
+  font-size: 1.34rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.tooltip.right p,
+.tooltip.left p {
+  margin-top: 8px;
+  font-size: 1.18rem;
+  line-height: 1.38;
+}
+
+.tooltip small {
+  display: block;
+  color: #5a7278;
+  font-size: 1.08rem;
+  font-weight: 500;
+}
+
+.tooltip.right small,
+.tooltip.left small {
+  font-size: 1rem;
+}
+
+.finger {
+  position: fixed;
+  z-index: 3;
+  transform: translate(-50%, -18%) rotate(-18deg);
+  filter: drop-shadow(0 10px 14px rgba(0, 80, 92, 0.28));
+  font-size: 4rem;
+  animation: tap 1.05s ease-in-out infinite;
+  transition:
+    left 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    top 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.finger.right {
+  transform: translate(8%, -42%) rotate(-90deg);
+  animation-name: tapRight;
+}
+
+.finger.left {
+  transform: translate(12%, -50%) rotate(-90deg);
+  animation-name: tapLeft;
+}
+
+.finger.top {
+  transform: translate(-50%, -92%) rotate(162deg);
+  animation-name: tapDown;
+}
+
+.finger.pointRight {
+  transform: translate(-100%, -42%) scaleY(-1) rotate(90deg);
+  animation-name: tapPointRight;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    outline-offset: 3px;
+  }
+
+  50% {
+    outline-offset: 8px;
+  }
+}
+
+@keyframes tap {
+  0%,
+  100% {
+    transform: translate(-50%, -18%) rotate(-18deg) scale(1);
+  }
+
+  50% {
+    transform: translate(calc(-50% + 8px), calc(-18% + 8px)) rotate(-18deg) scale(0.94);
+  }
+}
+
+@keyframes tapRight {
+  0%,
+  100% {
+    transform: translate(8%, -42%) rotate(-90deg) scale(1);
+  }
+
+  50% {
+    transform: translate(calc(8% - 6px), -42%) rotate(-90deg) scale(0.94);
+  }
+}
+
+@keyframes tapLeft {
+  0%,
+  100% {
+    transform: translate(12%, -50%) rotate(-90deg) scale(1);
+  }
+
+  50% {
+    transform: translate(calc(12% - 8px), -50%) rotate(-90deg) scale(0.94);
+  }
+}
+
+@keyframes tapDown {
+  0%,
+  100% {
+    transform: translate(-50%, -92%) rotate(162deg) scale(1);
+  }
+
+  50% {
+    transform: translate(-50%, calc(-92% + 8px)) rotate(162deg) scale(0.94);
+  }
+}
+
+@keyframes tapPointRight {
+  0%,
+  100% {
+    transform: translate(-100%, -42%) scaleY(-1) rotate(90deg) scale(1);
+  }
+
+  50% {
+    transform: translate(calc(-100% + 8px), -42%) scaleY(-1) rotate(90deg) scale(0.94);
+  }
+}
+
+@media (max-width: 640px) {
+  .tooltip {
+    padding: 13px 14px;
+  }
+
+  .tooltip p {
+    font-size: 1.26rem;
+  }
+
+  .finger {
+    font-size: 3.4rem;
+  }
+}

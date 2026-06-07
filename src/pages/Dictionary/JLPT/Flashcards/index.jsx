@@ -11,7 +11,14 @@ import {
     faChevronRight,
     faVolumeUp,
     faLayerGroup,
+    faCheck,
+    faXmark,
 } from "@fortawesome/free-solid-svg-icons";
+import {
+    getJlptCardStatuses,
+    updateJlptCardStatus,
+} from "~/services/learningPathService";
+import { useToast } from "~/context/ToastContext";
 
 const cx = classNames.bind(styles);
 
@@ -19,9 +26,11 @@ const cx = classNames.bind(styles);
 export default function JLPTFlashcard() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { addToast } = useToast();
 
     const sourceType = searchParams.get("type");
     const sourceLevel = searchParams.get("level");
+    const learningPathSkill = searchParams.get("lpSkill");
     const isJLPTMode = searchParams.get("source") === "jlpt";
     const defaultLimit = sourceType === "kanji" ? 18 : 10;
     const sourcePage = Math.max(parseInt(searchParams.get("page"), 10) || 1, 1);
@@ -37,6 +46,27 @@ export default function JLPTFlashcard() {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [cardStatuses, setCardStatuses] = useState({});
+    const [savingStatus, setSavingStatus] = useState(false);
+
+    const fetchCardStatuses = useCallback(async (cards) => {
+        if (!isJLPTMode || !sourceType || !sourceLevel || !cards.length) {
+            setCardStatuses({});
+            return;
+        }
+
+        try {
+            const skill = sourceType === "word" ? "vocab" : sourceType;
+            const result = await getJlptCardStatuses({
+                skill,
+                level: sourceLevel,
+                refIds: cards.map((card) => card.id).filter(Boolean),
+            });
+            setCardStatuses(result?.statuses || {});
+        } catch (err) {
+            console.error("Failed to load JLPT card statuses:", err);
+        }
+    }, [isJLPTMode, sourceType, sourceLevel]);
 
 
     const fetchJLPTData = useCallback(async () => {
@@ -60,6 +90,7 @@ export default function JLPTFlashcard() {
                 const transformedCards = data.map(item => {
                     if (sourceType === "word") {
                         return {
+                            id: item._id,
                             name: item.word,
                             phonetic: item.phonetic,
                             mean: item.meanings,
@@ -68,6 +99,7 @@ export default function JLPTFlashcard() {
                         };
                     } else if (sourceType === "grammar") {
                         return {
+                            id: item._id,
                             name: item.title,
                             phonetic: item.structure || "",
                             mean: item.mean,
@@ -76,6 +108,7 @@ export default function JLPTFlashcard() {
                         };
                     } else if (sourceType === "kanji") {
                         return {
+                            id: item._id,
                             name: item.kanji,
                             phonetic: item.kun_reading || item.on_reading || "",
                             mean: item.mean,
@@ -87,6 +120,7 @@ export default function JLPTFlashcard() {
                 });
 
                 setAllCards(transformedCards);
+                fetchCardStatuses(transformedCards);
                 setCurrentIndex(0);
                 setIsFlipped(false);
             }
@@ -96,7 +130,7 @@ export default function JLPTFlashcard() {
         } finally {
             setLoading(false);
         }
-    }, [sourceType, sourceLevel, sourcePage, sourceLimit]);
+    }, [sourceType, sourceLevel, sourcePage, sourceLimit, fetchCardStatuses]);
 
 
     useEffect(() => {
@@ -136,6 +170,8 @@ export default function JLPTFlashcard() {
 
     const total = filteredCards.length;
     const currentCard = filteredCards[currentIndex] ?? null;
+    const currentStatus = currentCard?.id ? cardStatuses[currentCard.id] : null;
+    const knownInCurrentSet = filteredCards.filter((card) => cardStatuses[card.id] === "known").length;
     const progress = total > 0 ? Math.round(((currentIndex + 1) / total) * 100) : 0;
     const typeLabel =
         sourceType === "word" ? "Từ vựng" :
@@ -170,8 +206,49 @@ export default function JLPTFlashcard() {
     };
 
     const handleBack = () => {
-        if (isJLPTMode) navigate("/jlpt");
+        if (learningPathSkill) navigate("/dashboard");
+        else if (isJLPTMode) navigate("/jlpt");
         else navigate("/dictionary/notebook");
+    };
+
+    const handleMarkStatus = async (status) => {
+        if (!currentCard?.id) {
+            addToast("Không tìm thấy mã thẻ để lưu trạng thái. Vui lòng tải lại trang.", "error");
+            return;
+        }
+
+        if (savingStatus) return;
+
+        try {
+            setSavingStatus(true);
+            const skill = sourceType === "word" ? "vocab" : sourceType;
+            const result = await updateJlptCardStatus({
+                refId: currentCard.id,
+                skill,
+                level: sourceLevel,
+                status,
+            });
+
+            setCardStatuses((prev) => ({
+                ...prev,
+                [currentCard.id]: status,
+            }));
+
+            if (result?.completedTask) {
+                addToast("Đã hoàn thành mục trong lộ trình hôm nay!", "success");
+            } else {
+                addToast(
+                    status === "known" ? "Đã lưu: Đã thuộc" : "Đã lưu: Chưa thuộc",
+                    "success",
+                    1800
+                );
+            }
+        } catch (err) {
+            console.error("Failed to update JLPT card status:", err);
+            addToast(err.message || "Không lưu được trạng thái thẻ.", "error");
+        } finally {
+            setSavingStatus(false);
+        }
     };
 
     const ErrorMessage = () =>
@@ -227,6 +304,10 @@ export default function JLPTFlashcard() {
                             <div className={cx("stat")}>
                                 <span>Tổng thẻ</span>
                                 <strong>{total}</strong>
+                            </div>
+                            <div className={cx("stat")}>
+                                <span>Đã thuộc</span>
+                                <strong>{knownInCurrentSet}</strong>
                             </div>
                         </div>
                     </div>
@@ -333,6 +414,31 @@ export default function JLPTFlashcard() {
                                             >
                                                 Tiếp theo
                                                 <FontAwesomeIcon icon={faChevronRight} />
+                                            </button>
+                                        </div>
+
+                                        <div className={cx("memoryActions")}>
+                                            <button
+                                                type="button"
+                                                className={cx("memoryBtn", {
+                                                    memoryKnown: currentStatus === "known",
+                                                })}
+                                                onClick={() => handleMarkStatus("known")}
+                                                disabled={savingStatus}
+                                            >
+                                                <FontAwesomeIcon icon={faCheck} />
+                                                Đã thuộc
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={cx("memoryBtn", {
+                                                    memoryUnknown: currentStatus === "unknown",
+                                                })}
+                                                onClick={() => handleMarkStatus("unknown")}
+                                                disabled={savingStatus}
+                                            >
+                                                <FontAwesomeIcon icon={faXmark} />
+                                                Chưa thuộc
                                             </button>
                                         </div>
                                     </>

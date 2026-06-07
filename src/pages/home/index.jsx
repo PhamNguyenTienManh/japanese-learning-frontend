@@ -16,6 +16,7 @@ import searchHistoryService from "~/services/searchHistoryService";
 import trendingWordsService from "~/services/homeService";
 import handlePlayAudio from "~/services/handlePlayAudio";
 import { useAuth } from "~/context/AuthContext";
+import { getLearningPathStatus } from "~/services/learningPathService";
 
 const cx = classNames.bind(styles);
 
@@ -101,7 +102,8 @@ function Home() {
     const [searchHistory, setSearchHistory] = useState([]);
     const [trendingWords, setTrendingWords] = useState([]);
     const [isLoadingTrending, setIsLoadingTrending] = useState(true);
-    const { userId } = useAuth();
+    const [showLearningPathPrompt, setShowLearningPathPrompt] = useState(false);
+    const { userId, isLoading: authLoading } = useAuth();
 
     useEffect(() => {
         if (userId) {
@@ -112,6 +114,37 @@ function Home() {
         fetchTrendingWords();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId]);
+
+    useEffect(() => {
+        if (authLoading || !userId) {
+            setShowLearningPathPrompt(false);
+            return;
+        }
+
+        let ignore = false;
+
+        async function checkLearningPath() {
+            try {
+                const dismissedKey = `learning_path_prompt_dismissed_${userId}`;
+                if (sessionStorage.getItem(dismissedKey) === "true") {
+                    return;
+                }
+
+                const result = await getLearningPathStatus();
+                if (!ignore && !result?.hasLearningPath) {
+                    setShowLearningPathPrompt(true);
+                }
+            } catch (error) {
+                console.error("Error checking learning path status:", error);
+            }
+        }
+
+        checkLearningPath();
+
+        return () => {
+            ignore = true;
+        };
+    }, [authLoading, userId]);
 
     const fetchSearchHistory = async () => {
         try {
@@ -191,11 +224,50 @@ function Home() {
         );
     };
 
+    const closeLearningPathPrompt = () => {
+        if (userId) {
+            sessionStorage.setItem(`learning_path_prompt_dismissed_${userId}`, "true");
+        }
+        setShowLearningPathPrompt(false);
+    };
+
     const hasHistory = Array.isArray(searchHistory) && searchHistory.length > 0;
     const hasTrending = Array.isArray(trendingWords) && trendingWords.length > 0;
 
     return (
         <div className={cx("wrapper")}>
+            {showLearningPathPrompt && (
+                <div className={cx("modalBackdrop")} role="dialog" aria-modal="true">
+                    <div className={cx("learningPathModal")}>
+                        <div className={cx("modalEyebrow")}>Lộ trình cá nhân hóa</div>
+                        <h2 className={cx("modalTitle")}>
+                            Tạo lộ trình học phù hợp với bạn
+                        </h2>
+                        <p className={cx("modalText")}>
+                            Tài khoản của bạn chưa có lộ trình học. Hãy trả lời vài câu
+                            hỏi ngắn để hệ thống gợi ý trình độ, mục tiêu và kế hoạch học
+                            mỗi tuần.
+                        </p>
+                        <div className={cx("modalActions")}>
+                            <button
+                                type="button"
+                                className={cx("modalSecondary")}
+                                onClick={closeLearningPathPrompt}
+                            >
+                                Để sau
+                            </button>
+                            <button
+                                type="button"
+                                className={cx("modalPrimary")}
+                                onClick={() => navigate("/onboarding")}
+                            >
+                                Tạo lộ trình ngay
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className={cx("blob1")} />
             <div className={cx("blob2")} />
 

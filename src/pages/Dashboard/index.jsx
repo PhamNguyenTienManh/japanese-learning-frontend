@@ -21,6 +21,7 @@ import { getTodayStudyTime, getWeekStudyMinutes } from "~/services/userStudy";
 import { studyTimeTracker } from "~/utils/studyTimeTracker";
 import { getRecentUserActivities } from "~/services/userActivityService";
 import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
+import { getLearningPathDashboard } from "~/services/learningPathService";
 
 const LEADERBOARD_STEP = 10;
 const tw = {
@@ -202,23 +203,6 @@ const mockUserData = {
       unlocked: false,
     },
   ],
-  goals: [
-    {
-      id: 1,
-      title: "Học 50 từ mới mỗi tuần",
-      current: 34,
-      target: 50,
-      unit: "từ",
-    },
-    { id: 2, title: "Hoàn thành 3 đề thi", current: 2, target: 3, unit: "đề" },
-    {
-      id: 3,
-      title: "Học 30 phút mỗi ngày",
-      current: 5,
-      target: 7,
-      unit: "ngày",
-    },
-  ],
 };
 
 const formatStudyDuration = (value) => {
@@ -278,6 +262,9 @@ const getActivityScore = (activity) => {
 function Dashboard() {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
+  const [learningPath, setLearningPath] = useState(null);
+  const [learningPathLoading, setLearningPathLoading] = useState(false);
+  const [learningPathError, setLearningPathError] = useState("");
   const [studyTimeToday, setStudyTimeToday] = useState(0);
   const [currentSessionMinutes, setCurrentSessionMinutes] = useState(0);
   const [weeklyProgress, setWeeklyProgress] = useState([]);
@@ -348,6 +335,20 @@ function Dashboard() {
     }
   }, []);
 
+  const loadLearningPath = useCallback(async () => {
+    try {
+      setLearningPathLoading(true);
+      const data = await getLearningPathDashboard();
+      setLearningPath(data);
+      setLearningPathError("");
+    } catch (error) {
+      console.error("Failed to load learning path dashboard:", error);
+      setLearningPathError("Không tải được lộ trình học.");
+    } finally {
+      setLearningPathLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     async function fetchUserData() {
       try {
@@ -376,6 +377,7 @@ function Dashboard() {
 
         await loadLeaderboard(LEADERBOARD_STEP);
         await loadRecentActivities();
+        await loadLearningPath();
 
         await loadStudyTime();
       } catch (err) {
@@ -391,7 +393,7 @@ function Dashboard() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [loadLeaderboard, loadRecentActivities, loadStudyTime]);
+  }, [loadLeaderboard, loadRecentActivities, loadLearningPath, loadStudyTime]);
 
   if (!userData) return <div>Loading...</div>;
 
@@ -663,33 +665,61 @@ function Dashboard() {
                   </h2>
                   <Button
                     outline
-                    href="/dashboard/goals"
+                    onClick={() => navigate("/dashboard/learning-path")}
                     className={cx("sectionAction")}
                   >
-                    Xem tất cả
+                    Xem lộ trình
                   </Button>
                 </div>
-                <div className={cx("goalsList")}>
-                  {mockUserData.goals.map((goal) => {
-                    const progress = (goal.current / goal.target) * 100;
-                    return (
-                      <div key={goal.id} className={cx("goalItem")}>
-                        <div className={cx("goalHeader")}>
-                          <p className={cx("goalTitle")}>{goal.title}</p>
-                          <span className={cx("goalValue")}>
-                            {goal.current}/{goal.target} {goal.unit}
-                          </span>
+                {learningPathLoading ? (
+                  <div className={cx("emptyState")}>Đang tải mục tiêu lộ trình...</div>
+                ) : learningPathError ? (
+                  <div className={cx("emptyState")}>{learningPathError}</div>
+                ) : !learningPath?.hasLearningPath ? (
+                  <div className={cx("emptyState")}>
+                    Bạn chưa có lộ trình học. Vào trang onboarding để tạo kế hoạch cá nhân hóa.
+                    <div className="mt-3">
+                      <Button
+                        primary
+                        onClick={() => navigate("/onboarding")}
+                        className={cx("leaderboardMoreBtn")}
+                      >
+                        Tạo lộ trình
+                      </Button>
+                    </div>
+                  </div>
+                ) : !learningPath.weekTasks?.length ? (
+                  <div className={cx("emptyState")}>
+                    Tuần này chưa có mục tiêu nào trong lộ trình.
+                  </div>
+                ) : (
+                  <div className={cx("goalsList")}>
+                    {learningPath.weekTasks.map((task) => {
+                      const progress = task.progress || {
+                        percent: task.completedAt ? 100 : 0,
+                        label: `${task.completedAt ? task.targetCount || 1 : 0}/${task.targetCount || 1} mục`,
+                      };
+                      const progressPercent = Math.min(Math.max(Number(progress.percent) || 0, 0), 100);
+
+                      return (
+                        <div key={`${task.skill}-${task.order}`} className={cx("goalItem")}>
+                          <div className={cx("goalHeader")}>
+                            <p className={cx("goalTitle")}>{task.title || "Mục tiêu lộ trình"}</p>
+                            <span className={cx("goalValue")}>
+                              {progress.label}
+                            </span>
+                          </div>
+                          <div className={cx("goalTrack")}>
+                            <div
+                              className={cx("goalBar")}
+                              style={{ width: `${progressPercent}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className={cx("goalTrack")}>
-                          <div
-                            className={cx("goalBar")}
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Recent activity */}

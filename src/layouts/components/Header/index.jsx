@@ -198,11 +198,8 @@ function Header() {
                   <Button to="/dashboard" text>
                     Bảng điều khiển
                   </Button>
-                  <Button to="/dashboard/achievements" text>
-                    Thành tích
-                  </Button>
-                  <Button to="/dashboard/goals" text>
-                    Mục tiêu
+                  <Button to="/dashboard/learning-path" text>
+                    Lộ trình học
                   </Button>
                   <Button to="/dashboard/settings" text>
                     Cài đặt

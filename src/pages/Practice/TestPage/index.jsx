@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import classNames from "classnames/bind";
 import { motion } from "framer-motion";
 import styles from "./TestPage.module.scss";
 
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 
 import TestCard from "~/components/TestCard";
+import GuidedCoachmark from "~/components/GuidedCoachmark";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft,
@@ -16,7 +17,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import Button from "~/components/Button";
 
-import { checkExamStatus, getExamsByLevel } from "~/services/examService";
+import { checkExamResult, checkExamStatus, getExamsByLevel } from "~/services/examService";
+import { getLearningPathDashboard } from "~/services/learningPathService";
 
 const cx = classNames.bind(styles);
 
@@ -77,6 +79,31 @@ const LEVEL_SUMMARY = {
   N1: "Luyện sức bền cho đề nâng cao, đọc hiểu chuyên sâu và nghe tốc độ tự nhiên.",
 };
 
+function getNumericScore(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function buildExamTourMessage(test, weeklyHighestScore = null) {
+  const score = getNumericScore(weeklyHighestScore) ?? getNumericScore(test?.latestScore);
+  const passScore = getNumericScore(test?.pass_score);
+
+  if (test?.completed && score !== null && passScore !== null) {
+    const missing = Math.max(passScore - score, 0);
+    if (missing > 0) {
+      return `Điểm cao nhất tuần này của bạn là ${score}, còn ${missing} điểm nữa mới hoàn thành. Bạn có muốn làm lại đề này không?`;
+    }
+
+    return `Điểm cao nhất tuần này của bạn là ${score}. Làm lại đề này để ôn tập và giữ nhịp luyện thi nhé.`;
+  }
+
+  if (test?.completed) {
+    return "Bạn đã hoàn thành đề này. Bấm Làm lại nếu muốn ôn tập và cải thiện điểm số.";
+  }
+
+  return "Chọn đề thi này để bắt đầu luyện theo lộ trình hôm nay.";
+}
+
 const fadeUp = {
   hidden: { opacity: 0, y: 22 },
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: easeOut } },
@@ -99,10 +126,18 @@ const statItem = {
 
 export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
   const { level } = useParams();
+  const location = useLocation();
   const upperLevel = (levelInfo.level || level || "n5").toUpperCase();
   const lowerLevel = upperLevel.toLowerCase();
   const [tests, setTests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [weeklyHighestExamScore, setWeeklyHighestExamScore] = useState(null);
+  const examTourRef = useRef(null);
+  const examTourCardRef = useRef(null);
+  const tourParam = useMemo(
+    () => new URLSearchParams(location.search).get("tour"),
+    [location.search],
+  );
 
   useEffect(() => {
     async function fetchTests() {
@@ -143,7 +178,28 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
             const completed =
               statusRes?.data?.status === "completed" ||
               statusRes?.data?.hasCompletedResult === true;
-            return { ...test, completed };
+            if (!completed) return { ...test, completed };
+
+            try {
+              const resultRes = await checkExamResult(test.id);
+              const result = resultRes?.data || resultRes || {};
+              const latestScore =
+                result.totalScore ??
+                result.score ??
+                result.total_score ??
+                result.result?.totalScore ??
+                null;
+
+              return {
+                ...test,
+                completed,
+                latestScore,
+                passed: result.passed,
+              };
+            } catch (resultError) {
+              console.error("Fetch exam result score error:", resultError);
+              return { ...test, completed };
+            }
           } catch (e) {
             console.error(e);
             return test;
@@ -163,9 +219,39 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
     fetchTests();
   }, [upperLevel]);
 
-  const testList = Array.isArray(tests) ? tests : [];
+  useEffect(() => {
+    if (tourParam !== "exam") return;
+
+    let active = true;
+
+    async function loadWeeklyExamScore() {
+      try {
+        const dashboard = await getLearningPathDashboard();
+        const examTask = dashboard?.weekTasks?.find(
+          (task) => task.skill === "jlpt_exam" && task.progress,
+        );
+        const score = examTask?.progress?.latestScore;
+        if (active) setWeeklyHighestExamScore(score ?? null);
+      } catch (error) {
+        console.error("Fetch weekly exam score error:", error);
+        if (active) setWeeklyHighestExamScore(null);
+      }
+    }
+
+    loadWeeklyExamScore();
+
+    return () => {
+      active = false;
+    };
+  }, [tourParam]);
+
+  const testList = useMemo(() => (Array.isArray(tests) ? tests : []), [tests]);
   const totalTests = testList.length;
   const completedCount = testList.filter((t) => t.completed).length;
+  const examTourTarget = useMemo(
+    () => testList.find((test) => !test.completed) || testList[0] || null,
+    [testList],
+  );
   const averageDuration = totalTests
     ? Math.round(
         testList.reduce((sum, test) => sum + Number(test.duration || 0), 0) /
@@ -351,6 +437,7 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
             ) : (
               testList.map((test) => (
                 <motion.div
+                  ref={examTourTarget?.id === test.id ? examTourCardRef : undefined}
                   key={test.id}
                   className={cx("test-wrap")}
                   variants={fadeUp}
@@ -360,11 +447,25 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
                   <TestCard
                     test={test}
                     basePath={`${basePath}/${upperLevel.toLowerCase()}`}
+                    actionRef={examTourTarget?.id === test.id ? examTourRef : undefined}
                   />
                 </motion.div>
               ))
             )}
           </motion.div>
+          {tourParam === "exam" && examTourTarget && !isLoading && (
+            <GuidedCoachmark
+              targetRef={examTourRef}
+              scrollTargetRef={examTourCardRef}
+              tourKey={`practice-exam-${lowerLevel}`}
+              message={buildExamTourMessage(examTourTarget, weeklyHighestExamScore)}
+              placement="left"
+              pointerAnchor="left-edge"
+              pointerOffsetX={-2}
+              fingerDirection="pointRight"
+              tooltipOffset={118}
+            />
+          )}
         </div>
       </main>
     </div>
