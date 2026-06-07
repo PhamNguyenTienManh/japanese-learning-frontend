@@ -108,7 +108,9 @@ function JLPT() {
     const flashcardTourTimerRef = useRef(null);
     const writingButtonRef = useRef(null);
 
-    const itemsPerPage = selectedType === "Hán tự" ? 18 : 10;
+    const itemsPerPage =
+        selectedType === "Từ vựng" ? 15 :
+            selectedType === "Hán tự" ? 18 : 10;
     const flashcardTourActive = tourParam === "flashcard";
     const flashcardTourLabel =
         selectedType === "Ngữ pháp"
@@ -319,6 +321,17 @@ function JLPT() {
         return item?.mean || item?.meaning || formatMeanings(item?.meanings) || "";
     };
 
+    const limitDisplayParts = (value, limit = 2) => {
+        const raw = Array.isArray(value)
+            ? value.map((entry) => typeof entry === "string" ? entry : entry?.meaning).filter(Boolean)
+            : String(value || "")
+                .split(/[、,;；]+/)
+                .map((part) => part.trim())
+                .filter(Boolean);
+
+        return raw.slice(0, limit).join(", ");
+    };
+
     const fetchDetail = async (item) => {
         const label = getDetailLabel(item);
         if (!label) return;
@@ -386,21 +399,6 @@ function JLPT() {
         }
     };
 
-    const openNotebookPickerForCard = (event, item) => {
-        event.stopPropagation();
-        if (!isLoggedIn) {
-            setShowAuthModal(true);
-            return;
-        }
-
-        setDetailItem(item);
-        setDetailType(selectedType);
-        setShowNotebookPicker(true);
-        setDetailOpen(true);
-        setDetailLoading(false);
-        setDetailError(null);
-    };
-
     const handleAuthConfirm = () => {
         setShowAuthModal(false);
         navigate("/login");
@@ -413,6 +411,10 @@ function JLPT() {
         const title = getDetailLabel(item);
         const meaning = getMeaning(item);
         const phonetic = formatPhonetic(item.phonetic || item.hiragana || item.kana);
+        const displayPhonetic = selectedType === "Từ vựng"
+            ? limitDisplayParts(item.phonetic || item.hiragana || item.kana || phonetic)
+            : phonetic;
+        const displayMeaning = selectedType === "Từ vựng" ? limitDisplayParts(meaning) : meaning;
 
         if (selectedType === "Ngữ pháp") {
             return (
@@ -425,14 +427,6 @@ function JLPT() {
                         {isDisplayEnabled("Từ vựng") && <div className={cx("grammarPattern")}>{title}</div>}
                         {isDisplayEnabled("Nghĩa") && <div className={cx("grammarMeaning")}>{meaning}</div>}
                     </div>
-                    <button
-                        type="button"
-                        className={cx("addBtn")}
-                        onClick={(event) => openNotebookPickerForCard(event, item)}
-                        aria-label="Thêm vào sổ tay"
-                    >
-                        <FontAwesomeIcon icon={faPlus} />
-                    </button>
                 </article>
             );
         }
@@ -440,36 +434,17 @@ function JLPT() {
         return (
             <article
                 ref={cardTourRef}
-                className={cx("card", "clickableCard", { kanjiCard: selectedType === "Hán tự" })}
+                className={cx("card", "clickableCard", {
+                    vocabCard: selectedType === "Từ vựng",
+                    kanjiCard: selectedType === "Hán tự",
+                })}
                 onClick={() => fetchDetail(item)}
             >
-                <div className={cx("cardTop")}>
-                    <button
-                        type="button"
-                        className={cx("speakerBtn")}
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            handlePlayAudio(selectedType === "Từ vựng" ? phonetic || title : title);
-                        }}
-                        aria-label="Nghe phát âm"
-                    >
-                        <FontAwesomeIcon icon={faVolumeHigh} />
-                    </button>
-                    <button
-                        type="button"
-                        className={cx("addBtn")}
-                        onClick={(event) => openNotebookPickerForCard(event, item)}
-                        aria-label="Thêm vào sổ tay"
-                    >
-                        <FontAwesomeIcon icon={faPlus} />
-                    </button>
-                </div>
-
                 {isDisplayEnabled("Từ vựng") && <div className={cx("kanji")}>{title}</div>}
-                {selectedType === "Từ vựng" && isDisplayEnabled("Phiên âm") && phonetic && (
-                    <div className={cx("hiragana")}>{phonetic}</div>
+                {selectedType === "Từ vựng" && isDisplayEnabled("Phiên âm") && displayPhonetic && (
+                    <div className={cx("hiragana")}>{displayPhonetic}</div>
                 )}
-                {isDisplayEnabled("Nghĩa") && meaning && <div className={cx("meaning")}>{meaning}</div>}
+                {isDisplayEnabled("Nghĩa") && displayMeaning && <div className={cx("meaning")}>{displayMeaning}</div>}
             </article>
         );
     };
@@ -496,6 +471,25 @@ function JLPT() {
             : `jlpt-card-detail-${tourKeyScope}`;
     const handleActiveFlashcardTourDismiss =
         flashcardTourStep === "flashcard" ? handleFlashcardTourDismiss : handleCardTourDismiss;
+    const paginationItems = useMemo(() => {
+        if (totalPages <= 7) {
+            return Array.from({ length: totalPages }, (_, index) => index + 1);
+        }
+
+        const visible = new Set([1, 2, totalPages - 1, totalPages]);
+        for (let page = currentPage - 1; page <= currentPage + 1; page += 1) {
+            if (page >= 1 && page <= totalPages) visible.add(page);
+        }
+
+        const pages = [...visible].sort((a, b) => a - b);
+        return pages.flatMap((page, index) => {
+            const previous = pages[index - 1];
+            if (index > 0 && page - previous > 1) {
+                return [`ellipsis-${previous}-${page}`, page];
+            }
+            return [page];
+        });
+    }, [currentPage, totalPages]);
 
     // --- Render ---
 
@@ -599,7 +593,13 @@ function JLPT() {
                                 tourKey={activeFlashcardTourKey}
                                 message={activeFlashcardTourMessage}
                                 placement="bottom"
+                                pointerOffsetY={flashcardTourStep === "flashcard" ? -2 : 0}
                                 onDismiss={handleActiveFlashcardTourDismiss}
+                                spotlightPadding={
+                                    flashcardTourStep === "flashcard"
+                                        ? { x: 9, y: 7 }
+                                        : undefined
+                                }
                                 showOnce={false}
                             />
                         )}
@@ -638,16 +638,36 @@ function JLPT() {
                             <nav className={cx("pagination")} aria-label="Phân trang JLPT">
                                 <button
                                     type="button"
+                                    className={cx("pagBtn")}
                                     onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                                     disabled={currentPage <= 1}
+                                    aria-label="Trang trước"
                                 >
                                     <FontAwesomeIcon icon={faChevronLeft} />
                                 </button>
-                                <span>{currentPage} / {totalPages}</span>
+                                <div className={cx("pageList")}>
+                                    {paginationItems.map((page) => (
+                                        typeof page === "number" ? (
+                                            <button
+                                                key={page}
+                                                type="button"
+                                                className={cx("pageNumber", { pageNumberActive: page === currentPage })}
+                                                onClick={() => setCurrentPage(page)}
+                                                aria-current={page === currentPage ? "page" : undefined}
+                                            >
+                                                {page}
+                                            </button>
+                                        ) : (
+                                            <span key={page} className={cx("pagEllipsis")}>...</span>
+                                        )
+                                    ))}
+                                </div>
                                 <button
                                     type="button"
+                                    className={cx("pagBtn")}
                                     onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                                     disabled={currentPage >= totalPages}
+                                    aria-label="Trang sau"
                                 >
                                     <FontAwesomeIcon icon={faChevronRight} />
                                 </button>

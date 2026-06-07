@@ -100,7 +100,7 @@ $orange: #fc5f00;
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(104px, 1fr));
+  grid-template-columns: repeat(4, minmax(96px, 1fr));
   gap: 10px;
   flex-shrink: 0;
 }
@@ -231,6 +231,88 @@ $orange: #fc5f00;
   }
 }
 
+.cardTopRight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.statusBadge {
+  &.statusKnown {
+    border-color: rgba(34, 197, 94, 0.28);
+    background: rgba(34, 197, 94, 0.1);
+    color: #15803d;
+  }
+
+  &.statusUnknown {
+    border-color: rgba(252, 95, 0, 0.28);
+    background: rgba(252, 95, 0, 0.1);
+    color: $orange;
+  }
+}
+
+.resetIconBtn,
+.cardNavBtn {
+  border: 1px solid $line;
+  background: rgba(255, 255, 255, 0.92);
+  color: $primary;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.16s ease, background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+
+  &:hover:not(:disabled) {
+    border-color: rgba(0, 135, 154, 0.35);
+    background: $primary;
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.34;
+    cursor: not-allowed;
+  }
+}
+
+.resetIconBtn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.cardNavBtn {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 999px;
+  box-shadow: 0 12px 26px rgba(16, 42, 45, 0.12);
+}
+
+.cardNavPrev {
+  left: 18px;
+  transform: translateY(-50%);
+
+  &:hover:not(:disabled) {
+    transform: translateY(calc(-50% - 1px));
+  }
+}
+
+.cardNavNext {
+  right: 18px;
+  transform: translateY(-50%);
+
+  &:hover:not(:disabled) {
+    transform: translateY(calc(-50% - 1px));
+  }
+}
+
 .front,
 .back {
   min-height: 360px;
@@ -325,13 +407,6 @@ $orange: #fc5f00;
   }
 }
 
-.actions {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.25fr;
-  gap: 12px;
-}
-
 .memoryActions {
   width: 100%;
   display: grid;
@@ -375,55 +450,6 @@ $orange: #fc5f00;
   border-color: rgba(252, 95, 0, 0.34);
   background: rgba(252, 95, 0, 0.1);
   color: $orange;
-}
-
-.controlBtn {
-  min-height: 48px;
-  padding: 0 18px;
-  border: 1px solid $line;
-  border-radius: 14px;
-  background: #fff;
-  color: $ink;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  font-size: 14px;
-  font-weight: 900;
-  cursor: pointer;
-  transition: all 0.16s ease;
-
-  &:hover:not(:disabled) {
-    border-color: rgba(0, 135, 154, 0.35);
-    color: $primary;
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  &.ghost {
-    color: $orange;
-  }
-
-  &.primary {
-    border-color: transparent;
-    background: $primary;
-    color: #fff;
-    box-shadow: 0 5px 0 $primary-dark;
-
-    &:hover:not(:disabled) {
-      background: $primary-dark;
-      color: #fff;
-    }
-
-    &:active:not(:disabled) {
-      transform: translateY(2px);
-      box-shadow: 0 2px 0 $primary-dark;
-    }
-  }
 }
 
 .empty,
@@ -514,7 +540,7 @@ $orange: #fc5f00;
 
   .stats {
     width: 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .card {
@@ -528,15 +554,34 @@ $orange: #fc5f00;
     min-height: 310px;
   }
 
-  .actions {
-    grid-template-columns: 1fr;
+  .cardTop {
+    left: 14px;
+    right: 14px;
+    gap: 8px;
+  }
+
+  .cardTopRight {
+    gap: 5px;
+  }
+
+  .statusBadge {
+    display: none;
+  }
+
+  .cardNavBtn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .cardNavPrev {
+    left: 10px;
+  }
+
+  .cardNavNext {
+    right: 10px;
   }
 
   .memoryActions {
     grid-template-columns: 1fr;
-  }
-
-  .controlBtn {
-    width: 100%;
   }
 }
