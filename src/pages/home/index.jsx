@@ -277,7 +277,10 @@ function Home() {
                     <div className={cx("greeting")}>Chào ngày mới!</div>
                     <h1 className={cx("title")}>
                         Hôm nay bạn muốn học{" "}
-                        <span className={cx("titleAccent")}>gì?</span>
+                        <span className={cx("titleAccent")}>
+                            <span className={cx("accentWord")}>gì</span>
+                            <span className={cx("questionMark")}>?</span>
+                        </span>
                     </h1>
                     <p className={cx("subtitle")}>
                         Tra từ điển, luyện thi JLPT, đọc tin tức tiếng Nhật và trò chuyện
