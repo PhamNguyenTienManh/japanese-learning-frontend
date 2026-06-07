@@ -10,8 +10,33 @@ const PADDING = 4;
 const TOOLTIP_WIDTH = 320;
 const shownTours = new Set();
 
-function expandRadius(value) {
-  return value ? `calc(${value} + ${PADDING}px)` : "16px";
+function normalizePadding(value) {
+  if (typeof value === "number") {
+    return {
+      x: value,
+      y: value,
+      top: value,
+      right: value,
+      bottom: value,
+      left: value,
+    };
+  }
+
+  const x = value?.x ?? PADDING;
+  const y = value?.y ?? PADDING;
+
+  return {
+    x,
+    y,
+    top: value?.top ?? y,
+    right: value?.right ?? x,
+    bottom: value?.bottom ?? y,
+    left: value?.left ?? x,
+  };
+}
+
+function expandRadius(value, padding) {
+  return value ? `calc(${value} + ${padding}px)` : "16px";
 }
 
 function isPointInsideRect(event, rect) {
@@ -139,6 +164,7 @@ function GuidedCoachmark({
   pointerOffsetX = 0,
   pointerOffsetY = 0,
   fingerDirection,
+  spotlightPadding = PADDING,
   tooltipOffset,
   onDismiss,
   showOnce = true,
@@ -316,15 +342,16 @@ function GuidedCoachmark({
 
   if (!visible || !rect || typeof document === "undefined") return null;
 
+  const padding = normalizePadding(spotlightPadding);
   const spotlightStyle = {
-    left: rect.left - PADDING,
-    top: rect.top - PADDING,
-    width: rect.width + PADDING * 2,
-    height: rect.height + PADDING * 2,
-    borderTopLeftRadius: expandRadius(rect.radius?.topLeft),
-    borderTopRightRadius: expandRadius(rect.radius?.topRight),
-    borderBottomRightRadius: expandRadius(rect.radius?.bottomRight),
-    borderBottomLeftRadius: expandRadius(rect.radius?.bottomLeft),
+    left: rect.left - padding.left,
+    top: rect.top - padding.top,
+    width: rect.width + padding.left + padding.right,
+    height: rect.height + padding.top + padding.bottom,
+    borderTopLeftRadius: expandRadius(rect.radius?.topLeft, Math.max(padding.left, padding.top)),
+    borderTopRightRadius: expandRadius(rect.radius?.topRight, Math.max(padding.right, padding.top)),
+    borderBottomRightRadius: expandRadius(rect.radius?.bottomRight, Math.max(padding.right, padding.bottom)),
+    borderBottomLeftRadius: expandRadius(rect.radius?.bottomLeft, Math.max(padding.left, padding.bottom)),
   };
   const resolvedTooltipOffset =
     tooltipOffset ?? (placement === "right" ? 34 : 18);

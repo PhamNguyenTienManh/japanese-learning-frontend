@@ -31,8 +31,11 @@ export default function JLPTFlashcard() {
     const sourceType = searchParams.get("type");
     const sourceLevel = searchParams.get("level");
     const learningPathSkill = searchParams.get("lpSkill");
+    const learningPathOrder = searchParams.get("lpOrder");
     const isJLPTMode = searchParams.get("source") === "jlpt";
-    const defaultLimit = sourceType === "kanji" ? 18 : 10;
+    const defaultLimit =
+        sourceType === "word" ? 15 :
+            sourceType === "kanji" ? 18 : 10;
     const sourcePage = Math.max(parseInt(searchParams.get("page"), 10) || 1, 1);
     const sourceLimit = Math.max(parseInt(searchParams.get("limit"), 10) || defaultLimit, 1);
 
@@ -172,6 +175,7 @@ export default function JLPTFlashcard() {
     const currentCard = filteredCards[currentIndex] ?? null;
     const currentStatus = currentCard?.id ? cardStatuses[currentCard.id] : null;
     const knownInCurrentSet = filteredCards.filter((card) => cardStatuses[card.id] === "known").length;
+    const unknownInCurrentSet = filteredCards.filter((card) => cardStatuses[card.id] === "unknown").length;
     const progress = total > 0 ? Math.round(((currentIndex + 1) / total) * 100) : 0;
     const typeLabel =
         sourceType === "word" ? "Từ vựng" :
@@ -206,8 +210,15 @@ export default function JLPTFlashcard() {
     };
 
     const handleBack = () => {
-        if (learningPathSkill) navigate("/dashboard");
-        else if (isJLPTMode) navigate("/jlpt");
+        if (isJLPTMode) {
+            const params = new URLSearchParams();
+            if (sourceType) params.set("type", sourceType);
+            if (sourceLevel) params.set("level", sourceLevel);
+            if (learningPathSkill) params.set("lpSkill", learningPathSkill);
+            if (learningPathOrder) params.set("lpOrder", learningPathOrder);
+
+            navigate(`/jlpt${params.toString() ? `?${params.toString()}` : ""}`);
+        }
         else navigate("/dictionary/notebook");
     };
 
@@ -309,6 +320,10 @@ export default function JLPTFlashcard() {
                                 <span>Đã thuộc</span>
                                 <strong>{knownInCurrentSet}</strong>
                             </div>
+                            <div className={cx("stat")}>
+                                <span>Chưa thuộc</span>
+                                <strong>{unknownInCurrentSet}</strong>
+                            </div>
                         </div>
                     </div>
                 </header>
@@ -352,8 +367,56 @@ export default function JLPTFlashcard() {
                                         >
                                             <div className={cx("cardTop")}>
                                                 <span>{typeLabel}</span>
-                                                <span>{currentIndex + 1} / {total}</span>
+                                                <div className={cx("cardTopRight")}>
+                                                    {currentStatus && (
+                                                        <span className={cx("statusBadge", {
+                                                            statusKnown: currentStatus === "known",
+                                                            statusUnknown: currentStatus === "unknown",
+                                                        })}>
+                                                            {currentStatus === "known" ? "Đã thuộc" : "Chưa thuộc"}
+                                                        </span>
+                                                    )}
+                                                    <span>{currentIndex + 1} / {total}</span>
+                                                    <button
+                                                        type="button"
+                                                        className={cx("resetIconBtn")}
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            handleReset();
+                                                        }}
+                                                        aria-label="Bắt đầu lại"
+                                                        title="Bắt đầu lại"
+                                                    >
+                                                        <FontAwesomeIcon icon={faRotate} />
+                                                    </button>
+                                                </div>
                                             </div>
+
+                                            <button
+                                                type="button"
+                                                className={cx("cardNavBtn", "cardNavPrev")}
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    handlePrevious();
+                                                }}
+                                                disabled={currentIndex <= 0}
+                                                aria-label="Thẻ trước"
+                                            >
+                                                <FontAwesomeIcon icon={faChevronLeft} />
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                className={cx("cardNavBtn", "cardNavNext")}
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    handleNext();
+                                                }}
+                                                disabled={currentIndex >= total - 1}
+                                                aria-label="Thẻ sau"
+                                            >
+                                                <FontAwesomeIcon icon={faChevronRight} />
+                                            </button>
 
                                             {!isFlipped ? (
                                                 <div className={cx("front")}>
@@ -384,37 +447,6 @@ export default function JLPTFlashcard() {
                                                     <p className={cx("hint")}>Nhấn để quay lại</p>
                                                 </div>
                                             )}
-                                        </div>
-
-                                        <div className={cx("actions")}>
-                                            <button
-                                                type="button"
-                                                className={cx("controlBtn", "ghost")}
-                                                onClick={handleReset}
-                                            >
-                                                <FontAwesomeIcon icon={faRotate} />
-                                                Bắt đầu lại
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                className={cx("controlBtn")}
-                                                onClick={handlePrevious}
-                                                disabled={currentIndex <= 0}
-                                            >
-                                                <FontAwesomeIcon icon={faChevronLeft} />
-                                                Trước
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                className={cx("controlBtn", "primary")}
-                                                onClick={handleNext}
-                                                disabled={currentIndex >= total - 1}
-                                            >
-                                                Tiếp theo
-                                                <FontAwesomeIcon icon={faChevronRight} />
-                                            </button>
                                         </div>
 
                                         <div className={cx("memoryActions")}>

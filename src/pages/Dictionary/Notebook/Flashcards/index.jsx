@@ -154,6 +154,35 @@ export default function Flashcards() {
     setIsFlipped(false);
   };
 
+  const stopAndRun = (event, action) => {
+    event.stopPropagation();
+    action();
+  };
+
+  const renderCardControls = () => (
+    <>
+      <button
+        type="button"
+        className={cx("card-nav-btn", "card-nav-prev")}
+        onClick={(event) => stopAndRun(event, goPrev)}
+        disabled={currentIndex === 0}
+        aria-label="Thẻ trước"
+      >
+        <FontAwesomeIcon icon={faChevronLeft} />
+      </button>
+
+      <button
+        type="button"
+        className={cx("card-nav-btn", "card-nav-next")}
+        onClick={(event) => stopAndRun(event, goNext)}
+        disabled={currentIndex >= total - 1}
+        aria-label="Thẻ tiếp theo"
+      >
+        <FontAwesomeIcon icon={faChevronRight} />
+      </button>
+    </>
+  );
+
   const shuffleCards = () => {
     const arr = [...filteredCards];
     for (let i = arr.length - 1; i > 0; i--) {
@@ -441,19 +470,32 @@ export default function Flashcards() {
                           >
                             {categoryLabel(currentCard.type || "word")}
                           </span>
-                          <button
-                            className={cx("audio-btn")}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              playAudio(
-                                currentCard.phonetic || currentCard.name
-                              );
-                            }}
-                            aria-label="Phát âm"
-                          >
-                            <FontAwesomeIcon icon={faVolumeUp} />
-                          </button>
+                          <div className={cx("card-top-actions")}>
+                            <button
+                              className={cx("audio-btn")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                playAudio(
+                                  currentCard.phonetic || currentCard.name
+                                );
+                              }}
+                              aria-label="Phát âm"
+                            >
+                              <FontAwesomeIcon icon={faVolumeUp} />
+                            </button>
+                            <button
+                              type="button"
+                              className={cx("reset-icon-btn")}
+                              onClick={(event) => stopAndRun(event, handleReset)}
+                              title="Bắt đầu lại"
+                              aria-label="Bắt đầu lại"
+                            >
+                              <FontAwesomeIcon icon={faRotate} />
+                            </button>
+                          </div>
                         </div>
+
+                        {renderCardControls()}
 
                         <div className={cx("card-center")}>
                           <h2 className={cx("card-kanji")}>
@@ -479,19 +521,32 @@ export default function Flashcards() {
                           >
                             {categoryLabel(currentCard.type || "word")}
                           </span>
-                          <button
-                            className={cx("audio-btn")}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              playAudio(
-                                currentCard.phonetic || currentCard.name
-                              );
-                            }}
-                            aria-label="Phát âm"
-                          >
-                            <FontAwesomeIcon icon={faVolumeUp} />
-                          </button>
+                          <div className={cx("card-top-actions")}>
+                            <button
+                              className={cx("audio-btn")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                playAudio(
+                                  currentCard.phonetic || currentCard.name
+                                );
+                              }}
+                              aria-label="Phát âm"
+                            >
+                              <FontAwesomeIcon icon={faVolumeUp} />
+                            </button>
+                            <button
+                              type="button"
+                              className={cx("reset-icon-btn")}
+                              onClick={(event) => stopAndRun(event, handleReset)}
+                              title="Bắt đầu lại"
+                              aria-label="Bắt đầu lại"
+                            >
+                              <FontAwesomeIcon icon={faRotate} />
+                            </button>
+                          </div>
                         </div>
+
+                        {renderCardControls()}
 
                         <div className={cx("card-center")}>
                           {currentCard.phonetic && (
@@ -537,37 +592,6 @@ export default function Flashcards() {
                     </div>
                   )}
 
-                  {/* Actions */}
-                  <div className={cx("actions")}>
-                    <button
-                      className={cx("ghost-btn")}
-                      onClick={handleReset}
-                      title="Bắt đầu lại"
-                      aria-label="Bắt đầu lại"
-                    >
-                      <FontAwesomeIcon icon={faRotate} />
-                    </button>
-
-                    <button
-                      className={cx("nav-btn")}
-                      onClick={goPrev}
-                      disabled={currentIndex === 0}
-                      aria-label="Thẻ trước"
-                    >
-                      <FontAwesomeIcon icon={faChevronLeft} />
-                      <span>Trước</span>
-                    </button>
-
-                    <button
-                      className={cx("nav-btn", "primary")}
-                      onClick={goNext}
-                      disabled={currentIndex >= total - 1}
-                      aria-label="Thẻ tiếp theo"
-                    >
-                      <span>Tiếp theo</span>
-                      <FontAwesomeIcon icon={faChevronRight} />
-                    </button>
-                  </div>
                 </>
               ) : (
                 <div className={cx("empty-state")}>
