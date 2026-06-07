@@ -17,6 +17,8 @@ import Community from "~/pages/Community";
 import PostDetail from "~/pages/Community/PostDetail";
 import NewPost from "~/pages/Community/NewPost";
 import Dashboard from "~/pages/Dashboard";
+import Onboarding from "~/pages/Onboarding";
+import LearningPathProgress from "~/pages/Dashboard/LearningPathProgress";
 import Achievements from "~/pages/Dashboard/Achievements";
 import Goals from "~/pages/Dashboard/Goals";
 import Setting from "~/pages/Dashboard/Setting";
@@ -67,6 +69,8 @@ export const publicRouter = [
   { path: config.routes.postDetail, component: PostDetail },
   { path: config.routes.newPost, component: NewPost },
   { path: config.routes.dashboard, component: Dashboard },
+  { path: config.routes.onboarding, component: Onboarding, layout: null },
+  { path: config.routes.learningPathProgress, component: LearningPathProgress },
   { path: config.routes.achievements, component: Achievements },
   { path: config.routes.goals, component: Goals },
   { path: config.routes.setting, component: Setting },

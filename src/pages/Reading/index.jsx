@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import classNames from "classnames/bind";
+import { useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faArrowLeft,
@@ -20,9 +21,11 @@ import {
     markNewsViewed,
     toggleNewsFavorite,
 } from "~/services/newsService";
+import { recordLearningResourceProgress } from "~/services/learningPathService";
 import { assessPronunciation } from "~/services/voiceAssessService";
 import { getFurigana } from "~/services/furiganaService";
 import { showToast } from "~/components/ToastManager";
+import GuidedCoachmark from "~/components/GuidedCoachmark";
 import styles from "./Reading.module.scss";
 
 const cx = classNames.bind(styles);
@@ -62,17 +65,28 @@ function renderFuriganaSegments(segments) {
 }
 
 export default function Reading() {
+    const location = useLocation();
     const [readingArticles, setReadingArticles] = useState([]);
     const [selectedArticle, setSelectedArticle] = useState(null);
     const [articleFilter, setArticleFilter] = useState("all");
     const [likedIds, setLikedIds] = useState([]);
     const [viewedIds, setViewedIds] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [readyForPracticeTour, setReadyForPracticeTour] = useState(false);
+    const [pendingPracticeTour, setPendingPracticeTour] = useState(false);
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
 
     const audioRef = useRef(null);
+    const readingTourRef = useRef(null);
+    const readingTourCardRef = useRef(null);
+    const readingPracticeTourRef = useRef(null);
+    const tourParam = useMemo(
+        () => new URLSearchParams(location.search).get("tour"),
+        [location.search]
+    );
+    const readingTourActive = tourParam === "reading";
 
     const [showPractice, setShowPractice] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
@@ -114,6 +128,7 @@ export default function Reading() {
                             date: new Date(item.dateField).toLocaleDateString('vi-VN'),
                             likeCount: item.likeCount ?? 0,
                             viewCount: item.viewCount ?? 0,
+                            level: item.level,
                             read: Boolean(item.isViewed),
                         }));
 
@@ -185,6 +200,23 @@ export default function Reading() {
         return true;
     });
 
+    const readingTourArticle = useMemo(() => {
+        if (!readingTourActive || readingArticles.length === 0) return null;
+
+        return (
+            readingArticles.find(
+                (article) => !article.read && !viewedIds.includes(article.id)
+            ) || readingArticles[0]
+        );
+    }, [readingArticles, readingTourActive, viewedIds]);
+
+    useEffect(() => {
+        if (!readingTourActive || loading) return;
+
+        setArticleFilter("all");
+        setSelectedArticle(null);
+    }, [loading, readingTourActive]);
+
     const selectedArticleId = selectedArticle?.id;
 
     useEffect(() => {
@@ -199,6 +231,34 @@ export default function Reading() {
         setIsPlaying(false);
         setCurrentTime(0);
     }, [selectedArticleId]);
+
+    useEffect(() => {
+        if (!readingTourActive || !selectedArticle || !pendingPracticeTour) return undefined;
+
+        setReadyForPracticeTour(false);
+        window.scrollTo({ top: 0, behavior: "auto" });
+
+        const scrollTimer = window.setTimeout(() => {
+            const target = readingPracticeTourRef.current;
+            if (!target) return;
+
+            target.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+                inline: "nearest",
+            });
+        }, 220);
+
+        const showTimer = window.setTimeout(() => {
+            setReadyForPracticeTour(true);
+            setPendingPracticeTour(false);
+        }, 620);
+
+        return () => {
+            window.clearTimeout(scrollTimer);
+            window.clearTimeout(showTimer);
+        };
+    }, [pendingPracticeTour, readingTourActive, selectedArticle]);
 
     const updateArticleState = (id, updater) => {
         setReadingArticles((prev) =>
@@ -259,6 +319,10 @@ export default function Reading() {
     };
 
     const handleSelectArticle = (article) => {
+        if (readingTourActive) {
+            setPendingPracticeTour(true);
+            setReadyForPracticeTour(false);
+        }
         setSelectedArticle(article);
         window.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -277,6 +341,18 @@ export default function Reading() {
                     read: true,
                     viewCount: data.viewCount ?? currentArticle.viewCount ?? 0,
                 }));
+                if (isLoggedIn) {
+                    recordLearningResourceProgress({
+                        skill: "reading",
+                        refKey: article.id,
+                        metadata: {
+                            title: article.title,
+                            difficulty: article.difficulty,
+                        },
+                    }).catch((error) => {
+                        console.error("Record reading progress error:", error);
+                    });
+                }
             })
             .catch((error) => {
                 console.error("Mark reading viewed error:", error);
@@ -288,6 +364,8 @@ export default function Reading() {
             audioRef.current.pause();
         }
         setIsPlaying(false);
+        setPendingPracticeTour(false);
+        setReadyForPracticeTour(false);
         setSelectedArticle(null);
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -567,45 +645,67 @@ export default function Reading() {
         </div>
     );
 
-    const renderArticleCard = (article, compact = false) => (
-        <button
-            key={article.id}
-            type="button"
-            className={cx("articleItem", {
-                active: selectedArticle?.id === article.id,
-                compact,
-            })}
-            onClick={() => handleSelectArticle(article)}
-        >
-            <div className={cx("thumb")}>
-                <img
-                    src={article.image || "/placeholder.svg"}
-                    alt={article.title}
-                    className={cx("thumbImage")}
-                />
-            </div>
+    const renderArticleCard = (article, compact = false) => {
+        const isLiked = likedIds.includes(article.id);
+        const isViewed = article.read || viewedIds.includes(article.id);
 
-            <div className={cx("articleInfo")}>
-                <div>
-                    <span className={cx("difficultyPill")}>
-                        {article.difficulty === "hard" ? "Khó" : "Dễ"}
-                    </span>
-                    <h3 className={cx("articleTitle")}>{article.title}</h3>
+        return (
+            <button
+                ref={
+                    readingTourActive && !compact && readingTourArticle?.id === article.id
+                        ? readingTourCardRef
+                        : undefined
+                }
+                key={article.id}
+                type="button"
+                className={cx("articleItem", {
+                    active: selectedArticle?.id === article.id,
+                    compact,
+                })}
+                onClick={() => handleSelectArticle(article)}
+            >
+                <div
+                    ref={
+                        readingTourActive && !compact && readingTourArticle?.id === article.id
+                            ? readingTourRef
+                            : undefined
+                    }
+                    className={cx("thumb")}
+                >
+                    <img
+                        src={article.image || "/placeholder.svg"}
+                        alt={article.title}
+                        className={cx("thumbImage")}
+                    />
                 </div>
-                <div className={cx("articleMeta")}>
-                    <span className={cx("articleDate")}>{article.date}</span>
-                    <div className={cx("cardBadges")}>
-                        {likedIds.includes(article.id) && (
-                            <span className={cx("cardBadge", "favorite")}>
-                                <FontAwesomeIcon icon={faHeart} />
-                                Yêu thích
-                            </span>
-                        )}
+
+                <div className={cx("articleInfo")}>
+                    <div>
+                        <span className={cx("difficultyPill")}>
+                            {article.difficulty === "hard" ? "Khó" : "Dễ"}
+                        </span>
+                        <h3 className={cx("articleTitle")}>{article.title}</h3>
+                    </div>
+                    <div className={cx("articleMeta")}>
+                        <span className={cx("articleDate")}>{article.date}</span>
+                        <div className={cx("cardBadges")}>
+                            {isLiked ? (
+                                <span className={cx("cardBadge", "favorite")}>
+                                    <FontAwesomeIcon icon={faHeart} />
+                                    Yêu thích
+                                </span>
+                            ) : isViewed ? (
+                                <span className={cx("cardBadge", "viewed")}>
+                                    <FontAwesomeIcon icon={faEye} />
+                                    Đã xem
+                                </span>
+                            ) : null}
+                        </div>
                     </div>
                 </div>
-            </div>
-        </button>
-    );
+            </button>
+        );
+    };
 
     if (loading) {
         return renderFrame(
@@ -631,6 +731,15 @@ export default function Reading() {
                     <div className={cx("stateCard")}>
                         Không có bài đọc phù hợp với bộ lọc hiện tại.
                     </div>
+                )}
+                {readingTourActive && readingTourArticle && (
+                    <GuidedCoachmark
+                        targetRef={readingTourRef}
+                        scrollTargetRef={readingTourCardRef}
+                        tourKey="reading"
+                        message="Chọn bài đọc này để hoàn thành mục luyện đọc trong lộ trình."
+                        placement="right"
+                    />
                 )}
             </>
         );
@@ -774,6 +883,7 @@ export default function Reading() {
                                             : "Hiện furigana"}
                                 </button>
                                 <button
+                                    ref={readingPracticeTourRef}
                                     type="button"
                                     className={cx("toolButton", "toolPrimary")}
                                     onClick={handleOpenPractice}
@@ -781,6 +891,16 @@ export default function Reading() {
                                     Luyện đọc
                                 </button>
                             </div>
+                            {readingTourActive && readyForPracticeTour && !showPractice && (
+                                <GuidedCoachmark
+                                    targetRef={readingPracticeTourRef}
+                                    tourKey="reading-practice"
+                                    message="Sau khi nghe xong, hãy nhấn vào đây để luyện đọc rồi AI chấm phát âm nhé."
+                                    placement="right"
+                                    pointerAnchor="right-edge"
+                                    tooltipOffset={96}
+                                />
+                            )}
                         </div>
                     </section>
 

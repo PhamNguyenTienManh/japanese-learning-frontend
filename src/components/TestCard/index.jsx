@@ -23,6 +23,7 @@ export default function TestCard({
   test,
   basePath = "/practice",
   className = "",
+  actionRef,
 }) {
   const {
     id,
@@ -171,26 +172,28 @@ export default function TestCard({
               Đăng nhập để làm bài
             </Button>
             :
-            <Button
-              onClick={handleStartExam}
-              full
-              primary
-              className={cx("start-button")}
-              disabled={isLoading}
-              leftIcon={
-                <FontAwesomeIcon
-                  icon={isLoading ? faSpinner : faPlay}
-                  spin={isLoading}
-                />
-              }
-            >
-              {isLoading
-                ? "Đang tải..."
-                : completed
-                  ? "Làm lại"
-                  : "Bắt đầu"
-              }
-            </Button>}
+            <span ref={actionRef} className={cx("action-target")}>
+              <Button
+                onClick={handleStartExam}
+                full
+                primary
+                className={cx("start-button")}
+                disabled={isLoading}
+                leftIcon={
+                  <FontAwesomeIcon
+                    icon={isLoading ? faSpinner : faPlay}
+                    spin={isLoading}
+                  />
+                }
+              >
+                {isLoading
+                  ? "Đang tải..."
+                  : completed
+                    ? "Làm lại"
+                    : "Bắt đầu"
+                }
+              </Button>
+            </span>}
 
           {completed && (
             <Button to={resultsLink} outline full className={cx("result-button")}>

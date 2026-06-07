@@ -47,6 +47,78 @@ $yellow: #ffd166;
   padding: 0 32px;
 }
 
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 42, 42, 0.42);
+}
+
+.learningPathModal {
+  width: min(100%, 460px);
+  border: 1px solid $soft-border;
+  border-radius: 18px;
+  background: #fff;
+  padding: 26px;
+  box-shadow: 0 24px 70px rgba(15, 42, 42, 0.22);
+}
+
+.modalEyebrow {
+  display: inline-flex;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  background: $soft-tint;
+  padding: 5px 12px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.modalTitle {
+  margin: 0;
+  color: $ink;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.modalText {
+  margin: 12px 0 0;
+  color: $ink-soft;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.modalPrimary,
+.modalSecondary {
+  min-height: 42px;
+  border-radius: 10px;
+  padding: 0 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.modalPrimary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.modalSecondary {
+  border: 1px solid $soft-border;
+  color: $ink-soft;
+}
+
 /* ============ HERO ============ */
 .hero {
   text-align: center;
@@ -450,5 +522,18 @@ $yellow: #ffd166;
 
   .results {
     grid-template-columns: 1fr;
+  }
+
+  .learningPathModal {
+    padding: 22px;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+  }
+
+  .modalPrimary,
+  .modalSecondary {
+    width: 100%;
   }
 }

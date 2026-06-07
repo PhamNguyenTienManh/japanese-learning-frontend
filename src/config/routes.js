@@ -21,6 +21,8 @@ const routes = {
   postDetail: "/community/:id",
   newPost: "/community/new",
   dashboard: "/dashboard",
+  onboarding: "/onboarding",
+  learningPathProgress: "/dashboard/learning-path",
   achievements: "/dashboard/achievements",
   goals: "/dashboard/goals",
   setting: "/dashboard/settings",

@@ -1,0 +1,470 @@
+.wrapper {
+  min-height: 100vh;
+  padding: 32px 20px 64px;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(0, 135, 154, 0.12), transparent 30%),
+    radial-gradient(circle at 88% 12%, rgba(252, 95, 0, 0.08), transparent 28%),
+    linear-gradient(180deg, #f0fbf7 0%, #f7fbfb 52%, #ffffff 100%);
+}
+
+.container {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+}
+
+.hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  overflow: hidden;
+  margin-bottom: 22px;
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--primary) 0%, #006d7d 100%);
+  box-shadow: 0 22px 52px rgba(0, 109, 125, 0.18);
+}
+
+.hero::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background:
+    radial-gradient(circle at 86% 18%, rgba(255, 255, 255, 0.16), transparent 28%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent 56%);
+}
+
+.heroContent,
+.regenerateBtn {
+  position: relative;
+  z-index: 1;
+}
+
+.heroContent {
+  max-width: 720px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 14px 0 8px;
+  color: #ffffff;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.subtitle {
+  max-width: 640px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.7;
+}
+
+.regenerateBtn,
+.stateBtn,
+.startBtn {
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 16px;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease;
+}
+
+.regenerateBtn {
+  flex-shrink: 0;
+  background: #ffffff;
+  color: var(--primary);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.12);
+}
+
+.regenerateBtn:hover,
+.stateBtn:hover,
+.startBtn:hover {
+  transform: translateY(-1px);
+}
+
+.overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.summaryCard,
+.panel {
+  border: 1px solid #edf2f4;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 46px rgba(16, 42, 45, 0.08);
+}
+
+.summaryCard {
+  min-height: 132px;
+  padding: 20px;
+}
+
+.summaryLabel {
+  color: var(--grey);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.summaryValue {
+  margin-top: 8px;
+  color: var(--text-high);
+  font-size: 34px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.summaryHint {
+  margin: 8px 0 0;
+  color: var(--grey);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.progressSummary {
+  background:
+    linear-gradient(135deg, rgba(0, 135, 154, 0.08), rgba(0, 135, 154, 0.02)),
+    #ffffff;
+}
+
+.miniTrack {
+  height: 9px;
+  margin-top: 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8edf0;
+}
+
+.miniTrack span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+}
+
+.panel {
+  padding: 22px;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.panelHeader h2 {
+  margin: 0;
+  color: var(--text-high);
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.panelHeader p {
+  margin: 4px 0 0;
+  color: var(--grey);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.panelBadge,
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.panelBadge {
+  min-height: 30px;
+  padding: 0 12px;
+  background: rgba(0, 135, 154, 0.08);
+  color: var(--primary);
+}
+
+.taskList {
+  display: grid;
+  gap: 12px;
+}
+
+.taskCard {
+  padding: 18px;
+  border: 1px solid #e7eef0;
+  border-radius: 14px;
+  background: #ffffff;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+}
+
+.taskCard:hover {
+  border-color: rgba(0, 135, 154, 0.28);
+  box-shadow: 0 16px 32px rgba(16, 42, 45, 0.08);
+  transform: translateY(-1px);
+}
+
+.taskTop {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(0, 135, 154, 0.12), rgba(0, 135, 154, 0.04));
+  font-size: 23px;
+}
+
+.taskInfo {
+  min-width: 0;
+}
+
+.taskLabelRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.taskTitle {
+  margin: 0;
+  color: var(--text-high);
+  font-size: 17px;
+  font-weight: 950;
+  line-height: 1.35;
+}
+
+.taskMeta,
+.scoreNote {
+  margin: 5px 0 0;
+  color: var(--grey);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.badge {
+  min-height: 30px;
+  padding: 0 10px;
+  background: rgba(0, 135, 154, 0.08);
+  color: var(--primary);
+}
+
+.badgeDone {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+.progressBlock {
+  margin-top: 16px;
+  padding: 13px;
+  border-radius: 12px;
+  background: #f8fafb;
+}
+
+.progressMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: var(--grey);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.progressTrack {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e4ebee;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+  transition: width 0.24s ease;
+}
+
+.progressFillDone {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.taskActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.startBtn,
+.stateBtn {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 135, 154, 0.18);
+}
+
+.startBtn:hover,
+.stateBtn:hover {
+  background: var(--primary-hover);
+}
+
+.state,
+.emptyTasks {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  border: 1px dashed #dce7e8;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 34px 22px;
+  color: var(--grey);
+  text-align: center;
+  font-weight: 700;
+  box-shadow: 0 14px 34px rgba(16, 42, 45, 0.06);
+}
+
+.state strong {
+  color: var(--text-high);
+  font-size: 16px;
+}
+
+.state p {
+  max-width: 520px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.stateSpinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid rgba(0, 135, 154, 0.15);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 780px) {
+  .wrapper {
+    padding: 20px 14px 44px;
+  }
+
+  .hero {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 24px;
+  }
+
+  .regenerateBtn {
+    width: 100%;
+  }
+
+  .overview {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    padding: 18px;
+  }
+
+  .panelHeader,
+  .taskTop {
+    grid-template-columns: 1fr;
+  }
+
+  .panelHeader {
+    flex-direction: column;
+  }
+
+  .taskTop {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .taskInfo {
+    flex: 1 1 220px;
+  }
+
+  .badge {
+    margin-left: 66px;
+  }
+
+  .taskActions {
+    justify-content: stretch;
+  }
+
+  .startBtn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 28px;
+  }
+
+  .hero {
+    border-radius: 16px;
+  }
+
+  .summaryCard,
+  .panel,
+  .taskCard {
+    border-radius: 14px;
+  }
+
+  .badge {
+    margin-left: 0;
+  }
+}

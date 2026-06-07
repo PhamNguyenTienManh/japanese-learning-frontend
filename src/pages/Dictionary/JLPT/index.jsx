@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -22,7 +22,8 @@ import {
 } from "~/services/jlptService";
 import notebookService from "~/services/notebookService";
 import AuthRequiredModal from "~/components/AuthRequiredModal";
-import { useNavigate } from "react-router-dom";
+import GuidedCoachmark from "~/components/GuidedCoachmark";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "~/context/AuthContext";
 import { useToast } from "~/context/ToastContext";
 import handlePlayAudio from "~/services/handlePlayAudio";
@@ -33,6 +34,25 @@ const cx = classNames.bind(styles);
 
 const vocabularyTypes = ["Từ vựng", "Ngữ pháp", "Hán tự"];
 const jlptLevels = ["N5", "N4", "N3", "N2", "N1"];
+
+function parseFiltersFromSearch(search) {
+    const params = new URLSearchParams(search || "");
+    const typeParam = params.get("type");
+    const writingMode = params.get("writing") === "1";
+    const levelParam = String(params.get("level") || "").toUpperCase();
+
+    const type =
+        writingMode || typeParam === "kanji"
+            ? "Hán tự"
+            : typeParam === "grammar"
+                ? "Ngữ pháp"
+                : typeParam === "word"
+                    ? "Từ vựng"
+                    : null;
+    const level = jlptLevels.includes(levelParam) ? levelParam : null;
+
+    return { type, level };
+}
 
 const initialDisplayOptions = {
     "Từ vựng": [
@@ -114,8 +134,14 @@ function parseKanjiStrokeSvg(svgContent) {
 
 
 function JLPT() {
-    const [selectedType, setSelectedType] = useState("Từ vựng");
-    const [selectedLevel, setSelectedLevel] = useState("N5");
+    const location = useLocation();
+    const initialFilters = parseFiltersFromSearch(location.search);
+    const tourParam = useMemo(
+        () => new URLSearchParams(location.search).get("tour"),
+        [location.search]
+    );
+    const [selectedType, setSelectedType] = useState(initialFilters.type || "Từ vựng");
+    const [selectedLevel, setSelectedLevel] = useState(initialFilters.level || "N5");
     const [displaySettings, setDisplaySettings] = useState(initialDisplayOptions);
     const [currentPage, setCurrentPage] = useState(1);
     const [data, setData] = useState([]);
@@ -137,16 +163,73 @@ function JLPT() {
     const [detailLoading, setDetailLoading] = useState(false);
     const [detailError, setDetailError] = useState(null);
     const [showNotebookPicker, setShowNotebookPicker] = useState(false);
+    const [flashcardTourStep, setFlashcardTourStep] = useState("card");
+    const firstCardTourRef = useRef(null);
+    const flashcardButtonRef = useRef(null);
+    const flashcardTourTimerRef = useRef(null);
+    const writingButtonRef = useRef(null);
     const itemsPerPage = selectedType === "Hán tự" ? 18 : 10;
+    const flashcardTourActive = tourParam === "flashcard";
+    const flashcardTourLabel =
+        selectedType === "Ngữ pháp"
+            ? "Ngữ pháp"
+            : selectedType === "Hán tự"
+                ? "Hán tự"
+                : "Từ vựng";
+    const detailTourLabel =
+        selectedType === "Hán tự" ? "kanji" : flashcardTourLabel.toLowerCase();
+    const learningPathParams = useMemo(() => {
+        const params = new URLSearchParams(location.search);
+
+        return {
+            lpSkill: params.get("lpSkill"),
+            lpOrder: params.get("lpOrder"),
+        };
+    }, [location.search]);
+    const learningPathTourScope =
+        [learningPathParams.lpSkill, learningPathParams.lpOrder].filter(Boolean).join("-") || "default";
+    const flashcardTourSessionKey = `${tourParam || "none"}-${learningPathTourScope}`;
 
     useEffect(() => {
         fetchNotebooks();
     }, []);
 
+    useEffect(() => {
+        window.clearTimeout(flashcardTourTimerRef.current);
+        setFlashcardTourStep("card");
+    }, [flashcardTourSessionKey]);
+
+    useEffect(() => {
+        return () => window.clearTimeout(flashcardTourTimerRef.current);
+    }, []);
+
+    useEffect(() => {
+        const nextFilters = parseFiltersFromSearch(location.search);
+        if (nextFilters.type) {
+            setSelectedType(nextFilters.type);
+            setCurrentPage(1);
+        }
+        if (nextFilters.level) {
+            setSelectedLevel(nextFilters.level);
+            setCurrentPage(1);
+        }
+    }, [location.search]);
+
     const getFlashcardLink = () => {
         const typeParam = selectedType === "Từ vựng" ? "word" :
             selectedType === "Ngữ pháp" ? "grammar" : "kanji";
-        return `flashcards?type=${typeParam}&level=${selectedLevel}&source=jlpt&page=${currentPage}&limit=${itemsPerPage}`;
+        const params = new URLSearchParams({
+            type: typeParam,
+            level: selectedLevel,
+            source: "jlpt",
+            page: String(currentPage),
+            limit: String(itemsPerPage),
+        });
+
+        if (learningPathParams.lpSkill) params.set("lpSkill", learningPathParams.lpSkill);
+        if (learningPathParams.lpOrder) params.set("lpOrder", learningPathParams.lpOrder);
+
+        return `flashcards?${params.toString()}`;
     };
 
     const handleFlashcardClick = () => {
@@ -157,6 +240,19 @@ function JLPT() {
         }
 
         window.location.href = "/jlpt/" + href;
+    };
+
+    const handleCardTourDismiss = () => {
+        window.clearTimeout(flashcardTourTimerRef.current);
+        flashcardTourTimerRef.current = window.setTimeout(() => {
+            setFlashcardTourStep("flashcard");
+        }, 180);
+        return false;
+    };
+
+    const handleFlashcardTourDismiss = () => {
+        window.clearTimeout(flashcardTourTimerRef.current);
+        setFlashcardTourStep("done");
     };
 
     const fetchNotebooks = async () => {
@@ -294,7 +390,10 @@ function JLPT() {
 
             const url = `${process.env.REACT_APP_BASE_URL_API}/pdf/jlpt?page=${currentPage}&limit=${itemsPerPage}&level=${selectedLevel}&type=${typeParam}`;
 
-            const response = await fetch(url);
+            const response = await fetch(url, { credentials: "include" });
+            if (!response.ok) {
+                throw new Error("PDF request failed");
+            }
             const blob = await response.blob();
 
             const pdfPreviewUrl = URL.createObjectURL(blob);
@@ -405,9 +504,12 @@ function JLPT() {
     };
 
     const renderCard = (item, index) => {
+        const cardTourRef = flashcardTourActive && index === 0 ? firstCardTourRef : undefined;
+
         if (selectedType === "Từ vựng") {
             return (
                 <div
+                    ref={cardTourRef}
                     key={index}
                     className={cx("card", "clickableCard")}
                     onClick={() => handleOpenDetail(item)}
@@ -444,6 +546,7 @@ function JLPT() {
         } else if (selectedType === "Ngữ pháp") {
             return (
                 <div
+                    ref={cardTourRef}
                     key={item._id}
                     className={cx("card", "grammarCard", "clickableCard")}
                     onClick={() => handleOpenDetail(item)}
@@ -466,6 +569,7 @@ function JLPT() {
         } else if (selectedType === "Hán tự") {
             return (
                 <div
+                    ref={cardTourRef}
                     key={item._id}
                     className={cx("card", "kanjiCard", "clickableCard")}
                     onClick={() => handleOpenDetail(item)}
@@ -490,6 +594,26 @@ function JLPT() {
         kanjiGrid: selectedType === "Hán tự",
         grammarGrid: selectedType === "Ngữ pháp",
     });
+    const tourKeyScope = `${selectedLevel}-${flashcardTourLabel}-${learningPathTourScope}`;
+    const showFlashcardTour =
+        flashcardTourActive &&
+        !detailOpen &&
+        (
+            (flashcardTourStep === "card" && !loading && !error && data.length > 0) ||
+            flashcardTourStep === "flashcard"
+        );
+    const activeFlashcardTourTargetRef =
+        flashcardTourStep === "flashcard" ? flashcardButtonRef : firstCardTourRef;
+    const activeFlashcardTourMessage =
+        flashcardTourStep === "flashcard"
+            ? `Sau khi học xong, nhớ bấm FlashCard để luyện ${flashcardTourLabel} và được tính tiến trình lộ trình.`
+            : `Nhấn vào đây để xem chi tiết ${detailTourLabel}.`;
+    const activeFlashcardTourKey =
+        flashcardTourStep === "flashcard"
+            ? `jlpt-flashcard-${tourKeyScope}`
+            : `jlpt-card-detail-${tourKeyScope}`;
+    const handleActiveFlashcardTourDismiss =
+        flashcardTourStep === "flashcard" ? handleFlashcardTourDismiss : handleCardTourDismiss;
 
     return (
         <div className={cx("wrapper")}>
@@ -588,6 +712,7 @@ function JLPT() {
 
                             <div className={cx("iconBtns")}>
                                 <button
+                                    ref={flashcardButtonRef}
                                     type="button"
                                     className={cx("toolbarBtn", "flashcardBtn")}
                                     onClick={handleFlashcardClick}
@@ -595,6 +720,7 @@ function JLPT() {
                                     FlashCard
                                 </button>
                                 <button
+                                    ref={writingButtonRef}
                                     type="button"
                                     className={cx("toolbarBtn", "pdfBtn")}
                                     onClick={handlePreviewPdf}
@@ -604,6 +730,26 @@ function JLPT() {
                                 </button>
                             </div>
                         </div>
+
+                        {showFlashcardTour && (
+                            <GuidedCoachmark
+                                targetRef={activeFlashcardTourTargetRef}
+                                tourKey={activeFlashcardTourKey}
+                                message={activeFlashcardTourMessage}
+                                placement="bottom"
+                                onDismiss={handleActiveFlashcardTourDismiss}
+                                showOnce={false}
+                            />
+                        )}
+
+                        {tourParam === "writing" && (
+                            <GuidedCoachmark
+                                targetRef={writingButtonRef}
+                                tourKey={`jlpt-writing-${selectedLevel}`}
+                                message="Tải file viết tay để luyện viết kanji hôm nay."
+                                placement="bottom"
+                            />
+                        )}
 
                         {loading && (
                             <div className={cx("loading")}>Đang tải dữ liệu...</div>
@@ -874,6 +1020,10 @@ function JLPTDetailModal({
     };
     const kanjiKunReading = normalizeReadingValue(item?.kun);
     const kanjiOnReading = normalizeReadingValue(item?.on);
+    const grammarStructures = usages
+        .map((usage) => String(usage?.synopsis || "").trim())
+        .filter(Boolean);
+    const hasGrammarExamples = usages.some((usage) => (usage.examples || []).length);
 
     const renderPrimaryContent = () => {
         if (loading) {
@@ -911,23 +1061,63 @@ function JLPTDetailModal({
 
         if (type === "Ngữ pháp") {
             return (
-                <section className={cx("detailSection")}>
-                    <div className={cx("detailSectionTitle")}>Cách dùng</div>
-                    <div className={cx("grammarSummary")}>{item.mean}</div>
-                    {usages.length ? usages.map((usage, index) => (
-                        <div key={`${usage.synopsis || usage.explain}-${index}`} className={cx("usageBlock")}>
-                            {usage.synopsis && <div className={cx("usageFormula")}>{usage.synopsis}</div>}
-                            {usage.explain && <p className={cx("usageExplain")}>{usage.explain}</p>}
-                            {(usage.examples || []).map((example, exampleIndex) => (
-                                <div key={`${example.content}-${exampleIndex}`} className={cx("exampleBlock")}>
-                                    {example.content && <p className={cx("jpText")}>{example.content}</p>}
-                                    {example.transcription && <p className={cx("readingText")}>{example.transcription}</p>}
-                                    {example.meaning && <p className={cx("viText")}>{example.meaning}</p>}
-                                </div>
-                            ))}
-                        </div>
-                    )) : <p className={cx("mutedText")}>Chưa có ví dụ/cách dùng chi tiết.</p>}
-                </section>
+                <div className={cx("grammarLesson")}>
+                    <section className={cx("detailSection", "grammarStructureSection")}>
+                        <div className={cx("detailSectionTitle")}>Cấu trúc</div>
+                        {grammarStructures.length ? (
+                            <div className={cx("grammarStructureList")}>
+                                {grammarStructures.map((structure, index) => (
+                                    <div key={`${structure}-${index}`} className={cx("grammarStructureItem")}>
+                                        <span className={cx("grammarDot")} />
+                                        <span>{structure}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className={cx("grammarStructureItem")}>
+                                <span className={cx("grammarDot")} />
+                                <span>{item?.title || title}</span>
+                            </div>
+                        )}
+                    </section>
+
+                    <section className={cx("detailSection", "grammarMeaningSection")}>
+                        <div className={cx("detailSectionTitle")}>Nghĩa và ví dụ</div>
+                        {usages.length ? usages.map((usage, index) => (
+                            <div key={`${usage.synopsis || usage.explain}-${index}`} className={cx("grammarUsageBlock")}>
+                                {usage.explain && (
+                                    <div className={cx("grammarExplainLine")}>
+                                        <span className={cx("grammarDot")} />
+                                        <p>{usage.explain}</p>
+                                    </div>
+                                )}
+                                {(usage.examples || []).map((example, exampleIndex) => (
+                                    <div key={`${example.content}-${exampleIndex}`} className={cx("grammarExampleBlock")}>
+                                        {example.content && (
+                                            <div className={cx("grammarExampleJapanese")}>
+                                                <span className={cx("grammarDot")} />
+                                                <p>{example.content}</p>
+                                                <button
+                                                    type="button"
+                                                    className={cx("grammarAudioBtn")}
+                                                    onClick={() => onPlayAudio(example.content)}
+                                                    aria-label="Nghe ví dụ"
+                                                >
+                                                    <FontAwesomeIcon icon={faVolumeHigh} />
+                                                </button>
+                                            </div>
+                                        )}
+                                        {example.transcription && <p className={cx("readingText")}>{example.transcription}</p>}
+                                        {example.meaning && <p className={cx("viText")}>{example.meaning}</p>}
+                                    </div>
+                                ))}
+                            </div>
+                        )) : <p className={cx("mutedText")}>Chưa có ví dụ/cách dùng chi tiết.</p>}
+                        {usages.length && !hasGrammarExamples ? (
+                            <p className={cx("mutedText")}>Chưa có ví dụ cho mẫu ngữ pháp này.</p>
+                        ) : null}
+                    </section>
+                </div>
             );
         }
 
@@ -1004,7 +1194,7 @@ function JLPTDetailModal({
 
     return createPortal(
         <div className={cx("detailOverlay")}>
-            <div className={cx("detailModal")} onClick={(e) => e.stopPropagation()}>
+            <div className={cx("detailModal", { detailModalGrammar: type === "Ngữ pháp" })} onClick={(e) => e.stopPropagation()}>
                 <header className={cx("detailHeader")}>
                     <div>
                         <h2>Chi tiết từ <span>{title}</span></h2>
@@ -1015,8 +1205,8 @@ function JLPTDetailModal({
                     </button>
                 </header>
 
-                <div className={cx("detailBody")}>
-                    <main className={cx("detailMain")}>
+                <div className={cx("detailBody", { detailBodyGrammar: type === "Ngữ pháp" })}>
+                    <main className={cx("detailMain", { detailMainGrammar: type === "Ngữ pháp" })}>
                         <div className={cx("detailHero")}>
                             <div>
                                 <div className={cx("detailWord")}>{title}</div>

@@ -100,7 +100,7 @@ $orange: #fc5f00;
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(104px, 1fr));
+  grid-template-columns: repeat(3, minmax(104px, 1fr));
   gap: 10px;
   flex-shrink: 0;
 }
@@ -332,6 +332,51 @@ $orange: #fc5f00;
   gap: 12px;
 }
 
+.memoryActions {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.memoryBtn {
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid $line;
+  border-radius: 14px;
+  background: #fff;
+  color: $ink;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.16s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.memoryKnown {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+}
+
+.memoryUnknown {
+  border-color: rgba(252, 95, 0, 0.34);
+  background: rgba(252, 95, 0, 0.1);
+  color: $orange;
+}
+
 .controlBtn {
   min-height: 48px;
   padding: 0 18px;
@@ -469,6 +514,7 @@ $orange: #fc5f00;
 
   .stats {
     width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .card {
@@ -483,6 +529,10 @@ $orange: #fc5f00;
   }
 
   .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .memoryActions {
     grid-template-columns: 1fr;
   }
 
