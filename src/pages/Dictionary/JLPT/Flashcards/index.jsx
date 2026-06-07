@@ -233,7 +233,7 @@ export default function JLPTFlashcard() {
         try {
             setSavingStatus(true);
             const skill = sourceType === "word" ? "vocab" : sourceType;
-            const result = await updateJlptCardStatus({
+            await updateJlptCardStatus({
                 refId: currentCard.id,
                 skill,
                 level: sourceLevel,
@@ -244,16 +244,6 @@ export default function JLPTFlashcard() {
                 ...prev,
                 [currentCard.id]: status,
             }));
-
-            if (result?.completedTask) {
-                addToast("Đã hoàn thành mục trong lộ trình hôm nay!", "success");
-            } else {
-                addToast(
-                    status === "known" ? "Đã lưu: Đã thuộc" : "Đã lưu: Chưa thuộc",
-                    "success",
-                    1800
-                );
-            }
         } catch (err) {
             console.error("Failed to update JLPT card status:", err);
             addToast(err.message || "Không lưu được trạng thái thẻ.", "error");
