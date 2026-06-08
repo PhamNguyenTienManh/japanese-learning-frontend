@@ -235,6 +235,30 @@ class AuthService {
     }
   }
 
+  async changePassword({ currentPassword, newPassword }) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/change-password`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.message || "Đổi mật khẩu thất bại");
+      }
+
+      return data;
+    } catch (error) {
+      console.error("Change password error:", error);
+      throw error;
+    }
+  }
+
   // Lấy URL đăng nhập Google
   getGoogleLoginUrl() {
     return `${API_BASE_URL}/auth/google`;

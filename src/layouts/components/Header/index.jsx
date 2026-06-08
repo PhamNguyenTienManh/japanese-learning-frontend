@@ -201,8 +201,8 @@ function Header() {
                   <Button to="/dashboard/learning-path" text>
                     Lộ trình học
                   </Button>
-                  <Button to="/dashboard/settings" text>
-                    Cài đặt
+                  <Button to="/profile" text>
+                    Hồ sơ
                   </Button>
 
                   <div className={cx("userMenuDivider")} />

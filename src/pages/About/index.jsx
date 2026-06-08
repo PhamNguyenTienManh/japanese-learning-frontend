@@ -125,21 +125,16 @@ const benefitItem = {
 
 function About() {
     return (
-        <div className="w-full bg-[#f0fbf7] text-[#0f2a2a] relative overflow-hidden">
+        <div className="w-full text-[#0f2a2a] relative overflow-hidden bg-[radial-gradient(circle_at_86%_12%,rgba(168,239,217,0.58)_0,rgba(168,239,217,0.26)_24%,transparent_48%),radial-gradient(circle_at_8%_64%,rgba(255,209,102,0.38)_0,rgba(255,209,102,0.18)_24%,transparent_45%),linear-gradient(135deg,#f7fffc_0%,#f0fbf7_42%,#e7fbf7_68%,#fff8dc_100%)]">
             <motion.div
-                className="absolute rounded-full pointer-events-none z-0 w-[480px] h-[480px] top-[-120px] right-[-160px] bg-[radial-gradient(circle,rgba(168,239,217,0.55),transparent_70%)]"
+                className="absolute rounded-full pointer-events-none z-0 w-[460px] h-[460px] top-[-100px] right-[-160px] bg-[radial-gradient(circle,rgba(0,135,154,0.22),rgba(168,239,217,0.36)_42%,transparent_72%)] blur-[4px]"
                 animate={{ y: [0, -24, 0], x: [0, 12, 0] }}
                 transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
             />
             <motion.div
-                className="absolute rounded-full pointer-events-none z-0 w-[380px] h-[380px] top-[420px] left-[-160px] bg-[radial-gradient(circle,rgba(255,209,102,0.32),transparent_70%)]"
+                className="absolute rounded-full pointer-events-none z-0 w-[360px] h-[360px] top-[280px] left-[-120px] bg-[radial-gradient(circle,rgba(255,209,102,0.42),rgba(252,95,0,0.1)_42%,transparent_72%)] blur-[6px]"
                 animate={{ y: [0, 20, 0], x: [0, -14, 0] }}
                 transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-            />
-            <motion.div
-                className="absolute rounded-full pointer-events-none z-0 w-[360px] h-[360px] bottom-[200px] right-[-120px] bg-[radial-gradient(circle,rgba(252,95,0,0.18),transparent_70%)]"
-                animate={{ y: [0, -18, 0], x: [0, 10, 0] }}
-                transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
             />
 
             <div className="relative z-[1] w-full px-8 mx-auto max-w-[1240px]">

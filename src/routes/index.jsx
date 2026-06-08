@@ -74,6 +74,7 @@ export const publicRouter = [
   { path: config.routes.achievements, component: Achievements },
   { path: config.routes.goals, component: Goals },
   { path: config.routes.setting, component: Setting },
+  { path: config.routes.settingLegacy, component: Setting },
   { path: config.routes.kanjiLookup, component: KanjiLookup },
   { path: config.routes.jlpt, component: JLPT },
   { path: config.routes.reading, component: Reading },
