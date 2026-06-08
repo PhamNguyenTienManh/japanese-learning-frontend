@@ -907,6 +907,52 @@
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 20px;
+
+  .create-btn {
+    background: var(--primary);
+    border-radius: 12px;
+    box-shadow: 0 6px 16px -4px rgba(0, 135, 154, 0.34);
+
+    &:hover:not(:disabled) {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px -6px rgba(0, 135, 154, 0.45);
+    }
+  }
+}
+
+.flashcard-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 22px;
+  border: 1px solid var(--orange);
+  border-radius: 12px;
+  background: var(--orange);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px -4px rgba(252, 95, 0, 0.34);
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: #e55500;
+    border-color: #e55500;
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px -6px rgba(252, 95, 0, 0.46);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }
 
 /* ============ ADD WORD CARD ============ */

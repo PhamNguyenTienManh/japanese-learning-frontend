@@ -26,7 +26,7 @@ const plans = [
     desc: "Tối ưu cho học viên nghiêm túc",
     features: [
       "Tất cả tính năng Miễn phí",
-      "AI Chat không giới hạn",
+      "50 lượt chat với AI JAVI mỗi ngày",
       "Đề thi JLPT N5-N1",
       "Phân tích chi tiết",
       "Luyện hội thoại",

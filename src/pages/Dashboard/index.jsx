@@ -449,11 +449,11 @@ function Dashboard() {
             </div>
             <div className={cx("heroActions")}>
               <Button
-                href="/dashboard/settings"
+                href="/profile"
                 className={cx("heroBtn")}
                 leftIcon={<FontAwesomeIcon icon={faGear} />}
               >
-                Cài đặt
+                Hồ sơ
               </Button>
             </div>
           </div>

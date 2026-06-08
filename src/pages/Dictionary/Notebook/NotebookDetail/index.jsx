@@ -4,7 +4,6 @@ import classNames from "classnames/bind";
 import styles from "../Notebook.module.scss";
 import notebookService from "~/services/notebookService";
 
-import Button from "~/components/Button";
 import Input from "~/components/Input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -430,13 +429,16 @@ function NotebookDetail() {
                   <FontAwesomeIcon icon={faPlus} />
                   <span>Thêm từ mới</span>
                 </button>
-                <Button
-                  outline
-                  to={`/dictionary/notebook/${notebookId}/flashcards`}
-                  className={"orange"}
+                <button
+                  type="button"
+                  className={cx("flashcard-btn")}
+                  onClick={() =>
+                    navigate(`/dictionary/notebook/${notebookId}/flashcards`)
+                  }
+                  disabled={loading}
                 >
                   Luyện tập Flashcard
-                </Button>
+                </button>
               </div>
 
               {showAddWord && (
