@@ -67,6 +67,7 @@ function LearningPathProgress() {
   const weekTasks = data?.weekTasks || [];
   const weekProgress = data?.weekProgress || {};
   const weekPercent = Math.min(Math.max(Number(weekProgress.percent) || 0, 0), 100);
+  const generationSource = data?.generationSource === "ai" ? "ai" : "fallback";
 
   return (
     <main className={cx("wrapper")}>
@@ -135,7 +136,12 @@ function LearningPathProgress() {
                   <h2>Nhiệm vụ học tập</h2>
                   <p>{weekTasks.length} mục được AI đề xuất cho tuần này</p>
                 </div>
-                <span className={cx("panelBadge")}>{weekPercent}% hoàn thành</span>
+                <div className={cx("panelBadges")}>
+                  <span className={cx("panelBadge", { fallbackBadge: generationSource === "fallback" })}>
+                    {generationSource === "ai" ? "Tạo bởi AI" : "Kế hoạch dự phòng"}
+                  </span>
+                  <span className={cx("panelBadge")}>{weekPercent}% hoàn thành</span>
+                </div>
               </div>
 
               {weekTasks.length === 0 ? (
@@ -212,3 +218,5 @@ function LearningPathProgress() {
 }
 
 export default LearningPathProgress;
+
+
