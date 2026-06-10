@@ -115,7 +115,8 @@
 }
 
 .summaryCard,
-.panel {
+.panel,
+.reviewPanel {
   border: 1px solid #edf2f4;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.92);
@@ -171,8 +172,132 @@
   background: linear-gradient(90deg, var(--primary), var(--primary-hover));
 }
 
-.panel {
+.panel,
+.reviewPanel {
   padding: 22px;
+}
+
+.reviewPanel {
+  margin-bottom: 18px;
+}
+
+.reviewHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.reviewHeader h2 {
+  margin: 0;
+  color: var(--text-high);
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.reviewHeader p {
+  max-width: 640px;
+  margin: 4px 0 0;
+  color: var(--grey);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.reviewBtn {
+  flex-shrink: 0;
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 15px;
+  background: var(--primary);
+  color: #ffffff;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 135, 154, 0.18);
+  transition:
+    transform 0.16s ease,
+    background 0.16s ease,
+    opacity 0.16s ease;
+}
+
+.reviewBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--primary-hover);
+}
+
+.reviewBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.reviewBody {
+  display: grid;
+  gap: 12px;
+}
+
+.reviewMeta {
+  color: var(--grey);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.assessment {
+  margin: 0;
+  color: var(--text-high);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.suggestionList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.suggestionCard {
+  border: 1px solid rgba(0, 135, 154, 0.12);
+  border-radius: 12px;
+  padding: 13px;
+  background: rgba(0, 135, 154, 0.04);
+}
+
+.suggestionTitle {
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.suggestionCard p {
+  margin: 6px 0 0;
+  color: var(--grey);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.reviewEmpty,
+.reviewError {
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.reviewEmpty {
+  background: #f8fafb;
+  color: var(--grey);
+}
+
+.reviewError {
+  margin-bottom: 12px;
+  background: rgba(252, 95, 0, 0.1);
+  color: #b94600;
 }
 
 .panelHeader {
@@ -208,12 +333,6 @@
   white-space: nowrap;
 }
 
-.panelBadges {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
 .panelBadges {
   display: flex;
   flex-wrap: wrap;
