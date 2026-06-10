@@ -76,6 +76,12 @@ export async function generateLearningPath(payload) {
   });
 }
 
+export async function reviewLearningPath() {
+  return request("/learning-path/review", {
+    method: "POST",
+  });
+}
+
 const learningPathService = {
   getPlacementQuestions,
   getLearningPathStatus,
@@ -86,6 +92,7 @@ const learningPathService = {
   updateJlptCardStatus,
   submitPlacement,
   generateLearningPath,
+  reviewLearningPath,
 };
 
 export default learningPathService;

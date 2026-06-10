@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 
 import styles from "./LearningPathProgress.module.scss";
-import { getLearningPathDashboard } from "~/services/learningPathService";
+import { getLearningPathDashboard, reviewLearningPath } from "~/services/learningPathService";
 
 const cx = classNames.bind(styles);
 
@@ -15,6 +15,24 @@ const skillMeta = {
   jlpt_exam: { icon: "📋", label: "Đề JLPT" },
   reading: { icon: "📖", label: "Đọc hiểu" },
   writing: { icon: "✍️", label: "Viết" },
+};
+
+const suggestionTypeLabels = {
+  speed_up: "Có thể tăng tốc",
+  slow_down: "Nên giảm tải",
+  focus_skill: "Tập trung kỹ năng",
+  add_review: "Thêm ôn tập",
+};
+
+const formatReviewDate = (value) => {
+  if (!value) return "Chưa có đánh giá";
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 };
 
 const getTaskHref = (task, level) => {
@@ -45,6 +63,8 @@ function LearningPathProgress() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState("");
 
   const loadProgress = useCallback(async () => {
     try {
@@ -63,6 +83,24 @@ function LearningPathProgress() {
   useEffect(() => {
     loadProgress();
   }, [loadProgress]);
+
+  const handleReview = async () => {
+    try {
+      setReviewLoading(true);
+      setReviewError("");
+      const result = await reviewLearningPath();
+      setData((current) => ({
+        ...current,
+        lastReview: result.lastReview,
+        reviewStats: result.stats,
+      }));
+    } catch (err) {
+      console.error("Failed to review learning path:", err);
+      setReviewError("Không tạo được đánh giá lộ trình. Vui lòng thử lại sau.");
+    } finally {
+      setReviewLoading(false);
+    }
+  };
 
   const weekTasks = data?.weekTasks || [];
   const weekProgress = data?.weekProgress || {};
@@ -128,6 +166,49 @@ function LearningPathProgress() {
                   <span style={{ width: `${weekPercent}%` }} />
                 </div>
               </div>
+            </section>
+
+            <section className={cx("reviewPanel")}>
+              <div className={cx("reviewHeader")}>
+                <div>
+                  <h2>Đánh giá lộ trình bằng AI</h2>
+                  <p>Cập nhật sau 7–14 ngày học để biết nên tăng tốc, giảm tải hoặc tập trung kỹ năng nào.</p>
+                </div>
+                <button
+                  type="button"
+                  className={cx("reviewBtn")}
+                  onClick={handleReview}
+                  disabled={reviewLoading}
+                >
+                  {reviewLoading ? "Đang đánh giá..." : data?.lastReview ? "Đánh giá lại" : "Tạo đánh giá"}
+                </button>
+              </div>
+
+              {reviewError && <div className={cx("reviewError")}>{reviewError}</div>}
+
+              {data?.lastReview ? (
+                <div className={cx("reviewBody")}>
+                  <div className={cx("reviewMeta")}>Lần đánh giá gần nhất: {formatReviewDate(data.lastReview.reviewedAt)}</div>
+                  <p className={cx("assessment")}>{data.lastReview.assessment}</p>
+                  {data.lastReview.suggestions?.length > 0 && (
+                    <div className={cx("suggestionList")}>
+                      {data.lastReview.suggestions.map((suggestion, index) => (
+                        <article key={`${suggestion.type}-${suggestion.skill || index}`} className={cx("suggestionCard")}>
+                          <div className={cx("suggestionTitle")}>
+                            {suggestionTypeLabels[suggestion.type] || "Gợi ý"}
+                            {suggestion.skill && skillMeta[suggestion.skill]?.label ? ` · ${skillMeta[suggestion.skill].label}` : ""}
+                          </div>
+                          <p>{suggestion.reason}</p>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className={cx("reviewEmpty")}>
+                  Chưa có đánh giá nào. Khi bạn đã học được vài ngày, hãy tạo đánh giá để AI đề xuất điều chỉnh phù hợp.
+                </div>
+              )}
             </section>
 
             <section className={cx("panel")}>
