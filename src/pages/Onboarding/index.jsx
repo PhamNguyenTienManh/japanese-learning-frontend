@@ -278,7 +278,7 @@ function Onboarding() {
       if (warnings.length) {
         addToast(warnings[0], "warning");
       }
-      addToast("Đã tạo lộ trình học cá nhân hóa!", "success");
+      addToast(warnings.length ? "Đã tạo lộ trình bằng kế hoạch dự phòng." : "AI đã tạo lộ trình học cá nhân hóa!", "success");
       navigate("/dashboard/learning-path");
     } catch (err) {
       setError(err?.response?.data?.message || err?.message || "Không tạo được lộ trình.");
@@ -536,7 +536,7 @@ function Onboarding() {
             <span className={cx("sectionKicker")}>Cá nhân hóa</span>
             <h2 className={cx("sectionTitle")}>Thiết lập lộ trình</h2>
             <p className={cx("sectionHint")}>
-              Mục tiêu: {selectedGoalTitles} · Trình độ bắt đầu: {level}
+              Mục tiêu: {selectedGoalTitles} · Trình độ bắt đầu: {level}. Gemini sẽ cạnh chỉnh task theo thời gian học của bạn.
             </p>
           </div>
           <div className={cx("setupBadge")}>
@@ -622,7 +622,7 @@ function Onboarding() {
             onClick={handleGenerate}
             disabled={!canGenerate}
           >
-            {generating ? "AI đang tạo lộ trình..." : "Tạo lộ trình của tôi"}
+            {generating ? "Đang tạo weekly plan..." : "Tạo lộ trình bằng AI"}
           </button>
         </div>
       </div>
@@ -671,3 +671,4 @@ function Onboarding() {
 }
 
 export default Onboarding;
+

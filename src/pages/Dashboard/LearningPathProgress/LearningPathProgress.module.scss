@@ -208,11 +208,28 @@
   white-space: nowrap;
 }
 
+.panelBadges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.panelBadges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
 .panelBadge {
   min-height: 30px;
   padding: 0 12px;
   background: rgba(0, 135, 154, 0.08);
   color: var(--primary);
+}
+
+.fallbackBadge {
+  background: rgba(252, 95, 0, 0.1);
+  color: #b94600;
 }
 
 .taskList {
@@ -468,3 +485,4 @@
     margin-left: 0;
   }
 }
+
