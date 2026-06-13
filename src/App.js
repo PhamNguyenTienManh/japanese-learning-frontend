@@ -10,6 +10,7 @@ import useTextSelection from "./hooks/useTextSelection";
 import SelectionIcon from "./components/SelectionIcon";
 import TranslateModal from "./components/TranslateModal";
 import FloatingAIChatIcon from "./components/FloatingAIChatIcon";
+import LearningPathReviewPrompt from "./components/LearningPathReviewPrompt";
 import { translateArgos } from "./services/traslate";
 // import { RequireAuth, RequireAdmin } from "~/components/Auth";
 
@@ -246,6 +247,7 @@ function App() {
       <div className="App">
         <ScrollToTop />
         <AnimatedRoutes />
+        <LearningPathReviewPrompt />
         <FloatingAIChatIcon />
         {!modalState.isOpen && (
           <SelectionIcon selection={selection} onClick={handleLookup} />
