@@ -368,11 +368,7 @@ function AdminConversation() {
       <div className="mx-auto flex max-w-7xl flex-col gap-5">
         <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="inline-flex min-h-8 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm">
-              <MessageSquareText size={16} aria-hidden="true" />
-              Quản lý hội thoại
-            </div>
-            <h1 className="m-0 mt-3 text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">
+            <h1 className="m-0 text-[28px] font-extrabold leading-[1.2] text-[#0f172a]">
               Nội dung luyện hội thoại
             </h1>
             <p className="m-0 mt-2 text-sm font-medium text-slate-500">

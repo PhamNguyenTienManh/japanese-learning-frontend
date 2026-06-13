@@ -1,4 +1,4 @@
-import { History, Lock, LockOpen } from "lucide-react";
+import { Edit3, History } from "lucide-react";
 import {
   USER_ROLES,
   USER_STATUS,
@@ -6,7 +6,7 @@ import {
 } from "~/services/userConstants";
 import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
 
-function UserTableRow({ user, onToggleStatus, onChangeRole, onViewActivity }) {
+function UserTableRow({ user, onViewActivity, onEditUser }) {
   const isBanned = user.status === USER_STATUS.BANNED;
   const premiumExpiredAt = user.premium_expired_date
     ? new Date(user.premium_expired_date)
@@ -38,14 +38,9 @@ function UserTableRow({ user, onToggleStatus, onChangeRole, onViewActivity }) {
       </td>
 
       <td className="border-b border-slate-200 px-4 py-4 align-middle">
-        <select
-          value={user.role || USER_ROLES.STUDENT}
-          onChange={(e) => onChangeRole(user._id, e.target.value)}
-          className="h-9 cursor-pointer rounded-xl border-[1.5px] border-slate-200 bg-white px-3 text-xs font-extrabold text-slate-800 shadow-[0_1px_2px_rgba(16,24,40,0.04)] outline-none transition hover:border-blue-200 hover:bg-blue-50/30 focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
-        >
-          <option value={USER_ROLES.STUDENT}>Học viên</option>
-          <option value={USER_ROLES.ADMIN}>Quản trị viên</option>
-        </select>
+        <span className="inline-flex min-h-7 items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
+          {user.role === USER_ROLES.ADMIN ? "Quản trị viên" : "Học viên"}
+        </span>
       </td>
 
       <td className="border-b border-slate-200 px-4 py-4 align-middle">
@@ -89,34 +84,27 @@ function UserTableRow({ user, onToggleStatus, onChangeRole, onViewActivity }) {
         {new Date(user.registeredAt || user.createdAt).toLocaleDateString("vi-VN")}
       </td>
 
-      <td className="border-b border-slate-200 px-4 py-4 align-middle">
-        <button
-          type="button"
-          onClick={() => onViewActivity(user)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-xl border-[1.5px] border-blue-100 bg-white px-3 text-xs font-extrabold text-slate-700 shadow-sm transition hover:-translate-y-px hover:border-blue-600 hover:bg-blue-600 hover:text-white hover:shadow-[0_8px_16px_-10px_rgba(37,99,235,0.45)]"
-        >
-          <History size={14} aria-hidden="true" />
-          Xem lịch sử
-        </button>
-      </td>
-
       <td className="border-b border-slate-200 px-4 py-4 text-right align-middle">
-        <button
-          type="button"
-          onClick={() => onToggleStatus(user._id, user.status)}
-          className={`inline-flex h-9 items-center gap-1.5 rounded-xl border-[1.5px] px-3 text-xs font-extrabold shadow-sm transition hover:-translate-y-px ${
-            isBanned
-              ? "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
-              : "border-rose-200 bg-white text-rose-700 hover:bg-rose-50"
-          }`}
-        >
-          {isBanned ? (
-            <LockOpen size={14} aria-hidden="true" />
-          ) : (
-            <Lock size={14} aria-hidden="true" />
-          )}
-          {isBanned ? "Mở khóa" : "Cấm"}
-        </button>
+        <div className="inline-flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onViewActivity(user)}
+            className="inline-grid h-9 w-9 place-items-center rounded-xl border-[1.5px] border-blue-100 bg-white text-slate-700 shadow-sm transition hover:-translate-y-px hover:border-blue-600 hover:bg-blue-600 hover:text-white"
+            aria-label="Xem lịch sử người dùng"
+            title="Xem lịch sử"
+          >
+            <History size={15} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onEditUser(user)}
+            className="inline-grid h-9 w-9 place-items-center rounded-xl border-[1.5px] border-slate-200 bg-white text-slate-700 shadow-sm transition hover:-translate-y-px hover:border-slate-900 hover:bg-slate-950 hover:text-white"
+            aria-label="Sửa người dùng"
+            title="Sửa người dùng"
+          >
+            <Edit3 size={15} aria-hidden="true" />
+          </button>
+        </div>
       </td>
     </tr>
   );

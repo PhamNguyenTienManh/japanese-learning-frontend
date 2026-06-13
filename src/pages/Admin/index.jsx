@@ -430,7 +430,6 @@ function Admin() {
     <div className={cx("page")}>
       <header className={cx("header")}>
         <div>
-          <span className={cx("eyebrow")}>Vận hành hệ thống</span>
           <h1>Bảng quản trị</h1>
           <p>Tổng quan người học, học liệu, đề thi, cộng đồng và dịch vụ Pro.</p>
         </div>
