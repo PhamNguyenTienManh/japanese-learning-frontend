@@ -9,76 +9,78 @@ import {
 
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
-const wrapperClass = "min-h-screen bg-[radial-gradient(circle_at_12%_10%,rgba(0,135,154,0.12),transparent_30%),radial-gradient(circle_at_88%_12%,rgba(252,95,0,0.08),transparent_28%),linear-gradient(180deg,#f0fbf7_0%,#f7fbfb_52%,#ffffff_100%)] px-5 pt-8 pb-16 max-[780px]:px-3.5 max-[780px]:pt-5 max-[780px]:pb-11";
+const wrapperClass = "min-h-screen bg-[radial-gradient(circle_at_14%_8%,rgba(0,135,154,0.14),transparent_30%),radial-gradient(circle_at_86%_10%,rgba(252,95,0,0.1),transparent_26%),linear-gradient(180deg,#f0fbf7_0%,#f8fbfb_54%,#ffffff_100%)] px-5 pt-8 pb-16 max-[780px]:px-3.5 max-[780px]:pt-5 max-[780px]:pb-11";
 const containerClass = "mx-auto w-[min(1120px,100%)]";
-const heroClass = "relative mb-[22px] flex items-center justify-between gap-6 overflow-hidden rounded-[18px] border border-[rgba(255,255,255,0.26)] bg-[linear-gradient(135deg,var(--primary)_0%,#006d7d_100%)] p-[30px] shadow-[0_22px_52px_rgba(0,109,125,0.18)] before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_86%_18%,rgba(255,255,255,0.16),transparent_28%),linear-gradient(90deg,rgba(255,255,255,0.08),transparent_56%)] before:content-[''] max-[780px]:flex-col max-[780px]:items-stretch max-[780px]:p-6 max-[480px]:rounded-2xl";
-const heroContentClass = "relative z-[1] max-w-[720px]";
-const eyebrowClass = "inline-flex min-h-7 items-center rounded-full border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.14)] px-3 text-xs font-black uppercase tracking-[0.08em] text-white";
-const titleClass = "my-0 mt-3.5 mb-2 text-[clamp(28px,4vw,42px)] leading-[1.08] tracking-normal text-white max-[480px]:text-[28px]";
-const subtitleClass = "m-0 max-w-[640px] text-[15px] font-semibold leading-[1.7] text-[rgba(255,255,255,0.82)]";
-const baseButtonClass = "min-h-[42px] cursor-pointer rounded-[10px] border-0 px-4 font-black transition-[transform,box-shadow,background] duration-150 ease-[ease] hover:-translate-y-px";
-const regenerateBtnClass = cn(baseButtonClass, "relative z-[1] shrink-0 bg-white text-primary shadow-[0_14px_28px_rgba(0,0,0,0.12)] max-[780px]:w-full");
-const overviewClass = "mb-[18px] grid grid-cols-3 gap-3.5 max-[780px]:grid-cols-1";
-const cardShellClass = "rounded-2xl border border-[#edf2f4] bg-[rgba(255,255,255,0.92)] shadow-[0_18px_46px_rgba(16,42,45,0.08)]";
-const summaryCardClass = cn(cardShellClass, "min-h-[132px] p-5 max-[480px]:rounded-[14px]");
-const summaryLabelClass = "text-xs font-black uppercase tracking-[0.04em] text-grey";
-const summaryValueClass = "mt-2 text-[34px] font-[950] leading-none text-text-high";
-const summaryHintClass = "mt-2 mb-0 text-[13px] font-bold text-grey";
-const progressSummaryClass = "bg-[linear-gradient(135deg,rgba(0,135,154,0.08),rgba(0,135,154,0.02)),#ffffff]";
-const miniTrackClass = "mt-4 h-[9px] overflow-hidden rounded-full bg-[#e8edf0]";
-const progressGradientClass = "block h-full rounded-[inherit] bg-[linear-gradient(90deg,var(--primary),var(--primary-hover))]";
-const panelClass = cn(cardShellClass, "p-[22px] max-[780px]:p-[18px] max-[480px]:rounded-[14px]");
-const reviewPanelClass = cn(panelClass, "mb-[18px]");
-const reviewHeaderClass = "mb-4 flex items-start justify-between gap-4";
-const sectionTitleClass = "m-0 text-xl leading-[1.25] text-text-high";
-const sectionDescriptionClass = "mt-1 mb-0 max-w-[640px] text-[13px] font-bold leading-[1.6] text-grey";
-const reviewBtnClass = "min-h-10 shrink-0 cursor-pointer rounded-[10px] border-0 bg-primary px-[15px] font-black text-white shadow-[0_10px_24px_rgba(0,135,154,0.18)] transition-[transform,background,opacity] duration-150 ease-[ease] hover:not-disabled:-translate-y-px hover:not-disabled:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-[0.68]";
-const reviewBodyClass = "grid gap-3";
-const reviewMetaRowClass = "flex items-center justify-between gap-2.5";
-const reviewMetaClass = "text-xs font-black text-grey";
-const reviewStatusClass = "inline-flex min-h-7 items-center whitespace-nowrap rounded-full bg-[rgba(16,185,129,0.12)] px-[11px] text-xs font-[950] text-[#047857]";
-const reviewStatusWarningClass = "bg-[rgba(252,95,0,0.1)] text-[#b94600]";
-const assessmentClass = "m-0 text-[15px] font-bold leading-[1.7] text-text-high";
-const suggestionListClass = "grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-2.5";
-const suggestionCardClass = "rounded-xl border border-[rgba(0,135,154,0.12)] bg-[rgba(0,135,154,0.04)] p-[13px]";
-const suggestionTitleClass = "text-xs font-[950] uppercase tracking-[0.03em] text-primary";
-const suggestionTextClass = "mt-1.5 mb-0 text-[13px] font-bold leading-[1.55] text-grey";
-const adjustedBlockClass = "grid gap-2.5 rounded-[14px] bg-[#f8fafb] p-3.5";
-const adjustedTitleClass = "text-[13px] font-[950] text-text-high";
-const adjustedListClass = "grid gap-2";
-const adjustedItemClass = "grid gap-[3px] rounded-[11px] border border-[#e7eef0] bg-white p-[11px]";
-const adjustedSkillClass = "text-[11px] font-[950] uppercase tracking-[0.04em] text-primary";
-const adjustedItemTitleClass = "text-sm leading-[1.35] text-text-high";
-const adjustedMetaClass = "text-xs font-extrabold text-grey";
-const reviewActionsClass = "flex flex-wrap justify-end gap-2.5";
-const keepBtnClass = "min-h-10 cursor-pointer rounded-[10px] border border-[#dbe7ea] bg-white px-[15px] font-black text-text-high transition-[transform,border-color,color,opacity] duration-150 ease-[ease] hover:not-disabled:-translate-y-px hover:not-disabled:border-[rgba(0,135,154,0.35)] hover:not-disabled:text-primary disabled:cursor-not-allowed disabled:opacity-[0.68]";
-const messageBoxBaseClass = "rounded-xl p-3.5 text-[13px] font-bold leading-[1.6]";
-const reviewEmptyClass = cn(messageBoxBaseClass, "bg-[#f8fafb] text-grey");
-const reviewErrorClass = cn(messageBoxBaseClass, "mb-3 bg-[rgba(252,95,0,0.1)] text-[#b94600]");
-const applySuccessClass = cn(messageBoxBaseClass, "bg-[rgba(16,185,129,0.12)] text-[#047857]");
-const panelHeaderClass = "mb-[18px] flex items-start justify-between gap-4 max-[780px]:flex-col";
-const panelBadgesClass = "flex flex-wrap justify-end gap-2";
-const pillBaseClass = "inline-flex items-center justify-center whitespace-nowrap rounded-full text-xs font-black";
-const panelBadgeClass = cn(pillBaseClass, "min-h-[30px] bg-[rgba(0,135,154,0.08)] px-3 text-primary");
+const topBarClass = "mb-5 flex items-center justify-between gap-5 rounded-[24px] border border-white/70 bg-[rgba(255,255,255,0.78)] p-5 shadow-[0_18px_48px_rgba(16,42,45,0.08)] backdrop-blur-[14px] max-[780px]:flex-col max-[780px]:items-stretch max-[480px]:rounded-[18px]";
+const eyebrowClass = "mb-2 inline-flex min-h-7 items-center rounded-full bg-[rgba(0,135,154,0.1)] px-3 text-xs font-black uppercase tracking-[0.08em] text-primary";
+const titleClass = "m-0 text-[clamp(30px,4.8vw,48px)] font-[950] leading-[1.05] tracking-[-0.03em] text-text-high";
+const subtitleClass = "mt-2 mb-0 max-w-[680px] text-[15px] font-bold leading-[1.7] text-grey";
+const baseButtonClass = "min-h-[42px] cursor-pointer rounded-[12px] border-0 px-4 font-black transition-[transform,box-shadow,background,border-color,color,opacity] duration-150 ease-[ease] hover:not-disabled:-translate-y-px disabled:cursor-not-allowed disabled:opacity-[0.68]";
+const regenerateBtnClass = cn(baseButtonClass, "shrink-0 bg-white text-primary shadow-[0_12px_28px_rgba(0,135,154,0.12)] ring-1 ring-[rgba(0,135,154,0.12)] hover:bg-[rgba(0,135,154,0.06)] max-[780px]:w-full");
+const mainGridClass = "grid grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)] gap-5 max-[980px]:grid-cols-1";
+const cardShellClass = "rounded-[24px] border border-[#edf2f4] bg-[rgba(255,255,255,0.94)] shadow-[0_18px_46px_rgba(16,42,45,0.08)] max-[480px]:rounded-[18px]";
+const todayCardClass = cn(cardShellClass, "relative overflow-hidden p-6 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-1.5 before:bg-[linear-gradient(90deg,var(--primary),var(--orange))] max-[780px]:p-5");
+const sideStackClass = "grid content-start gap-5";
+const panelClass = cn(cardShellClass, "p-5 max-[780px]:p-[18px]");
+const sectionHeaderClass = "mb-4 flex items-start justify-between gap-4 max-[640px]:flex-col";
+const sectionTitleClass = "m-0 text-[22px] font-[950] leading-[1.2] tracking-[-0.01em] text-text-high";
+const sectionDescriptionClass = "mt-1.5 mb-0 max-w-[640px] text-[13px] font-bold leading-[1.65] text-grey";
+const pillBaseClass = "inline-flex min-h-[30px] items-center justify-center whitespace-nowrap rounded-full px-3 text-xs font-black";
+const panelBadgeClass = cn(pillBaseClass, "bg-[rgba(0,135,154,0.08)] text-primary");
 const fallbackBadgeClass = "bg-[rgba(252,95,0,0.1)] text-[#b94600]";
-const taskListClass = "grid gap-3";
-const taskCardClass = "rounded-[14px] border border-[#e7eef0] bg-white p-[18px] transition-[border-color,box-shadow,transform] duration-150 ease-[ease] hover:-translate-y-px hover:border-[rgba(0,135,154,0.28)] hover:shadow-[0_16px_32px_rgba(16,42,45,0.08)]";
-const taskTopClass = "grid grid-cols-[52px_minmax(0,1fr)_auto] items-start gap-3.5 max-[780px]:flex max-[780px]:flex-wrap max-[780px]:items-start";
-const iconClass = "inline-flex h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-[linear-gradient(135deg,rgba(0,135,154,0.12),rgba(0,135,154,0.04))] text-[23px]";
-const taskInfoClass = "min-w-0 max-[780px]:flex-[1_1_220px]";
-const taskLabelRowClass = "mb-1.5 flex flex-wrap gap-2 text-[11px] font-black uppercase tracking-[0.04em] text-primary";
-const taskTitleClass = "m-0 text-[17px] font-[950] leading-[1.35] text-text-high";
-const taskMetaClass = "mt-[5px] mb-0 text-[13px] font-bold leading-normal text-grey";
-const badgeClass = cn(pillBaseClass, "min-h-[30px] bg-[rgba(0,135,154,0.08)] px-2.5 text-primary max-[780px]:ml-[66px] max-[480px]:ml-0");
-const badgeDoneClass = "bg-[rgba(16,185,129,0.12)] text-[#047857]";
-const progressBlockClass = "mt-4 rounded-xl bg-[#f8fafb] p-[13px]";
+const todayListClass = "grid gap-3.5";
+const weekListClass = "grid gap-3";
+const todayTaskClass = "rounded-[20px] border border-[rgba(0,135,154,0.12)] bg-[linear-gradient(135deg,#ffffff_0%,#f7fcfb_100%)] p-5 shadow-[0_14px_30px_rgba(16,42,45,0.07)] transition-[border-color,box-shadow,transform] duration-150 ease-[ease] hover:-translate-y-px hover:border-[rgba(0,135,154,0.28)] hover:shadow-[0_18px_38px_rgba(16,42,45,0.1)]";
+const weekTaskClass = "rounded-[16px] border border-[#e7eef0] bg-white p-4 transition-[border-color,box-shadow,transform] duration-150 ease-[ease] hover:-translate-y-px hover:border-[rgba(0,135,154,0.24)] hover:shadow-[0_14px_28px_rgba(16,42,45,0.07)]";
+const taskTopClass = "flex items-start justify-between gap-4 max-[640px]:flex-col";
+const taskSkillClass = "mb-2 flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-[0.05em] text-primary";
+const skillMarkClass = "text-lg leading-none";
+const taskTitleClass = "m-0 text-[18px] font-[950] leading-[1.35] text-text-high";
+const weekTaskTitleClass = "m-0 text-base font-[950] leading-[1.35] text-text-high";
+const taskMetaClass = "mt-1.5 mb-0 text-[13px] font-bold leading-[1.55] text-grey";
+const timeBadgeClass = cn(pillBaseClass, "bg-[rgba(252,95,0,0.1)] text-[#b94600]");
+const doneBadgeClass = "bg-[rgba(16,185,129,0.12)] text-[#047857]";
+const progressBlockClass = "mt-4 rounded-[14px] bg-[#f8fafb] p-3.5";
 const progressMetaClass = "mb-2 flex justify-between gap-3 text-xs font-black text-grey";
 const progressTrackClass = "h-[9px] overflow-hidden rounded-full bg-[#e4ebee]";
 const progressFillClass = "h-full rounded-[inherit] bg-[linear-gradient(90deg,var(--primary),var(--primary-hover))] transition-[width] duration-[240ms] ease-[ease]";
 const progressFillDoneClass = "bg-[linear-gradient(90deg,#10b981,#34d399)]";
-const taskActionsClass = "mt-3.5 flex justify-end max-[780px]:justify-stretch";
-const startBtnClass = cn(baseButtonClass, "bg-primary text-white shadow-[0_10px_24px_rgba(0,135,154,0.18)] hover:bg-primary-hover max-[780px]:w-full");
-const stateClass = "grid justify-items-center gap-2.5 rounded-2xl border border-dashed border-[#dce7e8] bg-[rgba(255,255,255,0.9)] px-[22px] py-[34px] text-center font-bold text-grey shadow-[0_14px_34px_rgba(16,42,45,0.06)]";
+const taskActionsClass = "mt-4 flex justify-end max-[640px]:justify-stretch";
+const startBtnClass = cn(baseButtonClass, "bg-primary text-white shadow-[0_10px_24px_rgba(0,135,154,0.18)] hover:bg-primary-hover max-[640px]:w-full");
+const progressPanelClass = cn(panelClass, "bg-[linear-gradient(135deg,rgba(0,135,154,0.08),rgba(252,95,0,0.04)),#ffffff]");
+const statsGridClass = "grid grid-cols-3 gap-2.5";
+const statBoxClass = "rounded-[16px] bg-white/80 p-3 text-center ring-1 ring-[#edf2f4]";
+const statLabelClass = "text-[11px] font-black uppercase tracking-[0.05em] text-grey";
+const statValueClass = "mt-1 text-2xl font-[950] leading-none text-text-high";
+const weeklyTrackClass = "mt-4 h-3 overflow-hidden rounded-full bg-white ring-1 ring-[#e1ecee]";
+const weeklyFillClass = "block h-full rounded-[inherit] bg-[linear-gradient(90deg,var(--primary),var(--orange))]";
+const reviewPanelClass = cn(panelClass, "grid gap-3.5");
+const reviewBtnClass = cn(baseButtonClass, "bg-primary text-white shadow-[0_10px_24px_rgba(0,135,154,0.18)] hover:bg-primary-hover");
+const reviewMetaRowClass = "flex items-center justify-between gap-2.5 max-[640px]:items-start max-[640px]:flex-col";
+const reviewMetaClass = "text-xs font-black text-grey";
+const reviewStatusClass = cn(pillBaseClass, "bg-[rgba(16,185,129,0.12)] text-[#047857]");
+const reviewStatusWarningClass = "bg-[rgba(252,95,0,0.1)] text-[#b94600]";
+const assessmentClass = "m-0 text-[14px] font-bold leading-[1.7] text-text-high";
+const suggestionListClass = "grid gap-2";
+const suggestionCardClass = "rounded-[14px] border border-[rgba(0,135,154,0.12)] bg-[rgba(0,135,154,0.04)] p-3";
+const suggestionTitleClass = "text-xs font-[950] uppercase tracking-[0.03em] text-primary";
+const suggestionTextClass = "mt-1.5 mb-0 text-[13px] font-bold leading-[1.55] text-grey";
+const adjustedBlockClass = "grid gap-2.5 rounded-[16px] bg-[#f8fafb] p-3.5";
+const adjustedTitleClass = "text-[13px] font-[950] text-text-high";
+const adjustedListClass = "grid gap-2";
+const adjustedItemClass = "grid gap-[3px] rounded-[12px] border border-[#e7eef0] bg-white p-3";
+const adjustedSkillClass = "text-[11px] font-[950] uppercase tracking-[0.04em] text-primary";
+const adjustedItemTitleClass = "text-sm leading-[1.35] text-text-high";
+const adjustedMetaClass = "text-xs font-extrabold text-grey";
+const reviewActionsClass = "flex flex-wrap justify-end gap-2.5";
+const keepBtnClass = cn(baseButtonClass, "border border-[#dbe7ea] bg-white text-text-high hover:border-[rgba(0,135,154,0.35)] hover:text-primary");
+const messageBoxBaseClass = "rounded-[16px] p-3.5 text-[13px] font-bold leading-[1.6]";
+const reviewEmptyClass = cn(messageBoxBaseClass, "bg-[#f8fafb] text-grey");
+const reviewErrorClass = cn(messageBoxBaseClass, "bg-[rgba(252,95,0,0.1)] text-[#b94600]");
+const applySuccessClass = cn(messageBoxBaseClass, "bg-[rgba(16,185,129,0.12)] text-[#047857]");
+const lowerSectionClass = "mt-5";
+const panelBadgesClass = "flex flex-wrap justify-end gap-2";
+const stateClass = "grid justify-items-center gap-2.5 rounded-[22px] border border-dashed border-[#dce7e8] bg-[rgba(255,255,255,0.9)] px-[22px] py-[34px] text-center font-bold text-grey shadow-[0_14px_34px_rgba(16,42,45,0.06)]";
 const emptyTasksClass = stateClass;
 const stateTitleClass = "text-base text-text-high";
 const stateTextClass = "m-0 max-w-[520px] leading-[1.6]";
@@ -211,21 +213,79 @@ function LearningPathProgress() {
   };
 
   const weekTasks = data?.weekTasks || [];
+  const todayTasks = data?.todayTasks || [];
   const weekProgress = data?.weekProgress || {};
   const weekPercent = Math.min(Math.max(Number(weekProgress.percent) || 0, 0), 100);
   const generationSource = data?.generationSource === "ai" ? "ai" : "fallback";
   const adjustedWeeklyItems = data?.lastReview?.adjustedWeeklyItems || [];
   const canApplyReview = adjustedWeeklyItems.length > 0 && !reviewDismissed;
+  const dailyMinutes = data?.goal?.dailyMinutes || 30;
+
+  const renderTaskCard = (task, keyPrefix = "task", variant = "week") => {
+    const meta = skillMeta[task.skill] || { icon: "", label: task.skill };
+    const progress = task.progress || {
+      count: task.completedAt ? task.targetCount || 1 : 0,
+      target: task.targetCount || 1,
+      percent: task.completedAt ? 100 : 0,
+      label: `${task.completedAt ? task.targetCount || 1 : 0}/${task.targetCount || 1} mục`,
+    };
+    const progressPercent = Math.min(Math.max(Number(progress.percent) || 0, 0), 100);
+    const href = getTaskHref(task, data.level);
+    const isDone = Boolean(task.completedAt || progress.isComplete);
+    const isToday = variant === "today";
+
+    return (
+      <article key={`${keyPrefix}-${task.skill}-${task.order}`} className={isToday ? todayTaskClass : weekTaskClass}>
+        <div className={taskTopClass}>
+          <div>
+            <div className={taskSkillClass}>
+              {meta.icon && <span className={skillMarkClass}>{meta.icon}</span>}
+              <span>{meta.label}</span>
+            </div>
+            <h3 className={isToday ? taskTitleClass : weekTaskTitleClass}>{task.title || meta.label}</h3>
+            <p className={taskMetaClass}>{progress.requirement || progress.label}</p>
+          </div>
+          <span className={cn(timeBadgeClass, isDone && doneBadgeClass)}>
+            {isDone ? "Hoàn thành" : `${task.estimatedMinutes || 15} phút`}
+          </span>
+        </div>
+
+        <div className={progressBlockClass}>
+          <div className={progressMetaClass}>
+            <span>{progress.label}</span>
+            <span>{progressPercent}%</span>
+          </div>
+          <div className={progressTrackClass}>
+            <div
+              className={cn(progressFillClass, isDone && progressFillDoneClass)}
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          {progress.latestScore !== null && progress.latestScore !== undefined && (
+            <p className={taskMetaClass}>Điểm cao nhất tuần này: {progress.latestScore}</p>
+          )}
+        </div>
+
+        {href && (
+          <div className={taskActionsClass}>
+            <button type="button" className={startBtnClass} onClick={() => navigate(href)}>
+              {isDone ? "Tiếp tục luyện" : "Bắt đầu"}
+            </button>
+          </div>
+        )}
+      </article>
+    );
+  };
 
   return (
     <main className={wrapperClass}>
       <div className={containerClass}>
-        <header className={heroClass}>
-          <div className={heroContentClass}>
+        <header className={topBarClass}>
+          <div>
             <div className={eyebrowClass}>Lộ trình cá nhân</div>
-            <h1 className={titleClass}>Kế hoạch học tuần này</h1>
+            <h1 className={titleClass}>Hôm nay học gì?</h1>
             <p className={subtitleClass}>
-              Theo dõi các mục AI đã lên lịch, mức hoàn thành từng kỹ năng và bắt đầu bài học đúng nơi trong hệ thống.
+              Tập trung vào các nhiệm vụ quan trọng nhất trong khoảng {dailyMinutes} phút học hôm nay, rồi xem phần còn lại của tuần ở bên dưới.
             </p>
           </div>
           <button type="button" className={regenerateBtnClass} onClick={() => navigate("/onboarding")}>
@@ -256,126 +316,148 @@ function LearningPathProgress() {
           </div>
         ) : (
           <>
-            <section className={overviewClass}>
-              <div className={summaryCardClass}>
-                <div className={summaryLabelClass}>Tuần hiện tại</div>
-                <div className={summaryValueClass}>{weekProgress.week || 1}</div>
-                <p className={summaryHintClass}>Cấp độ {data.level || "N5"}</p>
-              </div>
-              <div className={summaryCardClass}>
-                <div className={summaryLabelClass}>Bài hoàn thành</div>
-                <div className={summaryValueClass}>
-                  {weekProgress.completed || 0}/{weekProgress.total || 0}
-                </div>
-                <p className={summaryHintClass}>Theo kế hoạch tuần</p>
-              </div>
-              <div className={cn(summaryCardClass, progressSummaryClass)}>
-                <div className={summaryLabelClass}>Tiến độ tuần</div>
-                <div className={summaryValueClass}>{weekPercent}%</div>
-                <div className={miniTrackClass}>
-                  <span className={progressGradientClass} style={{ width: `${weekPercent}%` }} />
-                </div>
-              </div>
-            </section>
-
-            <section className={reviewPanelClass}>
-              <div className={reviewHeaderClass}>
-                <div>
-                  <h2 className={sectionTitleClass}>Đánh giá lộ trình bằng AI</h2>
-                  <p className={sectionDescriptionClass}>Cập nhật sau 7–14 ngày học để biết nên tăng tốc, giảm tải hoặc tập trung kỹ năng nào.</p>
-                </div>
-                <button
-                  type="button"
-                  className={reviewBtnClass}
-                  onClick={handleReview}
-                  disabled={reviewLoading}
-                >
-                  {reviewLoading ? "Đang đánh giá..." : data?.lastReview ? "Đánh giá lại" : "Tạo đánh giá"}
-                </button>
-              </div>
-
-              {reviewError && <div className={reviewErrorClass}>{reviewError}</div>}
-
-              {data?.lastReview ? (
-                <div className={reviewBodyClass}>
-                  <div className={reviewMetaRowClass}>
-                    <div className={reviewMetaClass}>Lần đánh giá gần nhất: {formatReviewDate(data.lastReview.reviewedAt)}</div>
-                    {typeof data.lastReview.onTrack === "boolean" && (
-                      <span className={cn(reviewStatusClass, !data.lastReview.onTrack && reviewStatusWarningClass)}>
-                        {data.lastReview.onTrack ? "Đúng tiến độ" : "Cần điều chỉnh"}
-                      </span>
-                    )}
+            <section className={mainGridClass}>
+              <div className={todayCardClass}>
+                <div className={sectionHeaderClass}>
+                  <div>
+                    <h2 className={sectionTitleClass}>Nhiệm vụ hôm nay</h2>
+                    <p className={sectionDescriptionClass}>
+                      Ưu tiên các mục chưa hoàn thành theo thứ tự lộ trình, vừa với mục tiêu {dailyMinutes} phút/ngày.
+                    </p>
                   </div>
-                  <p className={assessmentClass}>{data.lastReview.assessment}</p>
-                  {data.lastReview.suggestions?.length > 0 && (
-                    <div className={suggestionListClass}>
-                      {data.lastReview.suggestions.map((suggestion, index) => (
-                        <article key={`${suggestion.type}-${suggestion.skill || index}`} className={suggestionCardClass}>
-                          <div className={suggestionTitleClass}>
-                            {suggestionTypeLabels[suggestion.type] || "Gợi ý"}
-                            {suggestion.skill && skillMeta[suggestion.skill]?.label ? ` · ${skillMeta[suggestion.skill].label}` : ""}
-                          </div>
-                          <p className={suggestionTextClass}>{suggestion.reason}</p>
-                        </article>
-                      ))}
-                    </div>
-                  )}
+                  <span className={panelBadgeClass}>{todayTasks.length} mục hôm nay</span>
+                </div>
 
-                  {adjustedWeeklyItems.length > 0 && (
-                    <div className={adjustedBlockClass}>
-                      <div className={adjustedTitleClass}>Điều chỉnh đề xuất cho tuần tiếp theo</div>
-                      <div className={adjustedListClass}>
-                        {adjustedWeeklyItems.map((item, index) => (
-                          <div key={`${item.skill}-${item.order || index}`} className={adjustedItemClass}>
-                            <span className={adjustedSkillClass}>{skillMeta[item.skill]?.label || item.skill}</span>
-                            <strong className={adjustedItemTitleClass}>{item.title}</strong>
-                            <small className={adjustedMetaClass}>{item.targetCount || 1} mục · {item.estimatedMinutes || 15} phút</small>
-                          </div>
-                        ))}
+                {todayTasks.length === 0 ? (
+                  <div className={emptyTasksClass}>
+                    <strong className={stateTitleClass}>Hôm nay bạn đã hoàn thành các mục gợi ý.</strong>
+                    <p className={stateTextClass}>Bạn có thể ôn lại bài cũ hoặc xem kế hoạch tuần bên dưới để học trước.</p>
+                  </div>
+                ) : (
+                  <div className={todayListClass}>
+                    {todayTasks.map((task) => renderTaskCard(task, "today", "today"))}
+                  </div>
+                )}
+              </div>
+
+              <aside className={sideStackClass}>
+                <section className={progressPanelClass}>
+                  <div className={sectionHeaderClass}>
+                    <div>
+                      <h2 className={sectionTitleClass}>Nhịp học tuần này</h2>
+                      <p className={sectionDescriptionClass}>Theo dõi nhanh để biết hôm nay cần giữ nhịp hay tăng tốc.</p>
+                    </div>
+                  </div>
+                  <div className={statsGridClass}>
+                    <div className={statBoxClass}>
+                      <div className={statLabelClass}>Tuần</div>
+                      <div className={statValueClass}>{weekProgress.week || 1}</div>
+                    </div>
+                    <div className={statBoxClass}>
+                      <div className={statLabelClass}>Xong</div>
+                      <div className={statValueClass}>{weekProgress.completed || 0}/{weekProgress.total || 0}</div>
+                    </div>
+                    <div className={statBoxClass}>
+                      <div className={statLabelClass}>Tiến độ</div>
+                      <div className={statValueClass}>{weekPercent}%</div>
+                    </div>
+                  </div>
+                  <div className={weeklyTrackClass}>
+                    <span className={weeklyFillClass} style={{ width: `${weekPercent}%` }} />
+                  </div>
+                  <p className={sectionDescriptionClass}>Cấp độ hiện tại: {data.level || "N5"}</p>
+                </section>
+
+                <section className={reviewPanelClass}>
+                  <div className={sectionHeaderClass}>
+                    <div>
+                      <h2 className={sectionTitleClass}>AI coach</h2>
+                      <p className={sectionDescriptionClass}>Đánh giá lộ trình và đề xuất điều chỉnh khi nhịp học thay đổi.</p>
+                    </div>
+                    <button type="button" className={reviewBtnClass} onClick={handleReview} disabled={reviewLoading}>
+                      {reviewLoading ? "Đang đánh giá..." : data?.lastReview ? "Đánh giá lại" : "Tạo đánh giá"}
+                    </button>
+                  </div>
+
+                  {reviewError && <div className={reviewErrorClass}>{reviewError}</div>}
+
+                  {data?.lastReview ? (
+                    <>
+                      <div className={reviewMetaRowClass}>
+                        <div className={reviewMetaClass}>Lần đánh giá gần nhất: {formatReviewDate(data.lastReview.reviewedAt)}</div>
+                        {typeof data.lastReview.onTrack === "boolean" && (
+                          <span className={cn(reviewStatusClass, !data.lastReview.onTrack && reviewStatusWarningClass)}>
+                            {data.lastReview.onTrack ? "Đúng tiến độ" : "Cần điều chỉnh"}
+                          </span>
+                        )}
                       </div>
+                      <p className={assessmentClass}>{data.lastReview.assessment}</p>
+                      {data.lastReview.suggestions?.length > 0 && (
+                        <div className={suggestionListClass}>
+                          {data.lastReview.suggestions.map((suggestion, index) => (
+                            <article key={`${suggestion.type}-${suggestion.skill || index}`} className={suggestionCardClass}>
+                              <div className={suggestionTitleClass}>
+                                {suggestionTypeLabels[suggestion.type] || "Gợi ý"}
+                                {suggestion.skill && skillMeta[suggestion.skill]?.label ? ` · ${skillMeta[suggestion.skill].label}` : ""}
+                              </div>
+                              <p className={suggestionTextClass}>{suggestion.reason}</p>
+                            </article>
+                          ))}
+                        </div>
+                      )}
+
+                      {adjustedWeeklyItems.length > 0 && (
+                        <div className={adjustedBlockClass}>
+                          <div className={adjustedTitleClass}>Điều chỉnh đề xuất cho tuần tiếp theo</div>
+                          <div className={adjustedListClass}>
+                            {adjustedWeeklyItems.map((item, index) => (
+                              <div key={`${item.skill}-${item.order || index}`} className={adjustedItemClass}>
+                                <span className={adjustedSkillClass}>{skillMeta[item.skill]?.label || item.skill}</span>
+                                <strong className={adjustedItemTitleClass}>{item.title}</strong>
+                                <small className={adjustedMetaClass}>{item.targetCount || 1} mục · {item.estimatedMinutes || 15} phút</small>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {applyError && <div className={reviewErrorClass}>{applyError}</div>}
+                      {applySuccess && <div className={applySuccessClass}>{applySuccess}</div>}
+
+                      {canApplyReview && (
+                        <div className={reviewActionsClass}>
+                          <button type="button" className={reviewBtnClass} onClick={handleApplyReview} disabled={applyLoading}>
+                            {applyLoading ? "Đang áp dụng..." : "Áp dụng điều chỉnh"}
+                          </button>
+                          <button
+                            type="button"
+                            className={keepBtnClass}
+                            onClick={() => {
+                              setReviewDismissed(true);
+                              setApplyError("");
+                              setApplySuccess("Đã giữ nguyên lộ trình hiện tại.");
+                            }}
+                            disabled={applyLoading}
+                          >
+                            Giữ nguyên lộ trình
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className={reviewEmptyClass}>
+                      Chưa có đánh giá nào. Khi bạn đã học được vài ngày, hãy tạo đánh giá để AI đề xuất điều chỉnh phù hợp.
                     </div>
                   )}
-
-                  {applyError && <div className={reviewErrorClass}>{applyError}</div>}
-                  {applySuccess && <div className={applySuccessClass}>{applySuccess}</div>}
-
-                  {canApplyReview && (
-                    <div className={reviewActionsClass}>
-                      <button
-                        type="button"
-                        className={reviewBtnClass}
-                        onClick={handleApplyReview}
-                        disabled={applyLoading}
-                      >
-                        {applyLoading ? "Đang áp dụng..." : "Áp dụng điều chỉnh"}
-                      </button>
-                      <button
-                        type="button"
-                        className={keepBtnClass}
-                        onClick={() => {
-                          setReviewDismissed(true);
-                          setApplyError("");
-                          setApplySuccess("Đã giữ nguyên lộ trình hiện tại.");
-                        }}
-                        disabled={applyLoading}
-                      >
-                        Giữ nguyên lộ trình
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className={reviewEmptyClass}>
-                  Chưa có đánh giá nào. Khi bạn đã học được vài ngày, hãy tạo đánh giá để AI đề xuất điều chỉnh phù hợp.
-                </div>
-              )}
+                </section>
+              </aside>
             </section>
 
-            <section className={panelClass}>
-              <div className={panelHeaderClass}>
+            <section className={cn(panelClass, lowerSectionClass)}>
+              <div className={sectionHeaderClass}>
                 <div>
-                  <h2 className={sectionTitleClass}>Nhiệm vụ học tập</h2>
-                  <p className="mt-1 mb-0 text-[13px] font-bold text-grey">{weekTasks.length} mục được AI đề xuất cho tuần này</p>
+                  <h2 className={sectionTitleClass}>Kế hoạch tuần</h2>
+                  <p className={sectionDescriptionClass}>{weekTasks.length} mục được AI đề xuất cho tuần này, dùng để học tiếp sau nhiệm vụ hôm nay.</p>
                 </div>
                 <div className={panelBadgesClass}>
                   <span className={cn(panelBadgeClass, generationSource === "fallback" && fallbackBadgeClass)}>
@@ -386,68 +468,10 @@ function LearningPathProgress() {
               </div>
 
               {weekTasks.length === 0 ? (
-                <div className={emptyTasksClass}>
-                  Tuần này chưa có mục học nào trong lộ trình.
-                </div>
+                <div className={emptyTasksClass}>Tuần này chưa có mục học nào trong lộ trình.</div>
               ) : (
-                <div className={taskListClass}>
-                  {weekTasks.map((task) => {
-                    const meta = skillMeta[task.skill] || { icon: "📌", label: task.skill };
-                    const progress = task.progress || {
-                      count: task.completedAt ? task.targetCount || 1 : 0,
-                      target: task.targetCount || 1,
-                      percent: task.completedAt ? 100 : 0,
-                      label: `${task.completedAt ? task.targetCount || 1 : 0}/${task.targetCount || 1} mục`,
-                    };
-                    const progressPercent = Math.min(Math.max(Number(progress.percent) || 0, 0), 100);
-                    const href = getTaskHref(task, data.level);
-                    const isDone = Boolean(task.completedAt || progress.isComplete);
-
-                    return (
-                      <article key={`${task.skill}-${task.order}`} className={taskCardClass}>
-                        <div className={taskTopClass}>
-                          <span className={iconClass}>{meta.icon}</span>
-                          <div className={taskInfoClass}>
-                            <div className={taskLabelRowClass}>
-                              <span>{meta.label}</span>
-                              <span>{task.estimatedMinutes || 15} phút</span>
-                            </div>
-                            <h3 className={taskTitleClass}>{task.title || meta.label}</h3>
-                            <p className={taskMetaClass}>
-                              {progress.requirement || progress.label}
-                            </p>
-                          </div>
-                          <span className={cn(badgeClass, isDone && badgeDoneClass)}>
-                            {isDone ? "Hoàn thành" : `${progressPercent}%`}
-                          </span>
-                        </div>
-
-                        <div className={progressBlockClass}>
-                          <div className={progressMetaClass}>
-                            <span>{progress.label}</span>
-                            <span>{progressPercent}%</span>
-                          </div>
-                          <div className={progressTrackClass}>
-                            <div
-                              className={cn(progressFillClass, isDone && progressFillDoneClass)}
-                              style={{ width: `${progressPercent}%` }}
-                            />
-                          </div>
-                          {progress.latestScore !== null && progress.latestScore !== undefined && (
-                            <p className={taskMetaClass}>Điểm cao nhất tuần này: {progress.latestScore}</p>
-                          )}
-                        </div>
-
-                        {href && (
-                          <div className={taskActionsClass}>
-                            <button type="button" className={startBtnClass} onClick={() => navigate(href)}>
-                              {isDone ? "Tiếp tục luyện" : "Bắt đầu học"}
-                            </button>
-                          </div>
-                        )}
-                      </article>
-                    );
-                  })}
+                <div className={weekListClass}>
+                  {weekTasks.map((task) => renderTaskCard(task, "week", "week"))}
                 </div>
               )}
             </section>
