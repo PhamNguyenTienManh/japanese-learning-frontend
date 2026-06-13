@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import UserTableRow from "../UserTableRow/UserTableRow";
 
 function UserTable({
@@ -6,9 +7,9 @@ function UserTable({
   showingTo,
   totalCount,
   pagination,
-  onToggleStatus,
-  onChangeRole,
   onViewActivity,
+  onEditUser,
+  onCreateUser,
 }) {
   return (
     <section className="overflow-hidden rounded-[20px] border-[1.5px] border-slate-200 bg-white shadow-[0_18px_48px_-30px_rgba(0,135,154,0.36)]">
@@ -21,10 +22,18 @@ function UserTable({
             Hiển thị {showingFrom}-{showingTo} trên {totalCount} người dùng
           </p>
         </div>
+        <button
+          type="button"
+          onClick={onCreateUser}
+          className="inline-flex h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-px hover:bg-slate-800"
+        >
+          <Plus size={16} aria-hidden="true" />
+          Thêm user
+        </button>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[980px] border-separate border-spacing-0">
+        <table className="w-full min-w-[940px] border-separate border-spacing-0">
           <thead className="bg-slate-50">
             <tr>
               <th className="border-b border-slate-200 px-4 py-3.5 text-left text-[11px] font-black uppercase tracking-[0.6px] text-slate-600">
@@ -45,9 +54,6 @@ function UserTable({
               <th className="border-b border-slate-200 px-4 py-3.5 text-left text-[11px] font-black uppercase tracking-[0.6px] text-slate-600">
                 Ngày đăng ký
               </th>
-              <th className="border-b border-slate-200 px-4 py-3.5 text-left text-[11px] font-black uppercase tracking-[0.6px] text-slate-600">
-                Hoạt động
-              </th>
               <th className="border-b border-slate-200 px-4 py-3.5 text-right text-[11px] font-black uppercase tracking-[0.6px] text-slate-600">
                 Hành động
               </th>
@@ -58,15 +64,14 @@ function UserTable({
               <UserTableRow
                 key={user._id}
                 user={user}
-                onToggleStatus={onToggleStatus}
-                onChangeRole={onChangeRole}
                 onViewActivity={onViewActivity}
+                onEditUser={onEditUser}
               />
             ))}
             {users.length === 0 && (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={7}
                   className="px-4 py-14 text-center text-sm font-bold text-slate-500"
                 >
                   Không tìm thấy người dùng nào phù hợp

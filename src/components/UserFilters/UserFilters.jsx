@@ -1,4 +1,4 @@
-import { RefreshCw, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { USER_ROLES, USER_STATUS } from "~/services/userConstants";
 
 function UserFilters({
@@ -8,11 +8,10 @@ function UserFilters({
   onSearchChange,
   onStatusChange,
   onRoleChange,
-  onRefresh,
 }) {
   return (
     <section className="rounded-[18px] border-[1.5px] border-slate-200 bg-white px-[18px] py-4 shadow-[0_4px_14px_-10px_rgba(0,135,154,0.25)]">
-      <div className="grid gap-3 md:grid-cols-[minmax(260px,1fr)_180px_170px_auto] md:items-center">
+      <div className="grid gap-3 md:grid-cols-[minmax(260px,1fr)_180px_170px] md:items-center">
         <label className="relative block">
           <span className="sr-only">Tìm kiếm người dùng</span>
           <Search
@@ -54,14 +53,6 @@ function UserFilters({
           </select>
         </label>
 
-        <button
-          type="button"
-          onClick={onRefresh}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border-[1.5px] border-slate-200 bg-white px-4 text-sm font-extrabold text-slate-900 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:-translate-y-px hover:border-blue-200 hover:bg-slate-100 hover:text-blue-600 hover:shadow-[0_10px_22px_-16px_rgba(0,135,154,0.45)]"
-        >
-          <RefreshCw size={14} aria-hidden="true" className="text-blue-600" />
-          Làm mới
-        </button>
       </div>
     </section>
   );

@@ -1,20 +1,16 @@
-import { Users } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("vi-VN");
 }
 
-function UserHeader({ total, filteredCount, page }) {
+function UserHeader({ total, filteredCount, page, onRefresh, refreshing }) {
   const isFiltered = filteredCount !== total;
 
   return (
     <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <div className="inline-flex min-h-8 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 shadow-sm">
-          <Users size={16} aria-hidden="true" />
-          Quản trị
-        </div>
-        <h1 className="m-0 mt-3 text-2xl font-bold leading-tight text-slate-950 sm:text-3xl">
+        <h1 className="m-0 text-[28px] font-extrabold leading-[1.2] text-[#0f172a]">
           Quản lý {page}
         </h1>
         <p className="m-0 mt-2 text-sm font-medium text-slate-500">
@@ -31,26 +27,19 @@ function UserHeader({ total, filteredCount, page }) {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-center shadow-sm">
-          <div className="text-xl font-bold leading-none text-slate-950 [font-variant-numeric:tabular-nums]">
-            {formatNumber(total)}
-          </div>
-          <div className="mt-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-            Tổng
-          </div>
-        </div>
-        {isFiltered && (
-          <div className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-center shadow-sm">
-            <div className="text-xl font-bold leading-none text-slate-950 [font-variant-numeric:tabular-nums]">
-              {formatNumber(filteredCount)}
-            </div>
-            <div className="mt-1 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-              Hiển thị
-            </div>
-          </div>
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={onRefresh}
+        disabled={refreshing}
+        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-950 bg-slate-950 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-70"
+      >
+        <RefreshCw
+          size={16}
+          aria-hidden="true"
+          className={refreshing ? "animate-spin" : ""}
+        />
+        Làm mới
+      </button>
     </header>
   );
 }

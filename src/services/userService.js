@@ -56,6 +56,26 @@ export const userApi = {
     }
   },
 
+  // Tạo internal account kèm profile
+  createUser: async (payload) => {
+    try {
+      const response = await apiClient.post('/users', payload);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: error.message };
+    }
+  },
+
+  // Cập nhật user và profile từ trang admin
+  updateUser: async (id, payload) => {
+    try {
+      const response = await apiClient.patch(`/users/${id}`, payload);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: error.message };
+    }
+  },
+
   // Cập nhật trạng thái user
   updateUserStatus: async (id, status) => {
     try {

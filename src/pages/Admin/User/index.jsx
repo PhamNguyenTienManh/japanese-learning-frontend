@@ -7,8 +7,51 @@ import UserHeader from "~/components/UserHeader/UserHeader";
 import UserFilters from "~/components/UserFilters/UserFilters";
 import UserTable from "~/components/UserTable/UserTable";
 import UserActivityDrawer from "~/components/UserActivityDrawer/UserActivityDrawer";
+import AdminUserModal from "~/components/AdminUserModal/AdminUserModal";
+import { useToast } from "~/context/ToastContext";
 
 const PAGE_SIZE = 10;
+
+const FIELD_ERROR_PATTERNS = [
+  { field: "email", patterns: ["email"] },
+  { field: "password", patterns: ["password", "mật khẩu"] },
+  { field: "name", patterns: ["name", "tên"] },
+  { field: "phone", patterns: ["phone", "số điện thoại"] },
+  { field: "birthday", patterns: ["birthday", "birth", "date", "age", "tuổi"] },
+  { field: "role", patterns: ["role", "vai trò"] },
+  { field: "status", patterns: ["status", "trạng thái"] },
+  { field: "sex", patterns: ["sex", "gender", "giới tính"] },
+  { field: "address", patterns: ["address", "địa chỉ"] },
+  { field: "job", patterns: ["job", "nghề"] },
+  { field: "introduction", patterns: ["introduction", "giới thiệu"] },
+];
+
+function normalizeErrorMessages(error) {
+  const message = error?.message || error?.response?.data?.message;
+  if (Array.isArray(message)) return message;
+  if (typeof message === "string") return [message];
+  return ["Không thể lưu người dùng"];
+}
+
+function parseFieldErrors(error) {
+  const fieldErrors = {};
+  const genericErrors = [];
+
+  normalizeErrorMessages(error).forEach((message) => {
+    const normalized = String(message).toLowerCase();
+    const match = FIELD_ERROR_PATTERNS.find(({ patterns }) =>
+      patterns.some((pattern) => normalized.includes(pattern)),
+    );
+
+    if (match && !fieldErrors[match.field]) {
+      fieldErrors[match.field] = message;
+    } else {
+      genericErrors.push(message);
+    }
+  });
+
+  return { fieldErrors, genericMessage: genericErrors[0] || "" };
+}
 
 const getPaginationItems = (totalPages, currentPage) => {
   if (totalPages <= 7) {
@@ -43,6 +86,7 @@ const getPaginationItems = (totalPages, currentPage) => {
 };
 
 function User() {
+  const { addToast } = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -55,6 +99,12 @@ function User() {
   const [userActivities, setUserActivities] = useState([]);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [activitiesError, setActivitiesError] = useState("");
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [userModalMode, setUserModalMode] = useState("create");
+  const [editingUser, setEditingUser] = useState(null);
+  const [userSaving, setUserSaving] = useState(false);
+  const [userModalError, setUserModalError] = useState("");
+  const [userFieldErrors, setUserFieldErrors] = useState({});
 
   useEffect(() => {
     fetchUsers();
@@ -75,37 +125,6 @@ function User() {
       console.error("Error fetching users:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleToggleStatus = async (userId, currentStatus) => {
-    try {
-      const newStatus = currentStatus === "active" ? "banned" : "active";
-      const response = await userApi.updateUserStatus(userId, newStatus);
-      if (response.success) {
-        setUsers((prev) =>
-          prev.map((u) => (u._id === userId ? { ...u, status: newStatus } : u)),
-        );
-        alert(response.data.message);
-      }
-    } catch (err) {
-      console.error("Error updating status:", err);
-      alert("Không thể cập nhật trạng thái người dùng");
-    }
-  };
-
-  const handleChangeRole = async (userId, newRole) => {
-    try {
-      const response = await userApi.updateUserRole(userId, newRole);
-      if (response.success) {
-        setUsers((prev) =>
-          prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u)),
-        );
-        alert(response.data.message);
-      }
-    } catch (err) {
-      console.error("Error updating role:", err);
-      alert("Không thể cập nhật vai trò người dùng");
     }
   };
 
@@ -138,6 +157,79 @@ function User() {
 
   const handleRetryActivities = () => {
     if (activityUser?._id) loadUserActivities(activityUser._id);
+  };
+
+  const handleOpenCreateUser = () => {
+    setUserModalMode("create");
+    setEditingUser(null);
+    setUserModalError("");
+    setUserFieldErrors({});
+    setUserModalOpen(true);
+  };
+
+  const handleOpenEditUser = (user) => {
+    setUserModalMode("edit");
+    setEditingUser(user);
+    setUserModalError("");
+    setUserFieldErrors({});
+    setUserModalOpen(true);
+  };
+
+  const handleCloseUserModal = () => {
+    if (userSaving) return;
+    setUserModalOpen(false);
+    setEditingUser(null);
+    setUserModalError("");
+    setUserFieldErrors({});
+  };
+
+  const handleSubmitUser = async (payload) => {
+    try {
+      setUserSaving(true);
+      setUserModalError("");
+      setUserFieldErrors({});
+
+      const response =
+        userModalMode === "edit" && editingUser?._id
+          ? await userApi.updateUser(editingUser._id, payload)
+          : await userApi.createUser(payload);
+
+      const savedUser = response?.data;
+      if (savedUser?._id) {
+        setUsers((current) => {
+          if (userModalMode === "edit") {
+            return current.map((user) =>
+              user._id === savedUser._id ? savedUser : user,
+            );
+          }
+          setCurrentPage(1);
+          return [savedUser, ...current];
+        });
+      } else {
+        await fetchUsers();
+      }
+
+      setUserModalOpen(false);
+      setEditingUser(null);
+      addToast(
+        userModalMode === "edit"
+          ? "Cập nhật người dùng thành công"
+          : "Tạo người dùng thành công",
+        "success",
+      );
+    } catch (err) {
+      console.error("Error saving user:", err);
+      const { fieldErrors, genericMessage } = parseFieldErrors(err);
+      setUserFieldErrors(fieldErrors);
+      setUserModalError(genericMessage);
+    } finally {
+      setUserSaving(false);
+    }
+  };
+
+  const handleClearUserFieldError = (field) => {
+    setUserFieldErrors((current) => ({ ...current, [field]: "" }));
+    setUserModalError("");
   };
 
   const filteredUsers = users.filter((user) => {
@@ -175,6 +267,8 @@ function User() {
           total={users.length}
           filteredCount={filteredUsers.length}
           page="người dùng"
+          onRefresh={fetchUsers}
+          refreshing={loading}
         />
 
         {loading ? (
@@ -207,7 +301,6 @@ function User() {
               onSearchChange={setSearchQuery}
               onStatusChange={setStatusFilter}
               onRoleChange={setRoleFilter}
-              onRefresh={fetchUsers}
             />
 
             <UserTable
@@ -273,13 +366,25 @@ function User() {
                   </div>
                 ) : null
               }
-              onToggleStatus={handleToggleStatus}
-              onChangeRole={handleChangeRole}
               onViewActivity={handleViewActivity}
+              onEditUser={handleOpenEditUser}
+              onCreateUser={handleOpenCreateUser}
             />
           </>
         )}
       </div>
+
+      <AdminUserModal
+        open={userModalOpen}
+        mode={userModalMode}
+        user={editingUser}
+        saving={userSaving}
+        error={userModalError}
+        fieldErrors={userFieldErrors}
+        onClose={handleCloseUserModal}
+        onSubmit={handleSubmitUser}
+        onClearFieldError={handleClearUserFieldError}
+      />
 
       <UserActivityDrawer
         open={activityDrawerOpen}
