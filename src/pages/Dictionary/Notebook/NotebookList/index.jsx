@@ -348,7 +348,9 @@ function NotebookList() {
                 {notebooks.map((notebook, idx) => (
                   <div
                     key={notebook._id}
-                    className={cx("notebook-card")}
+                    className={cx("notebook-card", {
+                      "menu-open": openMenuId === notebook._id,
+                    })}
                     onClick={() =>
                       !editingNotebookId &&
                       navigate(`/dictionary/notebook/${notebook._id}`)

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import classNames from "classnames/bind";
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import styles from "./Results.module.scss";
 
 import Button from "~/components/Button";
@@ -17,7 +17,7 @@ import {
   faChartSimple,
   faAngleRight,
 } from "@fortawesome/free-solid-svg-icons";
-import { checkExamResult } from "~/services/examService";
+import { checkExamResult, startExam } from "~/services/examService";
 
 const cx = classNames.bind(styles);
 
@@ -118,8 +118,10 @@ function ScoreRing({ percent, passed }) {
 function Results() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [error, setError] = useState("");
   const { testId } = useParams();
+  const navigate = useNavigate();
   const examId = testId;
 
   useEffect(() => {
@@ -190,6 +192,26 @@ function Results() {
   );
   const passed = results.passed;
   const levelLower = results.exam.level.toLowerCase();
+
+  const handleRetryExam = async () => {
+    try {
+      setIsRetrying(true);
+      const response = await startExam(results.exam.id);
+      const examResultId = response?.data?._id;
+
+      if (!examResultId) {
+        throw new Error("Không nhận được phiên làm bài mới từ server");
+      }
+
+      localStorage.setItem("currentExamResultId", examResultId);
+      navigate(`/practice/${levelLower}/test/${results.exam.id}`);
+    } catch (err) {
+      console.error("Không thể tạo phiên làm bài mới:", err);
+      alert("Có lỗi xảy ra khi tạo phiên làm bài mới. Vui lòng thử lại!");
+    } finally {
+      setIsRetrying(false);
+    }
+  };
 
   const stats = [
     {
@@ -411,10 +433,11 @@ function Results() {
           >
             <Button
               primary
-              to={`/practice/${levelLower}/test/${results.exam.id}`}
+              onClick={handleRetryExam}
+              disabled={isRetrying}
               leftIcon={<FontAwesomeIcon icon={faRotateLeft} />}
             >
-              Làm lại bài thi
+              {isRetrying ? "Đang tạo phiên mới..." : "Làm lại bài thi"}
             </Button>
 
             <Button

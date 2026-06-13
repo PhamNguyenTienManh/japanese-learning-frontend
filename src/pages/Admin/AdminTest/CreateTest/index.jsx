@@ -5,8 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faArrowLeft,
     faPlus,
+    faMinus,
     faXmark,
-    faEye,
     faLink,
     faMagic,
 } from "@fortawesome/free-solid-svg-icons";
@@ -15,12 +15,160 @@ import Card from "~/components/Card";
 import Button from "~/components/Button";
 import Input from "~/components/Input";
 import { createExam, createExamQuestion } from "~/services/examService";
-import { uploadVoice } from "~/services/textToSpeechService";
+import {
+    FALLBACK_VOICEVOX_SPEAKERS,
+    getVoicevoxSpeakers,
+    mapVoicevoxSpeakersToOptions,
+    uploadDialogueVoice,
+    uploadVoice,
+} from "~/services/textToSpeechService";
+import StyledSelect from "../components/StyledSelect";
+import RichTextEditor from "../components/RichTextEditor";
+import ImageUploadField from "../components/ImageUploadField";
+import DialogueScriptEditor from "../components/DialogueScriptEditor";
 
 import styles from "./CreateTest.module.scss";
 import PopupModal from "~/components/Popup";
 
 const cx = classNames.bind(styles);
+
+const SAFE_HTML_TAGS = new Set([
+    "B", "BR", "CAPTION", "DIV", "EM", "I", "LI", "OL", "P", "RB", "RP",
+    "RT", "RUBY", "SPAN", "STRONG", "TABLE", "TBODY", "TD", "TFOOT", "TH",
+    "THEAD", "TR", "U", "UL",
+]);
+const BLOCKED_HTML_TAGS = new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "LINK", "META"]);
+const SAFE_HTML_ATTRIBUTES = {
+    TD: new Set(["colspan", "rowspan"]),
+    TH: new Set(["colspan", "rowspan", "scope"]),
+};
+const LEVEL_OPTIONS = ["N5", "N4", "N3", "N2", "N1"].map((level) => ({
+    value: level,
+    label: level,
+}));
+const QUESTION_TYPE_OPTIONS = [
+    { value: "vocab", label: "Từ vựng" },
+    { value: "grammar", label: "Ngữ pháp, Đọc hiểu" },
+    { value: "listening", label: "Thi nghe" },
+];
+
+function createDefaultAudioScript() {
+    return {
+        mode: "dialogue",
+        pauseMs: 500,
+        lines: [
+            { speakerLabel: "A", speakerId: 2, text: "" },
+            { speakerLabel: "B", speakerId: 13, text: "" },
+        ],
+    };
+}
+
+function normalizeAudioScriptForSubmit(audioScript) {
+    if (!audioScript || !Array.isArray(audioScript.lines)) return null;
+
+    const lines = audioScript.lines
+        .map((line) => {
+            const text = String(line?.text || "").trim();
+            const speakerId = Number(line?.speakerId);
+
+            return {
+                speakerLabel: String(line?.speakerLabel || "").trim(),
+                speakerId: Number.isFinite(speakerId) ? speakerId : 1,
+                text,
+            };
+        })
+        .filter((line) => line.text);
+
+    if (lines.length === 0) return null;
+
+    const pauseMs = Number(audioScript.pauseMs);
+
+    return {
+        mode: audioScript.mode || (lines.length > 1 ? "dialogue" : "single"),
+        pauseMs: Number.isFinite(pauseMs) && pauseMs >= 0 ? pauseMs : 500,
+        lines,
+    };
+}
+
+function sanitizeExamHtml(value) {
+    const raw = value === null || value === undefined ? "" : String(value);
+    if (!raw.trim()) return "";
+
+    if (typeof DOMParser === "undefined") {
+        return raw
+            .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+            .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "");
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(raw, "text/html");
+
+    const cleanNode = (node) => {
+        Array.from(node.childNodes).forEach((child) => {
+            if (child.nodeType !== Node.ELEMENT_NODE) return;
+
+            const element = child;
+            const tagName = element.tagName;
+
+            if (BLOCKED_HTML_TAGS.has(tagName)) {
+                element.remove();
+                return;
+            }
+
+            cleanNode(element);
+
+            if (!SAFE_HTML_TAGS.has(tagName)) {
+                element.replaceWith(...Array.from(element.childNodes));
+                return;
+            }
+
+            const allowedAttributes = SAFE_HTML_ATTRIBUTES[tagName] || new Set();
+            Array.from(element.attributes).forEach((attr) => {
+                if (!allowedAttributes.has(attr.name.toLowerCase())) {
+                    element.removeAttribute(attr.name);
+                }
+            });
+        });
+    };
+
+    cleanNode(doc.body);
+    return doc.body.innerHTML;
+}
+
+function SafeHtml({ as: Component = "div", className, value }) {
+    return (
+        <Component
+            className={className}
+            dangerouslySetInnerHTML={{ __html: sanitizeExamHtml(value) }}
+        />
+    );
+}
+
+function hasEditorContent(value) {
+    const raw = value === null || value === undefined ? "" : String(value);
+    if (!raw.trim()) return false;
+
+    if (typeof document === "undefined") {
+        return raw.replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").trim().length > 0;
+    }
+
+    const temp = document.createElement("div");
+    temp.innerHTML = raw;
+    return (temp.textContent || "").replace(/\u00a0/g, " ").trim().length > 0;
+}
+
+function getEditorPlainText(value) {
+    const raw = value === null || value === undefined ? "" : String(value);
+    if (!raw.trim()) return "";
+
+    if (typeof document === "undefined") {
+        return raw.replace(/<[^>]*>/g, " ").replace(/&nbsp;/gi, " ").trim();
+    }
+
+    const temp = document.createElement("div");
+    temp.innerHTML = raw;
+    return (temp.textContent || "").replace(/\u00a0/g, " ").trim();
+}
 
 // Tạo câu con
 function createSubQuestion(id) {
@@ -30,6 +178,8 @@ function createSubQuestion(id) {
         options: ["", "", "", ""],
         correctAnswer: 0,
         explanation: "",
+        explainAll: "",
+        image: "",
         score: 1,
     };
 }
@@ -41,6 +191,8 @@ function createParentQuestion(id) {
         type: "vocab",
         question: "",
         listeningContent: "",
+        generalImage: "",
+        audioScript: createDefaultAudioScript(),
         audioFile: null,
         audioPreview: "",
         subQuestions: [createSubQuestion(id * 10 + 1)],
@@ -55,6 +207,7 @@ function CreateTest() {
     const [questions, setQuestions] = useState([createParentQuestion(1)]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [audioInputType, setAudioInputType] = useState("link");
+    const [speakerOptions, setSpeakerOptions] = useState(FALLBACK_VOICEVOX_SPEAKERS);
     const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [createdExamId, setCreatedExamId] = useState(null);
@@ -63,8 +216,6 @@ function CreateTest() {
     const [errors, setErrors] = useState({});
 
     const titleRef = useRef(null);
-    const questionContentRef = useRef(null);
-    const subQuestionContentRef = useRef(null);
     // Hiển thị PopupModal
     const [showConfirm, setShowConfirm] = useState(false);
 
@@ -85,6 +236,24 @@ function CreateTest() {
             return () => clearTimeout(timer);
         }
     }, [toast.show]);
+
+    useEffect(() => {
+        const loadSpeakers = async () => {
+            try {
+                const result = await getVoicevoxSpeakers();
+                setSpeakerOptions(mapVoicevoxSpeakersToOptions(result));
+            } catch (error) {
+                console.warn("Failed to load Voicevox speakers:", error);
+                setSpeakerOptions(FALLBACK_VOICEVOX_SPEAKERS);
+            }
+        };
+
+        loadSpeakers();
+    }, []);
+
+    const showToast = (message, type = "success") => {
+        setToast({ show: true, message, type });
+    };
 
     // ====== CÂU CHA ======
 
@@ -113,8 +282,9 @@ function CreateTest() {
         setAudioInputType(type);
         const currentQuestion = questions[currentQuestionIndex];
         if (currentQuestion) {
-            updateQuestion(currentQuestion.id, "audioPreview", "");
-            updateQuestion(currentQuestion.id, "audioFile", null);
+            if (type === "dialogue" && !currentQuestion.audioScript) {
+                updateQuestion(currentQuestion.id, "audioScript", createDefaultAudioScript());
+            }
         }
     };
 
@@ -148,11 +318,11 @@ function CreateTest() {
 
     const handleGenerateAudio = async () => {
         const currentQuestion = questions[currentQuestionIndex];
-        if (!currentQuestion || !currentQuestion.question.trim()) {
+        if (!currentQuestion || !hasEditorContent(currentQuestion.listeningContent)) {
             //alert("Vui lòng nhập nội dung câu hỏi trước khi tạo audio");
             setToast({
                 show: true,
-                message: 'Vui lòng nhập nội dung câu hỏi trước khi tạo audio',
+                message: 'Vui lòng nhập nội dung bài nghe trước khi tạo audio',
                 type: 'error'
             });
             return;
@@ -161,7 +331,10 @@ function CreateTest() {
         setIsGeneratingAudio(true);
         try {
             // Gọi API text-to-speech
-            const result = await uploadVoice(currentQuestion.listeningContent, 6);
+            const result = await uploadVoice(
+                getEditorPlainText(currentQuestion.listeningContent),
+                6
+            );
 
             if (result && result.success && result.data) {
                 const audioUrl = result.data.audioUrl;
@@ -185,6 +358,62 @@ function CreateTest() {
                 show: true,
                 message: 'Có lỗi xảy ra khi tạo audio. Vui lòng thử lại!',
                 type: 'error'
+            });
+        } finally {
+            setIsGeneratingAudio(false);
+        }
+    };
+
+    const handleGenerateDialogueAudio = async () => {
+        const currentQuestion = questions[currentQuestionIndex];
+        const audioScript = currentQuestion?.audioScript || createDefaultAudioScript();
+        const lines = (audioScript.lines || []).map((line) => ({
+            speakerLabel: line.speakerLabel || "",
+            speakerId: Number(line.speakerId) || 6,
+            text: (line.text || "").trim(),
+        }));
+
+        if (!lines.some((line) => line.text)) {
+            setToast({
+                show: true,
+                message: "Vui lòng nhập ít nhất 1 lời thoại trước khi tạo audio",
+                type: "error",
+            });
+            return;
+        }
+
+        setIsGeneratingAudio(true);
+        try {
+            const result = await uploadDialogueVoice(
+                lines.filter((line) => line.text),
+                audioScript.pauseMs || 500
+            );
+
+            const audioUrl = result?.data?.audioUrl || result?.audioUrl;
+
+            if (!audioUrl) {
+                throw new Error("Không nhận được URL audio");
+            }
+
+            updateQuestion(currentQuestion.id, "audioPreview", audioUrl);
+            updateQuestion(currentQuestion.id, "audioFile", { type: "generated", url: audioUrl });
+            updateQuestion(currentQuestion.id, "audioScript", {
+                mode: "dialogue",
+                pauseMs: audioScript.pauseMs || 500,
+                lines,
+            });
+
+            setToast({
+                show: true,
+                message: "Tạo audio hội thoại thành công!",
+                type: "success",
+            });
+        } catch (error) {
+            console.error("Error generating dialogue audio:", error);
+            setToast({
+                show: true,
+                message: "Có lỗi xảy ra khi tạo audio hội thoại. Vui lòng thử lại!",
+                type: "error",
             });
         } finally {
             setIsGeneratingAudio(false);
@@ -216,7 +445,6 @@ function CreateTest() {
             prev.map((parent) => {
                 if (parent.id !== parentId) return parent;
                 const newSubs = parent.subQuestions.filter((sq) => sq.id !== subId);
-                if (newSubs.length === 0) return parent;
                 return { ...parent, subQuestions: newSubs };
             })
         );
@@ -296,18 +524,21 @@ function CreateTest() {
 
         questions.forEach((q, qIndex) => {
             // Kiểm tra câu hỏi cha rỗng
-            if (!q.question.trim()) {
+            if (!hasEditorContent(q.question)) {
                 setCurrentQuestionIndex(qIndex);
                 newErrors.questContent = "Nội dung câu hỏi không được để trống";
-                questionContentRef.current?.focus();
+            }
+
+            if (q.subQuestions.length === 0) {
+                setCurrentQuestionIndex(qIndex);
+                newErrors.subQuestionContent = "Câu hỏi phải có ít nhất 1 câu hỏi con";
             }
 
             // Kiểm tra từng sub-question
             q.subQuestions.forEach((sub) => {
-                if (!sub.question.trim()) {
+                if (!hasEditorContent(sub.question)) {
                     setCurrentQuestionIndex(qIndex);
                     newErrors.subQuestionContent = "Câu hỏi con không được để trống";
-                    subQuestionContentRef.current?.focus();
                 }
             });
         });
@@ -365,21 +596,24 @@ function CreateTest() {
                         kind: getQuestionKind(type),
                         level: getLevelNumber(testLevel),
                         count_question: question.subQuestions.length,
-                        general: {},
+                        general: {
+                            audio: question.audioPreview || "",
+                            image: question.generalImage || "",
+                            txt_read: question.listeningContent || "",
+                            audioScript: normalizeAudioScriptForSubmit(question.audioScript),
+                        },
                         content: question.subQuestions.map(sub => ({
                             question: sub.question || "",
                             answers: sub.options,
                             correctAnswer: sub.correctAnswer,
+                            explain: sub.explanation || "",
+                            image: sub.image || "",
+                            explainAll: sub.explainAll || "",
                             score: sub.score
                         })),
-                        correct_answers: question.subQuestions.map(sub => sub.correctAnswer)
+                        correct_answers: question.subQuestions.map(sub => sub.correctAnswer),
+                        scores: question.subQuestions.map(sub => Number(sub.score) || 1)
                     };
-
-                    // Add audio if listening type
-                    if (type === "listening" && question.audioPreview) {
-                        questionData.general.audio = question.audioPreview;
-                        questionData.general.txt_read = question.listeningContent;
-                    }
 
                     await createExamQuestion(partId, questionData);
                 }
@@ -409,10 +643,6 @@ function CreateTest() {
     };
 
     const currentQuestion = questions[currentQuestionIndex];
-    const subQuestionTotal = questions.reduce(
-        (total, question) => total + question.subQuestions.length,
-        0
-    );
     const currentQuestionTypeLabel =
         currentQuestion?.type === "vocab"
             ? "Từ vựng"
@@ -431,24 +661,10 @@ function CreateTest() {
                         </Link>
                         <div className={cx("headerMain")}>
                             <div className={cx("titleBlock")}>
-                                <span className={cx("eyebrow")}>Quản trị đề thi</span>
-                                <h1 className={cx("title")}>
-                                    Tạo <span className={cx("titleAccent")}>đề thi mới</span>
-                                </h1>
+                                <h1 className={cx("title")}>Tạo đề thi mới</h1>
                                 <p className={cx("subtitle")}>
                                     Thiết lập thông tin đề thi, soạn câu hỏi và xem trước nội dung trước khi lưu.
                                 </p>
-                            </div>
-
-                            <div className={cx("headerStats")}>
-                                <div className={cx("statPill", "tonePrimary")}>
-                                    <span className={cx("statValue")}>{questions.length}</span>
-                                    <span className={cx("statLabel")}>Câu chính</span>
-                                </div>
-                                <div className={cx("statPill", "toneOrange")}>
-                                    <span className={cx("statValue")}>{subQuestionTotal}</span>
-                                    <span className={cx("statLabel")}>Câu con</span>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -473,17 +689,13 @@ function CreateTest() {
                             </div>
                             <div className={cx("field")}>
                                 <label className={cx("label")}>Cấp độ</label>
-                                <select
+                                <StyledSelect
                                     value={testLevel}
-                                    onChange={(e) => setTestLevel(e.target.value)}
+                                    onChange={setTestLevel}
+                                    options={LEVEL_OPTIONS}
+                                    ariaLabel="Cấp độ đề thi"
                                     className={cx("select")}
-                                >
-                                    <option value="N5">N5</option>
-                                    <option value="N4">N4</option>
-                                    <option value="N3">N3</option>
-                                    <option value="N2">N2</option>
-                                    <option value="N1">N1</option>
-                                </select>
+                                />
                             </div>
                             <div className={cx("field", "fieldFull")}>
                                 <label className={cx("label")}>Thời gian làm bài (phút)</label>
@@ -505,7 +717,6 @@ function CreateTest() {
                         <div className={cx("left")}>
                             <Card className={cx("previewCard")}>
                                 <div className={cx("previewHeader")}>
-                                    <FontAwesomeIcon icon={faEye} className={cx("previewIcon")} />
                                     <span>Xem trước câu hỏi</span>
                                 </div>
 
@@ -524,26 +735,48 @@ function CreateTest() {
                                                             : "Thi nghe"}
                                                 </span>
                                             </div>
-                                            <h2 className={cx("questionText")}>
-                                                {currentQuestion.question || "Chưa có nội dung câu hỏi"}
-                                            </h2>
+                                            <SafeHtml
+                                                as="h2"
+                                                className={cx("questionText")}
+                                                value={currentQuestion.question || "Chưa có nội dung câu hỏi"}
+                                            />
                                         </div>
 
-                                        {currentQuestion.type === "listening" &&
-                                            currentQuestion.audioPreview && (
-                                                <audio
-                                                    controls
-                                                    src={currentQuestion.audioPreview}
-                                                    className={cx("audioPreview")}
-                                                />
-                                            )}
+                                        {currentQuestion.audioPreview && (
+                                            <audio
+                                                controls
+                                                src={currentQuestion.audioPreview}
+                                                className={cx("audioPreview")}
+                                            />
+                                        )}
+
+                                        {currentQuestion.generalImage && (
+                                            <div className={cx("previewImage")}>
+                                                <img src={currentQuestion.generalImage} alt="Question" />
+                                            </div>
+                                        )}
+
+                                        {currentQuestion.listeningContent && (
+                                            <SafeHtml
+                                                className={cx("generalTextPreview")}
+                                                value={currentQuestion.listeningContent}
+                                            />
+                                        )}
 
                                         {currentQuestion.subQuestions.map((sub, subIndex) => (
                                             <div key={sub.id} className={cx("contentSection")}>
-                                                <p className={cx("contentQuestion")}>
-                                                    {currentQuestionIndex + 1}.{subIndex + 1}{" "}
-                                                    {sub.question || "Chưa có nội dung câu hỏi con"}
-                                                </p>
+                                                <div className={cx("contentQuestion")}>
+                                                    <span>{currentQuestionIndex + 1}.{subIndex + 1}</span>
+                                                    <SafeHtml
+                                                        value={sub.question || "Chưa có nội dung câu hỏi con"}
+                                                    />
+                                                </div>
+
+                                                {sub.image && (
+                                                    <div className={cx("previewImage")}>
+                                                        <img src={sub.image} alt="Sub question" />
+                                                    </div>
+                                                )}
 
                                                 <div className={cx("options")}>
                                                     {sub.options.map((option, optionIndex) => (
@@ -566,12 +799,14 @@ function CreateTest() {
                                                                         />
                                                                     )}
                                                                 </div>
-                                                                <span className={cx("optionLabel")}>
-                                                                    {option ||
+                                                                <SafeHtml
+                                                                    as="span"
+                                                                    className={cx("optionLabel")}
+                                                                    value={option ||
                                                                         `Đáp án ${String.fromCharCode(
                                                                             65 + optionIndex
                                                                         )}`}
-                                                                </span>
+                                                                />
                                                             </div>
                                                         </div>
                                                     ))}
@@ -579,7 +814,15 @@ function CreateTest() {
 
                                                 {sub.explanation && (
                                                     <div className={cx("explanation")}>
-                                                        <strong>Giải thích:</strong> {sub.explanation}
+                                                        <div className={cx("explanationTitle")}>Giải thích:</div>
+                                                        <SafeHtml value={sub.explanation} />
+                                                    </div>
+                                                )}
+
+                                                {sub.explainAll && (
+                                                    <div className={cx("explanation")}>
+                                                        <div className={cx("explanationTitle")}>Giải thích chi tiết:</div>
+                                                        <SafeHtml value={sub.explainAll} />
                                                     </div>
                                                 )}
                                             </div>
@@ -696,36 +939,32 @@ function CreateTest() {
                                             Chỉnh sửa Câu {currentQuestionIndex + 1}
                                             <span>{currentQuestionTypeLabel}</span>
                                         </h3>
-                                        {questions.length > 1 && (
-                                            <Button
-                                                outline
-                                                small
-                                                className={cx("removeBtn")}
-                                                leftIcon={<FontAwesomeIcon icon={faXmark} />}
-                                                onClick={() => removeQuestion(currentQuestion.id)}
-                                            >
-                                                Xóa
-                                            </Button>
-                                        )}
+                                        <Button
+                                            outline
+                                            small
+                                            className={cx("removeBtn")}
+                                            leftIcon={<FontAwesomeIcon icon={faXmark} />}
+                                            onClick={() => removeQuestion(currentQuestion.id)}
+                                        >
+                                            Xóa
+                                        </Button>
                                     </div>
 
                                     <div className={cx("field")}>
                                         <label className={cx("label")}>Loại câu hỏi</label>
-                                        <select
+                                        <StyledSelect
                                             value={currentQuestion.type}
-                                            onChange={(e) =>
+                                            onChange={(nextType) =>
                                                 updateQuestion(
                                                     currentQuestion.id,
                                                     "type",
-                                                    e.target.value
+                                                    nextType
                                                 )
                                             }
+                                            options={QUESTION_TYPE_OPTIONS}
+                                            ariaLabel="Loại câu hỏi"
                                             className={cx("select")}
-                                        >
-                                            <option value="vocab">Từ vựng</option>
-                                            <option value="grammar">Ngữ pháp, Đọc hiểu</option>
-                                            <option value="listening">Thi nghe</option>
-                                        </select>
+                                        />
                                     </div>
 
                                     <div className={cx("field")}>
@@ -737,48 +976,60 @@ function CreateTest() {
                                         </div>
 
                                         {/* Ô nhập nội dung chung */}
-                                        <textarea
-                                            ref={questionContentRef}
+                                        <RichTextEditor
+                                            key={`question-${currentQuestion.id}-question`}
                                             placeholder="Nhập nội dung câu hỏi..."
                                             value={currentQuestion.question}
-                                            onChange={(e) =>
+                                            onChange={(nextValue) =>
                                                 updateQuestion(
                                                     currentQuestion.id,
                                                     "question",
-                                                    e.target.value
+                                                    nextValue
                                                 )
                                             }
-                                            className={cx("textarea")}
-                                            rows={3}
+                                            size="md"
                                         />
                                         {errors.questContent && <p className={cx("errorText")}>{errors.questContent}</p>}
 
-                                        {/* Nếu là phần nghe thì hiện thêm textarea cho nd thi nghe */}
-                                        {currentQuestion.type === "listening" && (
-                                            <div>
-                                                <label className={cx("label")}>
-                                                    Nội dung phần nghe
-                                                </label>
-                                                <textarea
-                                                    placeholder="Nhập nội dung phần nghe..."
-                                                    value={currentQuestion.listeningContent || ""}
-                                                    onChange={(e) =>
-                                                        updateQuestion(
-                                                            currentQuestion.id,
-                                                            "listeningContent",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    className={cx("textarea")}
-                                                    rows={3}
-                                                    style={{ marginTop: "10px" }}
-                                                />
-                                            </div>
-                                        )}
+                                        <div>
+                                            <label className={cx("label")}>
+                                                Bài đọc/nghe
+                                            </label>
+                                            <RichTextEditor
+                                                key={`question-${currentQuestion.id}-listeningContent`}
+                                                placeholder="Nhập bài đọc hoặc nội dung phần nghe..."
+                                                value={currentQuestion.listeningContent || ""}
+                                                onChange={(nextValue) =>
+                                                    updateQuestion(
+                                                        currentQuestion.id,
+                                                        "listeningContent",
+                                                        nextValue
+                                                    )
+                                                }
+                                                size="lg"
+                                            />
+                                        </div>
+
+                                        <div className={cx("field")} style={{ marginTop: "12px" }}>
+                                            <ImageUploadField
+                                                label="Ảnh chung"
+                                                value={currentQuestion.generalImage || ""}
+                                                onChange={(nextUrl) =>
+                                                    updateQuestion(
+                                                        currentQuestion.id,
+                                                        "generalImage",
+                                                        nextUrl
+                                                    )
+                                                }
+                                                placeholder="Nhập URL ảnh chung nếu có"
+                                                onSuccess={showToast}
+                                                onError={(message) => showToast(message, "error")}
+                                            />
+                                        </div>
                                     </div>
 
 
-                                    {currentQuestion.type === "listening" && (
+                                    {currentQuestion && (
                                         <div className={cx("field")}>
                                             <label className={cx("label")}>Audio</label>
 
@@ -806,7 +1057,19 @@ function CreateTest() {
                                                         className={cx("radioInput")}
                                                     />
                                                     <FontAwesomeIcon icon={faMagic} className={cx("radioIcon")} />
-                                                    <span>Tạo audio tự động</span>
+                                                    <span>Đơn thoại</span>
+                                                </label>
+                                                <label className={cx("radioLabel")}>
+                                                    <input
+                                                        type="radio"
+                                                        name="audioType"
+                                                        value="dialogue"
+                                                        checked={audioInputType === "dialogue"}
+                                                        onChange={() => handleAudioInputTypeChange("dialogue")}
+                                                        className={cx("radioInput")}
+                                                    />
+                                                    <FontAwesomeIcon icon={faMagic} className={cx("radioIcon")} />
+                                                    <span>Hội thoại</span>
                                                 </label>
                                             </div>
 
@@ -820,7 +1083,7 @@ function CreateTest() {
                                                         placeholder="Nhập URL của file audio (ví dụ: https://example.com/audio.mp3)"
                                                     />
                                                 </div>
-                                            ) : (
+                                            ) : audioInputType === "generate" ? (
                                                 <div className={cx("generateAudioSection")}>
                                                     <p className={cx("generateHint")}>
                                                         Audio sẽ được tạo từ nội dung bài nghe bằng công nghệ text-to-speech
@@ -829,9 +1092,44 @@ function CreateTest() {
                                                         primary
                                                         leftIcon={<FontAwesomeIcon icon={faMagic} />}
                                                         onClick={handleGenerateAudio}
-                                                        disabled={isGeneratingAudio || !currentQuestion.listeningContent.trim()}
+                                                        disabled={isGeneratingAudio || !hasEditorContent(currentQuestion.listeningContent)}
                                                     >
                                                         {isGeneratingAudio ? "Đang tạo audio..." : "Tạo audio"}
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <div className={cx("generateAudioSection", "dialogueAudioSection")}>
+                                                    <p className={cx("generateHint")}>
+                                                        Kịch bản hội thoại nhiều vai
+                                                    </p>
+                                                    <DialogueScriptEditor
+                                                        lines={(currentQuestion.audioScript || createDefaultAudioScript()).lines}
+                                                        pauseMs={(currentQuestion.audioScript || createDefaultAudioScript()).pauseMs}
+                                                        speakerOptions={speakerOptions}
+                                                        disabled={isGeneratingAudio}
+                                                        onLinesChange={(nextLines) =>
+                                                            updateQuestion(currentQuestion.id, "audioScript", {
+                                                                ...(currentQuestion.audioScript || createDefaultAudioScript()),
+                                                                mode: "dialogue",
+                                                                lines: nextLines,
+                                                            })
+                                                        }
+                                                        onPauseMsChange={(nextPauseMs) =>
+                                                            updateQuestion(currentQuestion.id, "audioScript", {
+                                                                ...(currentQuestion.audioScript || createDefaultAudioScript()),
+                                                                mode: "dialogue",
+                                                                pauseMs: nextPauseMs,
+                                                            })
+                                                        }
+                                                    />
+                                                    <Button
+                                                        className={cx("dialogueGenerateButton")}
+                                                        primary
+                                                        leftIcon={<FontAwesomeIcon icon={faMagic} />}
+                                                        onClick={handleGenerateDialogueAudio}
+                                                        disabled={isGeneratingAudio}
+                                                    >
+                                                        {isGeneratingAudio ? "Đang tạo audio..." : "Tạo audio hội thoại"}
                                                     </Button>
                                                 </div>
                                             )}
@@ -870,20 +1168,18 @@ function CreateTest() {
                                                         <span className={cx("subIndex")}>
                                                             {currentQuestionIndex + 1}.{subIndex + 1}
                                                         </span>
-                                                        {currentQuestion.subQuestions.length > 1 && (
-                                                            <button
-                                                                type="button"
-                                                                className={cx("subRemove")}
-                                                                onClick={() =>
-                                                                    removeSubQuestion(
-                                                                        currentQuestion.id,
-                                                                        sub.id
-                                                                    )
-                                                                }
-                                                            >
-                                                                <FontAwesomeIcon icon={faXmark} />
-                                                            </button>
-                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            className={cx("subRemove")}
+                                                            onClick={() =>
+                                                                removeSubQuestion(
+                                                                    currentQuestion.id,
+                                                                    sub.id
+                                                                )
+                                                            }
+                                                        >
+                                                            <FontAwesomeIcon icon={faXmark} />
+                                                        </button>
                                                     </div>
 
                                                     <div className={cx("field")}>
@@ -891,20 +1187,19 @@ function CreateTest() {
                                                             <label className={cx("label")}>Câu hỏi</label>
                                                             <span className={cx("requiredStar")}>*</span>
                                                         </div>
-                                                        <textarea
-                                                            ref={subQuestionContentRef}
+                                                        <RichTextEditor
+                                                            key={`question-${currentQuestion.id}-sub-${sub.id}-question`}
                                                             placeholder="Nhập nội dung câu hỏi con..."
                                                             value={sub.question}
-                                                            onChange={(e) =>
+                                                            onChange={(nextValue) =>
                                                                 updateSubQuestion(
                                                                     currentQuestion.id,
                                                                     sub.id,
                                                                     "question",
-                                                                    e.target.value
+                                                                    nextValue
                                                                 )
                                                             }
-                                                            className={cx("textarea")}
-                                                            rows={2}
+                                                            size="sm"
                                                         />
                                                         {errors.subQuestionContent && <p className={cx("errorText")}>{errors.subQuestionContent}</p>}
                                                     </div>
@@ -959,44 +1254,115 @@ function CreateTest() {
                                                     </div>
 
                                                     <div className={cx("field")}>
+                                                        <ImageUploadField
+                                                            label="Ảnh câu hỏi con"
+                                                            placeholder="Nhập URL ảnh nếu có..."
+                                                            value={sub.image || ""}
+                                                            onChange={(nextUrl) =>
+                                                                updateSubQuestion(
+                                                                    currentQuestion.id,
+                                                                    sub.id,
+                                                                    "image",
+                                                                    nextUrl
+                                                                )
+                                                            }
+                                                            onSuccess={showToast}
+                                                            onError={(message) => showToast(message, "error")}
+                                                        />
+                                                    </div>
+
+                                                    <div className={cx("field")}>
                                                         <label className={cx("label")}>
                                                             Giải thích
                                                         </label>
-                                                        <textarea
+                                                        <RichTextEditor
+                                                            key={`question-${currentQuestion.id}-sub-${sub.id}-explanation`}
                                                             placeholder="Nhập giải thích..."
                                                             value={sub.explanation}
-                                                            onChange={(e) =>
+                                                            onChange={(nextValue) =>
                                                                 updateSubQuestion(
                                                                     currentQuestion.id,
                                                                     sub.id,
                                                                     "explanation",
-                                                                    e.target.value
+                                                                    nextValue
                                                                 )
                                                             }
-                                                            className={cx("textarea")}
-                                                            rows={2}
+                                                            size="lg"
                                                         />
                                                     </div>
 
-                                                    <div className={cx("field")} style={{ marginTop: "12px" }}  >
+                                                    <div className={cx("field")}>
+                                                        <label className={cx("label")}>
+                                                            Giải thích chi tiết
+                                                        </label>
+                                                        <RichTextEditor
+                                                            key={`question-${currentQuestion.id}-sub-${sub.id}-explainAll`}
+                                                            placeholder="Nhập giải thích chi tiết..."
+                                                            value={sub.explainAll || ""}
+                                                            onChange={(nextValue) =>
+                                                                updateSubQuestion(
+                                                                    currentQuestion.id,
+                                                                    sub.id,
+                                                                    "explainAll",
+                                                                    nextValue
+                                                                )
+                                                            }
+                                                            size="xl"
+                                                        />
+                                                    </div>
+
+                                                    <div className={cx("field", "scoreField")}>
                                                         <label className={cx("label")}>
                                                             Điểm cho câu hỏi
                                                         </label>
 
-                                                        <input
-                                                            type="number"
-                                                            placeholder="Nhập điểm..."
-                                                            value={sub.score}
-                                                            onChange={(e) =>
-                                                                updateSubQuestion(
-                                                                    currentQuestion.id,
-                                                                    sub.id,
-                                                                    "score",
-                                                                    Number(e.target.value)
-                                                                )
-                                                            }
-                                                            className={cx("input")}
-                                                        />
+                                                        <div className={cx("scoreStepper")}>
+                                                            <button
+                                                                type="button"
+                                                                className={cx("scoreButton")}
+                                                                onClick={() =>
+                                                                    updateSubQuestion(
+                                                                        currentQuestion.id,
+                                                                        sub.id,
+                                                                        "score",
+                                                                        Math.max(0, Number(sub.score || 0) - 1)
+                                                                    )
+                                                                }
+                                                                aria-label="Giảm điểm"
+                                                            >
+                                                                <FontAwesomeIcon icon={faMinus} />
+                                                            </button>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                step="1"
+                                                                value={sub.score}
+                                                                onChange={(e) =>
+                                                                    updateSubQuestion(
+                                                                        currentQuestion.id,
+                                                                        sub.id,
+                                                                        "score",
+                                                                        Math.max(0, Number(e.target.value) || 0)
+                                                                    )
+                                                                }
+                                                                className={cx("scoreInput")}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                className={cx("scoreButton")}
+                                                                onClick={() =>
+                                                                    updateSubQuestion(
+                                                                        currentQuestion.id,
+                                                                        sub.id,
+                                                                        "score",
+                                                                        Number(sub.score || 0) + 1
+                                                                    )
+                                                                }
+                                                                aria-label="Tăng điểm"
+                                                            >
+                                                                <FontAwesomeIcon icon={faPlus} />
+                                                            </button>
+                                                        </div>
                                                     </div>
 
                                                 </div>

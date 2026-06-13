@@ -8,7 +8,10 @@ $yellow: #ffd166;
 
 .wrapper {
   min-height: 100vh;
-  background: $soft-bg;
+  background:
+    radial-gradient(circle at 86% 12%, rgba(168, 239, 217, 0.55) 0, rgba(168, 239, 217, 0.24) 24%, transparent 48%),
+    radial-gradient(circle at 8% 64%, rgba(255, 209, 102, 0.34) 0, rgba(255, 209, 102, 0.16) 24%, transparent 45%),
+    linear-gradient(135deg, #f7fffc 0%, $soft-bg 42%, #e7fbf7 68%, #fff8dc 100%);
   padding: 40px 0 64px;
   color: $ink;
   position: relative;
@@ -28,7 +31,8 @@ $yellow: #ffd166;
   height: 460px;
   top: -100px;
   right: -160px;
-  background: radial-gradient(circle, rgba(168, 239, 217, 0.55), transparent 70%);
+  background: radial-gradient(circle, rgba(0, 135, 154, 0.22), rgba(168, 239, 217, 0.36) 42%, transparent 72%);
+  filter: blur(4px);
 }
 
 .blob2 {
@@ -36,7 +40,8 @@ $yellow: #ffd166;
   height: 360px;
   top: 280px;
   left: -120px;
-  background: radial-gradient(circle, rgba(255, 209, 102, 0.32), transparent 70%);
+  background: radial-gradient(circle, rgba(255, 209, 102, 0.42), rgba(252, 95, 0, 0.1) 42%, transparent 72%);
+  filter: blur(6px);
 }
 
 .container {
@@ -45,6 +50,78 @@ $yellow: #ffd166;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 32px;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 42, 42, 0.42);
+}
+
+.learningPathModal {
+  width: min(100%, 460px);
+  border: 1px solid $soft-border;
+  border-radius: 18px;
+  background: #fff;
+  padding: 26px;
+  box-shadow: 0 24px 70px rgba(15, 42, 42, 0.22);
+}
+
+.modalEyebrow {
+  display: inline-flex;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  background: $soft-tint;
+  padding: 5px 12px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.modalTitle {
+  margin: 0;
+  color: $ink;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.modalText {
+  margin: 12px 0 0;
+  color: $ink-soft;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.modalPrimary,
+.modalSecondary {
+  min-height: 42px;
+  border-radius: 10px;
+  padding: 0 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.modalPrimary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.modalSecondary {
+  border: 1px solid $soft-border;
+  color: $ink-soft;
 }
 
 /* ============ HERO ============ */
@@ -70,7 +147,7 @@ $yellow: #ffd166;
 .title {
   font-size: 44px;
   font-weight: 800;
-  letter-spacing: -1px;
+  letter-spacing: 0;
   color: $ink;
   margin: 0;
   line-height: 1.15;
@@ -78,10 +155,23 @@ $yellow: #ffd166;
 }
 
 .titleAccent {
-  background: linear-gradient(135deg, var(--primary), var(--orange));
+  display: inline-flex;
+  align-items: baseline;
+  padding: 0 6px 0 2px;
+}
+
+.accentWord,
+.questionMark {
+  background: linear-gradient(120deg, var(--primary) 0%, #25b8bf 34%, #ffb347 68%, var(--orange) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.questionMark {
+  display: inline-block;
+  margin-left: 6px;
+  padding-right: 3px;
 }
 
 .subtitle {
@@ -202,7 +292,7 @@ $yellow: #ffd166;
   font-weight: 800;
   color: $ink;
   margin: 0;
-  letter-spacing: -0.2px;
+  letter-spacing: 0;
 }
 
 .shortcutDesc {
@@ -450,5 +540,18 @@ $yellow: #ffd166;
 
   .results {
     grid-template-columns: 1fr;
+  }
+
+  .learningPathModal {
+    padding: 22px;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+  }
+
+  .modalPrimary,
+  .modalSecondary {
+    width: 100%;
   }
 }

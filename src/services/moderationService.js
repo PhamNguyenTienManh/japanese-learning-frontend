@@ -24,6 +24,21 @@ const moderationService = {
     return response.data;
   },
 
+  reportComment: async (commentId, payload) => {
+    const response = await moderationClient.post(`/reports/comments/${commentId}`, payload);
+    return response.data;
+  },
+
+  deletePostWithReason: async (postId, payload) => {
+    const response = await moderationClient.post(`/admin/posts/${postId}/delete`, payload);
+    return response.data;
+  },
+
+  deleteCommentWithReason: async (commentId, payload) => {
+    const response = await moderationClient.post(`/admin/comments/${commentId}/delete`, payload);
+    return response.data;
+  },
+
   getCaseCounts: async () => {
     const response = await moderationClient.get("/cases/counts");
     return response.data;

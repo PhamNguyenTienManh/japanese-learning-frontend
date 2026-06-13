@@ -34,12 +34,11 @@ const statusTabs = [
     countKey: "automatedAutoDeleted",
   },
   {
-    value: "user_report_posts",
-    label: "Bài viết bị người dùng báo cáo",
+    value: "user_reports",
+    label: "Người dùng báo cáo",
     status: "pending",
     source: "user_report",
-    targetType: "post",
-    countKey: "userReportPostsPending",
+    countKey: "userReportsPending",
   },
   { value: "handled", label: "Đã xử lý", status: "handled", source: "" },
 ];
@@ -105,7 +104,7 @@ function Violations() {
   const [caseCounts, setCaseCounts] = useState({
     automatedPending: 0,
     automatedAutoDeleted: 0,
-    userReportPostsPending: 0,
+    userReportsPending: 0,
     actionableTotal: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -181,14 +180,15 @@ function Violations() {
       setCaseCounts({
         automatedPending: Number(data?.automatedPending) || 0,
         automatedAutoDeleted: Number(data?.automatedAutoDeleted) || 0,
-        userReportPostsPending: Number(data?.userReportPostsPending) || 0,
+        userReportsPending:
+          Number(data?.userReportsPending ?? data?.userReportPostsPending) || 0,
         actionableTotal: Number(data?.actionableTotal) || 0,
       });
     } catch {
       setCaseCounts({
         automatedPending: 0,
         automatedAutoDeleted: 0,
-        userReportPostsPending: 0,
+        userReportsPending: 0,
         actionableTotal: 0,
       });
     }
@@ -298,7 +298,6 @@ function Violations() {
 
   const handleStatusChange = (status) => {
     setActiveStatus(status);
-    if (status === "user_report_posts") setTargetType("");
     setCurrentPage(1);
   };
 
@@ -310,7 +309,6 @@ function Violations() {
   const totalPage = Math.max(pagination.totalPage || 1, 1);
   const canGoPrevious = currentPage > 1 && !loading;
   const canGoNext = currentPage < totalPage && !loading;
-  const isUserReportTab = activeStatus === "user_report_posts";
 
   return (
     <div className={cx("page")}>
@@ -452,7 +450,6 @@ function Violations() {
         <select
           value={targetType}
           onChange={(event) => handleTargetTypeChange(event.target.value)}
-          disabled={isUserReportTab}
         >
           <option value="">Tất cả nội dung</option>
           <option value="post">Bài viết</option>
@@ -511,6 +508,11 @@ function Violations() {
                       state={{
                         fromAdminViolations: true,
                         returnTo: "/admin/violations",
+                        focusCommentId:
+                          item.targetType === "comment" ||
+                          item.targetType === "reply_comment"
+                            ? getId(item.targetId)
+                            : undefined,
                       }}
                       className={cx("viewLink")}
                     >
@@ -563,8 +565,9 @@ function Violations() {
                       </button>
                     </>
                   )}
-                  {(item.status === "auto_deleted" ||
-                    item.status === "approved_deleted") && (
+                  {activeStatus !== "handled" &&
+                    (item.status === "auto_deleted" ||
+                      item.status === "approved_deleted") && (
                     <button
                       type="button"
                       onClick={() => handleAction("restore", id)}

@@ -204,6 +204,33 @@ export async function comparisonUserAnswerWithResult(examId) {
   return await response.json();
 }
 
+export async function getAdminExamAttemptStats(examId, params = {}) {
+  const searchParams = new URLSearchParams();
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.limit) searchParams.set("limit", String(params.limit));
+  if (params.status) searchParams.set("status", params.status);
+  if (params.q) searchParams.set("q", params.q);
+
+  const queryString = searchParams.toString();
+  const response = await fetch(
+    `${BASE_URL}/exam-results/admin/statistics/${examId}${queryString ? `?${queryString}` : ""}`,
+    {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        ...getAuthHeaders(),
+        "Content-Type": "application/json"
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch exam attempt statistics");
+  }
+
+  return await response.json();
+}
+
 // Lưu tiến trình bài thi (elapsed time + status → SAVING)
 export async function saveProgress(examResultId, elapsed) {
   const response = await fetch(`${BASE_URL}/exam-results/save-progress`, {
@@ -321,4 +348,23 @@ export async function deleteExamQuestion(questionId) {
   return response.json();
 }
 
+// Delete multiple exam questions
+export async function deleteExamQuestions(questionIds) {
+  const response = await fetch(`${BASE_URL}/exam-questions/batch`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({ questionIds }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Failed to delete exam questions: ${err}`);
+  }
+
+  return response.json();
+}
 

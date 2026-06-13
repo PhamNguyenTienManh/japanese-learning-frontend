@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import classNames from "classnames/bind";
 import {
   faArrowLeft,
@@ -14,6 +15,7 @@ import {
   getConversationGroups,
   getConversationLesson,
 } from "~/services/conversationService";
+import GuidedCoachmark from "~/components/GuidedCoachmark";
 import styles from "./ConversationPractice.module.scss";
 
 const cx = classNames.bind(styles);
@@ -22,11 +24,16 @@ function getRecognitionConstructor() {
   return window.SpeechRecognition || window.webkitSpeechRecognition;
 }
 
-function ConversationCard({ lesson, onSelect }) {
+function ConversationCard({ lesson, onSelect, tourRef }) {
   const levelClass = (lesson.level || "").toLowerCase();
 
   return (
-    <button className={cx("card")} type="button" onClick={() => onSelect(lesson)}>
+    <button
+      ref={tourRef}
+      className={cx("card")}
+      type="button"
+      onClick={() => onSelect(lesson)}
+    >
       <img src={lesson.image} alt="" loading="lazy" />
       <span className={cx("imageShade")} />
       <span className={cx("playIcon")}>
@@ -43,6 +50,7 @@ function ConversationCard({ lesson, onSelect }) {
 }
 
 function ConversationPractice() {
+  const location = useLocation();
   const [conversationGroups, setConversationGroups] = useState([]);
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [activeLineIndex, setActiveLineIndex] = useState(0);
@@ -54,8 +62,19 @@ function ConversationPractice() {
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [loadError, setLoadError] = useState("");
   const recognitionRef = useRef(null);
+  const conversationTourRef = useRef(null);
+  const tourParam = useMemo(
+    () => new URLSearchParams(location.search).get("tour"),
+    [location.search],
+  );
 
   const dialogueLines = selectedLesson?.lines || [];
+  const conversationTourLesson = useMemo(() => {
+    const firstGroupWithLessons = conversationGroups.find(
+      (group) => Array.isArray(group.lessons) && group.lessons.length > 0,
+    );
+    return firstGroupWithLessons?.lessons?.[0] || null;
+  }, [conversationGroups]);
 
   useEffect(() => {
     return () => {
@@ -368,6 +387,13 @@ function ConversationPractice() {
                     lesson={lesson}
                     key={lesson.title}
                     onSelect={handleSelectLesson}
+                    tourRef={
+                      conversationTourLesson &&
+                      (conversationTourLesson.slug || conversationTourLesson.id || conversationTourLesson.title) ===
+                        (lesson.slug || lesson.id || lesson.title)
+                        ? conversationTourRef
+                        : undefined
+                    }
                   />
                 ))}
               </div>
@@ -378,6 +404,14 @@ function ConversationPractice() {
             </section>
           )}
         </div>
+        {tourParam === "conversation" && conversationTourLesson && !selectedLesson && !isLoadingList && (
+          <GuidedCoachmark
+            targetRef={conversationTourRef}
+            tourKey="conversation"
+            message="Chọn bài hội thoại này để bắt đầu luyện nói theo lộ trình."
+            placement="top"
+          />
+        )}
       </div>
     </main>
   );

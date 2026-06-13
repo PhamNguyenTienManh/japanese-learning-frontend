@@ -19,6 +19,7 @@ import PostViewMode from "~/components/PostViewMode/PostViewMode";
 import CommentForm from "~/components/CommentForm/CommentForm";
 import CommentList from "~/components/CommentList/CommentList";
 import ImageZoomModal from "~/components/ImageZoomModal/ImageZoomModal";
+import { useToast } from "~/context/ToastContext";
 
 const cx = classNames.bind(styles);
 
@@ -26,13 +27,22 @@ function PostDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn, userId: currentUserId, role } = useAuth();
-  const adminReturnTo = location.state?.fromAdminViolations
-    ? location.state?.returnTo || "/admin/violations"
+  const { addToast } = useToast();
+  const { isLoggedIn, userId: currentUserId } = useAuth();
+  const fromAdmin = location.state?.fromAdminViolations || location.state?.fromAdminPosts;
+  const adminReturnTo = fromAdmin
+    ? location.state?.returnTo ||
+      (location.state?.fromAdminPosts ? "/admin/posts" : "/admin/violations")
     : "";
-  const backLabel = adminReturnTo
-    ? "Quay lại báo cáo vi phạm"
-    : "Quay lại cộng đồng";
+  const backLabel =
+    location.state?.backLabel ||
+    (adminReturnTo
+      ? location.state?.fromAdminPosts
+        ? "Quay lại quản lý bài viết"
+        : "Quay lại báo cáo vi phạm"
+      : "Quay lại cộng đồng");
+  const focusCommentId = location.state?.focusCommentId;
+  const isAdminContext = Boolean(adminReturnTo);
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,6 +72,7 @@ function PostDetail() {
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedCommentContent, setEditedCommentContent] = useState("");
   const [savingComment, setSavingComment] = useState(false);
+  const [highlightedCommentId, setHighlightedCommentId] = useState("");
 
 
   const getMe = async (id) => {
@@ -88,7 +99,9 @@ function PostDetail() {
   const fetchComments = async () => {
     setCommentsLoading(true);
     try {
-      const response = await postService.getComments(id);
+      const response = isAdminContext
+        ? await postService.getAdminComments(id)
+        : await postService.getComments(id);
       let commentsData = [];
       if (Array.isArray(response)) commentsData = response;
       else if (response?.comments && Array.isArray(response.comments)) commentsData = response.comments;
@@ -122,7 +135,7 @@ function PostDetail() {
       setError(null);
       try {
         const response =
-          adminReturnTo || role === "admin"
+          isAdminContext
             ? await postService.getAdminPostById(id)
             : isLoggedIn
               ? await postService.getAccessiblePostById(id)
@@ -145,7 +158,28 @@ function PostDetail() {
       }
     };
     if (id) fetchPostDetail();
-  }, [id, currentUserId, isLoggedIn, adminReturnTo, role]);
+  }, [id, currentUserId, isLoggedIn, isAdminContext]);
+
+  useEffect(() => {
+    if (!focusCommentId || commentsLoading || comments.length === 0) return undefined;
+
+    const timer = window.setTimeout(() => {
+      const target = document.querySelector(`[data-comment-id="${focusCommentId}"]`);
+      if (!target) return;
+
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightedCommentId(String(focusCommentId));
+    }, 120);
+
+    const clearHighlightTimer = window.setTimeout(() => {
+      setHighlightedCommentId("");
+    }, 3200);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(clearHighlightTimer);
+    };
+  }, [focusCommentId, commentsLoading, comments]);
 
 
   const handleLike = async () => {
@@ -259,8 +293,17 @@ function PostDetail() {
         updateData.image_url = originalImageUrl; updateData.image_publicId = originalImagePublicId;
       }
 
+      const editedAt = new Date().toISOString();
       await postService.updatePost(id, updateData);
-      setPost((prev) => ({ ...prev, title: editedTitle, content: editedContent, description: editedContent, image_url: updateData.image_url, image_publicId: updateData.image_publicId }));
+      setPost((prev) => ({
+        ...prev,
+        title: editedTitle,
+        content: editedContent,
+        description: editedContent,
+        image_url: updateData.image_url,
+        image_publicId: updateData.image_publicId,
+        edited_at: editedAt,
+      }));
       setIsEditing(false);
       setImage(null); setImagePreview(null); setImageChanged(false);
       setOriginalImageUrl(null); setOriginalImagePublicId(null);
@@ -334,17 +377,45 @@ function PostDetail() {
     if (!editedCommentContent.trim()) { alert("Nội dung bình luận không được để trống!"); return; }
     setSavingComment(true);
     try {
+      const editedAt = new Date().toISOString();
       await postService.updateComment(commentId, { content: editedCommentContent });
       setComments((prev) =>
         prev.map((c) => {
           const cId = c._id || c.id || c.commentId;
-          return cId === commentId ? { ...c, content: editedCommentContent } : c;
+          return cId === commentId ? { ...c, content: editedCommentContent, edited_at: editedAt } : c;
         })
       );
       setEditingCommentId(null); setEditedCommentContent("");
     } catch (err) {
       console.error("Update comment error:", err);
-      alert("Không thể cập nhật bình luận. Vui lòng thử lại.");
+      const message =
+        err?.response?.data?.message ||
+        "Không thể cập nhật bình luận. Vui lòng thử lại.";
+
+      if (err?.response?.status === 403 && !isAdminContext) {
+        const removedComment = comments.find(
+          (c) => String(c._id || c.id || c.commentId) === String(commentId),
+        );
+        setEditingCommentId(null);
+        setEditedCommentContent("");
+        setComments((prev) =>
+          prev.filter((c) => String(c._id || c.id || c.commentId) !== String(commentId)),
+        );
+        if (removedComment) {
+          setCountComment((prev) => Math.max(prev - 1, 0));
+          setPost((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  comments: Math.max(Number(prev.comments || 0) - 1, 0),
+                }
+              : prev,
+          );
+        }
+        addToast(message, "warning");
+      } else {
+        addToast(message, "error");
+      }
     } finally {
       setSavingComment(false);
     }
@@ -404,7 +475,7 @@ function PostDetail() {
             <span>{backLabel}</span>
           </button>
 
-          {post?.status === 0 && (adminReturnTo || role === "admin" || isOwner) && (
+          {post?.status === 0 && (isAdminContext || isOwner) && (
             <div className={cx("admin-deleted-notice")}>
               Bài viết này đã bị xóa bởi vì vi phạm tiêu chuẩn cộng đồng.
             </div>
@@ -469,6 +540,9 @@ function PostDetail() {
                 editingCommentId={editingCommentId}
                 editedCommentContent={editedCommentContent}
                 savingComment={savingComment}
+                isLoggedIn={isLoggedIn}
+                isAdminContext={isAdminContext}
+                highlightedCommentId={highlightedCommentId}
                 isCommentOwner={isCommentOwner}
                 onLike={handleCommentLike}
                 onEdit={handleEditComment}

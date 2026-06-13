@@ -1,17 +1,23 @@
-// DictionaryAdmin.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import classNames from "classnames/bind";
 import { motion, AnimatePresence } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+    faChevronDown,
+    faChevronLeft,
+    faChevronRight,
+    faDownload,
+    faFileExport,
+    faUpload,
     faMagnifyingGlass,
-    faPlus,
     faPenToSquare,
+    faPlus,
+    faRotateRight,
     faTrash,
     faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 
-import Card from "~/components/Card";
 import Button from "~/components/Button";
 import Input from "~/components/Input";
 
@@ -25,13 +31,21 @@ import {
     getJlptGrammarAdmin,
     updateJlptGrammar,
     deleteJlptGrammar,
+    importJlptWordExcel,
+    importJlptKanjiExcel,
+    importJlptGrammarExcel,
+    downloadJlptWordTemplate,
+    downloadJlptKanjiTemplate,
+    downloadJlptGrammarTemplate,
+    exportJlptWordExcel,
+    exportJlptKanjiExcel,
+    exportJlptGrammarExcel,
 } from "~/services/jlptService";
 import styles from "./DictionaryAdmin.module.scss";
 
 const BASE_URL = process.env.REACT_APP_BASE_URL_API;
 
 const cx = classNames.bind(styles);
-
 const easeOut = [0.22, 1, 0.36, 1];
 
 const TYPE_OPTIONS = [
@@ -47,27 +61,278 @@ const TYPE_OPTIONS = [
     "Thán từ",
 ];
 
+const LEVEL_OPTIONS = ["N5", "N4", "N3", "N2", "N1"];
+const PAGE_SIZE_OPTIONS = [25, 50, 100];
+const LEVEL_FILTER_OPTIONS = [
+    { value: "all", label: "Tất cả cấp độ" },
+    ...LEVEL_OPTIONS.map((level) => ({ value: level, label: level })),
+];
+const PAGE_SIZE_FILTER_OPTIONS = PAGE_SIZE_OPTIONS.map((size) => ({
+    value: size,
+    label: `${size} / trang`,
+}));
+const RESOURCE_BY_TAB = {
+    words: "jlpt_word",
+    grammar: "jlpt_grammar",
+    kanji: "jlpt_kanji",
+};
+const VALID_TABS = ["words", "grammar", "kanji"];
+
+const TAB_META = {
+    words: {
+        label: "Từ vựng",
+        noun: "từ vựng",
+        placeholder: "Tìm từ / phiên âm / nghĩa / loại từ...",
+    },
+    grammar: {
+        label: "Ngữ pháp",
+        noun: "ngữ pháp",
+        placeholder: "Tìm mẫu ngữ pháp / ý nghĩa...",
+    },
+    kanji: {
+        label: "Kanji",
+        noun: "kanji",
+        placeholder: "Tìm kanji / nghĩa / âm đọc...",
+    },
+};
+
+function unwrapCreateResponse(resJson) {
+    if (!resJson) return null;
+    return resJson?.data?.data || resJson?.data || resJson || null;
+}
+
+function unwrapAdminResponse(resJson) {
+    const payload =
+        resJson?.data && Array.isArray(resJson.data)
+            ? resJson
+            : resJson?.data?.data && Array.isArray(resJson.data.data)
+                ? resJson.data
+                : resJson || {};
+
+    const data = Array.isArray(payload.data) ? payload.data : [];
+    const total = Number(payload.total) || data.length;
+    const totalPages = Math.max(Number(payload.totalPages) || 1, 1);
+    const currentPage = Math.max(Number(payload.currentPage) || 1, 1);
+
+    return { data, total, totalPages, currentPage };
+}
+
+function unwrapServicePayload(resJson) {
+    return resJson?.data?.data || resJson?.data || resJson || null;
+}
+
+function downloadBase64File(report) {
+    if (!report?.base64) return;
+
+    const byteCharacters = atob(report.base64);
+    const byteNumbers = Array.from(byteCharacters, (char) => char.charCodeAt(0));
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], {
+        type: report.contentType || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = report.filename || "import-errors.xlsx";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+}
+
+function listText(value, separator = ", ") {
+    if (Array.isArray(value)) {
+        return value.filter(Boolean).join(separator) || "-";
+    }
+    return value || "-";
+}
+
+function meaningsText(meanings) {
+    if (!Array.isArray(meanings) || meanings.length === 0) return "-";
+    return meanings
+        .map((item) => item?.meaning || item)
+        .filter(Boolean)
+        .join(", ") || "-";
+}
+
+function formatDate(value) {
+    if (!value) return "-";
+    return new Intl.DateTimeFormat("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    }).format(new Date(value));
+}
+
+function normalizeDetailText(value) {
+    return String(value || "")
+        .replace(/\\n/g, "\n")
+        .replace(/\r\n?/g, "\n")
+        .replace(/\n{2,}/g, "\n")
+        .trim();
+}
+
+function getItemId(item) {
+    return item?._id || item?.id;
+}
+
+function createBlankMeaning() {
+    return { meaning: "", examples: [] };
+}
+
+function createBlankWordExample() {
+    return { jp: "", vi: "" };
+}
+
+function createBlankKanjiExample() {
+    return { w: "", m: "", p: "", h: "" };
+}
+
+function normalizeWordMeanings(meanings) {
+    if (!Array.isArray(meanings) || meanings.length === 0) return [createBlankMeaning()];
+
+    return meanings.map((meaning) => ({
+        meaning: meaning?.meaning || "",
+        examples: Array.isArray(meaning?.examples)
+            ? meaning.examples.map((example) => ({
+                jp: example?.jp || "",
+                vi: example?.vi || "",
+            }))
+            : [],
+    }));
+}
+
+function normalizeKanjiExamples(examples) {
+    if (!Array.isArray(examples)) return [];
+
+    return examples.map((example) => ({
+        w: example?.w || "",
+        m: example?.m || "",
+        p: example?.p || "",
+        h: example?.h || "",
+    }));
+}
+
+function toJsonEditorValue(value) {
+    if (!value || (typeof value === "object" && Object.keys(value).length === 0)) {
+        return "";
+    }
+
+    return JSON.stringify(value, null, 2);
+}
+
+function AdminSelect({ className, options, value, onChange, ariaLabel }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+    const selectedOption =
+        options.find((option) => option.value === value) || options[0];
+
+    useEffect(() => {
+        function handlePointerDown(event) {
+            if (ref.current && !ref.current.contains(event.target)) {
+                setOpen(false);
+            }
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === "Escape") {
+                setOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handlePointerDown);
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.removeEventListener("mousedown", handlePointerDown);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, []);
+
+    return (
+        <div className={cx("adminSelect", className, { open })} ref={ref}>
+            <button
+                type="button"
+                className={cx("adminSelectTrigger")}
+                aria-label={ariaLabel}
+                aria-haspopup="listbox"
+                aria-expanded={open}
+                onClick={() => setOpen((current) => !current)}
+            >
+                <span>{selectedOption?.label || "Chọn"}</span>
+                <FontAwesomeIcon icon={faChevronDown} />
+            </button>
+
+            {open && (
+                <div className={cx("adminSelectMenu")} role="listbox">
+                    {options.map((option) => (
+                        <button
+                            key={option.value}
+                            type="button"
+                            role="option"
+                            aria-selected={option.value === value}
+                            className={cx("adminSelectOption", {
+                                selected: option.value === value,
+                            })}
+                            onClick={() => {
+                                onChange(option.value);
+                                setOpen(false);
+                            }}
+                        >
+                            {option.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
 function DictionaryAdmin() {
-    const [activeTab, setActiveTab] = useState("words");
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const tabFromUrl = searchParams.get("tab");
+    const [activeTab, setActiveTab] = useState(
+        VALID_TABS.includes(tabFromUrl) ? tabFromUrl : "words",
+    );
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [levelFilter, setLevelFilter] = useState("all");
+    const [pageSize, setPageSize] = useState(25);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState({
+        total: 0,
+        totalPages: 1,
+        currentPage: 1,
+    });
+    const [items, setItems] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadError, setLoadError] = useState("");
+    const [refreshKey, setRefreshKey] = useState(0);
     const [showAddForm, setShowAddForm] = useState(false);
-
-    const [words, setWords] = useState([]);
-    const [grammar, setGrammar] = useState([]);
-    const [kanji, setKanji] = useState([]);
-
     const [editingItem, setEditingItem] = useState(null);
-
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [formState, setFormState] = useState({});
+    const [formError, setFormError] = useState("");
+    const [excelStatus, setExcelStatus] = useState(null);
+    const [isImporting, setIsImporting] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+    const importInputRef = useRef(null);
 
+    const tabLabel = TAB_META[activeTab].noun;
+    const activeResource = RESOURCE_BY_TAB[activeTab];
+
+    // eslint-disable-next-line no-unused-vars
     function resetFormForTab(tab) {
         if (tab === "words") {
             setFormState({
                 word: "",
                 phonetic: "",
-                type: TYPE_OPTIONS[0],
-                meanings: "",
+                type: "",
+                meanings: [createBlankMeaning()],
                 level: "N5",
                 isJlpt: true,
             });
@@ -86,6 +351,9 @@ function DictionaryAdmin() {
                 kun: "",
                 on: "",
                 stroke_count: "",
+                examples: [],
+                example_kun: "",
+                example_on: "",
                 level: "N5",
                 isJlpt: true,
             });
@@ -93,29 +361,173 @@ function DictionaryAdmin() {
     }
 
     useEffect(() => {
-        async function load() {
+        const nextTab = searchParams.get("tab");
+        if (VALID_TABS.includes(nextTab) && nextTab !== activeTab) {
+            setActiveTab(nextTab);
+            setCurrentPage(1);
+            setEditingItem(null);
+            setDeleteTarget(null);
+            setShowAddForm(false);
+            setItems([]);
+        }
+    }, [searchParams, activeTab]);
+
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            setDebouncedSearch(searchQuery.trim());
+        }, 350);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [searchQuery]);
+
+    useEffect(() => {
+        let isActive = true;
+
+        async function loadItems() {
             try {
+                setIsLoading(true);
+                setLoadError("");
+
+                const level = levelFilter === "all" ? "" : levelFilter;
+                const args = [currentPage, pageSize, level, debouncedSearch, false];
+                let response;
+
                 if (activeTab === "words") {
-                    const res = await getJlptWordsAdmin(1, 9999, "", "");
-                    setWords(res?.data?.data || res?.data || []);
+                    response = await getJlptWordsAdmin(...args);
                 } else if (activeTab === "grammar") {
-                    const res = await getJlptGrammarAdmin(1, 9999, "", "");
-                    setGrammar(res?.data?.data || res?.data || []);
+                    response = await getJlptGrammarAdmin(...args);
                 } else {
-                    const res = await getJlptKanjiAdmin(1, 9999, "", "");
-                    setKanji(res?.data?.data || res?.data || []);
+                    response = await getJlptKanjiAdmin(...args);
                 }
+
+                if (!isActive) return;
+
+                const next = unwrapAdminResponse(response);
+                setItems(next.data);
+                setPagination({
+                    total: next.total,
+                    totalPages: next.totalPages,
+                    currentPage: next.currentPage,
+                });
             } catch (err) {
-                console.error("Load error:", err);
+                if (!isActive) return;
+                console.error("Load dictionary admin error:", err);
+                setItems([]);
+                setPagination({ total: 0, totalPages: 1, currentPage: 1 });
+                setLoadError("Không tải được dữ liệu. Vui lòng thử lại.");
+            } finally {
+                if (isActive) setIsLoading(false);
             }
         }
-        load();
-    }, [activeTab]);
 
-    const unwrapResp = (resJson) => {
-        if (!resJson) return null;
-        return resJson?.data?.data || resJson?.data || resJson || null;
-    };
+        loadItems();
+
+        return () => {
+            isActive = false;
+        };
+    }, [activeTab, currentPage, pageSize, levelFilter, debouncedSearch, refreshKey]);
+
+    function requestReload() {
+        setRefreshKey((key) => key + 1);
+    }
+
+    function handleTabChange(tab) {
+        setActiveTab(tab);
+        navigate(`/admin/dictionary?tab=${tab}`, { replace: true });
+        setSearchQuery("");
+        setDebouncedSearch("");
+        setLevelFilter("all");
+        setCurrentPage(1);
+        setEditingItem(null);
+        setDeleteTarget(null);
+        setFormError("");
+        setExcelStatus(null);
+        setShowAddForm(false);
+        setItems([]);
+    }
+
+    function getActiveExcelHandlers() {
+        if (activeTab === "words") {
+            return {
+                importExcel: importJlptWordExcel,
+                downloadTemplate: downloadJlptWordTemplate,
+                exportExcel: exportJlptWordExcel,
+            };
+        }
+        if (activeTab === "grammar") {
+            return {
+                importExcel: importJlptGrammarExcel,
+                downloadTemplate: downloadJlptGrammarTemplate,
+                exportExcel: exportJlptGrammarExcel,
+            };
+        }
+        return {
+            importExcel: importJlptKanjiExcel,
+            downloadTemplate: downloadJlptKanjiTemplate,
+            exportExcel: exportJlptKanjiExcel,
+        };
+    }
+
+    function buildImportMessage(summary) {
+        return `Import xong: thêm ${summary.inserted || 0}, bỏ qua ${summary.skipped || 0}, lỗi ${summary.invalid || 0} trên ${summary.total || 0} dòng.`;
+    }
+
+    async function handleDownloadTemplate() {
+        try {
+            setExcelStatus(null);
+            await getActiveExcelHandlers().downloadTemplate();
+        } catch (error) {
+            console.error("Download dictionary template error:", error);
+            setExcelStatus({
+                type: "error",
+                message: "Không tải được file mẫu. Vui lòng thử lại.",
+            });
+        }
+    }
+
+    async function handleExportExcel() {
+        try {
+            setIsExporting(true);
+            setExcelStatus(null);
+            await getActiveExcelHandlers().exportExcel();
+        } catch (error) {
+            console.error("Export dictionary Excel error:", error);
+            setExcelStatus({
+                type: "error",
+                message: "Không export được Excel. Vui lòng thử lại.",
+            });
+        } finally {
+            setIsExporting(false);
+        }
+    }
+
+    async function handleImportFileChange(event) {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        if (!file) return;
+
+        try {
+            setIsImporting(true);
+            setExcelStatus(null);
+            const response = await getActiveExcelHandlers().importExcel(file);
+            const summary = unwrapServicePayload(response) || {};
+            setExcelStatus({
+                type: summary.invalid > 0 ? "warning" : "success",
+                message: buildImportMessage(summary),
+                errorReport: summary.errorReport || null,
+            });
+            setCurrentPage(1);
+            requestReload();
+        } catch (error) {
+            console.error("Import dictionary Excel error:", error);
+            setExcelStatus({
+                type: "error",
+                message: error?.message || "Import Excel thất bại.",
+            });
+        } finally {
+            setIsImporting(false);
+        }
+    }
 
     async function createWord(payload) {
         try {
@@ -127,7 +539,7 @@ function DictionaryAdmin() {
             });
             const body = await resp.json().catch(() => null);
             if (!resp.ok) return { ok: false, error: body || { status: resp.status } };
-            const newItem = unwrapResp(body);
+            const newItem = unwrapCreateResponse(body);
             if (!newItem) return { ok: false, error: body };
             return { ok: true, item: newItem };
         } catch (err) {
@@ -145,7 +557,7 @@ function DictionaryAdmin() {
             });
             const body = await resp.json().catch(() => null);
             if (!resp.ok) return { ok: false, error: body || { status: resp.status } };
-            const newItem = unwrapResp(body);
+            const newItem = unwrapCreateResponse(body);
             if (!newItem) return { ok: false, error: body };
             return { ok: true, item: newItem };
         } catch (err) {
@@ -163,7 +575,7 @@ function DictionaryAdmin() {
             });
             const body = await resp.json().catch(() => null);
             if (!resp.ok) return { ok: false, error: body || { status: resp.status } };
-            const newItem = unwrapResp(body);
+            const newItem = unwrapCreateResponse(body);
             if (!newItem) return { ok: false, error: body };
             return { ok: true, item: newItem };
         } catch (err) {
@@ -171,88 +583,125 @@ function DictionaryAdmin() {
         }
     }
 
-    const filteredItems = useMemo(() => {
-        const q = searchQuery.trim().toLowerCase();
+    function parseOptionalRecordJson(label, value) {
+        const raw = (value || "").trim();
+        if (!raw) return { ok: true, value: {} };
 
-        if (activeTab === "words") {
-            return words.filter((w) => {
-                if (!w || w.isDeleted) return false;
-                const matchLevel = levelFilter === "all" || w.level === levelFilter;
-                const meaningsTxt = (w.meanings || []).map((m) => m.meaning || "").join(" ");
-                const phoneticTxt = (w.phonetic || []).join(" ");
-                const matchSearch =
-                    !q ||
-                    (w.word || "").toLowerCase().includes(q) ||
-                    meaningsTxt.toLowerCase().includes(q) ||
-                    phoneticTxt.toLowerCase().includes(q) ||
-                    (w.type || "").toLowerCase().includes(q);
+        try {
+            const parsed = JSON.parse(raw);
+            if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") {
+                return { ok: false, error: `${label} phải là JSON object.` };
+            }
 
-                return matchLevel && matchSearch;
-            });
+            return { ok: true, value: parsed };
+        } catch {
+            return { ok: false, error: `${label} không phải JSON hợp lệ.` };
+        }
+    }
+
+    function buildWordPayload() {
+        const phonetic = formState.phonetic
+            ? formState.phonetic.split(",").map((s) => s.trim()).filter(Boolean)
+            : [];
+        const meanings = normalizeWordMeanings(formState.meanings)
+            .map((meaning) => ({
+                meaning: (meaning.meaning || "").trim(),
+                examples: (meaning.examples || [])
+                    .map((example) => ({
+                        jp: (example.jp || "").trim(),
+                        vi: (example.vi || "").trim(),
+                    }))
+                    .filter((example) => example.jp),
+            }))
+            .filter((meaning) => meaning.meaning);
+
+        if (!formState.word?.trim() || !formState.level) {
+            return { ok: false, error: "Vui lòng điền đầy đủ: Từ, Level" };
+        }
+        if (phonetic.length === 0) {
+            return { ok: false, error: "Vui lòng nhập ít nhất một phiên âm." };
+        }
+        if (meanings.length === 0) {
+            return { ok: false, error: "Vui lòng nhập ít nhất một nghĩa." };
         }
 
-        if (activeTab === "grammar") {
-            return grammar.filter((g) => {
-                if (!g || g.isDeleted) return false;
-                const matchLevel = levelFilter === "all" || g.level === levelFilter;
-                const matchSearch =
-                    !q ||
-                    (g.title || "").toLowerCase().includes(q) ||
-                    (g.mean || "").toLowerCase().includes(q);
+        return {
+            ok: true,
+            payload: {
+                word: formState.word.trim(),
+                phonetic,
+                type: formState.type || null,
+                meanings,
+                level: formState.level,
+                isJlpt: !!formState.isJlpt,
+            },
+        };
+    }
 
-                return matchLevel && matchSearch;
-            });
+    function buildKanjiPayload() {
+        if (!formState.kanji?.trim() || !formState.mean?.trim() || !formState.level) {
+            return { ok: false, error: "Vui lòng điền đầy đủ: Kanji, Nghĩa, Level" };
         }
 
-        return kanji.filter((k) => {
-            if (!k || k.isDeleted) return false;
-            const matchLevel = levelFilter === "all" || k.level === levelFilter;
-            const matchSearch =
-                !q ||
-                (k.kanji || "").toLowerCase().includes(q) ||
-                (k.mean || "").toLowerCase().includes(q) ||
-                (k.kun || "").toLowerCase().includes(q) ||
-                (k.on || "").toLowerCase().includes(q);
+        const examples = normalizeKanjiExamples(formState.examples)
+            .map((example) => ({
+                w: (example.w || "").trim(),
+                m: (example.m || "").trim(),
+                p: (example.p || "").trim(),
+                h: (example.h || "").trim(),
+            }))
+            .filter((example) => example.w || example.m || example.p || example.h);
+        const invalidExample = examples.find((example) => !example.w || !example.m || !example.p);
+        if (invalidExample) {
+            return {
+                ok: false,
+                error: "Mỗi ví dụ Kanji cần có đủ Từ ví dụ, Nghĩa và Phát âm.",
+            };
+        }
 
-            return matchLevel && matchSearch;
-        });
-    }, [activeTab, searchQuery, levelFilter, words, grammar, kanji]);
+        const exampleKun = parseOptionalRecordJson("Example Kun", formState.example_kun);
+        if (!exampleKun.ok) return exampleKun;
+        const exampleOn = parseOptionalRecordJson("Example On", formState.example_on);
+        if (!exampleOn.ok) return exampleOn;
 
-    const totalCount = useMemo(() => {
-        if (activeTab === "words") return words.length;
-        if (activeTab === "grammar") return grammar.length;
-        return kanji.length;
-    }, [activeTab, words, grammar, kanji]);
+        const payload = {
+            kanji: formState.kanji.trim(),
+            mean: formState.mean.trim(),
+            detail: normalizeDetailText(formState.detail),
+            kun: formState.kun || "",
+            on: formState.on || "",
+            stroke_count: formState.stroke_count || "",
+            examples,
+            level: formState.level,
+            isJlpt: !!formState.isJlpt,
+        };
+        if (exampleKun.value) payload.example_kun = exampleKun.value;
+        if (exampleOn.value) payload.example_on = exampleOn.value;
+
+        return { ok: true, payload };
+    }
 
     async function handleSubmitAdd(e) {
         e.preventDefault();
+        setFormError("");
 
-        if (editingItem) return handleUpdateItem();
+        if (editingItem) {
+            await handleUpdateItem();
+            return;
+        }
 
         if (activeTab === "words") {
-            if (!formState.word || !formState.level || !formState.type) {
-                alert("Vui lòng điền đầy đủ: Từ, Loại từ, Level");
+            const built = buildWordPayload();
+            if (!built.ok) {
+                setFormError(built.error);
                 return;
             }
 
-            const payload = {
-                word: formState.word,
-                phonetic: formState.phonetic ? formState.phonetic.split(",").map((s) => s.trim()) : [],
-                type: formState.type,
-                meanings: formState.meanings
-                    ? formState.meanings.split(",").map((m) => ({ meaning: m.trim() }))
-                    : [],
-                level: formState.level,
-                isJlpt: !!formState.isJlpt,
-            };
-
-            const { ok, item, error } = await createWord(payload);
-            if (ok) {
-                setWords((prev) => [item, ...prev]);
-                setShowAddForm(false);
-            } else {
+            const { ok, error } = await createWord(built.payload);
+            if (!ok) {
                 const msg = error?.message || error?.errors || "Thêm thất bại";
                 alert(Array.isArray(msg) ? msg.join(", ") : JSON.stringify(msg));
+                return;
             }
         } else if (activeTab === "grammar") {
             if (!formState.title || !formState.mean || !formState.level) {
@@ -260,161 +709,313 @@ function DictionaryAdmin() {
                 return;
             }
 
-            const payload = {
+            const { ok, error } = await createGrammar({
                 title: formState.title,
                 mean: formState.mean,
                 level: formState.level,
                 usages: [],
                 isJlpt: !!formState.isJlpt,
-            };
-
-            const { ok, item, error } = await createGrammar(payload);
-            if (ok) {
-                setGrammar((prev) => [item, ...prev]);
-                setShowAddForm(false);
-            } else {
+            });
+            if (!ok) {
                 const msg = error?.message || error?.errors || "Thêm thất bại";
                 alert(Array.isArray(msg) ? msg.join(", ") : JSON.stringify(msg));
+                return;
             }
         } else {
-            if (!formState.kanji || !formState.mean || !formState.level) {
-                alert("Vui lòng điền đầy đủ: Kanji, Nghĩa, Level");
+            const built = buildKanjiPayload();
+            if (!built.ok) {
+                setFormError(built.error);
                 return;
             }
 
-            const payload = {
-                kanji: formState.kanji,
-                mean: formState.mean,
-                detail: formState.detail || "",
-                kun: formState.kun || "",
-                on: formState.on || "",
-                stroke_count: formState.stroke_count || "",
-                level: formState.level,
-                isJlpt: !!formState.isJlpt,
-            };
-
-            const { ok, item, error } = await createKanji(payload);
-            if (ok) {
-                setKanji((prev) => [item, ...prev]);
-                setShowAddForm(false);
-            } else {
+            const { ok, error } = await createKanji(built.payload);
+            if (!ok) {
                 const msg = error?.message || error?.errors || "Thêm thất bại";
                 alert(Array.isArray(msg) ? msg.join(", ") : JSON.stringify(msg));
+                return;
             }
         }
+
+        setShowAddForm(false);
+        setEditingItem(null);
+        setCurrentPage(1);
+        requestReload();
     }
 
     async function handleUpdateItem() {
         if (!editingItem) return;
+        setFormError("");
 
-        if (activeTab === "words") {
-            const payload = {
-                word: formState.word,
-                phonetic: formState.phonetic ? formState.phonetic.split(",").map((s) => s.trim()) : [],
-                type: formState.type,
-                meanings: formState.meanings
-                    ? formState.meanings.split(",").map((m) => ({ meaning: m.trim() }))
-                    : [],
-                level: formState.level,
-            };
+        try {
+            if (activeTab === "words") {
+                const built = buildWordPayload();
+                if (!built.ok) {
+                    setFormError(built.error);
+                    return;
+                }
 
-            const updated = await updateJlptWord(editingItem._id, payload);
-            setWords((prev) => prev.map((w) => (w._id === editingItem._id ? updated.data : w)));
-        } else if (activeTab === "grammar") {
-            const payload = {
-                title: formState.title,
-                mean: formState.mean,
-                level: formState.level,
-                usages: editingItem?.usages || [],
-            };
+                await updateJlptWord(getItemId(editingItem), built.payload);
+            } else if (activeTab === "grammar") {
+                await updateJlptGrammar(getItemId(editingItem), {
+                    title: formState.title,
+                    mean: formState.mean,
+                    level: formState.level,
+                    usages: editingItem?.usages || [],
+                });
+            } else {
+                const built = buildKanjiPayload();
+                if (!built.ok) {
+                    setFormError(built.error);
+                    return;
+                }
 
-            const updated = await updateJlptGrammar(editingItem._id, payload);
-            setGrammar((prev) => prev.map((g) => (g._id === editingItem._id ? updated.data : g)));
-        } else {
-            const payload = {
-                kanji: formState.kanji,
-                mean: formState.mean,
-                detail: formState.detail,
-                kun: formState.kun,
-                on: formState.on,
-                stroke_count: formState.stroke_count,
-                level: formState.level,
-            };
+                await updateJlptKanji(getItemId(editingItem), built.payload);
+            }
 
-            const updated = await updateJlptKanji(editingItem._id, payload);
-            setKanji((prev) => prev.map((k) => (k._id === editingItem._id ? updated.data : k)));
-        }
-
-        setEditingItem(null);
-        setShowAddForm(false);
-    }
-
-    async function handleDelete(id) {
-        if (activeTab === "words") {
-            await deleteJlptWord(id);
-            setWords((prev) => prev.filter((w) => w._id !== id));
-        } else if (activeTab === "grammar") {
-            await deleteJlptGrammar(id);
-            setGrammar((prev) => prev.filter((g) => g._id !== id));
-        } else {
-            await deleteJlptKanji(id);
-            setKanji((prev) => prev.filter((k) => k._id !== id));
+            setEditingItem(null);
+            setShowAddForm(false);
+            requestReload();
+        } catch (err) {
+            console.error("Update dictionary item error:", err);
+            alert("Cập nhật thất bại");
         }
     }
 
+    async function confirmDelete() {
+        if (!deleteTarget) return;
+
+        try {
+            setIsDeleting(true);
+            const id = getItemId(deleteTarget);
+
+            if (activeTab === "words") {
+                await deleteJlptWord(id);
+            } else if (activeTab === "grammar") {
+                await deleteJlptGrammar(id);
+            } else {
+                await deleteJlptKanji(id);
+            }
+
+            if (items.length === 1 && currentPage > 1) {
+                setCurrentPage((page) => page - 1);
+            } else {
+                requestReload();
+            }
+
+            setDeleteTarget(null);
+        } catch (err) {
+            console.error("Delete dictionary item error:", err);
+            setLoadError("Xóa thất bại. Vui lòng thử lại.");
+        } finally {
+            setIsDeleting(false);
+        }
+    }
+
+    // eslint-disable-next-line no-unused-vars
     function openEditForm(item) {
         setEditingItem(item);
         setShowAddForm(true);
+        setFormError("");
 
         if (activeTab === "words") {
             setFormState({
-                word: item.word,
-                phonetic: (item.phonetic || []).join(", "),
-                type: item.type || TYPE_OPTIONS[0],
-                meanings: (item.meanings || []).map((m) => m.meaning).join(", "),
-                level: item.level,
-                isJlpt: item.isJlpt,
+                word: item.word || "",
+                phonetic: listText(item.phonetic, ", ").replace(/^-$/, ""),
+                type: item.type || "",
+                meanings: normalizeWordMeanings(item.meanings),
+                level: item.level || "N5",
+                isJlpt: item.isJlpt ?? true,
             });
         } else if (activeTab === "grammar") {
             setFormState({
-                title: item.title,
-                mean: item.mean,
-                level: item.level,
+                title: item.title || "",
+                mean: item.mean || "",
+                level: item.level || "N5",
                 isJlpt: item.isJlpt,
             });
         } else {
             setFormState({
-                kanji: item.kanji,
-                mean: item.mean,
-                detail: item.detail,
-                kun: item.kun,
-                on: item.on,
-                stroke_count: item.stroke_count,
-                level: item.level,
-                isJlpt: item.isJlpt,
+                kanji: item.kanji || "",
+                mean: item.mean || "",
+                detail: normalizeDetailText(item.detail),
+                kun: listText(item.kun, ", ").replace(/^-$/, ""),
+                on: listText(item.on, ", ").replace(/^-$/, ""),
+                stroke_count: item.stroke_count || "",
+                examples: normalizeKanjiExamples(item.examples),
+                example_kun: toJsonEditorValue(item.example_kun),
+                example_on: toJsonEditorValue(item.example_on),
+                level: item.level || "N5",
+                isJlpt: item.isJlpt ?? true,
             });
         }
     }
 
-    const tabLabel =
-        activeTab === "words" ? "từ vựng" : activeTab === "grammar" ? "ngữ pháp" : "kanji";
+    function renderTableHead() {
+        if (activeTab === "words") {
+            return (
+                <tr>
+                    <th>Từ</th>
+                    <th>Phiên âm</th>
+                    <th>Nghĩa</th>
+                    <th>Loại từ</th>
+                    <th>Level</th>
+                    <th>Cập nhật</th>
+                    <th>Action</th>
+                </tr>
+            );
+        }
+
+        if (activeTab === "grammar") {
+            return (
+                <tr>
+                    <th>Mẫu ngữ pháp</th>
+                    <th>Nghĩa</th>
+                    <th>Level</th>
+                    <th>Cập nhật</th>
+                    <th>Action</th>
+                </tr>
+            );
+        }
+
+        return (
+            <tr>
+                <th>Kanji</th>
+                <th>Nghĩa</th>
+                <th>Kun</th>
+                <th>On</th>
+                <th>Số nét</th>
+                <th>Level</th>
+                <th>Action</th>
+            </tr>
+        );
+    }
+
+    function renderActions(item) {
+        const id = getItemId(item);
+
+        return (
+            <div className={cx("tableActions")}>
+                <button
+                    type="button"
+                    className={cx("iconAction")}
+                    onClick={() =>
+                        navigate(
+                            `/admin/dictionary/${activeResource}/update/${id}?tab=${activeTab}`,
+                        )
+                    }
+                    title="Sửa"
+                >
+                    <FontAwesomeIcon icon={faPenToSquare} />
+                </button>
+                <button
+                    type="button"
+                    className={cx("iconAction", "dangerAction")}
+                    onClick={() => setDeleteTarget(item)}
+                    title="Xóa mềm"
+                >
+                    <FontAwesomeIcon icon={faTrash} />
+                </button>
+            </div>
+        );
+    }
+
+    function renderTableRows() {
+        if (isLoading) {
+            return (
+                <tr>
+                    <td colSpan={activeTab === "grammar" ? 5 : 7}>
+                        <div className={cx("tableState")}>Đang tải dữ liệu...</div>
+                    </td>
+                </tr>
+            );
+        }
+
+        if (!items.length) {
+            return (
+                <tr>
+                    <td colSpan={activeTab === "grammar" ? 5 : 7}>
+                        <div className={cx("tableState", "emptyState")}>
+                            {loadError || "Không có dữ liệu phù hợp."}
+                        </div>
+                    </td>
+                </tr>
+            );
+        }
+
+        if (activeTab === "words") {
+            return items.map((item) => (
+                <tr key={getItemId(item)}>
+                    <td>
+                        <div className={cx("cellMain")}>{item.word || "-"}</div>
+                    </td>
+                    <td className={cx("mutedCell")}>{listText(item.phonetic, " ・ ")}</td>
+                    <td className={cx("wideCell")}>{meaningsText(item.meanings)}</td>
+                    <td>
+                        <span className={cx("badge", "badgeType")}>
+                            {item.type || "Chưa phân loại"}
+                        </span>
+                    </td>
+                    <td>
+                        <span className={cx("badge", "badgeLevel", (item.level || "N5").toLowerCase())}>
+                            {item.level || "-"}
+                        </span>
+                    </td>
+                    <td className={cx("mutedCell")}>{formatDate(item.updatedAt || item.createdAt)}</td>
+                    <td>{renderActions(item)}</td>
+                </tr>
+            ));
+        }
+
+        if (activeTab === "grammar") {
+            return items.map((item) => (
+                <tr key={getItemId(item)}>
+                    <td>
+                        <div className={cx("cellMain")}>{item.title || "-"}</div>
+                    </td>
+                    <td className={cx("wideCell")}>{item.mean || "-"}</td>
+                    <td>
+                        <span className={cx("badge", "badgeLevel", (item.level || "N5").toLowerCase())}>
+                            {item.level || "-"}
+                        </span>
+                    </td>
+                    <td className={cx("mutedCell")}>{formatDate(item.updatedAt || item.createdAt)}</td>
+                    <td>{renderActions(item)}</td>
+                </tr>
+            ));
+        }
+
+        return items.map((item) => (
+            <tr key={getItemId(item)}>
+                <td>
+                    <div className={cx("kanjiCell")}>{item.kanji || "-"}</div>
+                </td>
+                <td className={cx("wideCell")}>{item.mean || "-"}</td>
+                <td className={cx("mutedCell")}>{listText(item.kun, " ・ ")}</td>
+                <td className={cx("mutedCell")}>{listText(item.on, " ・ ")}</td>
+                <td>{item.stroke_count || "-"}</td>
+                <td>
+                    <span className={cx("badge", "badgeLevel", (item.level || "N5").toLowerCase())}>
+                        {item.level || "-"}
+                    </span>
+                </td>
+                <td>{renderActions(item)}</td>
+            </tr>
+        ));
+    }
+
+    const showingFrom = pagination.total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const showingTo = Math.min(currentPage * pageSize, pagination.total);
+    const deleteTargetName =
+        activeTab === "words"
+            ? deleteTarget?.word
+            : activeTab === "grammar"
+                ? deleteTarget?.title
+                : deleteTarget?.kanji;
 
     return (
         <div className={cx("wrapper")}>
-            <motion.div
-                className={cx("blob1")}
-                animate={{ y: [0, -22, 0], x: [0, 12, 0] }}
-                transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
-            />
-            <motion.div
-                className={cx("blob2")}
-                animate={{ y: [0, 18, 0], x: [0, -14, 0] }}
-                transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-            />
-
             <main className={cx("main")}>
                 <div className={cx("inner")}>
-                    {/* HEADER */}
                     <motion.div
                         className={cx("header")}
                         initial={{ opacity: 0, y: -8 }}
@@ -423,62 +1024,77 @@ function DictionaryAdmin() {
                     >
                         <div className={cx("headerMain")}>
                             <div className={cx("titleBlock")}>
-                                <span className={cx("eyebrow")}>Quản trị</span>
-                                <h1 className={cx("title")}>
-                                    Quản lý <span className={cx("titleAccent")}>từ điển</span>
-                                </h1>
+                                <h1 className={cx("title")}>Quản lý từ điển</h1>
                                 <p className={cx("subtitle")}>
-                                    <strong>{totalCount}</strong> mục {tabLabel}
-                                    {filteredItems.length !== totalCount &&
-                                        ` · hiển thị ${filteredItems.length} kết quả`}
+                                    <strong>{pagination.total}</strong> mục {tabLabel}
+                                    {debouncedSearch ? ` · tìm "${debouncedSearch}"` : ""}
                                 </p>
                             </div>
 
                             <div className={cx("headerRight")}>
                                 <div className={cx("tabs")}>
-                                    <button
-                                        className={cx("tabBtn", { active: activeTab === "words" })}
-                                        onClick={() => {
-                                            setActiveTab("words");
-                                            setEditingItem(null);
-                                            setShowAddForm(false);
-                                        }}
-                                    >
-                                        Từ vựng
-                                    </button>
+                                    {Object.entries(TAB_META).map(([tab, meta]) => (
+                                        <button
+                                            key={tab}
+                                            type="button"
+                                            className={cx("tabBtn", { active: activeTab === tab })}
+                                            onClick={() => handleTabChange(tab)}
+                                        >
+                                            {meta.label}
+                                        </button>
+                                    ))}
+                                </div>
 
+                                <div className={cx("excelActions")}>
                                     <button
-                                        className={cx("tabBtn", { active: activeTab === "grammar" })}
-                                        onClick={() => {
-                                            setActiveTab("grammar");
-                                            setEditingItem(null);
-                                            setShowAddForm(false);
-                                        }}
+                                        type="button"
+                                        className={cx("secondaryBtn")}
+                                        onClick={handleDownloadTemplate}
                                     >
-                                        Ngữ pháp
+                                        <FontAwesomeIcon icon={faDownload} />
+                                        <span>Tải mẫu</span>
                                     </button>
-
                                     <button
-                                        className={cx("tabBtn", { active: activeTab === "kanji" })}
-                                        onClick={() => {
-                                            setActiveTab("kanji");
-                                            setEditingItem(null);
-                                            setShowAddForm(false);
-                                        }}
+                                        type="button"
+                                        className={cx("secondaryBtn")}
+                                        disabled={isImporting}
+                                        onClick={() => importInputRef.current?.click()}
                                     >
-                                        Kanji
+                                        <FontAwesomeIcon icon={faUpload} />
+                                        <span>{isImporting ? "Đang import..." : "Import"}</span>
                                     </button>
+                                    <button
+                                        type="button"
+                                        className={cx("secondaryBtn")}
+                                        disabled={isExporting}
+                                        onClick={handleExportExcel}
+                                    >
+                                        <FontAwesomeIcon icon={faFileExport} />
+                                        <span>{isExporting ? "Đang export..." : "Export"}</span>
+                                    </button>
+                                    <input
+                                        ref={importInputRef}
+                                        type="file"
+                                        accept=".xlsx,.xls"
+                                        className={cx("hiddenFileInput")}
+                                        onChange={handleImportFileChange}
+                                    />
                                 </div>
 
                                 <motion.button
                                     type="button"
                                     className={cx("primaryBtn")}
-                                    onClick={() => {
-                                        setEditingItem(null);
-                                        resetFormForTab(activeTab);
-                                        setShowAddForm((s) => !s);
+                                    style={{
+                                        backgroundColor: "#0f172a",
+                                        color: "#fff",
+                                        borderColor: "#0f172a",
                                     }}
-                                    whileHover={{ y: -1 }}
+                                    onClick={() => {
+                                        navigate(
+                                            `/admin/dictionary/${activeResource}/add?tab=${activeTab}`,
+                                        );
+                                    }}
+                                    whileHover={{ y: -1, backgroundColor: "#111827" }}
                                     whileTap={{ scale: 0.98 }}
                                 >
                                     <FontAwesomeIcon icon={faPlus} />
@@ -488,7 +1104,21 @@ function DictionaryAdmin() {
                         </div>
                     </motion.div>
 
-                    {/* FORM */}
+                    {excelStatus && (
+                        <div className={cx("excelNotice", excelStatus.type)}>
+                            <strong>{excelStatus.message}</strong>
+                            {excelStatus.errorReport && (
+                                <button
+                                    type="button"
+                                    className={cx("downloadErrorBtn")}
+                                    onClick={() => downloadBase64File(excelStatus.errorReport)}
+                                >
+                                    Tải file lỗi
+                                </button>
+                            )}
+                        </div>
+                    )}
+
                     <AnimatePresence>
                         {showAddForm && (
                             <motion.div
@@ -516,21 +1146,27 @@ function DictionaryAdmin() {
                                             onClick={() => {
                                                 setShowAddForm(false);
                                                 setEditingItem(null);
+                                                setFormError("");
                                             }}
                                         >
                                             <FontAwesomeIcon icon={faXmark} />
                                         </button>
                                     </div>
 
+                                    {formError && (
+                                        <div className={cx("formError")}>
+                                            {formError}
+                                        </div>
+                                    )}
+
                                     <form onSubmit={handleSubmitAdd}>
                                         <div className={cx("formGrid")}>
-                                            {/* WORD FORM */}
                                             {activeTab === "words" && (
                                                 <>
                                                     <div className={cx("formField")}>
                                                         <label className={cx("label")}>Từ</label>
                                                         <Input
-                                                            value={formState.word}
+                                                            value={formState.word || ""}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -545,7 +1181,7 @@ function DictionaryAdmin() {
                                                             Phonetic (phân tách bằng , )
                                                         </label>
                                                         <Input
-                                                            value={formState.phonetic}
+                                                            value={formState.phonetic || ""}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -559,7 +1195,7 @@ function DictionaryAdmin() {
                                                         <label className={cx("label")}>Loại từ</label>
                                                         <select
                                                             className={cx("select")}
-                                                            value={formState.type}
+                                                            value={formState.type || ""}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -568,34 +1204,169 @@ function DictionaryAdmin() {
                                                             }
                                                         >
                                                             <option value="">-- Chọn loại từ --</option>
-                                                            {TYPE_OPTIONS.map((t) => (
-                                                                <option key={t} value={t}>
-                                                                    {t}
+                                                            {TYPE_OPTIONS.map((type) => (
+                                                                <option key={type} value={type}>
+                                                                    {type}
                                                                 </option>
                                                             ))}
                                                         </select>
                                                     </div>
 
-                                                    <div className={cx("formField")}>
-                                                        <label className={cx("label")}>
-                                                            Nghĩa (phân tách bằng , )
-                                                        </label>
-                                                        <Input
-                                                            value={formState.meanings}
-                                                            onChange={(e) =>
-                                                                setFormState((s) => ({
-                                                                    ...s,
-                                                                    meanings: e.target.value,
-                                                                }))
-                                                            }
-                                                        />
+                                                    <div className={cx("formField", "formFieldFull")}>
+                                                        <div className={cx("nestedHeader")}>
+                                                            <label className={cx("label")}>Nghĩa và ví dụ</label>
+                                                            <button
+                                                                type="button"
+                                                                className={cx("smallBtn")}
+                                                                onClick={() =>
+                                                                    setFormState((s) => ({
+                                                                        ...s,
+                                                                        meanings: [
+                                                                            ...normalizeWordMeanings(s.meanings),
+                                                                            createBlankMeaning(),
+                                                                        ],
+                                                                    }))
+                                                                }
+                                                            >
+                                                                Thêm nghĩa
+                                                            </button>
+                                                        </div>
+
+                                                        <div className={cx("nestedEditor")}>
+                                                            {normalizeWordMeanings(formState.meanings).map((meaning, meaningIndex) => (
+                                                                <div className={cx("nestedCard")} key={meaningIndex}>
+                                                                    <div className={cx("nestedHeader")}>
+                                                                        <span className={cx("nestedTitle")}>
+                                                                            Nghĩa {meaningIndex + 1}
+                                                                        </span>
+                                                                        <button
+                                                                            type="button"
+                                                                            className={cx("dangerTextBtn")}
+                                                                            onClick={() =>
+                                                                                setFormState((s) => {
+                                                                                    const meanings = normalizeWordMeanings(s.meanings);
+                                                                                    return {
+                                                                                        ...s,
+                                                                                        meanings:
+                                                                                            meanings.length > 1
+                                                                                                ? meanings.filter((_, index) => index !== meaningIndex)
+                                                                                                : [createBlankMeaning()],
+                                                                                    };
+                                                                                })
+                                                                            }
+                                                                        >
+                                                                            Xóa
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <Input
+                                                                        value={meaning.meaning || ""}
+                                                                        placeholder="Nghĩa"
+                                                                        onChange={(e) =>
+                                                                            setFormState((s) => {
+                                                                                const meanings = normalizeWordMeanings(s.meanings);
+                                                                                meanings[meaningIndex] = {
+                                                                                    ...meanings[meaningIndex],
+                                                                                    meaning: e.target.value,
+                                                                                };
+                                                                                return { ...s, meanings };
+                                                                            })
+                                                                        }
+                                                                    />
+
+                                                                    <div className={cx("nestedSubHeader")}>
+                                                                        <span>Ví dụ</span>
+                                                                        <button
+                                                                            type="button"
+                                                                            className={cx("smallBtn")}
+                                                                            onClick={() =>
+                                                                                setFormState((s) => {
+                                                                                    const meanings = normalizeWordMeanings(s.meanings);
+                                                                                    meanings[meaningIndex] = {
+                                                                                        ...meanings[meaningIndex],
+                                                                                        examples: [
+                                                                                            ...(meanings[meaningIndex].examples || []),
+                                                                                            createBlankWordExample(),
+                                                                                        ],
+                                                                                    };
+                                                                                    return { ...s, meanings };
+                                                                                })
+                                                                            }
+                                                                        >
+                                                                            Thêm ví dụ
+                                                                        </button>
+                                                                    </div>
+
+                                                                    {(meaning.examples || []).map((example, exampleIndex) => (
+                                                                        <div className={cx("inlineGrid")} key={exampleIndex}>
+                                                                            <Input
+                                                                                value={example.jp || ""}
+                                                                                placeholder="Câu tiếng Nhật"
+                                                                                onChange={(e) =>
+                                                                                    setFormState((s) => {
+                                                                                        const meanings = normalizeWordMeanings(s.meanings);
+                                                                                        const examples = [...(meanings[meaningIndex].examples || [])];
+                                                                                        examples[exampleIndex] = {
+                                                                                            ...examples[exampleIndex],
+                                                                                            jp: e.target.value,
+                                                                                        };
+                                                                                        meanings[meaningIndex] = {
+                                                                                            ...meanings[meaningIndex],
+                                                                                            examples,
+                                                                                        };
+                                                                                        return { ...s, meanings };
+                                                                                    })
+                                                                                }
+                                                                            />
+                                                                            <Input
+                                                                                value={example.vi || ""}
+                                                                                placeholder="Nghĩa tiếng Việt"
+                                                                                onChange={(e) =>
+                                                                                    setFormState((s) => {
+                                                                                        const meanings = normalizeWordMeanings(s.meanings);
+                                                                                        const examples = [...(meanings[meaningIndex].examples || [])];
+                                                                                        examples[exampleIndex] = {
+                                                                                            ...examples[exampleIndex],
+                                                                                            vi: e.target.value,
+                                                                                        };
+                                                                                        meanings[meaningIndex] = {
+                                                                                            ...meanings[meaningIndex],
+                                                                                            examples,
+                                                                                        };
+                                                                                        return { ...s, meanings };
+                                                                                    })
+                                                                                }
+                                                                            />
+                                                                            <button
+                                                                                type="button"
+                                                                                className={cx("dangerTextBtn")}
+                                                                                onClick={() =>
+                                                                                    setFormState((s) => {
+                                                                                        const meanings = normalizeWordMeanings(s.meanings);
+                                                                                        meanings[meaningIndex] = {
+                                                                                            ...meanings[meaningIndex],
+                                                                                            examples: (meanings[meaningIndex].examples || []).filter(
+                                                                                                (_, index) => index !== exampleIndex,
+                                                                                            ),
+                                                                                        };
+                                                                                        return { ...s, meanings };
+                                                                                    })
+                                                                                }
+                                                                            >
+                                                                                Xóa
+                                                                            </button>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
 
                                                     <div className={cx("formField")}>
                                                         <label className={cx("label")}>Level</label>
                                                         <select
                                                             className={cx("select")}
-                                                            value={formState.level}
+                                                            value={formState.level || "N5"}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -603,23 +1374,36 @@ function DictionaryAdmin() {
                                                                 }))
                                                             }
                                                         >
-                                                            <option value="N5">N5</option>
-                                                            <option value="N4">N4</option>
-                                                            <option value="N3">N3</option>
-                                                            <option value="N2">N2</option>
-                                                            <option value="N1">N1</option>
+                                                            {LEVEL_OPTIONS.map((level) => (
+                                                                <option key={level} value={level}>
+                                                                    {level}
+                                                                </option>
+                                                            ))}
                                                         </select>
                                                     </div>
+
+                                                    <label className={cx("checkboxField")}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={!!formState.isJlpt}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    isJlpt: e.target.checked,
+                                                                }))
+                                                            }
+                                                        />
+                                                        <span>JLPT item</span>
+                                                    </label>
                                                 </>
                                             )}
 
-                                            {/* GRAMMAR FORM */}
                                             {activeTab === "grammar" && (
                                                 <>
                                                     <div className={cx("formField")}>
                                                         <label className={cx("label")}>Tiêu đề</label>
                                                         <Input
-                                                            value={formState.title}
+                                                            value={formState.title || ""}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -634,7 +1418,7 @@ function DictionaryAdmin() {
                                                             Ý nghĩa (tóm tắt)
                                                         </label>
                                                         <Input
-                                                            value={formState.mean}
+                                                            value={formState.mean || ""}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -648,7 +1432,7 @@ function DictionaryAdmin() {
                                                         <label className={cx("label")}>Level</label>
                                                         <select
                                                             className={cx("select")}
-                                                            value={formState.level}
+                                                            value={formState.level || "N5"}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -656,23 +1440,22 @@ function DictionaryAdmin() {
                                                                 }))
                                                             }
                                                         >
-                                                            <option value="N5">N5</option>
-                                                            <option value="N4">N4</option>
-                                                            <option value="N3">N3</option>
-                                                            <option value="N2">N2</option>
-                                                            <option value="N1">N1</option>
+                                                            {LEVEL_OPTIONS.map((level) => (
+                                                                <option key={level} value={level}>
+                                                                    {level}
+                                                                </option>
+                                                            ))}
                                                         </select>
                                                     </div>
                                                 </>
                                             )}
 
-                                            {/* KANJI FORM */}
                                             {activeTab === "kanji" && (
                                                 <>
                                                     <div className={cx("formField")}>
                                                         <label className={cx("label")}>Kanji</label>
                                                         <Input
-                                                            value={formState.kanji}
+                                                            value={formState.kanji || ""}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -685,7 +1468,7 @@ function DictionaryAdmin() {
                                                     <div className={cx("formField")}>
                                                         <label className={cx("label")}>Nghĩa</label>
                                                         <Input
-                                                            value={formState.mean}
+                                                            value={formState.mean || ""}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -697,8 +1480,9 @@ function DictionaryAdmin() {
 
                                                     <div className={cx("formField")}>
                                                         <label className={cx("label")}>Detail</label>
-                                                        <Input
-                                                            value={formState.detail}
+                                                        <textarea
+                                                            className={cx("textarea")}
+                                                            value={formState.detail || ""}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -711,7 +1495,7 @@ function DictionaryAdmin() {
                                                     <div className={cx("formField")}>
                                                         <label className={cx("label")}>Kun</label>
                                                         <Input
-                                                            value={formState.kun}
+                                                            value={formState.kun || ""}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -724,7 +1508,7 @@ function DictionaryAdmin() {
                                                     <div className={cx("formField")}>
                                                         <label className={cx("label")}>On</label>
                                                         <Input
-                                                            value={formState.on}
+                                                            value={formState.on || ""}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -737,7 +1521,7 @@ function DictionaryAdmin() {
                                                     <div className={cx("formField")}>
                                                         <label className={cx("label")}>Stroke Count</label>
                                                         <Input
-                                                            value={formState.stroke_count}
+                                                            value={formState.stroke_count || ""}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -751,7 +1535,7 @@ function DictionaryAdmin() {
                                                         <label className={cx("label")}>Level</label>
                                                         <select
                                                             className={cx("select")}
-                                                            value={formState.level}
+                                                            value={formState.level || "N5"}
                                                             onChange={(e) =>
                                                                 setFormState((s) => ({
                                                                     ...s,
@@ -759,12 +1543,156 @@ function DictionaryAdmin() {
                                                                 }))
                                                             }
                                                         >
-                                                            <option value="N5">N5</option>
-                                                            <option value="N4">N4</option>
-                                                            <option value="N3">N3</option>
-                                                            <option value="N2">N2</option>
-                                                            <option value="N1">N1</option>
+                                                            {LEVEL_OPTIONS.map((level) => (
+                                                                <option key={level} value={level}>
+                                                                    {level}
+                                                                </option>
+                                                            ))}
                                                         </select>
+                                                    </div>
+
+                                                    <label className={cx("checkboxField")}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={!!formState.isJlpt}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    isJlpt: e.target.checked,
+                                                                }))
+                                                            }
+                                                        />
+                                                        <span>JLPT item</span>
+                                                    </label>
+
+                                                    <div className={cx("formField", "formFieldFull")}>
+                                                        <div className={cx("nestedHeader")}>
+                                                            <label className={cx("label")}>Ví dụ Kanji</label>
+                                                            <button
+                                                                type="button"
+                                                                className={cx("smallBtn")}
+                                                                onClick={() =>
+                                                                    setFormState((s) => ({
+                                                                        ...s,
+                                                                        examples: [
+                                                                            ...normalizeKanjiExamples(s.examples),
+                                                                            createBlankKanjiExample(),
+                                                                        ],
+                                                                    }))
+                                                                }
+                                                            >
+                                                                Thêm ví dụ
+                                                            </button>
+                                                        </div>
+
+                                                        <div className={cx("nestedEditor")}>
+                                                            {normalizeKanjiExamples(formState.examples).map((example, exampleIndex) => (
+                                                                <div className={cx("nestedCard")} key={exampleIndex}>
+                                                                    <div className={cx("inlineGrid", "kanjiExampleGrid")}>
+                                                                        <Input
+                                                                            value={example.w || ""}
+                                                                            placeholder="Từ ví dụ"
+                                                                            onChange={(e) =>
+                                                                                setFormState((s) => {
+                                                                                    const examples = normalizeKanjiExamples(s.examples);
+                                                                                    examples[exampleIndex] = {
+                                                                                        ...examples[exampleIndex],
+                                                                                        w: e.target.value,
+                                                                                    };
+                                                                                    return { ...s, examples };
+                                                                                })
+                                                                            }
+                                                                        />
+                                                                        <Input
+                                                                            value={example.m || ""}
+                                                                            placeholder="Nghĩa"
+                                                                            onChange={(e) =>
+                                                                                setFormState((s) => {
+                                                                                    const examples = normalizeKanjiExamples(s.examples);
+                                                                                    examples[exampleIndex] = {
+                                                                                        ...examples[exampleIndex],
+                                                                                        m: e.target.value,
+                                                                                    };
+                                                                                    return { ...s, examples };
+                                                                                })
+                                                                            }
+                                                                        />
+                                                                        <Input
+                                                                            value={example.p || ""}
+                                                                            placeholder="Phát âm"
+                                                                            onChange={(e) =>
+                                                                                setFormState((s) => {
+                                                                                    const examples = normalizeKanjiExamples(s.examples);
+                                                                                    examples[exampleIndex] = {
+                                                                                        ...examples[exampleIndex],
+                                                                                        p: e.target.value,
+                                                                                    };
+                                                                                    return { ...s, examples };
+                                                                                })
+                                                                            }
+                                                                        />
+                                                                        <Input
+                                                                            value={example.h || ""}
+                                                                            placeholder="Hán Việt"
+                                                                            onChange={(e) =>
+                                                                                setFormState((s) => {
+                                                                                    const examples = normalizeKanjiExamples(s.examples);
+                                                                                    examples[exampleIndex] = {
+                                                                                        ...examples[exampleIndex],
+                                                                                        h: e.target.value,
+                                                                                    };
+                                                                                    return { ...s, examples };
+                                                                                })
+                                                                            }
+                                                                        />
+                                                                        <button
+                                                                            type="button"
+                                                                            className={cx("dangerTextBtn")}
+                                                                            onClick={() =>
+                                                                                setFormState((s) => ({
+                                                                                    ...s,
+                                                                                    examples: normalizeKanjiExamples(s.examples).filter(
+                                                                                        (_, index) => index !== exampleIndex,
+                                                                                    ),
+                                                                                }))
+                                                                            }
+                                                                        >
+                                                                            Xóa
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>Example Kun (JSON)</label>
+                                                        <textarea
+                                                            className={cx("textarea", "jsonTextarea")}
+                                                            value={formState.example_kun || ""}
+                                                            placeholder={'{"ひ": [{"w": "日", "m": "mặt trời", "p": "ひ"}]}'}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    example_kun: e.target.value,
+                                                                }))
+                                                            }
+                                                        />
+                                                    </div>
+
+                                                    <div className={cx("formField")}>
+                                                        <label className={cx("label")}>Example On (JSON)</label>
+                                                        <textarea
+                                                            className={cx("textarea", "jsonTextarea")}
+                                                            value={formState.example_on || ""}
+                                                            placeholder={'{"ニチ": [{"w": "日曜日", "m": "Chủ nhật", "p": "にちようび"}]}'}
+                                                            onChange={(e) =>
+                                                                setFormState((s) => ({
+                                                                    ...s,
+                                                                    example_on: e.target.value,
+                                                                }))
+                                                            }
+                                                        />
                                                     </div>
                                                 </>
                                             )}
@@ -777,11 +1705,12 @@ function DictionaryAdmin() {
                                                 onClick={() => {
                                                     setShowAddForm(false);
                                                     setEditingItem(null);
+                                                    setFormError("");
                                                 }}
                                             >
                                                 Hủy
                                             </Button>
-                                            <Button primary type="submit">
+                                            <Button primary type="submit" className={cx("blackSubmitBtn")}>
                                                 {editingItem ? "Cập nhật" : "Thêm"}
                                             </Button>
                                         </div>
@@ -791,7 +1720,6 @@ function DictionaryAdmin() {
                         )}
                     </AnimatePresence>
 
-                    {/* SEARCH & FILTER */}
                     <motion.div
                         className={cx("filterCard")}
                         initial={{ opacity: 0, y: 8 }}
@@ -800,253 +1728,154 @@ function DictionaryAdmin() {
                     >
                         <div className={cx("filterRow")}>
                             <div className={cx("searchWrapper")}>
-                                <FontAwesomeIcon
-                                    icon={faMagnifyingGlass}
-                                    className={cx("searchIcon")}
-                                />
+                                <FontAwesomeIcon icon={faMagnifyingGlass} className={cx("searchIcon")} />
                                 <Input
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
                                     className={cx("searchInput")}
-                                    placeholder={
-                                        activeTab === "words"
-                                            ? "Tìm từ / đọc / nghĩa..."
-                                            : activeTab === "grammar"
-                                                ? "Tìm tiêu đề / ý nghĩa..."
-                                                : "Tìm kanji / nghĩa / âm đọc..."
-                                    }
+                                    placeholder={TAB_META[activeTab].placeholder}
                                 />
                             </div>
 
-                            <select
-                                className={cx("select")}
+                            <AdminSelect
+                                className="filterSelect"
+                                options={LEVEL_FILTER_OPTIONS}
                                 value={levelFilter}
-                                onChange={(e) => setLevelFilter(e.target.value)}
+                                ariaLabel="Lọc theo cấp độ"
+                                onChange={(nextLevel) => {
+                                    setLevelFilter(nextLevel);
+                                    setCurrentPage(1);
+                                }}
+                            />
+
+                            <AdminSelect
+                                className="pageSizeSelect"
+                                options={PAGE_SIZE_FILTER_OPTIONS}
+                                value={pageSize}
+                                ariaLabel="Số mục mỗi trang"
+                                onChange={(nextPageSize) => {
+                                    setPageSize(Number(nextPageSize));
+                                    setCurrentPage(1);
+                                }}
+                            />
+
+                            <button
+                                type="button"
+                                className={cx("refreshBtn")}
+                                onClick={requestReload}
+                                disabled={isLoading}
                             >
-                                <option value="all">Tất cả cấp độ</option>
-                                <option value="N5">N5</option>
-                                <option value="N4">N4</option>
-                                <option value="N3">N3</option>
-                                <option value="N2">N2</option>
-                                <option value="N1">N1</option>
-                            </select>
+                                <FontAwesomeIcon icon={faRotateRight} />
+                                <span>Làm mới</span>
+                            </button>
                         </div>
                     </motion.div>
 
-                    {/* LIST */}
-                    <motion.div
-                        className={cx("list")}
-                        initial="hidden"
-                        animate={filteredItems.length > 0 ? "show" : "hidden"}
-                        variants={{
-                            hidden: {},
-                            show: {
-                                transition: { staggerChildren: 0.04, delayChildren: 0.05 },
-                            },
-                        }}
-                        key={activeTab}
+                    <motion.section
+                        className={cx("tablePanel")}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, ease: easeOut, delay: 0.12 }}
                     >
-                        {filteredItems.map((item) => {
-                            if (!item) return null;
+                        <div className={cx("tableHeader")}>
+                            <div>
+                                <h2>{TAB_META[activeTab].label}</h2>
+                                <p>
+                                    Hiển thị {showingFrom}-{showingTo} trên {pagination.total} mục
+                                </p>
+                            </div>
+                        </div>
 
-                            const levelLower = (item.level || "n5").toLowerCase();
+                        <div className={cx("tableWrap")}>
+                            <table className={cx("dictionaryTable")}>
+                                <thead>{renderTableHead()}</thead>
+                                <tbody>{renderTableRows()}</tbody>
+                            </table>
+                        </div>
 
-                            if (activeTab === "words") {
-                                return (
-                                    <motion.div
-                                        key={item._id}
-                                        className={cx("itemCard", levelLower)}
-                                        variants={{
-                                            hidden: { opacity: 0, y: 14 },
-                                            show: {
-                                                opacity: 1,
-                                                y: 0,
-                                                transition: { duration: 0.35, ease: easeOut },
-                                            },
-                                        }}
-                                    >
-                                        <div className={cx("itemHeader")}>
-                                            <div className={cx("itemInfo")}>
-                                                <div className={cx("itemTitleRow")}>
-                                                    <h3 className={cx("itemTitle")}>{item.word}</h3>
-                                                    <span
-                                                        className={cx(
-                                                            "badge",
-                                                            "badgeLevel",
-                                                            levelLower,
-                                                        )}
-                                                    >
-                                                        {item.level}
-                                                    </span>
-                                                    {item.type && (
-                                                        <span className={cx("badge", "badgeType")}>
-                                                            {item.type}
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                <p className={cx("romaji")}>
-                                                    {(item.phonetic || []).join(" ・ ")}
-                                                </p>
-
-                                                <p className={cx("meaning")}>
-                                                    {(item.meanings || [])
-                                                        .map((m) => m.meaning)
-                                                        .join(", ")}
-                                                </p>
-                                            </div>
-
-                                            <div className={cx("actions")}>
-                                                <button
-                                                    type="button"
-                                                    className={cx("editBtn")}
-                                                    onClick={() => openEditForm(item)}
-                                                >
-                                                    <FontAwesomeIcon icon={faPenToSquare} />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className={cx("deleteBtn")}
-                                                    onClick={() => handleDelete(item._id)}
-                                                >
-                                                    <FontAwesomeIcon icon={faTrash} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                );
-                            }
-
-                            if (activeTab === "grammar") {
-                                return (
-                                    <motion.div
-                                        key={item._id}
-                                        className={cx("itemCard", levelLower)}
-                                        variants={{
-                                            hidden: { opacity: 0, y: 14 },
-                                            show: {
-                                                opacity: 1,
-                                                y: 0,
-                                                transition: { duration: 0.35, ease: easeOut },
-                                            },
-                                        }}
-                                    >
-                                        <div className={cx("itemHeader")}>
-                                            <div className={cx("itemInfo")}>
-                                                <div className={cx("itemTitleRow")}>
-                                                    <h3 className={cx("itemTitle")}>{item.title}</h3>
-                                                    <span
-                                                        className={cx(
-                                                            "badge",
-                                                            "badgeLevel",
-                                                            levelLower,
-                                                        )}
-                                                    >
-                                                        {item.level}
-                                                    </span>
-                                                </div>
-
-                                                <p className={cx("meaning")}>{item.mean}</p>
-                                            </div>
-
-                                            <div className={cx("actions")}>
-                                                <button
-                                                    type="button"
-                                                    className={cx("editBtn")}
-                                                    onClick={() => openEditForm(item)}
-                                                >
-                                                    <FontAwesomeIcon icon={faPenToSquare} />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className={cx("deleteBtn")}
-                                                    onClick={() => handleDelete(item._id)}
-                                                >
-                                                    <FontAwesomeIcon icon={faTrash} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                );
-                            }
-
-                            return (
-                                <motion.div
-                                    key={item._id}
-                                    className={cx("itemCard", "kanjiCard", levelLower)}
-                                    variants={{
-                                        hidden: { opacity: 0, y: 14 },
-                                        show: {
-                                            opacity: 1,
-                                            y: 0,
-                                            transition: { duration: 0.35, ease: easeOut },
-                                        },
-                                    }}
+                        <div className={cx("paginationBar")}>
+                            <span className={cx("pageInfo")}>
+                                Trang {Math.min(currentPage, pagination.totalPages)} / {pagination.totalPages}
+                            </span>
+                            <div className={cx("pageControls")}>
+                                <button
+                                    type="button"
+                                    className={cx("pageButton")}
+                                    disabled={currentPage <= 1 || isLoading}
+                                    onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
                                 >
-                                    <div className={cx("itemHeader")}>
-                                        <div className={cx("kanjiGlyph", levelLower)}>
-                                            {item.kanji}
-                                        </div>
-                                        <div className={cx("itemInfo")}>
-                                            <div className={cx("itemTitleRow")}>
-                                                <h3 className={cx("itemTitle")}>{item.mean}</h3>
-                                                <span
-                                                    className={cx(
-                                                        "badge",
-                                                        "badgeLevel",
-                                                        levelLower,
-                                                    )}
-                                                >
-                                                    {item.level}
-                                                </span>
-                                            </div>
-                                            <p className={cx("meaning")}>{item.detail}</p>
-                                            <div className={cx("kanjiMeta")}>
-                                                <span>
-                                                    Kun: <strong>{item.kun || "—"}</strong>
-                                                </span>
-                                                <span>
-                                                    On: <strong>{item.on || "—"}</strong>
-                                                </span>
-                                                <span>
-                                                    Strokes:{" "}
-                                                    <strong>{item.stroke_count || "—"}</strong>
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className={cx("actions")}>
-                                            <button
-                                                type="button"
-                                                className={cx("editBtn")}
-                                                onClick={() => openEditForm(item)}
-                                            >
-                                                <FontAwesomeIcon icon={faPenToSquare} />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className={cx("deleteBtn")}
-                                                onClick={() => handleDelete(item._id)}
-                                            >
-                                                <FontAwesomeIcon icon={faTrash} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-
-                        {filteredItems.length === 0 && (
-                            <Card className={cx("emptyCard")}>
-                                <div className={cx("emptyIcon")}>
-                                    <FontAwesomeIcon icon={faMagnifyingGlass} />
-                                </div>
-                                <p className={cx("emptyText")}>Không tìm thấy mục phù hợp</p>
-                            </Card>
-                        )}
-                    </motion.div>
+                                    <FontAwesomeIcon icon={faChevronLeft} />
+                                </button>
+                                <button
+                                    type="button"
+                                    className={cx("pageButton")}
+                                    disabled={currentPage >= pagination.totalPages || isLoading}
+                                    onClick={() =>
+                                        setCurrentPage((page) => Math.min(page + 1, pagination.totalPages))
+                                    }
+                                >
+                                    <FontAwesomeIcon icon={faChevronRight} />
+                                </button>
+                            </div>
+                        </div>
+                    </motion.section>
                 </div>
             </main>
+
+            <AnimatePresence>
+                {deleteTarget && (
+                    <motion.div
+                        className={cx("modalBackdrop")}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onMouseDown={() => {
+                            if (!isDeleting) setDeleteTarget(null);
+                        }}
+                    >
+                        <motion.div
+                            className={cx("confirmDialog")}
+                            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 16, scale: 0.98 }}
+                            transition={{ duration: 0.2, ease: easeOut }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                        >
+                            <div className={cx("confirmIcon")}>
+                                <FontAwesomeIcon icon={faTrash} />
+                            </div>
+                            <div className={cx("confirmContent")}>
+                                <h3>Xác nhận xóa mềm</h3>
+                                <p>
+                                    Bạn có chắc muốn xóa mềm{" "}
+                                    <strong>{deleteTargetName || "mục này"}</strong> khỏi danh sách?
+                                </p>
+                            </div>
+                            <div className={cx("confirmActions")}>
+                                <button
+                                    type="button"
+                                    className={cx("secondaryDialogBtn")}
+                                    disabled={isDeleting}
+                                    onClick={() => setDeleteTarget(null)}
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="button"
+                                    className={cx("dangerDialogBtn")}
+                                    disabled={isDeleting}
+                                    onClick={confirmDelete}
+                                >
+                                    {isDeleting ? "Đang xóa..." : "Xóa mềm"}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

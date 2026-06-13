@@ -2,14 +2,16 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import classNames from "classnames/bind";
 import {
-  Activity,
   Bot,
   ChevronDown,
-  Clock3,
   Coins,
   FileCheck2,
   GraduationCap,
+  MessageSquareText,
+  Minus,
   RefreshCw,
+  TrendingDown,
+  TrendingUp,
   Users,
 } from "lucide-react";
 import {
@@ -79,6 +81,15 @@ function formatPercent(value) {
     : `${Number(value).toLocaleString("vi-VN")}%`;
 }
 
+function formatGrowthRate(value) {
+  if (value === null || value === undefined) return "-";
+  const numericValue = Number(value);
+  const sign = numericValue > 0 ? "+" : "";
+  return `${sign}${numericValue.toLocaleString("vi-VN", {
+    maximumFractionDigits: 1,
+  })}%`;
+}
+
 function formatMetricPercent(value) {
   return value === null || value === undefined
     ? "-"
@@ -113,11 +124,32 @@ function getPostStatus(status) {
     : { label: "Đang hiện", tone: "published" };
 }
 
+function getGrowthDisplay(value) {
+  if (value === null || value === undefined) {
+    return { Icon: Minus, tone: "neutral" };
+  }
+
+  const numericValue = Number(value);
+
+  if (numericValue > 0) {
+    return { Icon: TrendingUp, tone: "positive" };
+  }
+
+  if (numericValue < 0) {
+    return { Icon: TrendingDown, tone: "negative" };
+  }
+
+  return { Icon: Minus, tone: "neutral" };
+}
+
 function Skeleton({ className }) {
   return <span className={cx("skeleton", className)} />;
 }
 
-function MetricCard({ icon: Icon, label, value, sub, tone, loading }) {
+function MetricCard({ icon: Icon, label, value, sub, trend, tone, loading }) {
+  const growth = trend ? getGrowthDisplay(trend.value) : null;
+  const TrendIcon = growth?.Icon;
+
   return (
     <article className={cx("metric-card", tone)}>
       <span className={cx("metric-icon")}>
@@ -126,7 +158,14 @@ function MetricCard({ icon: Icon, label, value, sub, tone, loading }) {
       <div>
         <p>{label}</p>
         {loading ? <Skeleton className="metric-skeleton" /> : <strong>{value}</strong>}
-        <span>{sub}</span>
+        {trend ? (
+          <div className={cx("metric-trend", growth.tone)}>
+            <TrendIcon size={14} />
+            <span>{`${formatGrowthRate(trend.value)} ${trend.label}`}</span>
+          </div>
+        ) : (
+          <span className={cx("metric-sub")}>{sub}</span>
+        )}
       </div>
     </article>
   );
@@ -159,6 +198,62 @@ const aiMetricRangeOptions = [
   { value: "all", label: "Toàn bộ" },
 ];
 
+const chartRangeOptions = [
+  { value: "7d", label: "7 ngày" },
+  { value: "30d", label: "30 ngày" },
+  { value: "90d", label: "3 tháng" },
+  { value: "180d", label: "6 tháng" },
+  { value: "365d", label: "1 năm" },
+];
+
+function getChartRangeLabel(value, fallback = "30 ngày") {
+  return chartRangeOptions.find((option) => option.value === value)?.label || fallback;
+}
+
+function ChartRangeDropdown({ value, open, onOpenChange, onChange, disabled }) {
+  return (
+    <div
+      className={cx("range-dropdown")}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          onOpenChange(false);
+        }
+      }}
+    >
+      <button
+        type="button"
+        className={cx("range-trigger", { open })}
+        onClick={() => onOpenChange(!open)}
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span>{getChartRangeLabel(value)}</span>
+        <ChevronDown size={16} />
+      </button>
+      {open && (
+        <div className={cx("range-menu")} role="listbox">
+          {chartRangeOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={cx({
+                selected: option.value === value,
+              })}
+              onClick={() => {
+                onChange(option.value);
+                onOpenChange(false);
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ThresholdPointLabel({ x, y, payload }) {
   if (!payload || x === undefined || y === undefined) return null;
   return (
@@ -176,6 +271,11 @@ function ThresholdPointLabel({ x, y, payload }) {
 function Admin() {
   const [dashboard, setDashboard] = useState(null);
   const [dashboardError, setDashboardError] = useState("");
+  const [userGrowthRange, setUserGrowthRange] = useState("30d");
+  const [learningActivityRange, setLearningActivityRange] = useState("30d");
+  const [examActivityRange, setExamActivityRange] = useState("30d");
+  const [paymentRange, setPaymentRange] = useState("30d");
+  const [chartRangeMenuOpen, setChartRangeMenuOpen] = useState(null);
   const [aiMetricRange, setAiMetricRange] = useState("30d");
   const [aiMetrics, setAiMetrics] = useState(null);
   const [aiMetricsLoading, setAiMetricsLoading] = useState(true);
@@ -192,7 +292,12 @@ function Admin() {
         setLoading(true);
       }
       setDashboardError("");
-      const response = await getAdminDashboardStatistics();
+      const response = await getAdminDashboardStatistics({
+        userGrowthRange,
+        learningActivityRange,
+        examActivityRange,
+        paymentRange,
+      });
       setDashboard(unwrap(response));
     } catch (error) {
       setDashboardError(error?.message || "Không thể tải dashboard admin.");
@@ -200,7 +305,7 @@ function Admin() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [examActivityRange, learningActivityRange, paymentRange, userGrowthRange]);
 
   const loadAiMetrics = useCallback(async (range = aiMetricRange) => {
     try {
@@ -234,9 +339,24 @@ function Admin() {
   const examRows = dashboard?.examOverview || [];
   const postRows = dashboard?.community?.recentPosts || [];
   const payments = dashboard?.payments || {};
-  const paymentProviders = payments.providers30d || [];
   const ai = dashboard?.ai || {};
   const aiUsage = ai.usage30d;
+  const userGrowthRangeLabel = getChartRangeLabel(
+    userGrowthRange,
+    dashboard?.trends?.ranges?.userGrowth?.label,
+  );
+  const learningActivityRangeLabel = getChartRangeLabel(
+    learningActivityRange,
+    dashboard?.trends?.ranges?.learningActivity?.label,
+  );
+  const examActivityRangeLabel = getChartRangeLabel(
+    examActivityRange,
+    dashboard?.trends?.ranges?.examActivity?.label,
+  );
+  const paymentRangeLabel = getChartRangeLabel(
+    paymentRange,
+    payments?.range?.label,
+  );
   const aiMetricCounts = aiMetrics?.counts || {};
   const aiMetricScores = aiMetrics?.scores || {};
   const aiMetricCurve = (aiMetrics?.curve || []).filter(
@@ -252,15 +372,11 @@ function Admin() {
       icon: Users,
       label: "Tổng người dùng",
       value: formatNumber(summary.totalUsers),
-      sub: "Tài khoản trong hệ thống",
+      trend: {
+        value: summary.userGrowthRate7d,
+        label: "trong 7 ngày",
+      },
       tone: "tone-blue",
-    },
-    {
-      icon: Activity,
-      label: "User mới 30 ngày",
-      value: formatNumber(summary.newUsers30d),
-      sub: "Tăng trưởng gần đây",
-      tone: "tone-green",
     },
     {
       icon: GraduationCap,
@@ -270,10 +386,13 @@ function Admin() {
       tone: "tone-teal",
     },
     {
-      icon: Clock3,
-      label: "Phút học 30 ngày",
-      value: formatNumber(summary.studyMinutes30d),
-      sub: "Tổng thời gian học",
+      icon: MessageSquareText,
+      label: "Bài post 30 ngày",
+      value: formatNumber(summary.posts30d),
+      trend: {
+        value: summary.postGrowthRate30d,
+        label: "so với kỳ trước",
+      },
       tone: "tone-rose",
     },
     {
@@ -311,13 +430,10 @@ function Admin() {
     <div className={cx("page")}>
       <header className={cx("header")}>
         <div>
-          <span className={cx("eyebrow")}>Vận hành hệ thống</span>
           <h1>Bảng quản trị</h1>
           <p>Tổng quan người học, học liệu, đề thi, cộng đồng và dịch vụ Pro.</p>
         </div>
         <div className={cx("header-actions")}>
-          <Link to={config.routes.user}>Người dùng</Link>
-          <Link to={config.routes.dictionaryAdmin}>Từ điển</Link>
           <button
             type="button"
             onClick={() => {
@@ -343,7 +459,21 @@ function Admin() {
       </section>
 
       <section className={cx("chart-grid")}>
-        <Panel title="User Growth" subtitle="Tài khoản mới trong 30 ngày gần nhất">
+        <Panel
+          title="User Growth"
+          subtitle={`Tài khoản mới trong ${userGrowthRangeLabel} gần nhất`}
+          action={
+            <ChartRangeDropdown
+              value={userGrowthRange}
+              open={chartRangeMenuOpen === "userGrowth"}
+              onOpenChange={(open) =>
+                setChartRangeMenuOpen(open ? "userGrowth" : null)
+              }
+              onChange={setUserGrowthRange}
+              disabled={loading || refreshing}
+            />
+          }
+        >
           {loading && !dashboard ? (
             <Skeleton className="chart-skeleton" />
           ) : !hasValues(userGrowth, ["users"]) ? (
@@ -363,7 +493,21 @@ function Admin() {
           )}
         </Panel>
 
-        <Panel title="Learning Activity" subtitle="Người học và tổng phút học theo ngày">
+        <Panel
+          title="Learning Activity"
+          subtitle={`Người học và tổng phút học trong ${learningActivityRangeLabel}`}
+          action={
+            <ChartRangeDropdown
+              value={learningActivityRange}
+              open={chartRangeMenuOpen === "learningActivity"}
+              onOpenChange={(open) =>
+                setChartRangeMenuOpen(open ? "learningActivity" : null)
+              }
+              onChange={setLearningActivityRange}
+              disabled={loading || refreshing}
+            />
+          }
+        >
           {loading && !dashboard ? (
             <Skeleton className="chart-skeleton" />
           ) : !hasValues(learningActivity, ["activeLearners", "studyMinutes"]) ? (
@@ -385,7 +529,21 @@ function Admin() {
           )}
         </Panel>
 
-        <Panel title="Exam Activity" subtitle="Lượt nộp bài và số bài đạt">
+        <Panel
+          title="Exam Activity"
+          subtitle={`Lượt nộp bài và số bài đạt trong ${examActivityRangeLabel}`}
+          action={
+            <ChartRangeDropdown
+              value={examActivityRange}
+              open={chartRangeMenuOpen === "examActivity"}
+              onOpenChange={(open) =>
+                setChartRangeMenuOpen(open ? "examActivity" : null)
+              }
+              onChange={setExamActivityRange}
+              disabled={loading || refreshing}
+            />
+          }
+        >
           {loading && !dashboard ? (
             <Skeleton className="chart-skeleton" />
           ) : !hasValues(examActivity, ["attempts", "passed"]) ? (
@@ -682,7 +840,21 @@ function Admin() {
       </section>
 
       <section className={cx("summary-grid")}>
-        <Panel title="Payment Summary" subtitle="Dòng tiền Pro trong 30 ngày">
+        <Panel
+          title="Payment Summary"
+          subtitle={`Dòng tiền Pro trong ${paymentRangeLabel}`}
+          action={
+            <ChartRangeDropdown
+              value={paymentRange}
+              open={chartRangeMenuOpen === "payments"}
+              onOpenChange={(open) =>
+                setChartRangeMenuOpen(open ? "payments" : null)
+              }
+              onChange={setPaymentRange}
+              disabled={loading || refreshing}
+            />
+          }
+        >
           <div className={cx("payment-summary")}>
             <article>
               <span>Doanh thu</span>
@@ -700,18 +872,6 @@ function Admin() {
               <span>Đang chờ</span>
               <strong>{formatNumber(payments.pendingPayments30d)}</strong>
             </article>
-          </div>
-          <div className={cx("provider-list")}>
-            {paymentProviders.length === 0 ? (
-              <span>Chưa có payment thành công trong khoảng thời gian này.</span>
-            ) : (
-              paymentProviders.map((provider) => (
-                <div key={provider.provider}>
-                  <span>{provider.provider}</span>
-                  <strong>{formatNumber(provider.count)} - {formatCurrency(provider.revenue)}</strong>
-                </div>
-              ))
-            )}
           </div>
         </Panel>
 

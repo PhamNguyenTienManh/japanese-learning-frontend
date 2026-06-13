@@ -17,6 +17,8 @@ import Community from "~/pages/Community";
 import PostDetail from "~/pages/Community/PostDetail";
 import NewPost from "~/pages/Community/NewPost";
 import Dashboard from "~/pages/Dashboard";
+import Onboarding from "~/pages/Onboarding";
+import LearningPathProgress from "~/pages/Dashboard/LearningPathProgress";
 import Achievements from "~/pages/Dashboard/Achievements";
 import Goals from "~/pages/Dashboard/Goals";
 import Setting from "~/pages/Dashboard/Setting";
@@ -34,13 +36,16 @@ import PaymentSuccess from "~/pages/Payment/Success";
 import Admin from "~/pages/Admin";
 import User from "~/pages/Admin/User";
 import DictionaryAdmin from "~/pages/Admin/Dictionary";
+import DictionaryForm from "~/pages/Admin/Dictionary/Form";
 import AdminTest from "~/pages/Admin/AdminTest";
 import CreateTest from "~/pages/Admin/AdminTest/CreateTest";
 import AdminPosts from "~/pages/Admin/AdminPosts";
 import Violations from "~/pages/Admin/Violations";
+import AdminTransactions from "~/pages/Admin/AdminTransactions";
 import AdminReading from "~/pages/Admin/AdminReading";
 import AdminConversation from "~/pages/Admin/AdminConversation";
 import EditTest from "~/pages/Admin/AdminTest/UpdateTest";
+import AdminTestStatistics from "~/pages/Admin/AdminTest/Statistics";
 
 export const publicRouter = [
   { path: config.routes.home, component: Home },
@@ -64,9 +69,12 @@ export const publicRouter = [
   { path: config.routes.postDetail, component: PostDetail },
   { path: config.routes.newPost, component: NewPost },
   { path: config.routes.dashboard, component: Dashboard },
+  { path: config.routes.onboarding, component: Onboarding, layout: null },
+  { path: config.routes.learningPathProgress, component: LearningPathProgress },
   { path: config.routes.achievements, component: Achievements },
   { path: config.routes.goals, component: Goals },
   { path: config.routes.setting, component: Setting },
+  { path: config.routes.settingLegacy, component: Setting },
   { path: config.routes.kanjiLookup, component: KanjiLookup },
   { path: config.routes.jlpt, component: JLPT },
   { path: config.routes.reading, component: Reading },
@@ -79,10 +87,14 @@ export const publicRouter = [
   { path: config.routes.admin, component: Admin },
   { path: config.routes.user, component: User },
   { path: config.routes.dictionaryAdmin, component: DictionaryAdmin },
+  { path: config.routes.dictionaryAdminAdd, component: DictionaryForm },
+  { path: config.routes.dictionaryAdminUpdate, component: DictionaryForm },
   { path: config.routes.adminTest, component: AdminTest },
   { path: config.routes.createTest, component: CreateTest },
+  { path: config.routes.adminTestStatistics, component: AdminTestStatistics },
   { path: config.routes.adminPosts, component: AdminPosts },
   { path: config.routes.adminViolations, component: Violations },
+  { path: config.routes.adminTransactions, component: AdminTransactions },
   { path: config.routes.adminReading, component: AdminReading },
   { path: config.routes.adminConversation, component: AdminConversation },
   { path: config.routes.jlptFlashcard, component: JLPTFlashcard },

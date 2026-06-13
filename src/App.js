@@ -3,13 +3,14 @@ import { privateRouter, publicRouter, requireAuthRouter } from "./routes";
 import { DefaultLayout, AdminLayout } from "~/layouts";
 import { Fragment } from "react/jsx-runtime";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useStudyTimeTracker } from "./hooks/useStudyTimeTracker";
 import { AdminGuard } from "./utils/authUtils";
 import useTextSelection from "./hooks/useTextSelection";
 import SelectionIcon from "./components/SelectionIcon";
 import TranslateModal from "./components/TranslateModal";
 import FloatingAIChatIcon from "./components/FloatingAIChatIcon";
+import LearningPathReviewPrompt from "./components/LearningPathReviewPrompt";
 import { translateArgos } from "./services/traslate";
 // import { RequireAuth, RequireAdmin } from "~/components/Auth";
 
@@ -152,6 +153,34 @@ function AnimatedRoutes() {
   );
 }
 
+function ScrollToTop() {
+  const { pathname, search, hash } = useLocation();
+
+  useLayoutEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    if (hash) {
+      requestAnimationFrame(() => {
+        const target = document.getElementById(hash.slice(1));
+        if (target) {
+          target.scrollIntoView({ block: "start", behavior: "auto" });
+        }
+      });
+      return;
+    }
+
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [pathname, search, hash]);
+
+  return null;
+}
+
 const JP_REGEX = /[぀-ヿ一-鿿ｦ-ﾝ]/;
 
 function detectLangPair(text) {
@@ -216,7 +245,9 @@ function App() {
   return (
     <Router>
       <div className="App">
+        <ScrollToTop />
         <AnimatedRoutes />
+        <LearningPathReviewPrompt />
         <FloatingAIChatIcon />
         {!modalState.isOpen && (
           <SelectionIcon selection={selection} onClick={handleLookup} />

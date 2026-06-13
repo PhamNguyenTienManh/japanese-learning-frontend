@@ -1,17 +1,12 @@
 import { useState, useEffect } from "react";
-import classNames from "classnames/bind";
-import styles from "./Community.module.scss";
 import Tabs, { TabsList, TabsTrigger, TabsContent } from "~/components/Tabs";
 
 import postService from "~/services/postService";
 import CommunityHeader from "~/components/CommunityHeader";
-import CommunityStats from "~/components/CommunityStats";
 import CommunitySearch from "~/components/CommunitySearch";
 import CommunitySidebar from "~/components/CommunitySidebar/CommunitySidebar";
 import PostList from "~/components/PostList/PostList";
 import { useAuth } from "~/context/AuthContext";
-
-const cx = classNames.bind(styles);
 
 function Community() {
   const [posts, setPosts] = useState([]);
@@ -22,11 +17,6 @@ function Community() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [stats, setStats] = useState({
-    totalPosts: 234,
-    totalMembers: "1.2K",
-    totalLikes: "3.4K",
-  });
   const [categories, setCategories] = useState([]);
 
   const { userId: currentUserId } = useAuth();
@@ -66,19 +56,6 @@ function Community() {
     }
   };
 
-  const fetchStats = async () => {
-    try {
-      const data = await postService.getCommunityStats();
-      setStats({
-        totalPosts: data.data.totalPosts || 234,
-        totalMembers: data.data.totalMembers || "6",
-        totalLikes: data.data.totalLikes || "0",
-      });
-    } catch (err) {
-      console.error("Error fetching stats:", err);
-    }
-  };
-
   const fetchCategories = async () => {
     try {
       const data = await postService.getCategories();
@@ -102,7 +79,6 @@ function Community() {
 
   useEffect(() => {
     fetchPosts(1, "popular");
-    fetchStats();
     fetchCategories();
   }, [currentUserId]);
 
@@ -172,14 +148,13 @@ function Community() {
   };
 
   return (
-    <div className={cx("wrapper")}>
-      <main className={cx("main")}>
-        <div className={cx("container")}>
+    <div className="relative min-h-screen bg-[radial-gradient(1200px_480px_at_0%_-10%,rgba(0,135,154,0.10),transparent_60%),radial-gradient(900px_360px_at_100%_0%,rgba(252,95,0,0.06),transparent_60%),var(--background)] px-4 pb-20 pt-8">
+      <main className="flex justify-center">
+        <div className="w-full max-w-[1200px]">
           <CommunityHeader />
-          <CommunityStats stats={stats} />
 
-          <div className={cx("content")}>
-            <div className={cx("main-col")}>
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="flex min-w-0 flex-col gap-4">
               <CommunitySearch
                 searchQuery={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -193,7 +168,7 @@ function Community() {
                 </TabsList>
 
                 <TabsContent value="all">
-                  <div className={cx("tabs-content")}>
+                  <div className="flex flex-col gap-3.5">
                     <PostList
                       posts={posts}
                       loading={loading}
@@ -209,7 +184,7 @@ function Community() {
                 </TabsContent>
 
                 <TabsContent value="recent">
-                  <div className={cx("tabs-content")}>
+                  <div className="flex flex-col gap-3.5">
                     <PostList
                       posts={posts}
                       loading={loading}

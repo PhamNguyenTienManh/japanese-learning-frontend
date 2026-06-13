@@ -1,11 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import vocabService from '~/services/vocabService';
-import classNames from 'classnames/bind';
-import styles from './VocabContent.module.scss';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faVolumeHigh, faBookmark, faPlus } from '@fortawesome/free-solid-svg-icons';
-
-const cx = classNames.bind(styles);
+import { useState, useEffect } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faVolumeHigh } from "@fortawesome/free-solid-svg-icons";
+import { fetchVocabDetail } from "~/services/vocabService";
 
 const VocabContent = ({ selectedVocab }) => {
   const [vocabData, setVocabData] = useState(null);
@@ -13,38 +9,38 @@ const VocabContent = ({ selectedVocab }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (selectedVocab) {
-      fetchVocabDetail(selectedVocab);
-    } else {
+    if (!selectedVocab) {
       setVocabData(null);
+      return;
     }
-  }, [selectedVocab]);
 
-  const fetchVocabDetail = async (slug) => {
-    try {
+    const loadDetail = async () => {
       setLoading(true);
       setError(null);
-
-      const response = await vocabService.getWordDetail(slug, 0);
-
-
-      if (response && response) {
-        setVocabData(response);
-      } else {
-        setError('Không tìm thấy thông tin từ vựng');
+      try {
+        const data = await fetchVocabDetail(selectedVocab);
+        if (data) {
+          setVocabData(data);
+        } else {
+          throw new Error("Không tìm thấy dữ liệu từ vựng");
+        }
+      } catch (err) {
+        console.error("Error fetching vocab detail:", err);
+        setError(err.message);
+        setVocabData(null);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Error fetching vocab detail:', err);
-      setError('Không thể tải thông tin từ vựng');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    loadDetail();
+  }, [selectedVocab]);
 
   const handlePlayAudio = (text) => {
-    if ('speechSynthesis' in window) {
+    if (!text) return;
+    if ("speechSynthesis" in window) {
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ja-JP';
+      utterance.lang = "ja-JP";
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utterance);
     } else {
@@ -52,154 +48,109 @@ const VocabContent = ({ selectedVocab }) => {
     }
   };
 
-  const handleAddToNotebook = () => {
-    if (!vocabData) return;
-
-    // TODO: Implement add to notebook functionality
-    // You can navigate to notebook page or open a modal to select notebook
-    const vocabInfo = {
-      kanji: vocabData.word,
-      hiragana: vocabData.phonetic || '',
-      meaning: vocabData.means?.[0]?.mean || '',
-      note: '',
-      category: 'Từ vựng',
-    };
-
-    alert('Tính năng thêm vào sổ tay sẽ được cập nhật');
-  };
-
-  if (!selectedVocab) {
-    return (
-      <div className={cx('content')}>
-        <div className={cx('empty-state')}>
-          <p>Chọn một từ vựng từ danh sách bên trái để xem chi tiết</p>
-        </div>
-      </div>
-    );
-  }
-
   if (loading) {
     return (
-      <div className={cx('content')}>
-        <div className={cx('loading-state')}>
-          <p>Đang tải...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border border-border rounded-2xl text-center text-grey gap-2 min-h-[360px]">
+        <div className="w-8 h-8 border-[3px] border-primary/15 border-t-primary rounded-full animate-[spin_0.8s_linear_infinite] mb-2" />
+        <div>Đang tải dữ liệu từ vựng...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={cx('content')}>
-        <div className={cx('error-state')}>
-          <p>{error}</p>
-        </div>
+      <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border border-border rounded-2xl text-center text-[#b71247] gap-2 min-h-[360px]">
+        <div>Lỗi: {error}</div>
       </div>
     );
   }
 
   if (!vocabData) {
-    return null;
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border border-border rounded-2xl text-center text-grey gap-2 min-h-[360px]">
+        <div>Tìm một từ vựng ở thanh trên để xem chi tiết</div>
+      </div>
+    );
   }
 
+  const phonetic = (vocabData.phonetic || []).join(" ");
+  const meanings = vocabData.meanings || [];
+
   return (
-    <div className={cx('content')}>
-      <div className={cx('vocab-detail')}>
-        {/* Header */}
-        <div className={cx('vocab-header')}>
-          <div className={cx('header-main')}>
-            <h1 className={cx('vocab-word')}>{vocabData.word}</h1>
-            <button
-              className={cx('audio-btn')}
-              onClick={() => {
-                const text = vocabData.suggest_mean
-                  .replace(/\[[^\]]+\]/g, "")
-                  .trim();
-
-                // nếu CHỈ CẦN chứa 1 ký tự Latin (kể cả tiếng Việt có dấu)
-                const hasLatin = /[A-Za-zÀ-ỹ]/.test(text);
-                if (!hasLatin) // có Latin → không đọc
-                  handlePlayAudio(vocabData.suggest_mean.replace(/\[[A-Za-zÀ-ỹ\s]+\]/g, '').trim()); 
-                if(hasLatin) handlePlayAudio(vocabData.word.replace(/\[[A-Za-zÀ-ỹ\s]+\]/g, '').trim());
-
-                
-              }}
-
-
-            >
-              <FontAwesomeIcon icon={faVolumeHigh} />
-            </button>
-          </div>
-          {vocabData.phonetic && (
-            <p className={cx('vocab-phonetic')}>[{vocabData.phonetic}]</p>
-          )}
-
-          {vocabData.suggest_mean && (
-            <p className={cx('vocab-phonetic')}>
-              [{vocabData.suggest_mean.replace(/\[[A-Za-zÀ-ỹ\s]+\]/g, '').trim()}]
-            </p>
-          )}
-
+    <>
+      <div className="bg-white border border-border rounded-[18px] py-7 px-8 shadow-[0_4px_16px_rgba(15,23,42,0.04)] max-[720px]:py-[22px] max-[720px]:px-5">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-[28px] font-bold text-primary leading-tight">{vocabData.word}</h1>
+          <button
+            type="button"
+            className="shrink-0 w-[38px] h-[38px] rounded-full bg-[linear-gradient(135deg,var(--primary)_0%,var(--primary-hover)_100%)] text-white inline-flex items-center justify-center cursor-pointer transition-[transform,filter,box-shadow] duration-[180ms] ease-out shadow-[0_4px_12px_rgba(0,135,154,0.25)] hover:scale-105 hover:brightness-105 hover:shadow-[0_6px_16px_rgba(0,135,154,0.35)] active:scale-95"
+            onClick={() => handlePlayAudio(vocabData.word)}
+            aria-label="Phát âm"
+          >
+            <FontAwesomeIcon icon={faVolumeHigh} />
+          </button>
         </div>
 
-        {/* Meanings */}
-        {vocabData.meanings && vocabData.meanings.length > 0 && (
-          <div className={cx('section')}>
-            <h2 className={cx('section-title')}>Nghĩa</h2>
-            <div className={cx('meanings-list')}>
-              {vocabData.meanings.map((meaning, index) => (
-                <div key={index} className={cx('meaning-item')}>
-                  <div className={cx('meaning-header')}>
-                    {meaning.mean && (
-                      <span className={cx('word-type')}>{meaning.mean}</span>
-                    )}
-                  </div>
-                  <p className={cx('meaning-text')}>{meaning.suggest_mean}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Examples */}
-        {vocabData.examples && vocabData.examples.length > 0 && (
-          <div className={cx('section')}>
-            <h2 className={cx('section-title')}>Ví dụ</h2>
-            <div className={cx('examples-list')}>
-              {vocabData.examples.map((example, index) => (
-                <div key={index} className={cx('example-item')}>
-                  <div className={cx('example-ja')}>
-                    <span className={cx('example-text')}>{example.content}</span>
-                    <button
-                      className={cx('example-audio')}
-                      onClick={() => handlePlayAudio(example.mean)}
-                    >
-                      <FontAwesomeIcon icon={faVolumeHigh} />
-                    </button>
-                  </div>
-                  {example.mean && (
-                    <p className={cx('example-vi')}>{example.mean}</p>
-                  )}
-                  {example.transcription && (
-                    <p className={cx('example-transcription')}>
-                      [{example.transcription}]
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Additional Info */}
-        {vocabData.description && (
-          <div className={cx('section')}>
-            <h2 className={cx('section-title')}>Thông tin thêm</h2>
-            <p className={cx('description')}>{vocabData.description}</p>
-          </div>
-        )}
+        <div className="flex items-center gap-2 mt-2 flex-wrap">
+          {phonetic && <span className="text-base text-orange font-semibold">{phonetic}</span>}
+          {vocabData.type && (
+            <span className="inline-block py-0.5 px-2.5 rounded-full text-xs font-bold bg-orange/10 text-orange">
+              {vocabData.type}
+            </span>
+          )}
+          {vocabData.level && (
+            <span className="inline-block py-0.5 px-2.5 rounded-full text-xs font-bold bg-primary/10 text-primary">
+              {vocabData.level}
+            </span>
+          )}
+        </div>
       </div>
-    </div>
+
+      {meanings.length > 0 && (
+        <div className="bg-white border border-border rounded-[18px] py-6 px-7 shadow-[0_4px_16px_rgba(15,23,42,0.04)] max-[720px]:py-5 max-[720px]:px-[18px]">
+          <h2 className="flex items-center gap-2 text-base font-bold text-text-high mb-4 pl-2.5 border-l-[3px] border-primary">
+            Nghĩa
+            <span className="text-xs font-semibold py-0.5 px-2.5 rounded-full bg-primary/10 text-primary">{meanings.length}</span>
+          </h2>
+          <div className="flex flex-col gap-3">
+            {meanings.map((m, idx) => (
+              <div key={idx} className="bg-[#f1fbfb] rounded-xl py-4 px-[18px]">
+                <div className="flex items-baseline gap-2.5">
+                  <span className="shrink-0 w-6 h-6 inline-flex items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">
+                    {idx + 1}
+                  </span>
+                  <p className="text-[15px] font-semibold text-text-high">{m.meaning}</p>
+                </div>
+
+                {Array.isArray(m.examples) && m.examples.length > 0 && (
+                  <div className="flex flex-col gap-2 mt-3 pl-[34px]">
+                    {m.examples.map((ex, exIdx) => (
+                      <div
+                        key={exIdx}
+                        className="flex items-center justify-between gap-4 bg-white border border-transparent border-l-[3px] border-l-primary rounded-lg py-2.5 px-3.5 transition-[border-color,transform] duration-[180ms] ease-out hover:border-primary/30 hover:border-l-primary-hover hover:translate-x-0.5"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[15px] font-semibold text-text-high">{ex.jp}</div>
+                          {ex.vi && <div className="text-[13px] text-grey mt-0.5">{ex.vi}</div>}
+                        </div>
+                        <button
+                          type="button"
+                          className="shrink-0 w-[34px] h-[34px] rounded-full bg-[linear-gradient(135deg,var(--primary)_0%,var(--primary-hover)_100%)] text-white inline-flex items-center justify-center cursor-pointer transition-[transform,filter,box-shadow] duration-[180ms] ease-out shadow-[0_4px_12px_rgba(0,135,154,0.25)] hover:scale-105 hover:brightness-105 active:scale-95"
+                          onClick={() => handlePlayAudio(ex.jp)}
+                          aria-label="Phát âm ví dụ"
+                        >
+                          <FontAwesomeIcon icon={faVolumeHigh} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

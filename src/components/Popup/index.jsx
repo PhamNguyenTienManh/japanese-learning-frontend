@@ -1,7 +1,7 @@
 import styles from "./PopupModal.module.scss";
 
 function PopupModal(props) {
-    const { visible, onConfirm, onCancel, title, message, confirmText } = props;
+    const { visible, onConfirm, onCancel, title, message, confirmText, cancelText } = props;
 
     if (!visible) return null;
 
@@ -13,7 +13,7 @@ function PopupModal(props) {
 
                 <div className={styles.modalActions}>
                     <button className={styles.btnCancel} onClick={onCancel}>
-                        Hủy
+                        {cancelText || "Hủy"}
                     </button>
 
                     <button className={styles.btnConfirm} onClick={onConfirm}>

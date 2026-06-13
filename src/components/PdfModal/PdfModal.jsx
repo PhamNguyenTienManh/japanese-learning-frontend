@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import styles from "./PdfModal.module.scss";
 
-export default function PdfModal({ show, onClose, pdfUrl, loading }) {
+export default function PdfModal({ show, onClose, pdfUrl, loading, title = "Xem trước PDF" }) {
     const [iframeLoading, setIframeLoading] = useState(true);
 
     useEffect(() => {
@@ -9,6 +10,17 @@ export default function PdfModal({ show, onClose, pdfUrl, loading }) {
             setIframeLoading(true);
         }
     }, [show, pdfUrl]);
+
+    useEffect(() => {
+        if (!show) return undefined;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [show]);
 
     const handleLoad = () => {
         setIframeLoading(false);
@@ -23,9 +35,22 @@ export default function PdfModal({ show, onClose, pdfUrl, loading }) {
 
     if (!show) return null;
 
-    return (
+    return createPortal(
         <div className={styles.overlay}>
             <div className={styles.modal}>
+                <div className={styles.header}>
+                    <h2>{title}</h2>
+                    <button
+                        type="button"
+                        className={styles.iconCloseBtn}
+                        onClick={onClose}
+                        aria-label="Đóng"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div className={styles.previewPane}>
                 {/* Hiển thị loading khi đang fetch hoặc đang load iframe */}
                 {(loading || iframeLoading) && (
                     <div className={styles.loaderWrapper}>
@@ -37,12 +62,14 @@ export default function PdfModal({ show, onClose, pdfUrl, loading }) {
                 {/* PDF iframe - chỉ render khi đã có URL */}
                 {pdfUrl && (
                     <iframe
+                        title="Xem trước PDF JLPT"
                         src={pdfUrl}
                         className={styles.preview}
                         onLoad={handleLoad}
                         style={{ display: (loading || iframeLoading) ? "none" : "block" }}
                     />
                 )}
+                </div>
 
                 <div className={styles.actions}>
                     <button className={styles.closeBtn} onClick={onClose}>
@@ -57,6 +84,7 @@ export default function PdfModal({ show, onClose, pdfUrl, loading }) {
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

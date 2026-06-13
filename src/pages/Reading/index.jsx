@@ -1,32 +1,41 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import classNames from "classnames/bind";
+import { useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+    faArrowLeft,
     faVolumeHigh,
-    faPlay,
-    faPause,
     faMicrophone,
     faStop,
     faXmark,
     faSpinner,
     faRotateRight,
     faHeart,
-    faBookOpen,
+    faEye,
 } from "@fortawesome/free-solid-svg-icons";
 
 import { useAuth } from "~/context/AuthContext";
-import { getNews } from "~/services/newsService";
+import {
+    getNews,
+    getNewsEngagement,
+    markNewsViewed,
+    toggleNewsFavorite,
+} from "~/services/newsService";
+import { recordLearningResourceProgress } from "~/services/learningPathService";
 import { assessPronunciation } from "~/services/voiceAssessService";
 import { getFurigana } from "~/services/furiganaService";
 import { showToast } from "~/components/ToastManager";
+import GuidedCoachmark from "~/components/GuidedCoachmark";
 import styles from "./Reading.module.scss";
 
 const cx = classNames.bind(styles);
 
-const difficultyOptions = [
+const filterOptions = [
     { value: "all", label: "Tất cả" },
     { value: "easy", label: "Dễ" },
     { value: "hard", label: "Khó" },
+    { value: "viewed", label: "Đã xem" },
+    { value: "liked", label: "Yêu thích" },
 ];
 
 function formatTime(seconds) {
@@ -56,19 +65,28 @@ function renderFuriganaSegments(segments) {
 }
 
 export default function Reading() {
+    const location = useLocation();
     const [readingArticles, setReadingArticles] = useState([]);
     const [selectedArticle, setSelectedArticle] = useState(null);
-    const [difficulty, setDifficulty] = useState("all");
+    const [articleFilter, setArticleFilter] = useState("all");
     const [likedIds, setLikedIds] = useState([]);
+    const [viewedIds, setViewedIds] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [readyForPracticeTour, setReadyForPracticeTour] = useState(false);
+    const [pendingPracticeTour, setPendingPracticeTour] = useState(false);
 
-    const [audioElement, setAudioElement] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
 
-    const progressBarRef = useRef(null);
+    const audioRef = useRef(null);
+    const readingTourRef = useRef(null);
+    const readingTourCardRef = useRef(null);
+    const readingPracticeTourRef = useRef(null);
+    const tourParam = useMemo(
+        () => new URLSearchParams(location.search).get("tour"),
+        [location.search]
+    );
+    const readingTourActive = tourParam === "reading";
 
     const [showPractice, setShowPractice] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
@@ -87,7 +105,7 @@ export default function Reading() {
     const [furiganaCache, setFuriganaCache] = useState({});
     const [furiganaLoading, setFuriganaLoading] = useState(false);
 
-    const { isLoggedIn, isPremium } = useAuth();
+    const { isLoggedIn, isPremium, isLoading: authLoading } = useAuth();
 
     useEffect(() => {
         const fetchArticles = async () => {
@@ -108,13 +126,13 @@ export default function Reading() {
                             syncData: item.content.syncData || [],
                             difficulty: item.type,
                             date: new Date(item.dateField).toLocaleDateString('vi-VN'),
-                            read: false,
+                            likeCount: item.likeCount ?? 0,
+                            viewCount: item.viewCount ?? 0,
+                            level: item.level,
+                            read: Boolean(item.isViewed),
                         }));
 
                     setReadingArticles(transformedArticles);
-                    if (transformedArticles.length > 0) {
-                        setSelectedArticle(transformedArticles[0]);
-                    }
                 }
             } catch (error) {
                 console.error("Error fetching articles:", error);
@@ -126,138 +144,244 @@ export default function Reading() {
         fetchArticles();
     }, []);
 
-    const filteredArticles = readingArticles.filter(
-        (article) =>
-            difficulty === "all" || article.difficulty === difficulty
-    );
+    useEffect(() => {
+        const fetchEngagement = async () => {
+            if (authLoading) return;
 
-    const progressPercent = duration ? (currentTime / duration) * 100 : 0;
+            if (!isLoggedIn) {
+                setLikedIds([]);
+                setViewedIds([]);
+                setReadingArticles((prev) =>
+                    prev.map((article) => ({ ...article, read: false }))
+                );
+                return;
+            }
+
+            try {
+                const response = await getNewsEngagement();
+                const engagement = response.data || response;
+                const liked = engagement.likedIds || [];
+                const viewed = engagement.viewedIds || [];
+
+                setLikedIds(liked);
+                setViewedIds(viewed);
+                setReadingArticles((prev) =>
+                    prev.map((article) => ({
+                        ...article,
+                        read: viewed.includes(article.id),
+                    }))
+                );
+                setSelectedArticle((prev) =>
+                    prev
+                        ? {
+                            ...prev,
+                            read: viewed.includes(prev.id),
+                        }
+                        : prev
+                );
+            } catch (error) {
+                console.error("Error fetching reading engagement:", error);
+            }
+        };
+
+        fetchEngagement();
+    }, [authLoading, isLoggedIn]);
+
+    const filteredArticles = readingArticles.filter((article) => {
+        const isArticleViewed = article.read || viewedIds.includes(article.id);
+        const isArticleLiked = likedIds.includes(article.id);
+
+        if (articleFilter === "all") return true;
+        if (articleFilter === "easy" || articleFilter === "hard") {
+            return article.difficulty === articleFilter;
+        }
+        if (articleFilter === "viewed") return isArticleViewed;
+        if (articleFilter === "liked") return isArticleLiked;
+        return true;
+    });
+
+    const readingTourArticle = useMemo(() => {
+        if (!readingTourActive || readingArticles.length === 0) return null;
+
+        return (
+            readingArticles.find(
+                (article) => !article.read && !viewedIds.includes(article.id)
+            ) || readingArticles[0]
+        );
+    }, [readingArticles, readingTourActive, viewedIds]);
 
     useEffect(() => {
-        if (!selectedArticle) return;
+        if (!readingTourActive || loading) return;
 
-        if (audioElement) {
-            audioElement.pause();
-            audioElement.src = "";
+        setArticleFilter("all");
+        setSelectedArticle(null);
+    }, [loading, readingTourActive]);
+
+    const selectedArticleId = selectedArticle?.id;
+
+    useEffect(() => {
+        if (!selectedArticleId) return;
+
+        const audio = audioRef.current;
+        if (audio) {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.load();
         }
-
-        const audio = new Audio(selectedArticle.audioUrl);
-
-        audio.addEventListener("loadedmetadata", () => {
-            setDuration(audio.duration);
-        });
-
-        audio.addEventListener("timeupdate", () => {
-            if (!isDragging) {
-                setCurrentTime(audio.currentTime);
-            }
-        });
-
-        audio.addEventListener("ended", () => {
-            setIsPlaying(false);
-            setCurrentTime(0);
-        });
-
-        audio.addEventListener("error", (e) => {
-            console.error("Audio error:", e);
-        });
-
-        setAudioElement(audio);
         setIsPlaying(false);
         setCurrentTime(0);
-
-        return () => {
-            audio.pause();
-            audio.src = "";
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedArticle?.id]);
+    }, [selectedArticleId]);
 
     useEffect(() => {
-        if (!audioElement) return;
+        if (!readingTourActive || !selectedArticle || !pendingPracticeTour) return undefined;
 
-        if (isPlaying) {
-            audioElement.play().catch((e) => {
-                console.error("Play error:", e);
-                setIsPlaying(false);
+        setReadyForPracticeTour(false);
+        window.scrollTo({ top: 0, behavior: "auto" });
+
+        const scrollTimer = window.setTimeout(() => {
+            const target = readingPracticeTourRef.current;
+            if (!target) return;
+
+            target.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+                inline: "nearest",
             });
-        } else {
-            audioElement.pause();
-        }
-    }, [isPlaying, audioElement]);
+        }, 220);
 
-    const handleToggleLike = (id) => {
-        setLikedIds((prev) =>
-            prev.includes(id)
-                ? prev.filter((x) => x !== id)
-                : [...prev, id]
+        const showTimer = window.setTimeout(() => {
+            setReadyForPracticeTour(true);
+            setPendingPracticeTour(false);
+        }, 620);
+
+        return () => {
+            window.clearTimeout(scrollTimer);
+            window.clearTimeout(showTimer);
+        };
+    }, [pendingPracticeTour, readingTourActive, selectedArticle]);
+
+    const updateArticleState = (id, updater) => {
+        setReadingArticles((prev) =>
+            prev.map((article) => (article.id === id ? updater(article) : article))
+        );
+        setSelectedArticle((prev) =>
+            prev?.id === id ? updater(prev) : prev
         );
     };
 
-    const calculateTimeFromPosition = (clientX) => {
-        if (!progressBarRef.current || !duration) return 0;
-
-        const rect = progressBarRef.current.getBoundingClientRect();
-        const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-        const ratio = x / rect.width;
-        return Math.max(0, Math.min(duration * ratio, duration));
-    };
-
-    const handleProgressMouseDown = (e) => {
-        if (!audioElement || !duration) return;
-
-        setIsDragging(true);
-        const newTime = calculateTimeFromPosition(e.clientX);
-        setCurrentTime(newTime);
-    };
-
-    const handleProgressMouseMove = (e) => {
-        if (!isDragging) return;
-
-        const newTime = calculateTimeFromPosition(e.clientX);
-        setCurrentTime(newTime);
-    };
-
-    const handleProgressMouseUp = (e) => {
-        if (!isDragging || !audioElement) return;
-
-        const newTime = calculateTimeFromPosition(e.clientX);
-        audioElement.currentTime = newTime;
-        setCurrentTime(newTime);
-        setIsDragging(false);
-    };
-
-    useEffect(() => {
-        const handleGlobalMouseMove = (e) => {
-            if (isDragging) {
-                handleProgressMouseMove(e);
-            }
-        };
-
-        const handleGlobalMouseUp = (e) => {
-            if (isDragging) {
-                handleProgressMouseUp(e);
-            }
-        };
-
-        if (isDragging) {
-            document.addEventListener("mousemove", handleGlobalMouseMove);
-            document.addEventListener("mouseup", handleGlobalMouseUp);
+    const handleToggleLike = async (id) => {
+        if (!isLoggedIn) {
+            showToast({
+                type: "error",
+                message: "Vui lòng đăng nhập để yêu thích bài đọc.",
+            });
+            return;
         }
 
-        return () => {
-            document.removeEventListener("mousemove", handleGlobalMouseMove);
-            document.removeEventListener("mouseup", handleGlobalMouseUp);
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isDragging, duration, audioElement]);
+        const wasLiked = likedIds.includes(id);
+        const delta = wasLiked ? -1 : 1;
+
+        setLikedIds((prev) =>
+            wasLiked ? prev.filter((x) => x !== id) : [...prev, id]
+        );
+        updateArticleState(id, (article) => ({
+            ...article,
+            likeCount: Math.max(0, (article.likeCount || 0) + delta),
+        }));
+
+        try {
+            const response = await toggleNewsFavorite(id);
+            const data = response.data || response;
+
+            setLikedIds((prev) =>
+                data.liked
+                    ? Array.from(new Set([...prev, id]))
+                    : prev.filter((x) => x !== id)
+            );
+            updateArticleState(id, (article) => ({
+                ...article,
+                likeCount: data.likeCount ?? article.likeCount ?? 0,
+            }));
+        } catch (error) {
+            console.error("Toggle reading favorite error:", error);
+            setLikedIds((prev) =>
+                wasLiked ? Array.from(new Set([...prev, id])) : prev.filter((x) => x !== id)
+            );
+            updateArticleState(id, (article) => ({
+                ...article,
+                likeCount: Math.max(0, (article.likeCount || 0) - delta),
+            }));
+            showToast({
+                type: "error",
+                message: "Không cập nhật được yêu thích. Vui lòng thử lại.",
+            });
+        }
+    };
+
+    const handleSelectArticle = (article) => {
+        if (readingTourActive) {
+            setPendingPracticeTour(true);
+            setReadyForPracticeTour(false);
+        }
+        setSelectedArticle(article);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        if (viewedIds.includes(article.id) || article.read) return;
+
+        markNewsViewed(article.id)
+            .then((response) => {
+                const data = response.data || response;
+                if (isLoggedIn) {
+                    setViewedIds((prev) =>
+                        prev.includes(article.id) ? prev : [...prev, article.id]
+                    );
+                }
+                updateArticleState(article.id, (currentArticle) => ({
+                    ...currentArticle,
+                    read: true,
+                    viewCount: data.viewCount ?? currentArticle.viewCount ?? 0,
+                }));
+                if (isLoggedIn) {
+                    recordLearningResourceProgress({
+                        skill: "reading",
+                        refKey: article.id,
+                        metadata: {
+                            title: article.title,
+                            difficulty: article.difficulty,
+                        },
+                    }).catch((error) => {
+                        console.error("Record reading progress error:", error);
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error("Mark reading viewed error:", error);
+            });
+    };
+
+    const handleBackToList = () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+        }
+        setIsPlaying(false);
+        setPendingPracticeTour(false);
+        setReadyForPracticeTour(false);
+        setSelectedArticle(null);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
 
     const handleRestart = () => {
-        if (!audioElement) return;
+        const audio = audioRef.current;
+        if (!audio) return;
 
-        audioElement.currentTime = 0;
+        audio.currentTime = 0;
         setCurrentTime(0);
-        setIsPlaying(true);
+        audio.play().then(() => {
+            setIsPlaying(true);
+        }).catch((e) => {
+            console.error("Play error:", e);
+            setIsPlaying(false);
+        });
     };
 
     const ensureFuriganaForArticle = async (article) => {
@@ -335,8 +459,8 @@ export default function Reading() {
     };
 
     const handleOpenPractice = () => {
-        if (audioElement && isPlaying) {
-            audioElement.pause();
+        if (audioRef.current && isPlaying) {
+            audioRef.current.pause();
             setIsPlaying(false);
         }
         if (isLoggedIn && !isPremium) {
@@ -473,143 +597,193 @@ export default function Reading() {
     }, []);
 
     const isLiked = selectedArticle ? likedIds.includes(selectedArticle.id) : false;
+    const content = selectedArticle?.content?.replace(/\/n\/n/g, "\n\n") ?? "";
 
-    const renderShell = (body) => (
+    const renderFrame = (body) => (
         <div className={cx("wrapper")}>
-            <div className={cx("blob1")} />
-            <div className={cx("blob2")} />
             <div className={cx("inner")}>
-                <div className={cx("hero")}>
-                    <div className={cx("heroLeft")}>
-                        <div className={cx("heroBadge")}>
-                            <FontAwesomeIcon icon={faBookOpen} />
-                        </div>
-                        <div>
-                            <h1 className={cx("title")}>Luyện đọc</h1>
-                            <div className={cx("subtitle")}>
-                                <span className={cx("chip")}>Tin tức tiếng Nhật</span>
-                                <span className={cx("dot")}>·</span>
-                                <span>
-                                    {readingArticles.length > 0
-                                        ? `${readingArticles.length} bài viết`
-                                        : "Đang tải..."}
-                                </span>
-                            </div>
-                        </div>
+                <section className={cx("hero")}>
+                    <div className={cx("heroCopy")}>
+                        <span className={cx("eyebrow")}>Japanese reading studio</span>
+                        <h1 className={cx("title")}>Luyện đọc tiếng Nhật</h1>
+                        <p className={cx("subtitle")}>
+                            Đọc tin tức tiếng Nhật, nghe audio đồng bộ, bật furigana
+                            và luyện phát âm trong cùng một trải nghiệm.
+                        </p>
                     </div>
-                </div>
+
+                    <div className={cx("heroPanel")}>
+                        <span className={cx("panelLabel")}>Thư viện</span>
+                        <strong className={cx("panelValue")}>
+                            {readingArticles.length || 0}
+                        </strong>
+                        <span className={cx("panelText")}>bài đọc đã xuất bản</span>
+                    </div>
+                </section>
+
                 {body}
             </div>
         </div>
     );
 
+    const renderFilters = () => (
+        <div className={cx("controlsRow")}>
+            <div className={cx("difficultyGroup")} aria-label="Lọc bài đọc">
+                {filterOptions.map((opt) => (
+                    <button
+                        key={opt.value}
+                        type="button"
+                        className={cx("difficultyButton", {
+                            active: articleFilter === opt.value,
+                        })}
+                        onClick={() => setArticleFilter(opt.value)}
+                    >
+                        {opt.label}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+
+    const renderArticleCard = (article, compact = false) => {
+        const isLiked = likedIds.includes(article.id);
+        const isViewed = article.read || viewedIds.includes(article.id);
+
+        return (
+            <button
+                ref={
+                    readingTourActive && !compact && readingTourArticle?.id === article.id
+                        ? readingTourCardRef
+                        : undefined
+                }
+                key={article.id}
+                type="button"
+                className={cx("articleItem", {
+                    active: selectedArticle?.id === article.id,
+                    compact,
+                })}
+                onClick={() => handleSelectArticle(article)}
+            >
+                <div
+                    ref={
+                        readingTourActive && !compact && readingTourArticle?.id === article.id
+                            ? readingTourRef
+                            : undefined
+                    }
+                    className={cx("thumb")}
+                >
+                    <img
+                        src={article.image || "/placeholder.svg"}
+                        alt={article.title}
+                        className={cx("thumbImage")}
+                    />
+                </div>
+
+                <div className={cx("articleInfo")}>
+                    <div>
+                        <span className={cx("difficultyPill")}>
+                            {article.difficulty === "hard" ? "Khó" : "Dễ"}
+                        </span>
+                        <h3 className={cx("articleTitle")}>{article.title}</h3>
+                    </div>
+                    <div className={cx("articleMeta")}>
+                        <span className={cx("articleDate")}>{article.date}</span>
+                        <div className={cx("cardBadges")}>
+                            {isLiked ? (
+                                <span className={cx("cardBadge", "favorite")}>
+                                    <FontAwesomeIcon icon={faHeart} />
+                                    Yêu thích
+                                </span>
+                            ) : isViewed ? (
+                                <span className={cx("cardBadge", "viewed")}>
+                                    <FontAwesomeIcon icon={faEye} />
+                                    Đã xem
+                                </span>
+                            ) : null}
+                        </div>
+                    </div>
+                </div>
+            </button>
+        );
+    };
+
     if (loading) {
-        return renderShell(
+        return renderFrame(
             <div className={cx("stateCard")}>Đang tải bài viết...</div>
         );
     }
 
-    if (!selectedArticle) {
-        return renderShell(
+    if (readingArticles.length === 0) {
+        return renderFrame(
             <div className={cx("stateCard")}>Không có bài viết nào</div>
         );
     }
 
-    const content = selectedArticle?.content?.replace(/\/n\/n/g, "\n\n") ?? "";
+    if (!selectedArticle) {
+        return renderFrame(
+            <>
+                {renderFilters()}
+                {filteredArticles.length > 0 ? (
+                    <div className={cx("libraryGrid")}>
+                        {filteredArticles.map((article) => renderArticleCard(article))}
+                    </div>
+                ) : (
+                    <div className={cx("stateCard")}>
+                        Không có bài đọc phù hợp với bộ lọc hiện tại.
+                    </div>
+                )}
+                {readingTourActive && readingTourArticle && (
+                    <GuidedCoachmark
+                        targetRef={readingTourRef}
+                        scrollTargetRef={readingTourCardRef}
+                        tourKey="reading"
+                        message="Chọn bài đọc này để hoàn thành mục luyện đọc trong lộ trình."
+                        placement="right"
+                    />
+                )}
+            </>
+        );
+    }
+
+    const relatedArticles = readingArticles.filter(
+        (article) =>
+            article.id !== selectedArticle.id &&
+            !article.read &&
+            !viewedIds.includes(article.id)
+    );
 
     return (
         <div className={cx("wrapper")}>
-            <div className={cx("blob1")} />
-            <div className={cx("blob2")} />
-
             <div className={cx("inner")}>
-                {/* Hero */}
-                <div className={cx("hero")}>
-                    <div className={cx("heroLeft")}>
-                        <div className={cx("heroBadge")}>
-                            <FontAwesomeIcon icon={faBookOpen} />
-                        </div>
-                        <div>
-                            <h1 className={cx("title")}>Luyện đọc</h1>
-                            <div className={cx("subtitle")}>
-                                <span className={cx("chip")}>Tin tức tiếng Nhật</span>
-                                <span className={cx("dot")}>·</span>
-                                <span>{readingArticles.length} bài viết</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <section className={cx("detailHeader")}>
+                    <button
+                        type="button"
+                        className={cx("backButton")}
+                        onClick={handleBackToList}
+                    >
+                        <FontAwesomeIcon icon={faArrowLeft} />
+                        Danh sách bài đọc
+                    </button>
+                </section>
 
-                {/* Difficulty filter */}
-                <div className={cx("controlsRow")}>
-                    <div className={cx("difficultyGroup")}>
-                        {difficultyOptions.map((opt) => (
-                            <button
-                                key={opt.value}
-                                type="button"
-                                className={cx("difficultyButton", {
-                                    active: difficulty === opt.value,
-                                })}
-                                onClick={() => setDifficulty(opt.value)}
-                            >
-                                {opt.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div className={cx("layout")}>
-                    {/* Sidebar */}
-                    <aside className={cx("sidebar")}>
-                        <div className={cx("sidebarScroll")}>
-                            {filteredArticles.map((article) => (
-                                <div
-                                    key={article.id}
-                                    className={cx("articleItem", {
-                                        active: selectedArticle.id === article.id,
-                                    })}
-                                    onClick={() => setSelectedArticle(article)}
-                                >
-                                    <div className={cx("articleItemInner")}>
-                                        <div className={cx("thumb")}>
-                                            <img
-                                                src={article.image || "/placeholder.svg"}
-                                                alt={article.title}
-                                                className={cx("thumbImage")}
-                                            />
-                                        </div>
-
-                                        <div className={cx("articleInfo")}>
-                                            <h3 className={cx("articleTitle")}>
-                                                {article.title}
-                                            </h3>
-
-                                            <div className={cx("articleMeta")}>
-                                                <span className={cx("articleDate")}>
-                                                    {article.date}
-                                                </span>
-                                                {article.read && (
-                                                    <span className={cx("readDot")} />
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </aside>
-
-                    {/* Main article */}
+                <div className={cx("detailLayout")}>
                     <section className={cx("content")}>
                         <div className={cx("articleCard")}>
                             <div className={cx("articleHeader")}>
                                 <div className={cx("articleHeaderMain")}>
+                                    <div className={cx("articleKicker")}>
+                                        <span className={cx("difficultyPill")}>
+                                            {selectedArticle.difficulty === "hard" ? "Khó" : "Dễ"}
+                                        </span>
+                                        <span>{selectedArticle.date}</span>
+                                        <span className={cx("statPill")}>
+                                            <FontAwesomeIcon icon={faEye} />
+                                            {selectedArticle.viewCount || 0}
+                                        </span>
+                                    </div>
                                     <h2 className={cx("articleMainTitle")}>
                                         {selectedArticle.title}
                                     </h2>
-                                    <p className={cx("articleMainDate")}>
-                                        {selectedArticle.date}
-                                    </p>
                                 </div>
 
                                 <button
@@ -630,45 +804,23 @@ export default function Reading() {
                                 />
                             </div>
 
-                            {/* Audio player */}
                             <div className={cx("audioPlayer")}>
-                                <div className={cx("audioControlsRow")}>
-                                    <button
-                                        type="button"
-                                        className={cx("audioPlayButton")}
-                                        onClick={() => {
-                                            if (!audioElement || duration === 0) return;
-                                            setIsPlaying((prev) => !prev);
-                                        }}
-                                        aria-label={isPlaying ? "Tạm dừng" : "Phát"}
-                                    >
-                                        <FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />
-                                    </button>
-                                    <div className={cx("audioInfo")}>
-                                        <FontAwesomeIcon
-                                            icon={faVolumeHigh}
-                                            className={cx("audioIcon")}
-                                        />
-                                        <span className={cx("audioTime")}>
-                                            {formatTime(currentTime)} / {formatTime(duration)}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div
-                                    ref={progressBarRef}
-                                    className={cx("audioProgressBar", {
-                                        dragging: isDragging,
-                                    })}
-                                    onMouseDown={handleProgressMouseDown}
-                                >
-                                    <div
-                                        className={cx("audioProgress")}
-                                        style={{ width: `${progressPercent}%` }}
-                                    >
-                                        <div className={cx("audioProgressThumb")} />
-                                    </div>
-                                </div>
+                                <audio
+                                    ref={audioRef}
+                                    className={cx("nativeAudio")}
+                                    src={selectedArticle.audioUrl}
+                                    controls
+                                    preload="metadata"
+                                    onTimeUpdate={(e) => {
+                                        setCurrentTime(e.currentTarget.currentTime || 0);
+                                    }}
+                                    onPlay={() => setIsPlaying(true)}
+                                    onPause={() => setIsPlaying(false)}
+                                    onEnded={() => {
+                                        setIsPlaying(false);
+                                        setCurrentTime(0);
+                                    }}
+                                />
                             </div>
 
                             <div className={cx("articleText", { withFurigana: furiganaOn })}>
@@ -731,16 +883,43 @@ export default function Reading() {
                                             : "Hiện furigana"}
                                 </button>
                                 <button
+                                    ref={readingPracticeTourRef}
                                     type="button"
                                     className={cx("toolButton", "toolPrimary")}
                                     onClick={handleOpenPractice}
                                 >
-                                    <FontAwesomeIcon icon={faMicrophone} />
                                     Luyện đọc
                                 </button>
                             </div>
+                            {readingTourActive && readyForPracticeTour && !showPractice && (
+                                <GuidedCoachmark
+                                    targetRef={readingPracticeTourRef}
+                                    tourKey="reading-practice"
+                                    message="Sau khi nghe xong, hãy nhấn vào đây để luyện đọc rồi AI chấm phát âm nhé."
+                                    placement="right"
+                                    pointerAnchor="right-edge"
+                                    tooltipOffset={96}
+                                />
+                            )}
                         </div>
                     </section>
+
+                    <aside className={cx("relatedPanel")}>
+                        <div className={cx("relatedHead")}>
+                            <span className={cx("sectionLabel")}>Gợi ý tiếp theo</span>
+                        </div>
+                        <div className={cx("relatedScroll")}>
+                            {relatedArticles.length > 0 ? (
+                                relatedArticles.map((article) =>
+                                    renderArticleCard(article, true)
+                                )
+                            ) : (
+                                <div className={cx("emptyRelated")}>
+                                    Bạn đã xem hết các bài đọc đang có.
+                                </div>
+                            )}
+                        </div>
+                    </aside>
                 </div>
             </div>
 
@@ -775,7 +954,6 @@ export default function Reading() {
         </div>
     );
 }
-
 function PracticeModal({
     article,
     isRecording,
@@ -817,7 +995,7 @@ function PracticeModal({
             <div className={cx("practiceModal")}>
                 <div className={cx("practiceHeader")}>
                     <div>
-                        <h2 className={cx("practiceTitle")}>Luyện đọc 🎤</h2>
+                        <h2 className={cx("practiceTitle")}>Luyện đọc</h2>
                         <p className={cx("practiceSubtitle")}>{article?.title}</p>
                     </div>
                     <button

@@ -1,82 +1,109 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBan, faCircleCheck, faLock, faLockOpen } from "@fortawesome/free-solid-svg-icons";
-import classNames from "classnames/bind";
-import styles from "./UserTableRow.module.scss";
-import Button from "~/components/Button";
-import { USER_ROLES, USER_STATUS, PROVIDER_LABELS } from "~/services/userConstants";
+import { Edit3, History } from "lucide-react";
+import {
+  USER_ROLES,
+  USER_STATUS,
+  PROVIDER_LABELS,
+} from "~/services/userConstants";
+import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
 
-const cx = classNames.bind(styles);
-
-function UserTableRow({ user, onToggleStatus, onChangeRole }) {
+function UserTableRow({ user, onViewActivity, onEditUser }) {
   const isBanned = user.status === USER_STATUS.BANNED;
+  const premiumExpiredAt = user.premium_expired_date
+    ? new Date(user.premium_expired_date)
+    : null;
+  const isPremium =
+    premiumExpiredAt &&
+    !Number.isNaN(premiumExpiredAt.getTime()) &&
+    premiumExpiredAt > new Date();
 
   return (
-    <tr className={cx("row")}>
-      {/* User info */}
-      <td className={cx("td")}>
-        <div className={cx("userCell")}>
+    <tr className="transition hover:bg-slate-50 [&:last-child_td]:border-b-0">
+      <td className="border-b border-slate-200 px-4 py-4 align-middle">
+        <div className="flex items-center gap-3">
           <img
-            src={user.profile?.image_url || "/placeholder.svg"}
+            src={getAvatarUrl(user.profile?.image_url)}
             alt={user.profile?.name || "User"}
-            className={cx("avatar")}
+            className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm outline outline-1 outline-slate-200"
+            onError={handleAvatarError}
           />
-          <div>
-            <p className={cx("userName")}>{user.profile?.name || "Chưa có tên"}</p>
-            <p className={cx("userEmail")}>{user.email}</p>
+          <div className="min-w-0">
+            <p className="m-0 truncate text-[15px] font-black leading-snug text-slate-950">
+              {user.profile?.name || "Chưa có tên"}
+            </p>
+            <p className="m-0 mt-0.5 truncate text-xs font-semibold text-slate-500">
+              {user.email}
+            </p>
           </div>
         </div>
       </td>
 
-      {/* Role */}
-      <td className={cx("td")}>
-        <select
-          className={cx("roleSelect")}
-          value={user.role || USER_ROLES.STUDENT}
-          onChange={(e) => onChangeRole(user._id, e.target.value)}
+      <td className="border-b border-slate-200 px-4 py-4 align-middle">
+        <span className="inline-flex min-h-7 items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-700">
+          {user.role === USER_ROLES.ADMIN ? "Quản trị viên" : "Học viên"}
+        </span>
+      </td>
+
+      <td className="border-b border-slate-200 px-4 py-4 align-middle">
+        <span
+          className={`inline-flex min-h-7 items-center rounded-full px-3 py-1 text-xs font-extrabold ring-1 ring-inset ${
+            isBanned
+              ? "bg-rose-50 text-rose-700 ring-rose-200"
+              : "bg-emerald-50 text-emerald-700 ring-emerald-200"
+          }`}
         >
-          <option value={USER_ROLES.STUDENT}>Học viên</option>
-          <option value={USER_ROLES.ADMIN}>Quản trị viên</option>
-        </select>
+          {isBanned ? "Bị cấm" : "Hoạt động"}
+        </span>
       </td>
 
-      {/* Status */}
-      <td className={cx("td")}>
-        {isBanned ? (
-          <span className={cx("badge", "badgeBanned")}>
-            <FontAwesomeIcon icon={faBan} className={cx("badgeIcon")} />
-            <span>Bị cấm</span>
+      <td className="border-b border-slate-200 px-4 py-4 align-middle">
+        <div className="flex flex-col items-start gap-1">
+          <span
+            className={`inline-flex min-h-7 items-center rounded-full px-3 py-1 text-xs font-extrabold ring-1 ring-inset ${
+              isPremium
+                ? "bg-amber-50 text-amber-700 ring-amber-200"
+                : "bg-slate-100 text-slate-600 ring-slate-200"
+            }`}
+          >
+            {isPremium ? "Premium" : "Thường"}
           </span>
-        ) : (
-          <span className={cx("badge", "badgeActive")}>
-            <FontAwesomeIcon icon={faCircleCheck} className={cx("badgeIcon")} />
-            <span>Hoạt động</span>
-          </span>
-        )}
+          {isPremium && (
+            <span className="whitespace-nowrap text-[11px] font-medium text-slate-500">
+              Hết hạn {premiumExpiredAt.toLocaleDateString("vi-VN")}
+            </span>
+          )}
+        </div>
       </td>
 
-      {/* Provider */}
-      <td className={cx("td")}>
-        <span className={cx("badge", "badgeProvider")}>
+      <td className="border-b border-slate-200 px-4 py-4 align-middle">
+        <span className="inline-flex min-h-7 items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold capitalize text-slate-700">
           {PROVIDER_LABELS[user.provider] || user.provider || "local"}
         </span>
       </td>
 
-      {/* Registered date */}
-      <td className={cx("td", "tdText")}>
+      <td className="whitespace-nowrap border-b border-slate-200 px-4 py-4 align-middle text-sm font-bold text-slate-600">
         {new Date(user.registeredAt || user.createdAt).toLocaleDateString("vi-VN")}
       </td>
 
-      {/* Actions */}
-      <td className={cx("td")}>
-        <div className={cx("actions")}>
-          <Button
-            className={cx("actionButton", isBanned ? "unlockButton" : "banButton")}
-            rounded
-            onClick={() => onToggleStatus(user._id, user.status)}
+      <td className="border-b border-slate-200 px-4 py-4 text-right align-middle">
+        <div className="inline-flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onViewActivity(user)}
+            className="inline-grid h-9 w-9 place-items-center rounded-xl border-[1.5px] border-blue-100 bg-white text-slate-700 shadow-sm transition hover:-translate-y-px hover:border-blue-600 hover:bg-blue-600 hover:text-white"
+            aria-label="Xem lịch sử người dùng"
+            title="Xem lịch sử"
           >
-            <FontAwesomeIcon icon={isBanned ? faLockOpen : faLock} />
-            <span>{isBanned ? "Mở khóa" : "Cấm"}</span>
-          </Button>
+            <History size={15} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onEditUser(user)}
+            className="inline-grid h-9 w-9 place-items-center rounded-xl border-[1.5px] border-slate-200 bg-white text-slate-700 shadow-sm transition hover:-translate-y-px hover:border-slate-900 hover:bg-slate-950 hover:text-white"
+            aria-label="Sửa người dùng"
+            title="Sửa người dùng"
+          >
+            <Edit3 size={15} aria-hidden="true" />
+          </button>
         </div>
       </td>
     </tr>

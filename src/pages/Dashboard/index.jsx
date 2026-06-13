@@ -1,6 +1,4 @@
-import classNames from "classnames/bind";
-import styles from "./Dashboard.module.scss";
-
+import classNames from "classnames";
 import Button from "~/components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -16,29 +14,151 @@ import {
   faGear,
   faChartSimple,
 } from "@fortawesome/free-solid-svg-icons";
-import { useEffect, useState } from "react";
-import { getUserStatistics } from "~/services/statistic";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { getWeeklyStudyLeaderboard, getUserStatistics } from "~/services/statistic";
 import { getTodayStudyTime, getWeekStudyMinutes } from "~/services/userStudy";
 import { studyTimeTracker } from "~/utils/studyTimeTracker";
+import { getRecentUserActivities } from "~/services/userActivityService";
+import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
+import { getLearningPathDashboard } from "~/services/learningPathService";
 
-const cx = classNames.bind(styles);
+const LEADERBOARD_STEP = 10;
+const tw = {
+  wrapper:
+    "min-h-screen bg-[linear-gradient(180deg,rgba(240,251,247,0.96),#f0fbf7),linear-gradient(120deg,rgba(0,135,154,0.08),rgba(252,95,0,0.06))]",
+  main: "flex justify-center px-6 pb-16 pt-8 max-[560px]:px-4",
+  container: "w-full max-w-[1120px] animate-fade-up",
+  hero:
+    "relative mb-6 flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-2xl bg-[linear-gradient(135deg,var(--primary)_0%,#006d7d_100%)] px-8 py-7 before:absolute before:inset-0 before:pointer-events-none before:content-[''] before:bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.1)_0%,transparent_50%),radial-gradient(circle_at_20%_80%,rgba(255,255,255,0.06)_0%,transparent_50%)]",
+  heroContent: "relative z-[1] flex items-center gap-[18px]",
+  heroAvatar:
+    "h-[72px] w-[72px] flex-shrink-0 rounded-full border-[3px] border-white/50 object-cover shadow-[0_4px_12px_rgba(0,0,0,0.15)]",
+  heroName: "mb-1 text-[26px] font-bold leading-[1.2] text-white",
+  heroMeta: "flex flex-wrap items-center gap-2.5",
+  heroBadge:
+    "inline-flex items-center rounded-full border border-white/25 bg-white/20 px-2.5 py-[3px] text-[11px] font-bold tracking-[0.5px] text-white",
+  heroJoined: "text-xs text-white/75",
+  heroActions: "relative z-[1]",
+  heroBtn:
+    "!rounded-lg !border !border-white/20 !bg-white/15 !px-[18px] !py-2.5 !text-[13px] !font-semibold !text-white hover:!bg-white/25",
+  statsGrid: "mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4",
+  statCard:
+    "rounded-[14px] border border-[#eef2f4] bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:border-primary-low hover:shadow-primary-soft",
+  statInner: "flex items-center gap-3.5",
+  statIconWrap:
+    "flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,var(--primary-low),rgba(0,135,154,0.12))]",
+  statIconOrange:
+    "!bg-[linear-gradient(135deg,rgba(252,95,0,0.15),rgba(252,95,0,0.05))] [&_svg]:!text-orange",
+  statIcon: "text-lg text-primary",
+  statContent: "min-w-0",
+  statValue: "mb-0.5 text-2xl font-extrabold leading-[1.2] text-text-high",
+  statLabel: "text-[13px] font-medium text-grey",
+  layout: "grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]",
+  mainCol: "flex flex-col gap-[18px]",
+  sidebar: "flex flex-col gap-[18px]",
+  section:
+    "rounded-[14px] border border-[#eef2f4] bg-white px-6 py-[22px] shadow-card transition hover:shadow-card-hover",
+  sectionHeader: "mb-4 flex items-center justify-between",
+  sectionTitle: "flex items-center gap-2 text-[17px] font-bold text-text-high",
+  sectionTitleIcon: "text-[15px] text-primary",
+  sectionSubtitle: "mt-0.5 text-xs text-grey",
+  sectionAction:
+    "!rounded-lg !border-border !px-3 !py-1.5 !text-xs !font-semibold !text-grey hover:!border-primary hover:!bg-primary hover:!text-white",
+  badgeTrend:
+    "inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-500",
+  badgeIcon: "text-[11px]",
+  leaderboardHeader: "items-start gap-3 max-[560px]:flex-col max-[560px]:items-stretch",
+  leaderboardCount:
+    "inline-flex min-h-7 items-center whitespace-nowrap rounded-full border border-primary/15 bg-primary/5 px-2.5 py-1 text-xs font-bold text-primary max-[560px]:self-start",
+  emptyState: "rounded-lg border border-dashed border-border bg-[#f8fafb] p-[18px] text-[13px] leading-6 text-grey",
+  leaderboardList: "flex flex-col gap-2.5",
+  leaderboardRow:
+    "grid min-h-[68px] grid-cols-[38px_44px_minmax(0,1fr)_minmax(74px,auto)] items-center gap-3 rounded-lg border border-[#eef2f4] bg-[#f8fafb] px-3 py-2.5 max-[560px]:grid-cols-[36px_42px_minmax(0,1fr)] max-[560px]:gap-2.5",
+  currentUserRow: "border-primary/35 bg-primary/5",
+  rankBadge:
+    "inline-flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-[#e8edf0] text-[13px] font-extrabold text-grey-low max-[560px]:h-8 max-[560px]:w-8",
+  rankGold: "!bg-amber-100 !text-amber-700",
+  rankSilver: "!bg-gray-200 !text-gray-600",
+  rankBronze: "!bg-orange-100 !text-orange-700",
+  leaderAvatar: "h-[42px] w-[42px] rounded-full border-2 border-white bg-[#eef2f4] object-cover",
+  leaderInfo: "min-w-0",
+  leaderName: "mb-0.5 flex min-w-0 items-center gap-2 break-words text-sm font-bold leading-[1.35] text-text-high",
+  youBadge: "flex-shrink-0 rounded-full bg-primary px-[7px] py-0.5 text-[10px] font-bold text-white",
+  leaderMeta: "break-words text-xs leading-[1.4] text-grey",
+  leaderScore:
+    "flex min-w-[74px] flex-col items-end justify-center text-right leading-[1.2] text-text-high max-[560px]:col-start-3 max-[560px]:items-start max-[560px]:text-left [&_span]:mt-0.5 [&_span]:text-[11px] [&_span]:font-semibold [&_span]:text-grey [&_strong]:text-xl [&_strong]:font-extrabold [&_strong]:text-primary",
+  leaderboardFooter:
+    "mt-3 flex items-center justify-between gap-3 text-xs font-semibold text-grey max-[560px]:flex-col max-[560px]:items-stretch",
+  leaderboardMoreBtn: "!min-w-[104px] !rounded-lg !px-3 !py-2 !text-xs !font-bold max-[560px]:!w-full",
+  currentRankSummary:
+    "mt-3 flex items-center justify-between gap-2.5 rounded-lg bg-orange/10 px-3 py-2.5 text-[13px] font-semibold text-grey-low max-[560px]:flex-col max-[560px]:items-start [&_strong]:text-base [&_strong]:text-orange",
+  weeklyChart: "flex h-[200px] items-end gap-2 pt-2",
+  weeklyItem: "flex h-full flex-1 flex-col items-center gap-1.5",
+  barWrapper: "flex w-full flex-1 items-end justify-center",
+  bar: "min-h-1 w-[70%] max-w-10 rounded-t-md bg-[#e8edf0] transition sm:w-[80%] sm:max-w-12",
+  barActive: "bg-[linear-gradient(180deg,var(--primary)_0%,var(--primary-hover)_100%)] shadow-[0_2px_8px_rgba(0,135,154,0.25)]",
+  barLabels: "text-center",
+  barDay: "mb-px text-[11px] font-bold text-grey",
+  barMinutes: "text-[10px] font-semibold text-primary/80",
+  goalsList: "flex flex-col gap-3.5",
+  goalItem: "w-full",
+  goalHeader: "mb-1.5 flex items-center justify-between gap-3",
+  goalTitle: "text-sm font-semibold text-text-high",
+  goalValue: "text-xs font-semibold text-grey",
+  goalTrack: "h-2 w-full overflow-hidden rounded-full bg-[#eef2f4]",
+  goalBar: "h-full rounded-full bg-[linear-gradient(90deg,var(--primary),var(--primary-hover))] shadow-[0_1px_4px_rgba(0,135,154,0.2)] transition",
+  activityList: "flex flex-col",
+  activityItem:
+    "group relative flex w-full gap-3.5 rounded-lg px-1.5 pb-4 pt-1 text-left transition hover:bg-[#f8fafb] focus:outline-none focus:ring-2 focus:ring-primary/20 last:pb-1 [&:not(:last-child)::after]:absolute [&:not(:last-child)::after]:bottom-0 [&:not(:last-child)::after]:left-[21px] [&:not(:last-child)::after]:top-9 [&:not(:last-child)::after]:w-0.5 [&:not(:last-child)::after]:bg-[#e8edf0] [&:not(:last-child)::after]:content-['']",
+  activityDot: "relative z-[1] flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[13px]",
+  activityStudy: "border border-primary/20 bg-[linear-gradient(135deg,rgba(0,135,154,0.15),rgba(0,135,154,0.05))] text-primary",
+  activityTest: "border border-emerald-500/20 bg-[linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.05))] text-emerald-500",
+  activityDict: "border border-blue-500/20 bg-[linear-gradient(135deg,rgba(59,130,246,0.15),rgba(59,130,246,0.05))] text-blue-500",
+  activityChat: "border border-violet-500/20 bg-[linear-gradient(135deg,rgba(139,92,246,0.15),rgba(139,92,246,0.05))] text-violet-500",
+  activityCommunity: "border border-orange/20 bg-[linear-gradient(135deg,rgba(252,95,0,0.15),rgba(252,95,0,0.05))] text-orange",
+  activityContent: "min-w-0 flex-1",
+  activityTitle: "mb-0.5 text-sm font-semibold leading-[1.4] text-text-high",
+  activityDescription: "mb-1 text-xs leading-5 text-grey",
+  activityMeta: "flex flex-wrap items-center gap-1.5 text-xs text-grey",
+  activityScore: "text-xs font-bold text-emerald-500",
+  activityHint: "text-[11px] font-semibold text-primary opacity-0 transition group-hover:opacity-100",
+  sideCard: "rounded-[14px] border border-[#eef2f4] bg-white p-5 shadow-card",
+  sideTitle: "mb-3.5 flex items-center gap-2 text-[15px] font-bold text-text-high",
+  sideTitleIcon: "text-sm text-primary",
+  sideStats: "flex flex-col gap-3",
+  sideRow: "flex items-center justify-between gap-3",
+  sideLabel: "flex items-center gap-2 text-[13px] font-medium text-grey",
+  sideIcon: "w-4 text-center text-[13px] text-primary",
+  sideIconOrange: "!text-orange",
+  sideValue: "text-[15px] font-bold text-text-high",
+  sideHeader: "mb-3 flex items-center justify-between gap-3 [&_h3]:mb-0",
+  achievementsGrid: "grid grid-cols-3 gap-2",
+  achievement:
+    "flex aspect-square cursor-default items-center justify-center rounded-xl border-2 border-[#eef2f4] bg-[#f8fafb] text-2xl opacity-45 transition hover:border-border",
+  achievementUnlocked:
+    "!border-primary-low !bg-[linear-gradient(135deg,rgba(0,135,154,0.06),rgba(0,135,154,0.02))] !opacity-100 hover:!border-primary hover:scale-105 hover:shadow-[0_4px_12px_rgba(0,135,154,0.15)]",
+  quickActions: "flex flex-col gap-2.5",
+  quickBtn: "!w-full !justify-center !rounded-[10px] !px-4 !py-[13px] !text-sm !font-semibold",
+  quickIcon: "mr-1.5 text-sm",
+};
+
+const cx = (...args) =>
+  classNames(
+    ...args.flatMap((arg) => {
+      if (!arg) return [];
+      if (typeof arg === "string") return [tw[arg] || arg];
+      if (Array.isArray(arg)) return [cx(...arg)];
+      if (typeof arg === "object") {
+        return Object.entries(arg)
+          .filter(([, enabled]) => enabled)
+          .map(([key]) => tw[key] || key);
+      }
+      return [arg];
+    })
+  );
 
 const mockUserData = {
-  recentActivity: [
-    {
-      type: "test",
-      title: "Hoàn thành đề thi N5 - Đề số 3",
-      score: 88,
-      date: "Hôm nay",
-    },
-    { type: "dictionary", title: "Tra cứu 15 từ mới", date: "Hôm nay" },
-    { type: "chat", title: "Luyện hội thoại với AI", date: "Hôm qua" },
-    {
-      type: "community",
-      title: "Đăng bài về ngữ pháp て形",
-      date: "2 ngày trước",
-    },
-  ],
   achievements: [
     {
       id: 1,
@@ -83,33 +203,87 @@ const mockUserData = {
       unlocked: false,
     },
   ],
-  goals: [
-    {
-      id: 1,
-      title: "Học 50 từ mới mỗi tuần",
-      current: 34,
-      target: 50,
-      unit: "từ",
-    },
-    { id: 2, title: "Hoàn thành 3 đề thi", current: 2, target: 3, unit: "đề" },
-    {
-      id: 3,
-      title: "Học 30 phút mỗi ngày",
-      current: 5,
-      target: 7,
-      unit: "ngày",
-    },
-  ],
+};
+
+const formatStudyDuration = (value) => {
+  const totalMinutes = Math.max(Math.round(Number(value) || 0), 0);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h`;
+  return `${minutes}m`;
+};
+
+const formatActivityDate = (value) => {
+  if (!value) return "Vừa xong";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Vừa xong";
+
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMinutes < 1) return "Vừa xong";
+  if (diffMinutes < 60) return `${diffMinutes} phút trước`;
+  if (diffHours < 24) return `${diffHours} giờ trước`;
+  if (diffDays < 7) return `${diffDays} ngày trước`;
+
+  return date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
+const getActivityTone = (type) => {
+  if (type === "exam_completed") return "activityTest";
+  if (type === "post_created" || type === "comment_created") return "activityCommunity";
+  if (type === "notebook_created" || type === "notebook_item_added") return "activityDict";
+  if (type === "study_time_added") return "activityStudy";
+  return "activityChat";
+};
+
+const getActivityIcon = (type) => {
+  if (type === "exam_completed") return faTrophy;
+  if (type === "post_created" || type === "comment_created") return faMedal;
+  if (type === "notebook_created" || type === "notebook_item_added") return faBookOpen;
+  if (type === "study_time_added") return faClock;
+  return faStar;
+};
+
+const getActivityScore = (activity) => {
+  const score = Number(activity?.metadata?.score);
+  return Number.isFinite(score) ? score : null;
 };
 
 function Dashboard() {
+  const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
+  const [learningPath, setLearningPath] = useState(null);
+  const [learningPathLoading, setLearningPathLoading] = useState(false);
+  const [learningPathError, setLearningPathError] = useState("");
   const [studyTimeToday, setStudyTimeToday] = useState(0);
   const [currentSessionMinutes, setCurrentSessionMinutes] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [weeklyProgress, setWeeklyProgress] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [recentActivitiesLoading, setRecentActivitiesLoading] = useState(false);
+  const [recentActivitiesError, setRecentActivitiesError] = useState("");
+  const [leaderboard, setLeaderboard] = useState({
+    entries: [],
+    currentUserRank: null,
+    totalRankedUsers: 0,
+    visibleCount: 0,
+    hasMore: false,
+    period: null,
+  });
+  const [leaderboardLimit, setLeaderboardLimit] = useState(LEADERBOARD_STEP);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardError, setLeaderboardError] = useState("");
 
-  const loadStudyTime = async () => {
+  const loadStudyTime = useCallback(async () => {
     try {
       const data = await getTodayStudyTime();
       setStudyTimeToday(data?.data?.duration_minutes || 0);
@@ -117,13 +291,67 @@ function Dashboard() {
       console.error('Failed to load study time:', error);
       setStudyTimeToday(0);
     }
-  };
+  }, []);
+
+  const loadLeaderboard = useCallback(async (limit = LEADERBOARD_STEP) => {
+    try {
+      setLeaderboardLoading(true);
+      const leaderboardResponse = await getWeeklyStudyLeaderboard(limit);
+      if (leaderboardResponse.success) {
+        setLeaderboard({
+          entries: leaderboardResponse.data?.entries || [],
+          currentUserRank: leaderboardResponse.data?.currentUserRank || null,
+          totalRankedUsers: leaderboardResponse.data?.totalRankedUsers || 0,
+          visibleCount: leaderboardResponse.data?.visibleCount || 0,
+          hasMore: Boolean(leaderboardResponse.data?.hasMore),
+          period: leaderboardResponse.data?.period || null,
+        });
+        setLeaderboardError("");
+        return true;
+      }
+    } catch (error) {
+      console.error("Failed to load weekly study leaderboard:", error);
+      setLeaderboardError("Không tải được bảng xếp hạng.");
+    } finally {
+      setLeaderboardLoading(false);
+    }
+
+    return false;
+  }, []);
+
+  const loadRecentActivities = useCallback(async () => {
+    try {
+      setRecentActivitiesLoading(true);
+      const activitiesResponse = await getRecentUserActivities(8);
+      if (activitiesResponse.success) {
+        setRecentActivities(activitiesResponse.data || []);
+        setRecentActivitiesError("");
+      }
+    } catch (error) {
+      console.error("Failed to load recent activities:", error);
+      setRecentActivitiesError("Không tải được hoạt động gần đây.");
+    } finally {
+      setRecentActivitiesLoading(false);
+    }
+  }, []);
+
+  const loadLearningPath = useCallback(async () => {
+    try {
+      setLearningPathLoading(true);
+      const data = await getLearningPathDashboard();
+      setLearningPath(data);
+      setLearningPathError("");
+    } catch (error) {
+      console.error("Failed to load learning path dashboard:", error);
+      setLearningPathError("Không tải được lộ trình học.");
+    } finally {
+      setLearningPathLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchUserData() {
       try {
-        setLoading(true);
-
         const userResponse = await getUserStatistics();
         if (userResponse.success) {
           const user = userResponse.data;
@@ -147,11 +375,13 @@ function Dashboard() {
           setWeeklyProgress(progress);
         }
 
+        await loadLeaderboard(LEADERBOARD_STEP);
+        await loadRecentActivities();
+        await loadLearningPath();
+
         await loadStudyTime();
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
-      } finally {
-        setLoading(false);
       }
     }
 
@@ -163,7 +393,7 @@ function Dashboard() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [loadLeaderboard, loadRecentActivities, loadLearningPath, loadStudyTime]);
 
   if (!userData) return <div>Loading...</div>;
 
@@ -175,6 +405,22 @@ function Dashboard() {
     ...weeklyProgress.map((d) => d.minutes),
     1
   );
+  const currentUserInTop = leaderboard.entries.some((entry) => entry.isCurrentUser);
+  const canLoadMore = leaderboard.hasMore && !leaderboardLoading;
+
+  const handleLoadMoreLeaderboard = async () => {
+    const nextLimit = leaderboardLimit + LEADERBOARD_STEP;
+    const loaded = await loadLeaderboard(nextLimit);
+    if (loaded) {
+      setLeaderboardLimit(nextLimit);
+    }
+  };
+
+  const handleActivityClick = (activity) => {
+    if (activity?.href) {
+      navigate(activity.href);
+    }
+  };
 
   return (
     <div className={cx("wrapper")}>
@@ -184,9 +430,10 @@ function Dashboard() {
           <div className={cx("hero")}>
             <div className={cx("heroContent")}>
               <img
-                src={userData.avatar || "/placeholder.svg"}
+                src={getAvatarUrl(userData.avatar)}
                 alt={userData.name}
                 className={cx("heroAvatar")}
+                onError={handleAvatarError}
               />
               <div>
                 <h1 className={cx("heroName")}>{userData.name}</h1>
@@ -202,11 +449,11 @@ function Dashboard() {
             </div>
             <div className={cx("heroActions")}>
               <Button
-                href="/dashboard/settings"
+                href="/profile"
                 className={cx("heroBtn")}
                 leftIcon={<FontAwesomeIcon icon={faGear} />}
               >
-                Cài đặt
+                Hồ sơ
               </Button>
             </div>
           </div>
@@ -310,6 +557,105 @@ function Dashboard() {
                 </div>
               </div>
 
+              {/* Leaderboard */}
+              <div className={cx("section")}>
+                <div className={cx("sectionHeader", "leaderboardHeader")}>
+                  <div>
+                    <h2 className={cx("sectionTitle")}>
+                      <FontAwesomeIcon icon={faMedal} className={cx("sectionTitleIcon")} />
+                      Bảng xếp hạng học tập
+                    </h2>
+                    <p className={cx("sectionSubtitle")}>
+                      Tuần này · xếp theo tổng thời gian học
+                    </p>
+                  </div>
+                  <span className={cx("leaderboardCount")}>
+                    {leaderboard.totalRankedUsers} người học tuần này
+                  </span>
+                </div>
+
+                {leaderboardError ? (
+                  <div className={cx("emptyState")}>{leaderboardError}</div>
+                ) : leaderboard.entries.length === 0 ? (
+                  <div className={cx("emptyState")}>
+                    Chưa có dữ liệu xếp hạng tuần này. Hoàn thành một đề JLPT để bắt đầu.
+                  </div>
+                ) : (
+                  <>
+                    <div className={cx("leaderboardList")}>
+                      {leaderboard.entries.map((entry) => (
+                        <div
+                          key={entry.userId}
+                          className={cx("leaderboardRow", {
+                            currentUserRow: entry.isCurrentUser,
+                          })}
+                        >
+                          <div
+                            className={cx("rankBadge", {
+                              rankGold: entry.rank === 1,
+                              rankSilver: entry.rank === 2,
+                              rankBronze: entry.rank === 3,
+                            })}
+                          >
+                            {entry.rank}
+                          </div>
+
+                          <img
+                            src={getAvatarUrl(entry.avatar)}
+                            alt={entry.name}
+                            className={cx("leaderAvatar")}
+                            onError={handleAvatarError}
+                          />
+
+                          <div className={cx("leaderInfo")}>
+                            <p className={cx("leaderName")}>
+                              {entry.name}
+                              {entry.isCurrentUser && (
+                                <span className={cx("youBadge")}>Bạn</span>
+                              )}
+                            </p>
+                            <p className={cx("leaderMeta")}>
+                              {entry.studyDays} ngày học · TB {formatStudyDuration(entry.averageDailyMinutes)}/ngày
+                            </p>
+                          </div>
+
+                          <div className={cx("leaderScore")}>
+                            <strong>{formatStudyDuration(entry.totalMinutes)}</strong>
+                            <span>tuần này</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className={cx("leaderboardFooter")}>
+                      <span>
+                        Đang hiển thị {leaderboard.visibleCount}/{leaderboard.totalRankedUsers}
+                      </span>
+                      {leaderboard.hasMore && (
+                        <Button
+                          outline
+                          onClick={handleLoadMoreLeaderboard}
+                          disabled={!canLoadMore}
+                          className={cx("leaderboardMoreBtn")}
+                        >
+                          {leaderboardLoading ? "Đang tải..." : "Xem thêm"}
+                        </Button>
+                      )}
+                    </div>
+
+                    {leaderboard.currentUserRank && !currentUserInTop && (
+                      <div className={cx("currentRankSummary")}>
+                        <span>Hạng của bạn</span>
+                        <strong>#{leaderboard.currentUserRank.rank}</strong>
+                        <span>
+                          {formatStudyDuration(leaderboard.currentUserRank.totalMinutes)} tuần này
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
               {/* Goals */}
               <div className={cx("section")}>
                 <div className={cx("sectionHeader")}>
@@ -319,33 +665,61 @@ function Dashboard() {
                   </h2>
                   <Button
                     outline
-                    href="/dashboard/goals"
+                    onClick={() => navigate("/dashboard/learning-path")}
                     className={cx("sectionAction")}
                   >
-                    Xem tất cả
+                    Xem lộ trình
                   </Button>
                 </div>
-                <div className={cx("goalsList")}>
-                  {mockUserData.goals.map((goal) => {
-                    const progress = (goal.current / goal.target) * 100;
-                    return (
-                      <div key={goal.id} className={cx("goalItem")}>
-                        <div className={cx("goalHeader")}>
-                          <p className={cx("goalTitle")}>{goal.title}</p>
-                          <span className={cx("goalValue")}>
-                            {goal.current}/{goal.target} {goal.unit}
-                          </span>
+                {learningPathLoading ? (
+                  <div className={cx("emptyState")}>Đang tải mục tiêu lộ trình...</div>
+                ) : learningPathError ? (
+                  <div className={cx("emptyState")}>{learningPathError}</div>
+                ) : !learningPath?.hasLearningPath ? (
+                  <div className={cx("emptyState")}>
+                    Bạn chưa có lộ trình học. Vào trang onboarding để tạo kế hoạch cá nhân hóa.
+                    <div className="mt-3">
+                      <Button
+                        primary
+                        onClick={() => navigate("/onboarding")}
+                        className={cx("leaderboardMoreBtn")}
+                      >
+                        Tạo lộ trình
+                      </Button>
+                    </div>
+                  </div>
+                ) : !learningPath.weekTasks?.length ? (
+                  <div className={cx("emptyState")}>
+                    Tuần này chưa có mục tiêu nào trong lộ trình.
+                  </div>
+                ) : (
+                  <div className={cx("goalsList")}>
+                    {learningPath.weekTasks.map((task) => {
+                      const progress = task.progress || {
+                        percent: task.completedAt ? 100 : 0,
+                        label: `${task.completedAt ? task.targetCount || 1 : 0}/${task.targetCount || 1} mục`,
+                      };
+                      const progressPercent = Math.min(Math.max(Number(progress.percent) || 0, 0), 100);
+
+                      return (
+                        <div key={`${task.skill}-${task.order}`} className={cx("goalItem")}>
+                          <div className={cx("goalHeader")}>
+                            <p className={cx("goalTitle")}>{task.title || "Mục tiêu lộ trình"}</p>
+                            <span className={cx("goalValue")}>
+                              {progress.label}
+                            </span>
+                          </div>
+                          <div className={cx("goalTrack")}>
+                            <div
+                              className={cx("goalBar")}
+                              style={{ width: `${progressPercent}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className={cx("goalTrack")}>
-                          <div
-                            className={cx("goalBar")}
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Recent activity */}
@@ -354,47 +728,56 @@ function Dashboard() {
                   <FontAwesomeIcon icon={faStar} className={cx("sectionTitleIcon")} />
                   Hoạt động gần đây
                 </h2>
-                <div className={cx("activityList")}>
-                  {mockUserData.recentActivity.map((activity, index) => (
-                    <div key={index} className={cx("activityItem")}>
-                      <div
-                        className={cx("activityDot", {
-                          activityTest: activity.type === "test",
-                          activityDict: activity.type === "dictionary",
-                          activityChat: activity.type === "chat",
-                          activityCommunity: activity.type === "community",
-                        })}
-                      >
-                        {activity.type === "test" && (
-                          <FontAwesomeIcon icon={faTrophy} />
-                        )}
-                        {activity.type === "dictionary" && (
-                          <FontAwesomeIcon icon={faBookOpen} />
-                        )}
-                        {activity.type === "chat" && (
-                          <FontAwesomeIcon icon={faStar} />
-                        )}
-                        {activity.type === "community" && (
-                          <FontAwesomeIcon icon={faMedal} />
-                        )}
-                      </div>
-                      <div className={cx("activityContent")}>
-                        <p className={cx("activityTitle")}>{activity.title}</p>
-                        <div className={cx("activityMeta")}>
-                          <span>{activity.date}</span>
-                          {activity.score && (
-                            <>
-                              <span>•</span>
-                              <span className={cx("activityScore")}>
-                                Điểm: {activity.score}%
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {recentActivitiesLoading ? (
+                  <div className={cx("emptyState")}>Đang tải hoạt động gần đây...</div>
+                ) : recentActivitiesError ? (
+                  <div className={cx("emptyState")}>{recentActivitiesError}</div>
+                ) : recentActivities.length === 0 ? (
+                  <div className={cx("emptyState")}>
+                    Chưa có hoạt động nào. Khi bạn học, làm bài thi hoặc tham gia cộng đồng, lịch sử sẽ hiển thị tại đây.
+                  </div>
+                ) : (
+                  <div className={cx("activityList")}>
+                    {recentActivities.map((activity) => {
+                      const score = getActivityScore(activity);
+
+                      return (
+                        <button
+                          key={activity.id}
+                          type="button"
+                          className={cx("activityItem")}
+                          onClick={() => handleActivityClick(activity)}
+                          aria-label={`Mở hoạt động: ${activity.title}`}
+                        >
+                          <div className={cx("activityDot", getActivityTone(activity.type))}>
+                            <FontAwesomeIcon icon={getActivityIcon(activity.type)} />
+                          </div>
+                          <div className={cx("activityContent")}>
+                            <p className={cx("activityTitle")}>{activity.title}</p>
+                            {activity.description && (
+                              <p className={cx("activityDescription")}>
+                                {activity.description}
+                              </p>
+                            )}
+                            <div className={cx("activityMeta")}>
+                              <span>{formatActivityDate(activity.createdAt)}</span>
+                              {score !== null && (
+                                <>
+                                  <span>-</span>
+                                  <span className={cx("activityScore")}>
+                                    Điểm: {score}
+                                  </span>
+                                </>
+                              )}
+                              <span>-</span>
+                              <span className={cx("activityHint")}>Mở</span>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 

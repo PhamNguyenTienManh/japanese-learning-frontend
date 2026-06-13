@@ -1,116 +1,122 @@
-import React, { useState, useEffect } from 'react';
-import vocabService from '~/services/vocabService';
-import classNames from 'classnames/bind';
-import styles from './VocabSidebar.module.scss';
+import { useState, useEffect } from "react";
+import classNames from "classnames";
+import { searchVocabList } from "~/services/vocabService";
 
-const cx = classNames.bind(styles);
+const VocabItem = ({ word, phonetic, meaning, isActive, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={classNames(
+      "group flex flex-col gap-0.5 py-2.5 px-3 rounded-xl border-none cursor-pointer text-left transition-[background,transform] duration-200 ease-out",
+      isActive
+        ? "bg-[linear-gradient(90deg,rgba(0,135,154,0.16),rgba(0,135,154,0.04))]"
+        : "bg-transparent hover:bg-primary/[0.06] hover:translate-x-0.5"
+    )}
+  >
+    <span className="flex items-baseline gap-2 min-w-0">
+      <span
+        className={classNames(
+          "text-lg font-bold leading-tight transition-colors duration-200",
+          isActive ? "text-primary" : "text-text-high"
+        )}
+      >
+        {word}
+      </span>
+      {phonetic && (
+        <span className="text-[13px] text-orange font-semibold truncate">
+          {phonetic}
+        </span>
+      )}
+    </span>
+    {meaning && (
+      <span
+        className={classNames(
+          "text-[13px] truncate",
+          isActive ? "text-primary/80" : "text-grey"
+        )}
+      >
+        {meaning}
+      </span>
+    )}
+  </button>
+);
 
 const VocabSidebar = ({ keyword, onSelectVocab, selectedVocab }) => {
-  const [suggestions, setSuggestions] = useState([]);
+  const [vocabList, setVocabList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (keyword && keyword.trim()) {
-      fetchSuggestions(keyword.trim());
-    } else {
-      setSuggestions([]);
+    if (!keyword) {
+      setVocabList([]);
+      return;
     }
+
+    const fetchVocab = async () => {
+      setLoading(true);
+      try {
+        const response = await searchVocabList(keyword);
+        const simplifiedList = (response.data || [])
+          .map((item) => ({
+            word: item.word,
+            phonetic: (item.phonetic || []).join(" "),
+            meaning: (item.meanings || [])
+              .map((m) => m.meaning)
+              .filter(Boolean)
+              .join(", "),
+          }))
+          .filter((item) => item.word);
+
+        setVocabList(simplifiedList);
+
+        if (simplifiedList.length > 0 && onSelectVocab) {
+          onSelectVocab(simplifiedList[0].word);
+        }
+      } catch (err) {
+        console.error("Error fetching vocab:", err);
+        setVocabList([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVocab();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyword]);
 
-  const fetchSuggestions = async (searchKeyword) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await vocabService.getSuggestions(searchKeyword, 'start', 'word');
-      console.log("sidebar", response.list);
-      
-
-      if (response && response.list) {
-        setSuggestions(response.list);
-        
-        // Auto select first item if available
-        if (response.list.length > 0 && !selectedVocab) {
-          onSelectVocab(response.list[0].slug);
-        }
-      } else {
-        setSuggestions([]);
-      }
-    } catch (err) {
-      console.error('Error fetching suggestions:', err);
-      setError('Không thể tải gợi ý từ vựng');
-      setSuggestions([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSelectVocab = (vocabSlug) => {
-    onSelectVocab(vocabSlug);
-  };
-
   return (
-    <div className={cx('sidebar')}>
-      <div className={cx('sidebar-header')}>
-        <h3 className={cx('title')}>Kết quả tìm kiếm</h3>
-        {suggestions.length > 0 && (
-          <span className={cx('count')}>({suggestions.length})</span>
+    <aside className="sticky top-6 w-full bg-white border border-border rounded-2xl shadow-[0_4px_14px_rgba(15,23,42,0.04)] p-4 max-h-[calc(100vh-48px)] flex flex-col max-[900px]:static max-[900px]:max-h-[360px]">
+      <header className="flex items-center justify-between px-1.5 pb-3 mb-1.5">
+        <h2 className="text-sm font-bold text-text-high m-0">Kết quả</h2>
+        {vocabList.length > 0 && (
+          <span className="text-xs font-semibold py-0.5 px-2.5 rounded-full bg-primary/10 text-primary">
+            {vocabList.length}
+          </span>
         )}
-      </div>
+      </header>
 
-      <div className={cx('sidebar-content')}>
-        {loading && (
-          <div className={cx('loading')}>
-            <p>Đang tải...</p>
-          </div>
-        )}
-
-        {error && (
-          <div className={cx('error')}>
-            <p>{error}</p>
-          </div>
-        )}
-
-        {!loading && !error && suggestions.length === 0 && keyword && (
-          <div className={cx('empty')}>
-            <p>Không tìm thấy từ vựng nào</p>
-          </div>
-        )}
-
-        {!loading && !error && suggestions.length === 0 && !keyword && (
-          <div className={cx('empty')}>
-            <p>Nhập từ khóa để tìm kiếm</p>
-          </div>
-        )}
-
-        {!loading && !error && suggestions.length > 0 && (
-          <div className={cx('suggestions-list')}>
-            {suggestions.map((item) => (
-              <div
-                key={item.slug}
-                className={cx('suggestion-item', {
-                  active: selectedVocab === item.slug,
-                })}
-                onClick={() => handleSelectVocab(item.slug)}
-              >
-                <div className={cx('vocab-main')}>
-                  <span className={cx('vocab-word')}>{item.word}</span>
-                  {item.phonetic && (
-                    <span className={cx('vocab-phonetic')}>
-                      [{item.phonetic}]
-                    </span>
-                  )}
-                </div>
-                {item.mean && (
-                  <p className={cx('vocab-meaning')}>{item.mean}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+      {loading ? (
+        <div className="py-7 px-3.5 text-[13px] text-grey text-center">Đang tải...</div>
+      ) : !keyword ? (
+        <div className="py-7 px-3.5 text-[13px] text-grey text-center">
+          Nhập từ khoá ở trên để bắt đầu tra cứu.
+        </div>
+      ) : vocabList.length === 0 ? (
+        <div className="py-7 px-3.5 text-[13px] text-grey text-center">Không tìm thấy kết quả</div>
+      ) : (
+        <div className="flex flex-col gap-1 overflow-y-auto pr-1">
+          {vocabList.map((item, index) => (
+            <VocabItem
+              key={index}
+              word={item.word}
+              phonetic={item.phonetic}
+              meaning={item.meaning}
+              isActive={item.word === selectedVocab}
+              onClick={() => onSelectVocab && onSelectVocab(item.word)}
+            />
+          ))}
+        </div>
+      )}
+    </aside>
   );
 };
 

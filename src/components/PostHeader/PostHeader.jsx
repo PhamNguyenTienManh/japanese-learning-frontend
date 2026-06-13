@@ -2,6 +2,7 @@ import classNames from "classnames/bind";
 import styles from "./PostHeader.module.scss";
 import formatDateVN from "~/services/formatDate";
 import PostActionsMenu from "~/components/PostActionsMenu/PostActionsMenu";
+import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
 
 const cx = classNames.bind(styles);
 
@@ -16,9 +17,10 @@ function PostHeader({
   return (
     <div className={cx("post-header")}>
       <img
-        src={post.profile_id?.image_url || post.authorAvatar || "/placeholder.svg"}
+        src={getAvatarUrl(post.profile_id?.image_url, post.authorAvatar)}
         alt={post.profile_id?.name || "Anonymous"}
         className={cx("avatar")}
+        onError={handleAvatarError}
       />
       <div className={cx("post-header-main")}>
         <div className={cx("post-author-row")}>
@@ -28,6 +30,12 @@ function PostHeader({
         </div>
         <div className={cx("author-meta")}>
           <span>{post.created_at ? formatDateVN(post.created_at) : "Vừa xong"}</span>
+          {post.edited_at && (
+            <>
+              <span className={cx("dot")}>•</span>
+              <span className={cx("edited-badge")}>Đã sửa</span>
+            </>
+          )}
           {(post.author?.posts || post.authorPosts) && (
             <>
               <span className={cx("dot")}>•</span>

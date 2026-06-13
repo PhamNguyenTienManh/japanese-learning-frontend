@@ -1,28 +1,92 @@
-import { useState } from "react";
-import classNames from "classnames/bind";
+import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faVolumeHigh,
     faCopy,
     faRightLeft,
+    faPen,
+    faTrash,
+    faChevronDown,
+    faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 
-import styles from "./Translate.module.scss";
 import { useToast } from "~/context/ToastContext";
-import CustomSelect from "~/components/CustomSelect";
 import { translateText } from "~/services/traslate";
-
-const cx = classNames.bind(styles);
+import HandwritingOverlay from "~/components/HandwritingOverlay";
 
 const languages = [
     { code: "ja", name: "Tiếng Nhật" },
     { code: "vi", name: "Tiếng Việt" },
-    { code: "en", name: "Tiếng Anh" },
-    { code: "ko", name: "Tiếng Hàn" },
-    { code: "zh", name: "Tiếng Trung" },
 ];
 
 const langOptions = languages.map((l) => ({ value: l.code, label: l.name }));
+const MAX_TRANSLATE_LENGTH = 5000;
+const getOppositeLang = (lang) => (lang === "ja" ? "vi" : "ja");
+const getLangName = (lang) =>
+    languages.find((item) => item.code === lang)?.name || "";
+
+const iconButtonClass =
+    "inline-flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[10px] border border-[#dfe7ed] bg-[#f9fbfc] text-sm text-[#667985] transition-all duration-150 hover:not-disabled:-translate-y-px hover:not-disabled:border-primary/35 hover:not-disabled:bg-[#eefaf7] hover:not-disabled:text-primary disabled:cursor-not-allowed disabled:opacity-45";
+
+function TranslateLangSelect({ value, onChange, label }) {
+    const [open, setOpen] = useState(false);
+    const selectRef = useRef(null);
+    const selected = langOptions.find((option) => option.value === value);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (selectRef.current && !selectRef.current.contains(event.target)) {
+                setOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    return (
+        <div className="relative w-full" ref={selectRef}>
+            <button
+                type="button"
+                className={`flex min-h-[38px] w-full cursor-pointer items-center justify-between gap-3 rounded-lg border border-transparent bg-[#eaf3ff] py-0 pr-3 pl-3.5 text-[15px] font-semibold text-[#0b63d8] transition-all duration-150 hover:bg-[#dfeeff] ${open ? "bg-[#dfeeff]" : ""}`}
+                onClick={() => setOpen((current) => !current)}
+                aria-label={label}
+                aria-expanded={open}
+            >
+                <span>{selected?.label || "Chọn"}</span>
+                <FontAwesomeIcon
+                    className={`text-xs text-[#0b63d8] transition-transform duration-150 ${open ? "rotate-180" : ""}`}
+                    icon={faChevronDown}
+                />
+            </button>
+
+            {open && (
+                <div className="absolute left-0 top-[calc(100%+8px)] z-10 w-full rounded-xl border border-[#d7e5f0] bg-white p-1.5 shadow-[0_14px_30px_rgba(15,42,42,0.12)]">
+                    {langOptions.map((option) => {
+                        const isActive = option.value === value;
+
+                        return (
+                            <button
+                                key={option.value}
+                                type="button"
+                                className={`flex min-h-[38px] w-full cursor-pointer items-center justify-between gap-3 rounded-[9px] bg-transparent py-0 pr-2.5 pl-3 text-[15px] font-semibold text-[#1f3f4d] transition-all duration-150 hover:bg-[#f2f7fb] hover:text-[#0b63d8] ${isActive ? "bg-[#eaf3ff] text-[#0b63d8]" : ""}`}
+                                onClick={() => {
+                                    onChange(option.value);
+                                    setOpen(false);
+                                }}
+                            >
+                                <span>{option.label}</span>
+                                {isActive && (
+                                    <FontAwesomeIcon className="shrink-0 text-[13px]" icon={faCheck} />
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+}
 
 function Translate() {
     const [sourceText, setSourceText] = useState("");
@@ -30,27 +94,53 @@ function Translate() {
     const [sourceLang, setSourceLang] = useState("ja");
     const [targetLang, setTargetLang] = useState("vi");
     const [isTranslating, setIsTranslating] = useState(false);
+    const [showHandwritingModal, setShowHandwritingModal] = useState(false);
     const { addToast } = useToast();
 
-    const handleTranslate = async () => {
-        if (!sourceText.trim()) {
+    const applyRecognizedText = (text) => {
+        const value = String(text || "").trim();
+        if (!value) return;
+        setSourceText(value);
+        setSourceLang("ja");
+        setTargetLang("vi");
+        setTranslatedText("");
+    };
+
+    const translateWithText = async (text, source = sourceLang, target = targetLang) => {
+        const value = String(text || "").trim();
+        if (!value) {
             addToast("Vui lòng nhập văn bản", "info");
-            return;
+            return false;
         }
 
-        if (sourceLang === targetLang) {
+        if (source === target) {
             addToast("Hai ngôn ngữ giống nhau", "warning");
-            return;
+            return false;
         }
 
         try {
             setIsTranslating(true);
-            const res = await translateText(sourceText, sourceLang, targetLang);
+            const res = await translateText(value, source, target);
             setTranslatedText(res.data.translatedText);
+            return true;
         } catch (error) {
             addToast("Lỗi dịch văn bản", "error");
+            return false;
         } finally {
             setIsTranslating(false);
+        }
+    };
+
+    const handleTranslate = async () => {
+        await translateWithText(sourceText, sourceLang, targetLang);
+    };
+
+    const handleTranslateHandwriting = async (text) => {
+        applyRecognizedText(text);
+
+        const translated = await translateWithText(text, "ja", targetLang);
+        if (translated) {
+            setShowHandwritingModal(false);
         }
     };
 
@@ -59,6 +149,18 @@ function Translate() {
         setTargetLang(sourceLang);
         setSourceText(translatedText);
         setTranslatedText(sourceText);
+    };
+
+    const handleSourceLangChange = (value) => {
+        setSourceLang(value);
+        setTargetLang(getOppositeLang(value));
+        setTranslatedText("");
+    };
+
+    const handleTargetLangChange = (value) => {
+        setTargetLang(value);
+        setSourceLang(getOppositeLang(value));
+        setTranslatedText("");
     };
 
     const handleCopy = (text) => {
@@ -91,66 +193,58 @@ function Translate() {
     };
 
     return (
-        <div className={cx("wrapper")}>
-            <div className={cx("blob1")} />
-            <div className={cx("blob2")} />
-
-            <div className={cx("container")}>
-                {/* Hero */}
-                <div className={cx("hero")}>
-                    <h1 className={cx("title")}>Dịch văn bản</h1>
+        <div className="relative min-h-screen bg-[#eef3f6] py-6 pb-14 text-[#0f2a2a] max-md:pt-[18px]">
+            <div className="relative z-[1] mx-auto max-w-[1180px] px-6 max-md:px-3.5">
+                <div className="mb-[18px] flex items-end justify-between gap-6 max-md:block">
+                    <div>
+                        <span className="mb-1.5 block text-xs font-extrabold uppercase tracking-[1.2px] text-primary">
+                            JAVI Translator
+                        </span>
+                        <h1 className="m-0 text-3xl font-extrabold tracking-normal text-[#0f2a2a] max-md:text-[26px]">
+                            Dịch Nhật - Việt
+                        </h1>
+                    </div>
                 </div>
 
-                {/* Translator card */}
-                <div className={cx("translatorCard")}>
-                    {/* Language bar */}
-                    <div className={cx("langBar")}>
-                        <div className={cx("langSide")}>
-                            <span className={cx("langLabel")}>Từ</span>
-                            <div className={cx("langSelect")}>
-                                <CustomSelect
-                                    value={sourceLang}
-                                    onChange={(v) => setSourceLang(v)}
-                                    options={langOptions}
-                                />
+                <div className="relative">
+                    <div className="grid grid-cols-2 items-stretch gap-4 max-md:grid-cols-1 max-md:gap-[52px]">
+                        <section className="flex min-h-[420px] min-w-0 flex-col rounded-2xl border border-[#e3eaf0] bg-white py-[22px] pr-7 pl-6 shadow-[0_14px_34px_rgba(15,42,42,0.07)] max-md:min-h-[340px] max-md:p-[18px]">
+                            <div className="mb-2.5 flex min-h-[42px] items-center">
+                                <div className="w-[190px] max-w-full">
+                                    <TranslateLangSelect
+                                        label="Ngôn ngữ nguồn"
+                                        value={sourceLang}
+                                        onChange={handleSourceLangChange}
+                                    />
+                                </div>
                             </div>
-                        </div>
 
-                        <button
-                            type="button"
-                            className={cx("swapBtn")}
-                            onClick={handleSwapLanguages}
-                            aria-label="Đảo ngôn ngữ"
-                        >
-                            <FontAwesomeIcon icon={faRightLeft} />
-                        </button>
-
-                        <div className={cx("langSide")}>
-                            <span className={cx("langLabel")}>Sang</span>
-                            <div className={cx("langSelect")}>
-                                <CustomSelect
-                                    value={targetLang}
-                                    onChange={(v) => setTargetLang(v)}
-                                    options={langOptions}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Panes */}
-                    <div className={cx("panes")}>
-                        <div className={cx("pane")}>
                             <textarea
                                 value={sourceText}
-                                onChange={(e) => setSourceText(e.target.value)}
-                                placeholder="Nhập văn bản để dịch..."
-                                className={cx("textarea")}
+                                onChange={(e) => {
+                                    setSourceText(e.target.value.slice(0, MAX_TRANSLATE_LENGTH));
+                                    setTranslatedText("");
+                                }}
+                                placeholder={`Nhập ${getLangName(sourceLang).toLowerCase()} để dịch...`}
+                                className="min-h-[260px] w-full flex-1 resize-none border-0 bg-transparent p-0 text-[22px] leading-[1.6] text-[#0f2a2a] outline-none placeholder:font-semibold placeholder:text-[#9aa8b3] max-md:min-h-[190px] max-md:text-[19px]"
+                                maxLength={MAX_TRANSLATE_LENGTH}
                             />
-                            <div className={cx("paneFoot")}>
-                                <div className={cx("tools")}>
+
+                            <div className="mt-[18px] flex min-h-[46px] items-center justify-between gap-4 max-md:flex-col max-md:items-start">
+                                <div className="flex flex-wrap gap-2.5">
+                                    {sourceLang === "ja" && (
+                                        <button
+                                            type="button"
+                                            className={iconButtonClass}
+                                            onClick={() => setShowHandwritingModal(true)}
+                                            aria-label="Viết tay tiếng Nhật"
+                                        >
+                                            <FontAwesomeIcon icon={faPen} />
+                                        </button>
+                                    )}
                                     <button
                                         type="button"
-                                        className={cx("iconBtn")}
+                                        className={iconButtonClass}
                                         onClick={() => handleSpeak(sourceText, sourceLang)}
                                         disabled={!sourceText.trim()}
                                         aria-label="Phát âm"
@@ -159,32 +253,72 @@ function Translate() {
                                     </button>
                                     <button
                                         type="button"
-                                        className={cx("iconBtn")}
+                                        className={iconButtonClass}
                                         onClick={() => handleCopy(sourceText)}
                                         disabled={!sourceText.trim()}
                                         aria-label="Sao chép"
                                     >
                                         <FontAwesomeIcon icon={faCopy} />
                                     </button>
+                                    <button
+                                        type="button"
+                                        className={iconButtonClass}
+                                        onClick={handleClear}
+                                        disabled={!sourceText.trim() && !translatedText.trim()}
+                                        aria-label="Xóa"
+                                    >
+                                        <FontAwesomeIcon icon={faTrash} />
+                                    </button>
                                 </div>
-                                <span className={cx("length")}>
-                                    {sourceText.length} ký tự
-                                </span>
-                            </div>
-                        </div>
 
-                        <div className={cx("pane")}>
+                                <div className="flex items-center gap-4 max-md:w-full max-md:justify-between">
+                                    <span className="whitespace-nowrap text-xs font-bold tabular-nums text-[#94a3ad]">
+                                        {sourceText.length}/{MAX_TRANSLATE_LENGTH}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        className="inline-flex min-h-[42px] min-w-[118px] cursor-pointer items-center justify-center rounded-[10px] bg-primary px-[22px] text-sm font-extrabold text-white shadow-[0_4px_0_var(--primary-hover)] transition-all duration-150 hover:not-disabled:-translate-y-px hover:not-disabled:bg-primary-hover hover:not-disabled:shadow-[0_5px_0_#006170] active:not-disabled:translate-y-0.5 active:not-disabled:shadow-[0_1px_0_#006170] disabled:cursor-not-allowed disabled:bg-[#d8e1e7] disabled:text-[#8ea0aa] disabled:shadow-none max-md:min-w-[120px]"
+                                        onClick={handleTranslate}
+                                        disabled={isTranslating || !sourceText.trim()}
+                                    >
+                                        {isTranslating ? "Đang dịch..." : "Dịch"}
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+
+                        <button
+                            type="button"
+                            className="absolute left-1/2 top-1/2 z-[2] inline-flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-[6px] border-[#eef3f6] bg-white text-base text-[#0f2a2a] shadow-[0_10px_24px_rgba(15,42,42,0.12)] transition-all duration-150 hover:-translate-x-1/2 hover:-translate-y-1/2 hover:scale-105 hover:text-primary hover:shadow-[0_14px_28px_rgba(15,42,42,0.16)] active:scale-95 max-md:top-[calc(50%-2px)] max-md:-translate-x-1/2 max-md:-translate-y-1/2 max-md:rotate-90 max-md:hover:-translate-x-1/2 max-md:hover:-translate-y-1/2 max-md:hover:rotate-90 max-md:hover:scale-105 max-md:active:rotate-90 max-md:active:scale-95"
+                            onClick={handleSwapLanguages}
+                            aria-label="Đảo ngôn ngữ"
+                        >
+                            <FontAwesomeIcon icon={faRightLeft} />
+                        </button>
+
+                        <section className="flex min-h-[420px] min-w-0 flex-col rounded-2xl border border-[#e3eaf0] bg-white py-[22px] pr-6 pl-7 shadow-[0_14px_34px_rgba(15,42,42,0.07)] max-md:min-h-[340px] max-md:p-[18px]">
+                            <div className="mb-2.5 flex min-h-[42px] items-center">
+                                <div className="w-[190px] max-w-full">
+                                    <TranslateLangSelect
+                                        label="Ngôn ngữ đích"
+                                        value={targetLang}
+                                        onChange={handleTargetLangChange}
+                                    />
+                                </div>
+                            </div>
+
                             <textarea
                                 value={translatedText}
                                 readOnly
-                                placeholder="Kết quả dịch sẽ xuất hiện ở đây..."
-                                className={cx("textarea")}
+                                placeholder={`Bản dịch ${getLangName(targetLang).toLowerCase()}...`}
+                                className="min-h-[260px] w-full flex-1 resize-none border-0 bg-transparent p-0 text-[22px] leading-[1.6] text-[#0f2a2a] outline-none placeholder:font-semibold placeholder:text-[#9aa8b3] max-md:min-h-[190px] max-md:text-[19px]"
                             />
-                            <div className={cx("paneFoot")}>
-                                <div className={cx("tools")}>
+
+                            <div className="mt-[18px] flex min-h-[46px] items-center justify-between gap-4 max-md:flex-col max-md:items-start">
+                                <div className="flex flex-wrap gap-2.5">
                                     <button
                                         type="button"
-                                        className={cx("iconBtn")}
+                                        className={iconButtonClass}
                                         onClick={() => handleSpeak(translatedText, targetLang)}
                                         disabled={!translatedText.trim()}
                                         aria-label="Phát âm"
@@ -193,7 +327,7 @@ function Translate() {
                                     </button>
                                     <button
                                         type="button"
-                                        className={cx("iconBtn")}
+                                        className={iconButtonClass}
                                         onClick={() => handleCopy(translatedText)}
                                         disabled={!translatedText.trim()}
                                         aria-label="Sao chép"
@@ -201,33 +335,23 @@ function Translate() {
                                         <FontAwesomeIcon icon={faCopy} />
                                     </button>
                                 </div>
-                                <span className={cx("length")}>
+                                <span className="whitespace-nowrap text-xs font-bold tabular-nums text-[#94a3ad]">
                                     {translatedText.length} ký tự
                                 </span>
                             </div>
-                        </div>
+                        </section>
                     </div>
                 </div>
-
-                {/* Action row */}
-                <div className={cx("actions")}>
-                    <button
-                        type="button"
-                        className={cx("actionBtn", "actionPrimary")}
-                        onClick={handleTranslate}
-                        disabled={isTranslating}
-                    >
-                        {isTranslating ? "Đang dịch..." : "Dịch"}
-                    </button>
-                    <button
-                        type="button"
-                        className={cx("actionBtn")}
-                        onClick={handleClear}
-                    >
-                        Xoá
-                    </button>
-                </div>
             </div>
+
+            <HandwritingOverlay
+                open={showHandwritingModal}
+                onClose={() => setShowHandwritingModal(false)}
+                onApply={handleTranslateHandwriting}
+                primaryLabel="Dịch"
+                primaryLoading={isTranslating}
+                loadingLabel="Đang dịch..."
+            />
         </div>
     );
 }

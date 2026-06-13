@@ -1,56 +1,105 @@
 class StudyTimeTracker {
     constructor() {
-        this.loginTime = null;
+        this.activeStartedAt = null;
+        this.accumulatedMs = 0;
         this.isTracking = false;
+        this.storageKey = 'study_session_state';
+        this.legacyLoginTimeKey = 'study_login_time';
     }
 
-    // Bắt đầu track khi user login
+    persistSession() {
+        if (!this.isTracking) {
+            localStorage.removeItem(this.storageKey);
+            localStorage.removeItem(this.legacyLoginTimeKey);
+            return;
+        }
+
+        localStorage.setItem(
+            this.storageKey,
+            JSON.stringify({
+                activeStartedAt: this.activeStartedAt,
+                accumulatedMs: this.accumulatedMs,
+            })
+        );
+        localStorage.removeItem(this.legacyLoginTimeKey);
+    }
+
     startTracking() {
-        if (this.isTracking) return;
+        if (this.isTracking && this.activeStartedAt) return;
 
-        this.loginTime = Date.now();
+        this.activeStartedAt = Date.now();
         this.isTracking = true;
-        localStorage.setItem('study_login_time', this.loginTime.toString());
+        this.persistSession();
 
-        console.log('Study tracking started at:', new Date(this.loginTime));
+        console.log('Study tracking active at:', new Date(this.activeStartedAt));
     }
 
-    // Dừng track và lưu thời gian
-    async stopTracking() {
-        if (!this.isTracking || !this.loginTime) return 0;
+    pauseTracking() {
+        if (!this.isTracking || !this.activeStartedAt) return;
 
-        const studyTimeMs = Date.now() - this.loginTime;
-        const studyMinutes = Math.floor(studyTimeMs / 60000);
+        this.accumulatedMs += Date.now() - this.activeStartedAt;
+        this.activeStartedAt = null;
+        this.persistSession();
+
+        console.log('Study tracking paused. Accumulated minutes:', this.getCurrentMinutes());
+    }
+
+    async stopTracking() {
+        if (!this.isTracking) return 0;
+
+        if (this.activeStartedAt) {
+            this.accumulatedMs += Date.now() - this.activeStartedAt;
+        }
+
+        const studyMinutes = Math.floor(this.accumulatedMs / 60000);
 
         console.log('Study session ended. Total minutes:', studyMinutes);
 
         this.isTracking = false;
-        this.loginTime = null;
-        localStorage.removeItem('study_login_time');
+        this.activeStartedAt = null;
+        this.accumulatedMs = 0;
+        this.persistSession();
 
         return studyMinutes;
     }
 
-    // Khôi phục session nếu trang được reload
     restoreSession() {
-        const savedLoginTime = localStorage.getItem('study_login_time');
+        const savedSession = localStorage.getItem(this.storageKey);
+
+        if (savedSession) {
+            try {
+                const parsed = JSON.parse(savedSession);
+                this.activeStartedAt =
+                    typeof parsed.activeStartedAt === 'number' ? parsed.activeStartedAt : null;
+                this.accumulatedMs =
+                    typeof parsed.accumulatedMs === 'number' ? parsed.accumulatedMs : 0;
+                this.isTracking = true;
+                console.log('Study session restored. Accumulated minutes:', this.getCurrentMinutes());
+                return true;
+            } catch (error) {
+                localStorage.removeItem(this.storageKey);
+            }
+        }
+
+        const savedLoginTime = localStorage.getItem(this.legacyLoginTimeKey);
 
         if (savedLoginTime) {
-            this.loginTime = parseInt(savedLoginTime, 10);
+            this.activeStartedAt = parseInt(savedLoginTime, 10);
+            this.accumulatedMs = 0;
             this.isTracking = true;
-            console.log('Study session restored from:', new Date(this.loginTime));
+            this.persistSession();
+            console.log('Study session restored from:', new Date(this.activeStartedAt));
             return true;
         }
 
         return false;
     }
 
-    // Lấy số phút hiện tại (không lưu)
     getCurrentMinutes() {
-        if (!this.isTracking || !this.loginTime) return 0;
+        if (!this.isTracking) return 0;
 
-        const studyTimeMs = Date.now() - this.loginTime;
-        return Math.floor(studyTimeMs / 60000);
+        const activeMs = this.activeStartedAt ? Date.now() - this.activeStartedAt : 0;
+        return Math.floor((this.accumulatedMs + activeMs) / 60000);
     }
 }
 

@@ -15,7 +15,6 @@ import {
   faBookOpen,
   faKeyboard,
   faShuffle,
-  faCheck,
   faRepeat,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -41,7 +40,6 @@ export default function Flashcards() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [knownIds, setKnownIds] = useState(() => new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -75,7 +73,6 @@ export default function Flashcards() {
     }
     setCurrentIndex(0);
     setIsFlipped(false);
-    setKnownIds(new Set());
   }, [selectedCategory, allCards]);
 
   // Click outside để đóng filter dropdown
@@ -133,7 +130,6 @@ export default function Flashcards() {
   const total = filteredCards.length;
   const currentCard = filteredCards[currentIndex] ?? null;
   const progress = total > 0 ? Math.round(((currentIndex + 1) / total) * 100) : 0;
-  const knownCount = knownIds.size;
   const currentNotebookName =
     notebooks.find((n) => n._id === selectedNotebook)?.name || "";
 
@@ -156,18 +152,36 @@ export default function Flashcards() {
   const handleReset = () => {
     setCurrentIndex(0);
     setIsFlipped(false);
-    setKnownIds(new Set());
   };
 
-  const toggleKnown = useCallback((id) => {
-    if (!id) return;
-    setKnownIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
+  const stopAndRun = (event, action) => {
+    event.stopPropagation();
+    action();
+  };
+
+  const renderCardControls = () => (
+    <>
+      <button
+        type="button"
+        className={cx("card-nav-btn", "card-nav-prev")}
+        onClick={(event) => stopAndRun(event, goPrev)}
+        disabled={currentIndex === 0}
+        aria-label="Thẻ trước"
+      >
+        <FontAwesomeIcon icon={faChevronLeft} />
+      </button>
+
+      <button
+        type="button"
+        className={cx("card-nav-btn", "card-nav-next")}
+        onClick={(event) => stopAndRun(event, goNext)}
+        disabled={currentIndex >= total - 1}
+        aria-label="Thẻ tiếp theo"
+      >
+        <FontAwesomeIcon icon={faChevronRight} />
+      </button>
+    </>
+  );
 
   const shuffleCards = () => {
     const arr = [...filteredCards];
@@ -198,7 +212,6 @@ export default function Flashcards() {
     navigate(`/dictionary/notebook/${newId}/flashcards`, { replace: true });
     setCurrentIndex(0);
     setIsFlipped(false);
-    setKnownIds(new Set());
   };
 
   // Keyboard shortcuts
@@ -213,13 +226,11 @@ export default function Flashcards() {
         goNext();
       } else if (e.code === "ArrowLeft") {
         goPrev();
-      } else if (e.code === "KeyK") {
-        if (currentCard) toggleKnown(currentCard._id || currentCard.id);
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [flipCard, goNext, goPrev, toggleKnown, currentCard]);
+  }, [flipCard, goNext, goPrev]);
 
   const backToNotebookHref = selectedNotebook
     ? `/dictionary/notebook/${selectedNotebook}`
@@ -328,10 +339,6 @@ export default function Flashcards() {
                   {total}
                 </div>
                 <div className={cx("stat-label")}>Thẻ hiện tại</div>
-              </div>
-              <div className={cx("stat-item")}>
-                <div className={cx("stat-value")}>{knownCount}</div>
-                <div className={cx("stat-label")}>Đã thuộc</div>
               </div>
               <div className={cx("stat-item")}>
                 <div className={cx("stat-value")}>{progress}%</div>
@@ -463,19 +470,32 @@ export default function Flashcards() {
                           >
                             {categoryLabel(currentCard.type || "word")}
                           </span>
-                          <button
-                            className={cx("audio-btn")}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              playAudio(
-                                currentCard.phonetic || currentCard.name
-                              );
-                            }}
-                            aria-label="Phát âm"
-                          >
-                            <FontAwesomeIcon icon={faVolumeUp} />
-                          </button>
+                          <div className={cx("card-top-actions")}>
+                            <button
+                              className={cx("audio-btn")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                playAudio(
+                                  currentCard.phonetic || currentCard.name
+                                );
+                              }}
+                              aria-label="Phát âm"
+                            >
+                              <FontAwesomeIcon icon={faVolumeUp} />
+                            </button>
+                            <button
+                              type="button"
+                              className={cx("reset-icon-btn")}
+                              onClick={(event) => stopAndRun(event, handleReset)}
+                              title="Bắt đầu lại"
+                              aria-label="Bắt đầu lại"
+                            >
+                              <FontAwesomeIcon icon={faRotate} />
+                            </button>
+                          </div>
                         </div>
+
+                        {renderCardControls()}
 
                         <div className={cx("card-center")}>
                           <h2 className={cx("card-kanji")}>
@@ -501,19 +521,32 @@ export default function Flashcards() {
                           >
                             {categoryLabel(currentCard.type || "word")}
                           </span>
-                          <button
-                            className={cx("audio-btn")}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              playAudio(
-                                currentCard.phonetic || currentCard.name
-                              );
-                            }}
-                            aria-label="Phát âm"
-                          >
-                            <FontAwesomeIcon icon={faVolumeUp} />
-                          </button>
+                          <div className={cx("card-top-actions")}>
+                            <button
+                              className={cx("audio-btn")}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                playAudio(
+                                  currentCard.phonetic || currentCard.name
+                                );
+                              }}
+                              aria-label="Phát âm"
+                            >
+                              <FontAwesomeIcon icon={faVolumeUp} />
+                            </button>
+                            <button
+                              type="button"
+                              className={cx("reset-icon-btn")}
+                              onClick={(event) => stopAndRun(event, handleReset)}
+                              title="Bắt đầu lại"
+                              aria-label="Bắt đầu lại"
+                            >
+                              <FontAwesomeIcon icon={faRotate} />
+                            </button>
+                          </div>
                         </div>
+
+                        {renderCardControls()}
 
                         <div className={cx("card-center")}>
                           {currentCard.phonetic && (
@@ -548,7 +581,6 @@ export default function Flashcards() {
                           key={c._id || c.id || i}
                           className={cx("dot", {
                             active: i === currentIndex,
-                            known: knownIds.has(c._id || c.id),
                           })}
                           onClick={() => {
                             setCurrentIndex(i);
@@ -560,55 +592,6 @@ export default function Flashcards() {
                     </div>
                   )}
 
-                  {/* Actions */}
-                  <div className={cx("actions")}>
-                    <button
-                      className={cx("ghost-btn")}
-                      onClick={handleReset}
-                      title="Bắt đầu lại"
-                      aria-label="Bắt đầu lại"
-                    >
-                      <FontAwesomeIcon icon={faRotate} />
-                    </button>
-
-                    <button
-                      className={cx("nav-btn")}
-                      onClick={goPrev}
-                      disabled={currentIndex === 0}
-                      aria-label="Thẻ trước"
-                    >
-                      <FontAwesomeIcon icon={faChevronLeft} />
-                      <span>Trước</span>
-                    </button>
-
-                    <button
-                      className={cx("known-btn", {
-                        marked: knownIds.has(
-                          currentCard._id || currentCard.id
-                        ),
-                      })}
-                      onClick={() =>
-                        toggleKnown(currentCard._id || currentCard.id)
-                      }
-                    >
-                      <FontAwesomeIcon icon={faCheck} />
-                      <span>
-                        {knownIds.has(currentCard._id || currentCard.id)
-                          ? "Đã thuộc"
-                          : "Thuộc"}
-                      </span>
-                    </button>
-
-                    <button
-                      className={cx("nav-btn", "primary")}
-                      onClick={goNext}
-                      disabled={currentIndex >= total - 1}
-                      aria-label="Thẻ tiếp theo"
-                    >
-                      <span>Tiếp theo</span>
-                      <FontAwesomeIcon icon={faChevronRight} />
-                    </button>
-                  </div>
                 </>
               ) : (
                 <div className={cx("empty-state")}>
@@ -624,10 +607,10 @@ export default function Flashcards() {
                     {total === 0
                       ? selectedCategory === "Tất cả"
                         ? "Sổ tay này chưa có từ nào. Hãy thêm từ để bắt đầu luyện tập!"
-                        : `Không có từ nào thuộc loại "${categoryLabel(
+                      : `Không có từ nào thuộc loại "${categoryLabel(
                             selectedCategory
                           )}"`
-                      : `Bạn đã hoàn thành ${total} thẻ. Đã thuộc ${knownCount}/${total}.`}
+                      : `Bạn đã hoàn thành ${total} thẻ.`}
                   </p>
                   {total === 0 ? (
                     <button
@@ -683,10 +666,6 @@ export default function Flashcards() {
                     <li>
                       <kbd>→</kbd>
                       <span>Thẻ tiếp theo</span>
-                    </li>
-                    <li>
-                      <kbd>K</kbd>
-                      <span>Đánh dấu đã thuộc</span>
                     </li>
                   </ul>
                 </div>

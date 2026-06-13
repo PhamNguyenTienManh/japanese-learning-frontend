@@ -22,6 +22,116 @@ import { comparisonUserAnswerWithResult } from "~/services/examService";
 const cx = classNames.bind(styles);
 
 const easeOut = [0.22, 1, 0.36, 1];
+const SAFE_HTML_TAGS = new Set([
+  "B",
+  "BR",
+  "CAPTION",
+  "DIV",
+  "EM",
+  "I",
+  "LI",
+  "OL",
+  "P",
+  "RB",
+  "RP",
+  "RT",
+  "RUBY",
+  "SPAN",
+  "STRONG",
+  "TABLE",
+  "TBODY",
+  "TD",
+  "TFOOT",
+  "TH",
+  "THEAD",
+  "TR",
+  "U",
+  "UL",
+]);
+const BLOCKED_HTML_TAGS = new Set([
+  "SCRIPT",
+  "STYLE",
+  "IFRAME",
+  "OBJECT",
+  "EMBED",
+  "LINK",
+  "META",
+]);
+const SAFE_HTML_ATTRIBUTES = {
+  TABLE: new Set(["colspan", "rowspan"]),
+  TD: new Set(["colspan", "rowspan"]),
+  TH: new Set(["colspan", "rowspan", "scope"]),
+};
+
+function sanitizeExamHtml(value) {
+  const raw = value === null || value === undefined ? "" : String(value);
+  if (!raw.trim()) return "";
+
+  if (typeof DOMParser === "undefined") {
+    return raw
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "");
+  }
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(raw, "text/html");
+
+  const cleanNode = (node) => {
+    Array.from(node.childNodes).forEach((child) => {
+      if (child.nodeType !== Node.ELEMENT_NODE) return;
+
+      const element = child;
+      const tagName = element.tagName;
+
+      if (BLOCKED_HTML_TAGS.has(tagName)) {
+        element.remove();
+        return;
+      }
+
+      cleanNode(element);
+
+      if (!SAFE_HTML_TAGS.has(tagName)) {
+        element.replaceWith(...Array.from(element.childNodes));
+        return;
+      }
+
+      const allowedAttributes = SAFE_HTML_ATTRIBUTES[tagName] || new Set();
+      Array.from(element.attributes).forEach((attr) => {
+        if (!allowedAttributes.has(attr.name.toLowerCase())) {
+          element.removeAttribute(attr.name);
+        }
+      });
+    });
+  };
+
+  cleanNode(doc.body);
+  return doc.body.innerHTML;
+}
+
+function SafeHtml({ as: Component = "div", className, value }) {
+  return (
+    <Component
+      className={className}
+      dangerouslySetInnerHTML={{ __html: sanitizeExamHtml(value) }}
+    />
+  );
+}
+
+function normalizeReviewData(data) {
+  const parts = (data?.parts || [])
+    .map((part) => ({
+      ...part,
+      questions: Array.isArray(part?.questions)
+        ? part.questions.filter(Boolean)
+        : [],
+    }))
+    .filter((part) => part.questions.length > 0);
+
+  return {
+    ...data,
+    parts,
+  };
+}
 
 function ExamReview() {
   const { testId, level } = useParams();
@@ -41,7 +151,7 @@ function ExamReview() {
         setLoading(true);
         const response = await comparisonUserAnswerWithResult(testId);
         if (response.success && response.data) {
-          setReviewData(response.data);
+          setReviewData(normalizeReviewData(response.data));
         } else {
           setError("Không thể tải kết quả bài thi");
         }
@@ -58,8 +168,28 @@ function ExamReview() {
     }
   }, [testId]);
 
-  const handleNext = () => {
+  useEffect(() => {
+    if (!reviewData?.parts?.length) return;
+
+    if (currentPartIndex >= reviewData.parts.length) {
+      setCurrentPartIndex(0);
+      setCurrentQuestionIndexInPart(0);
+      return;
+    }
+
     const currentPart = reviewData.parts[currentPartIndex];
+    if (
+      currentQuestionIndexInPart >= currentPart.questions.length ||
+      currentQuestionIndexInPart < 0
+    ) {
+      setCurrentQuestionIndexInPart(0);
+    }
+  }, [reviewData, currentPartIndex, currentQuestionIndexInPart]);
+
+  const handleNext = () => {
+    const currentPart = reviewData?.parts?.[currentPartIndex];
+    if (!currentPart) return;
+
     if (currentQuestionIndexInPart < currentPart.questions.length - 1) {
       setCurrentQuestionIndexInPart(currentQuestionIndexInPart + 1);
     } else if (currentPartIndex < reviewData.parts.length - 1) {
@@ -74,6 +204,7 @@ function ExamReview() {
     } else if (currentPartIndex > 0) {
       const prevPartIndex = currentPartIndex - 1;
       const prevPart = reviewData.parts[prevPartIndex];
+      if (!prevPart?.questions?.length) return;
       setCurrentPartIndex(prevPartIndex);
       setCurrentQuestionIndexInPart(prevPart.questions.length - 1);
     }
@@ -149,7 +280,33 @@ function ExamReview() {
   }
 
   const currentPart = reviewData.parts[currentPartIndex];
-  const currentQuestion = currentPart.questions[currentQuestionIndexInPart];
+  const currentQuestion = currentPart?.questions?.[currentQuestionIndexInPart];
+
+  if (!currentPart || !currentQuestion) {
+    return (
+      <div className={cx("wrapper")}>
+        <main className={cx("main")}>
+          <div className={cx("container")}>
+            <div className={cx("errorState")}>
+              <p className={cx("errorText")}>
+                Không tìm thấy câu hỏi để xem lại trong phần này
+              </p>
+              <button
+                className={cx("retryButton")}
+                onClick={() => {
+                  setCurrentPartIndex(0);
+                  setCurrentQuestionIndexInPart(0);
+                }}
+              >
+                Về câu đầu
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   const isFirstQuestion =
     currentPartIndex === 0 && currentQuestionIndexInPart === 0;
   const isLastQuestion =
@@ -164,9 +321,6 @@ function ExamReview() {
     (sum, p) => sum + p.questions.filter((q) => q.isCorrect).length,
     0,
   );
-  const accuracyPct = totalQuestions
-    ? Math.round((totalCorrect / totalQuestions) * 100)
-    : 0;
 
   return (
     <div className={cx("wrapper")}>
@@ -197,27 +351,6 @@ function ExamReview() {
             <Link to={`/practice/${level}/results/${testId}`}>Kết quả</Link>
             <FontAwesomeIcon icon={faAngleRight} />
             <span className={cx("breadcrumbCurrent")}>Xem đáp án</span>
-          </motion.div>
-
-          {/* Accuracy strip */}
-          <motion.div
-            className={cx("accuracyStrip")}
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: easeOut, delay: 0.05 }}
-          >
-            <div className={cx("accuracyTrack")}>
-              <motion.div
-                className={cx("accuracyFill")}
-                initial={{ width: 0 }}
-                animate={{ width: `${accuracyPct}%` }}
-                transition={{ duration: 1.1, ease: easeOut, delay: 0.2 }}
-              />
-            </div>
-            <span className={cx("accuracyLabel")}>
-              <strong>{totalCorrect}</strong>/{totalQuestions} đúng •{" "}
-              {accuracyPct}%
-            </span>
           </motion.div>
 
           {/* Section Tabs */}
@@ -277,9 +410,10 @@ function ExamReview() {
                   </div>
 
                   {currentQuestion.questionTitle && (
-                    <h1 className={cx("questionTitle")}>
-                      {currentQuestion.questionTitle}
-                    </h1>
+                    <SafeHtml
+                      className={cx("questionTitle")}
+                      value={currentQuestion.questionTitle}
+                    />
                   )}
 
                   {currentQuestion.generalInfo && (
@@ -297,9 +431,10 @@ function ExamReview() {
 
                       {currentQuestion.generalInfo.txt_read && (
                         <div className={cx("txtReadBox")}>
-                          <p className={cx("txtReadText")}>
-                            {currentQuestion.generalInfo.txt_read}
-                          </p>
+                          <SafeHtml
+                            className={cx("txtReadText")}
+                            value={currentQuestion.generalInfo.txt_read}
+                          />
                         </div>
                       )}
                     </div>
@@ -314,9 +449,12 @@ function ExamReview() {
                     </div>
                   )}
 
-                  <h2 className={cx("questionText")}>
-                    {currentQuestion.questionText}
-                  </h2>
+                  <div className={cx("questionText")}>
+                    <SafeHtml
+                      className={cx("questionTextValue")}
+                      value={currentQuestion.questionText}
+                    />
+                  </div>
                 </div>
 
                 {/* Answer Options */}
@@ -362,9 +500,10 @@ function ExamReview() {
                             </span>
                             <div className={cx("answerContent")}>
                               <div className={cx("answerText")}>
-                                <span className={cx("answerValue")}>
-                                  {answer}
-                                </span>
+                                <SafeHtml
+                                  className={cx("answerValue")}
+                                  value={answer}
+                                />
                               </div>
 
                               {isWrongChoice && (
@@ -442,9 +581,12 @@ function ExamReview() {
                       <FontAwesomeIcon icon={faLightbulb} />
                       Giải thích
                     </p>
-                    <p className={cx("explainText")}>
-                      {currentQuestion.explain}
-                    </p>
+                    <div className={cx("explainText")}>
+                      <SafeHtml
+                        className={cx("explainTextValue")}
+                        value={currentQuestion.explain}
+                      />
+                    </div>
                   </motion.div>
                 )}
 
@@ -463,9 +605,12 @@ function ExamReview() {
                       <FontAwesomeIcon icon={faBook} />
                       Giải thích chi tiết
                     </p>
-                    <p className={cx("explainText")}>
-                      {currentQuestion.explainAll}
-                    </p>
+                    <div className={cx("explainText")}>
+                      <SafeHtml
+                        className={cx("explainTextValue")}
+                        value={currentQuestion.explainAll}
+                      />
+                    </div>
                   </motion.div>
                 )}
 

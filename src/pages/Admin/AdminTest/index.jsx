@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCircleCheck,
+  faChartLine,
+  faChevronDown,
+  faChevronLeft,
+  faChevronRight,
   faClock,
   faEyeSlash,
   faFileLines,
@@ -19,6 +24,7 @@ import styles from "./AdminTest.module.scss";
 const cx = classNames.bind(styles);
 
 const LEVEL_OPTIONS = ["N5", "N4", "N3", "N2", "N1"];
+const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
 
 const STATUS_OPTIONS = [
   { value: "published", label: "Công khai", tone: "published" },
@@ -31,6 +37,21 @@ const STATUS_MAP = STATUS_OPTIONS.reduce((acc, item) => {
   acc[item.value] = item;
   return acc;
 }, {});
+
+const LEVEL_FILTER_OPTIONS = [
+  { value: "all", label: "Tất cả cấp độ" },
+  ...LEVEL_OPTIONS.map((level) => ({ value: level, label: level })),
+];
+
+const STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "Tất cả trạng thái" },
+  ...STATUS_OPTIONS.map((status) => ({ value: status.value, label: status.label })),
+];
+
+const PAGE_SIZE_DROPDOWN_OPTIONS = PAGE_SIZE_OPTIONS.map((size) => ({
+  value: size,
+  label: `${size} dòng`,
+}));
 
 const statusIcons = {
   published: faCircleCheck,
@@ -50,16 +71,116 @@ function formatDate(value) {
   return date.toLocaleDateString("vi-VN");
 }
 
+function AdminDropdown({ value, options, onChange, className, ariaLabel }) {
+  const [open, setOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState(null);
+  const rootRef = useRef(null);
+  const menuRef = useRef(null);
+  const selectedOption = options.find((option) => option.value === value) || options[0];
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const updateMenuPosition = () => {
+      const rect = rootRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      setMenuStyle({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+
+    const handlePointerDown = (event) => {
+      const clickedButton = rootRef.current?.contains(event.target);
+      const clickedMenu = menuRef.current?.contains(event.target);
+
+      if (!clickedButton && !clickedMenu) {
+        setOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    updateMenuPosition();
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [open]);
+
+  const handleSelect = (nextValue) => {
+    onChange(nextValue);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={rootRef} className={cx("dropdown", className, { open })}>
+      <button
+        type="button"
+        className={cx("dropdownButton")}
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span>{selectedOption?.label}</span>
+        <FontAwesomeIcon icon={faChevronDown} />
+      </button>
+
+      {open && menuStyle && createPortal(
+        <div
+          ref={menuRef}
+          className={cx("dropdownMenu")}
+          role="listbox"
+          aria-label={ariaLabel}
+          style={menuStyle}
+        >
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={option.value === value}
+              className={cx("dropdownOption", {
+                selected: option.value === value,
+              })}
+              onClick={() => handleSelect(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 function AdminTest() {
   const [searchQuery, setSearchQuery] = useState("");
   const [levelFilter, setLevelFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [exams, setExams] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const fetchExams = async (level) => {
     try {
@@ -94,6 +215,21 @@ function AdminTest() {
   }, [toast.show]);
 
   useEffect(() => {
+    const routeToast = location.state?.toast;
+    if (!routeToast) return;
+
+    setToast({
+      show: true,
+      message: routeToast.message,
+      type: routeToast.type || "success",
+    });
+    navigate(`${location.pathname}${location.search}`, {
+      replace: true,
+      state: null,
+    });
+  }, [location.pathname, location.search, location.state, navigate]);
+
+  useEffect(() => {
     fetchExams(levelFilter);
   }, [levelFilter]);
 
@@ -121,6 +257,21 @@ function AdminTest() {
       { total: 0, published: 0, draft: 0, hidden: 0 },
     );
   }, [exams]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredExams.length / pageSize));
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(Math.max(page, 1), totalPages));
+  }, [totalPages]);
+
+  const paginatedExams = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredExams.slice(start, start + pageSize);
+  }, [filteredExams, currentPage, pageSize]);
+
+  const showingFrom =
+    filteredExams.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const showingTo = Math.min(currentPage * pageSize, filteredExams.length);
 
   const handleChangeStatus = async (id, newStatus) => {
     const previousExams = exams;
@@ -151,10 +302,7 @@ function AdminTest() {
         <div className={cx("inner")}>
           <section className={cx("header")}>
             <div className={cx("titleBlock")}>
-              <span className={cx("eyebrow")}>Quản trị</span>
-              <h1 className={cx("title")}>
-                Quản lý <span className={cx("titleAccent")}>đề thi</span>
-              </h1>
+              <h1 className={cx("title")}>Quản lý đề thi</h1>
               <p className={cx("subtitle")}>
                 Tổng cộng <strong>{summary.total}</strong> đề thi
                 {filteredExams.length !== exams.length && (
@@ -166,17 +314,6 @@ function AdminTest() {
             </div>
 
             <div className={cx("headerRight")}>
-              <div className={cx("statsRow")}>
-                <div className={cx("statPill", "tonePrimary")}>
-                  <span className={cx("statValue")}>{summary.total}</span>
-                  <span className={cx("statLabel")}>Tổng</span>
-                </div>
-                <div className={cx("statPill", "toneOrange")}>
-                  <span className={cx("statValue")}>{summary.published}</span>
-                  <span className={cx("statLabel")}>Công khai</span>
-                </div>
-              </div>
-
               <Link to="/admin/tests/create" className={cx("primaryBtn")}>
                 <FontAwesomeIcon icon={faPlus} />
                 <span>Tạo đề thi</span>
@@ -191,37 +328,36 @@ function AdminTest() {
                 <Input
                   placeholder="Tìm theo tên đề hoặc cấp độ..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className={cx("searchInput")}
                 />
               </div>
 
               <div className={cx("selectGroup")}>
-                <select
-                  className={cx("select")}
+                <AdminDropdown
+                  className="select"
                   value={levelFilter}
-                  onChange={(e) => setLevelFilter(e.target.value)}
-                >
-                  <option value="all">Tất cả cấp độ</option>
-                  {LEVEL_OPTIONS.map((level) => (
-                    <option key={level} value={level}>
-                      {level}
-                    </option>
-                  ))}
-                </select>
+                  options={LEVEL_FILTER_OPTIONS}
+                  ariaLabel="Lọc cấp độ"
+                  onChange={(nextValue) => {
+                    setLevelFilter(nextValue);
+                    setCurrentPage(1);
+                  }}
+                />
 
-                <select
-                  className={cx("select")}
+                <AdminDropdown
+                  className="select"
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="all">Tất cả trạng thái</option>
-                  {STATUS_OPTIONS.map((status) => (
-                    <option key={status.value} value={status.value}>
-                      {status.label}
-                    </option>
-                  ))}
-                </select>
+                  options={STATUS_FILTER_OPTIONS}
+                  ariaLabel="Lọc trạng thái"
+                  onChange={(nextValue) => {
+                    setStatusFilter(nextValue);
+                    setCurrentPage(1);
+                  }}
+                />
               </div>
             </div>
           </section>
@@ -244,93 +380,116 @@ function AdminTest() {
           )}
 
           {!loading && !error && (
-            <section className={cx("list")}>
+            <section className={cx("tablePanel")}>
+              <div className={cx("tableHeader")}>
+                <div>
+                  <h2>Danh sách đề thi</h2>
+                  <p>
+                    Hiển thị <strong>{showingFrom}-{showingTo}</strong> trên{" "}
+                    <strong>{filteredExams.length}</strong> đề thi
+                  </p>
+                </div>
+              </div>
+
               {filteredExams.length > 0 ? (
-                filteredExams.map((exam) => {
-                  const level = exam.level || "N5";
-                  const levelTone = level.toLowerCase();
-                  const statusMeta = getStatusMeta(exam.status);
-                  const statusIcon = statusIcons[statusMeta.value] || faClock;
-                  const maxScore = Number(exam.score) || 0;
-                  const passScore = Number(exam.pass_score) || 0;
-                  const passPercent = maxScore > 0
-                    ? Math.min(100, Math.round((passScore / maxScore) * 100))
-                    : 0;
+                <div className={cx("tableWrap")}>
+                  <table className={cx("testsTable")}>
+                    <colgroup>
+                      <col className={cx("colTitle")} />
+                      <col className={cx("colLevel")} />
+                      <col className={cx("colStatus")} />
+                      <col className={cx("colQuestions")} />
+                      <col className={cx("colScore")} />
+                      <col className={cx("colPassScore")} />
+                      <col className={cx("colDate")} />
+                      <col className={cx("colActions")} />
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th>Tên đề</th>
+                        <th>Cấp độ</th>
+                        <th>Trạng thái</th>
+                        <th>Số câu hỏi</th>
+                        <th>Tổng điểm</th>
+                        <th>Điểm đạt</th>
+                        <th>Ngày tạo</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedExams.map((exam) => {
+                        const level = exam.level || "N5";
+                        const levelTone = level.toLowerCase();
+                        const statusMeta = getStatusMeta(exam.status);
+                        const statusIcon = statusIcons[statusMeta.value] || faClock;
+                        const maxScore = Number(exam.score) || 0;
+                        const passScore = Number(exam.pass_score) || 0;
+                        const questionCount = Number(exam.questionCount) || 0;
 
-                  return (
-                    <article key={exam._id} className={cx("testCard", levelTone)}>
-                      <div className={cx("levelMark", levelTone)}>
-                        <span>{level}</span>
-                      </div>
-
-                      <div className={cx("testBody")}>
-                        <div className={cx("testTop")}>
-                          <div className={cx("testInfo")}>
-                            <div className={cx("titleRow")}>
-                              <h2 className={cx("testTitle")}>
-                                {exam.title || "Đề thi chưa có tên"}
-                              </h2>
-                              <span className={cx("badge", "badgeLevel", levelTone)}>
-                                JLPT {level}
+                        return (
+                          <tr key={exam._id}>
+                            <td>
+                              <div className={cx("examCell")}>
+                                <span className={cx("examTitle")}>
+                                  {exam.title || "Đề thi chưa có tên"}
+                                </span>
+                                <span className={cx("examId")}>{exam._id}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <span className={cx("levelBadge", levelTone)}>
+                                {level}
                               </span>
+                            </td>
+                            <td>
                               <span className={cx("statusBadge", statusMeta.tone)}>
                                 <FontAwesomeIcon icon={statusIcon} />
                                 {statusMeta.label}
                               </span>
-                            </div>
+                            </td>
+                            <td className={cx("numberCell")}>{questionCount}</td>
+                            <td className={cx("numberCell")}>{maxScore || "--"}</td>
+                            <td className={cx("numberCell")}>{passScore || "--"}</td>
+                            <td className={cx("mutedCell")}>
+                              {formatDate(exam.createdAt)}
+                            </td>
+                            <td>
+                              <div className={cx("tableActions")}>
+                                <button
+                                  type="button"
+                                  className={cx("iconAction")}
+                                  title="Sửa đề thi"
+                                  aria-label="Sửa đề thi"
+                                  onClick={() => navigate(`/admin/tests/update/${exam._id}`)}
+                                >
+                                  <FontAwesomeIcon icon={faPenToSquare} />
+                                </button>
 
-                            <p className={cx("createdText")}>
-                              Ngày tạo: <strong>{formatDate(exam.createdAt)}</strong>
-                            </p>
-                          </div>
+                                <button
+                                  type="button"
+                                  className={cx("iconAction")}
+                                  title="Xem thống kê"
+                                  aria-label="Xem thống kê"
+                                  onClick={() => navigate(`/admin/tests/statistics/${exam._id}`)}
+                                >
+                                  <FontAwesomeIcon icon={faChartLine} />
+                                </button>
 
-                          <div className={cx("actions")}>
-                            <button
-                              type="button"
-                              className={cx("editBtn")}
-                              title="Sửa đề thi"
-                              aria-label="Sửa đề thi"
-                              onClick={() => navigate(`/admin/tests/update/${exam._id}`)}
-                            >
-                              <FontAwesomeIcon icon={faPenToSquare} />
-                            </button>
-
-                            <select
-                              className={cx("statusSelect")}
-                              value={exam.status || "draft"}
-                              onChange={(e) => handleChangeStatus(exam._id, e.target.value)}
-                              aria-label="Trạng thái đề thi"
-                            >
-                              {STATUS_OPTIONS.map((status) => (
-                                <option key={status.value} value={status.value}>
-                                  {status.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className={cx("metaGrid")}>
-                          <div className={cx("metaItem")}>
-                            <span className={cx("metaLabel")}>Tổng điểm</span>
-                            <strong>{maxScore || "--"}</strong>
-                          </div>
-                          <div className={cx("metaItem")}>
-                            <span className={cx("metaLabel")}>Điểm đạt</span>
-                            <strong>{passScore || "--"}</strong>
-                          </div>
-                          <div className={cx("metaItem", "scoreProgress")}>
-                            <span className={cx("metaLabel")}>Tỷ lệ đạt</span>
-                            <div className={cx("progressLine")}>
-                              <span style={{ width: `${passPercent}%` }} />
-                            </div>
-                            <strong>{passPercent}%</strong>
-                          </div>
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })
+                                <AdminDropdown
+                                  className="statusSelect"
+                                  value={exam.status || "draft"}
+                                  options={STATUS_OPTIONS}
+                                  ariaLabel="Trạng thái đề thi"
+                                  onChange={(nextValue) => handleChangeStatus(exam._id, nextValue)}
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
                 <section className={cx("emptyCard")}>
                   <div className={cx("emptyIcon")}>
@@ -338,6 +497,49 @@ function AdminTest() {
                   </div>
                   <p>Không tìm thấy đề thi nào phù hợp</p>
                 </section>
+              )}
+
+              {filteredExams.length > 0 && (
+                <div className={cx("paginationBar")}>
+                  <span className={cx("pageInfo")}>
+                    Trang {currentPage} / {totalPages}
+                  </span>
+
+                  <div className={cx("pageControls")}>
+                    <AdminDropdown
+                      className="pageSizeSelect"
+                      value={pageSize}
+                      options={PAGE_SIZE_DROPDOWN_OPTIONS}
+                      ariaLabel="Số dòng mỗi trang"
+                      onChange={(nextValue) => {
+                        setPageSize(Number(nextValue));
+                        setCurrentPage(1);
+                      }}
+                    />
+
+                    <button
+                      type="button"
+                      className={cx("pageButton")}
+                      disabled={currentPage <= 1}
+                      onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+                      aria-label="Trang trước"
+                    >
+                      <FontAwesomeIcon icon={faChevronLeft} />
+                    </button>
+
+                    <button
+                      type="button"
+                      className={cx("pageButton")}
+                      disabled={currentPage >= totalPages}
+                      onClick={() =>
+                        setCurrentPage((page) => Math.min(page + 1, totalPages))
+                      }
+                      aria-label="Trang sau"
+                    >
+                      <FontAwesomeIcon icon={faChevronRight} />
+                    </button>
+                  </div>
+                </div>
               )}
             </section>
           )}

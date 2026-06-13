@@ -44,6 +44,18 @@ const postService = {
     }
   },
 
+  getAdminPosts: async ({ page = 1, limit = 10, q = '', category = 'all', status = 'active' } = {}) => {
+    try {
+      const response = await axiosInstance.get(`${API_BASE_URL}/posts/admin`, {
+        params: { page, limit, q, category, status }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching admin posts:', error);
+      throw error;
+    }
+  },
+
   getAccessiblePostById: async (id) => {
     try {
       const response = await axiosInstance.get(`${API_BASE_URL}/posts/post/${id}/accessible`);
@@ -90,17 +102,6 @@ const postService = {
     }
   },
 
-
-  getCommunityStats: async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/posts/stats`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching community stats:', error);
-      throw error;
-    }
-  },
-
   getCategories: async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/post-categories`);
@@ -119,6 +120,23 @@ const postService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching comments:', error);
+      throw error;
+    }
+  },
+
+  getAdminComments: async (input) => {
+    try {
+      if (input && typeof input === 'object') {
+        const response = await axiosInstance.get(`${API_BASE_URL}/comments/admin`, {
+          params: input
+        });
+        return response.data;
+      }
+
+      const response = await axiosInstance.get(`${API_BASE_URL}/comments/admin/${input}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching admin comments:', error);
       throw error;
     }
   },
@@ -181,8 +199,6 @@ const postService = {
   },
 
   async updatePost(id, postData) {
-    console.log("ppppppp", postData);
-
     try {
       const response = await axiosInstance.put(`${API_BASE_URL}/posts/${id}`, postData);
       return response.data;
@@ -198,6 +214,24 @@ const postService = {
       return response.data;
     } catch (error) {
       console.error("Error deleting post:", error);
+      throw error;
+    }
+  },
+  async restorePost(id) {
+    try {
+      const response = await axiosInstance.patch(`${API_BASE_URL}/posts/admin/${id}/restore`);
+      return response.data;
+    } catch (error) {
+      console.error("Error restoring post:", error);
+      throw error;
+    }
+  },
+  async restoreComment(id) {
+    try {
+      const response = await axiosInstance.patch(`${API_BASE_URL}/comments/admin/${id}/restore`);
+      return response.data;
+    } catch (error) {
+      console.error("Error restoring comment:", error);
       throw error;
     }
   },
