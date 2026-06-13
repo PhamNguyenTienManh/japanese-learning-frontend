@@ -237,10 +237,35 @@
   gap: 12px;
 }
 
+.reviewMetaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .reviewMeta {
   color: var(--grey);
   font-size: 12px;
   font-weight: 900;
+}
+
+.reviewStatus {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 0 11px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  font-size: 12px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.reviewStatusWarning {
+  background: rgba(252, 95, 0, 0.1);
+  color: #b94600;
 }
 
 .assessment {
@@ -280,8 +305,91 @@
   line-height: 1.55;
 }
 
+.adjustedBlock {
+  display: grid;
+  gap: 10px;
+  border-radius: 14px;
+  padding: 14px;
+  background: #f8fafb;
+}
+
+.adjustedTitle {
+  color: var(--text-high);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.adjustedList {
+  display: grid;
+  gap: 8px;
+}
+
+.adjustedItem {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #e7eef0;
+  border-radius: 11px;
+  padding: 11px;
+  background: #ffffff;
+}
+
+.adjustedItem span {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.adjustedItem strong {
+  color: var(--text-high);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.adjustedItem small {
+  color: var(--grey);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.reviewActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.keepBtn {
+  min-height: 40px;
+  border: 1px solid #dbe7ea;
+  border-radius: 10px;
+  padding: 0 15px;
+  background: #ffffff;
+  color: var(--text-high);
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    opacity 0.16s ease;
+}
+
+.keepBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(0, 135, 154, 0.35);
+  color: var(--primary);
+}
+
+.keepBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
 .reviewEmpty,
-.reviewError {
+.reviewError,
+.applySuccess {
   border-radius: 12px;
   padding: 14px;
   font-size: 13px;
@@ -298,6 +406,11 @@
   margin-bottom: 12px;
   background: rgba(252, 95, 0, 0.1);
   color: #b94600;
+}
+
+.applySuccess {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
 }
 
 .panelHeader {

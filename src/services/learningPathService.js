@@ -82,6 +82,13 @@ export async function reviewLearningPath() {
   });
 }
 
+export async function applyLearningPathReview(payload) {
+  return request("/learning-path/apply-review", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 const learningPathService = {
   getPlacementQuestions,
   getLearningPathStatus,
@@ -93,6 +100,7 @@ const learningPathService = {
   submitPlacement,
   generateLearningPath,
   reviewLearningPath,
+  applyLearningPathReview,
 };
 
 export default learningPathService;

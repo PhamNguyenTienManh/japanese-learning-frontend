@@ -3,7 +3,11 @@ import { useNavigate } from "react-router-dom";
 import classNames from "classnames/bind";
 
 import styles from "./LearningPathProgress.module.scss";
-import { getLearningPathDashboard, reviewLearningPath } from "~/services/learningPathService";
+import {
+  applyLearningPathReview,
+  getLearningPathDashboard,
+  reviewLearningPath,
+} from "~/services/learningPathService";
 
 const cx = classNames.bind(styles);
 
@@ -65,6 +69,10 @@ function LearningPathProgress() {
   const [error, setError] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewError, setReviewError] = useState("");
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [applyError, setApplyError] = useState("");
+  const [applySuccess, setApplySuccess] = useState("");
+  const [reviewDismissed, setReviewDismissed] = useState(false);
 
   const loadProgress = useCallback(async () => {
     try {
@@ -88,6 +96,9 @@ function LearningPathProgress() {
     try {
       setReviewLoading(true);
       setReviewError("");
+      setApplyError("");
+      setApplySuccess("");
+      setReviewDismissed(false);
       const result = await reviewLearningPath();
       setData((current) => ({
         ...current,
@@ -96,9 +107,32 @@ function LearningPathProgress() {
       }));
     } catch (err) {
       console.error("Failed to review learning path:", err);
-      setReviewError("Không tạo được đánh giá lộ trình. Vui lòng thử lại sau.");
+      setReviewError(err?.message || "Hệ thống AI đánh giá lộ trình đang gặp lỗi. Vui lòng thử lại sau.");
     } finally {
       setReviewLoading(false);
+    }
+  };
+
+  const handleApplyReview = async () => {
+    const confirmedItems = data?.lastReview?.adjustedWeeklyItems || [];
+    if (!confirmedItems.length) {
+      setApplyError("Không có điều chỉnh nào để áp dụng.");
+      return;
+    }
+
+    try {
+      setApplyLoading(true);
+      setApplyError("");
+      setApplySuccess("");
+      const result = await applyLearningPathReview({ confirmedItems });
+      setData(result);
+      setReviewDismissed(true);
+      setApplySuccess("Đã áp dụng điều chỉnh vào tuần tiếp theo.");
+    } catch (err) {
+      console.error("Failed to apply learning path review:", err);
+      setApplyError(err?.message || "Không áp dụng được điều chỉnh. Vui lòng thử lại sau.");
+    } finally {
+      setApplyLoading(false);
     }
   };
 
@@ -106,6 +140,8 @@ function LearningPathProgress() {
   const weekProgress = data?.weekProgress || {};
   const weekPercent = Math.min(Math.max(Number(weekProgress.percent) || 0, 0), 100);
   const generationSource = data?.generationSource === "ai" ? "ai" : "fallback";
+  const adjustedWeeklyItems = data?.lastReview?.adjustedWeeklyItems || [];
+  const canApplyReview = adjustedWeeklyItems.length > 0 && !reviewDismissed;
 
   return (
     <main className={cx("wrapper")}>
@@ -188,7 +224,14 @@ function LearningPathProgress() {
 
               {data?.lastReview ? (
                 <div className={cx("reviewBody")}>
-                  <div className={cx("reviewMeta")}>Lần đánh giá gần nhất: {formatReviewDate(data.lastReview.reviewedAt)}</div>
+                  <div className={cx("reviewMetaRow")}>
+                    <div className={cx("reviewMeta")}>Lần đánh giá gần nhất: {formatReviewDate(data.lastReview.reviewedAt)}</div>
+                    {typeof data.lastReview.onTrack === "boolean" && (
+                      <span className={cx("reviewStatus", { reviewStatusWarning: !data.lastReview.onTrack })}>
+                        {data.lastReview.onTrack ? "Đúng tiến độ" : "Cần điều chỉnh"}
+                      </span>
+                    )}
+                  </div>
                   <p className={cx("assessment")}>{data.lastReview.assessment}</p>
                   {data.lastReview.suggestions?.length > 0 && (
                     <div className={cx("suggestionList")}>
@@ -201,6 +244,49 @@ function LearningPathProgress() {
                           <p>{suggestion.reason}</p>
                         </article>
                       ))}
+                    </div>
+                  )}
+
+                  {adjustedWeeklyItems.length > 0 && (
+                    <div className={cx("adjustedBlock")}>
+                      <div className={cx("adjustedTitle")}>Điều chỉnh đề xuất cho tuần tiếp theo</div>
+                      <div className={cx("adjustedList")}>
+                        {adjustedWeeklyItems.map((item, index) => (
+                          <div key={`${item.skill}-${item.order || index}`} className={cx("adjustedItem")}>
+                            <span>{skillMeta[item.skill]?.label || item.skill}</span>
+                            <strong>{item.title}</strong>
+                            <small>{item.targetCount || 1} mục · {item.estimatedMinutes || 15} phút</small>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {applyError && <div className={cx("reviewError")}>{applyError}</div>}
+                  {applySuccess && <div className={cx("applySuccess")}>{applySuccess}</div>}
+
+                  {canApplyReview && (
+                    <div className={cx("reviewActions")}>
+                      <button
+                        type="button"
+                        className={cx("reviewBtn")}
+                        onClick={handleApplyReview}
+                        disabled={applyLoading}
+                      >
+                        {applyLoading ? "Đang áp dụng..." : "Áp dụng điều chỉnh"}
+                      </button>
+                      <button
+                        type="button"
+                        className={cx("keepBtn")}
+                        onClick={() => {
+                          setReviewDismissed(true);
+                          setApplyError("");
+                          setApplySuccess("Đã giữ nguyên lộ trình hiện tại.");
+                        }}
+                        disabled={applyLoading}
+                      >
+                        Giữ nguyên lộ trình
+                      </button>
                     </div>
                   )}
                 </div>
