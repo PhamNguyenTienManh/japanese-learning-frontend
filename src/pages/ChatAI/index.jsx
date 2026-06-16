@@ -29,6 +29,7 @@ import { useAuth } from "~/context/AuthContext";
 import {
   createSession,
   confirmNotebookAdd,
+  confirmNotebookCreateLimited,
   deleteSession,
   getSessionHistory,
   getTodayAiUsage,
@@ -55,6 +56,55 @@ function unwrap(response) {
   return response?.success ? response.data : response;
 }
 
+function formatProgressContent(progressItems) {
+  const lines = (progressItems || [])
+    .map((item) => item?.message)
+    .filter(Boolean)
+    .slice(-5);
+
+  return lines.length > 0 ? lines : ["Đang xử lý yêu cầu của bạn..."];
+}
+
+function ProgressMessage({ items }) {
+  const lines = Array.isArray(items)
+    ? items.filter(Boolean)
+    : formatProgressContent([]);
+
+  return (
+    <div className={cx("progress-message")}>
+      <div className={cx("progress-title")}>
+        <span />
+        <span>Đang xử lý</span>
+      </div>
+      <div className={cx("progress-lines")}>
+        {lines.map((line, index) => (
+          <div key={`${line}-${index}`} className={cx("progress-line")}>
+            {line}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function isPendingNotebookAction(action) {
+  return (
+    action?.type === "confirm_add_to_notebook" ||
+    action?.type === "select_notebook_for_add" ||
+    action?.type === "confirm_add_limited_to_notebook" ||
+    action?.type === "confirm_create_limited_notebook"
+  );
+}
+
+function dismissPendingNotebookActions(messages) {
+  return (messages || []).map((message) => ({
+    ...message,
+    actions: (message.actions || []).filter(
+      (action) => !isPendingNotebookAction(action),
+    ),
+  }));
+}
+
 function filterVisibleActions(actions) {
   const visibleActions = Array.isArray(actions)
     ? actions.filter((action) => !action?.consumed)
@@ -74,8 +124,7 @@ function filterVisibleActions(actions) {
 
   return visibleActions.filter((action) => {
     if (
-      action?.type !== "confirm_add_to_notebook" &&
-      action?.type !== "select_notebook_for_add"
+      !isPendingNotebookAction(action)
     ) {
       return true;
     }
@@ -491,17 +540,10 @@ function ChatAI() {
       return;
     }
 
-    if (hasNoQuota) {
-      setQuotaMessage(
-        "Bạn đã dùng hết 50 request hôm nay. Quay lại vào ngày mai.",
-      );
-      return;
-    }
-
     const userMessage = {
       id: `notebook-action-user-${Date.now()}`,
       role: "user",
-      content: `Thêm "${prompt}" vào sổ tay "${notebookName || "đã chọn"}".`,
+      content: `Xác nhận thêm từ vào sổ tay "${notebookName || "đã chọn"}".`,
       timestamp: new Date(),
     };
 
@@ -561,6 +603,79 @@ function ChatAI() {
     }
   };
 
+  const handleNotebookCreateLimitedAction = async (action, actionKey) => {
+    const notebookName = action?.notebookName;
+    const prompt = action?.prompt;
+
+    if (
+      !notebookName ||
+      !prompt ||
+      isLoading ||
+      pendingActionKey ||
+      consumedActionKeysRef.current.has(actionKey)
+    ) {
+      return;
+    }
+
+    const userMessage = {
+      id: `notebook-create-user-${Date.now()}`,
+      role: "user",
+      content: `Tạo ${action?.limitedCount || 30} từ vựng cho sổ tay "${notebookName}".`,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    consumedActionKeysRef.current.add(actionKey);
+    hideActionLocal(actionKey);
+    setIsLoading(true);
+    setPendingActionKey(actionKey);
+    setQuotaMessage("");
+
+    try {
+      const response = unwrap(
+        await confirmNotebookCreateLimited(activeSessionId, {
+          name: notebookName,
+          prompt,
+        }),
+      );
+
+      if (response?.usage) {
+        setAiUsage(response.usage);
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        formatMessage(response?.aiMessage, "assistant"),
+      ]);
+      await refreshConversations();
+      await refreshTodayUsage();
+    } catch (error) {
+      console.error("Notebook create action error:", error);
+      if (error?.code === "DAILY_AI_LIMIT_EXCEEDED") {
+        if (error.usage) setAiUsage(error.usage);
+        setQuotaMessage(
+          "Bạn đã dùng hết 50 request hôm nay. Quay lại vào ngày mai.",
+        );
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `notebook-create-error-${Date.now()}`,
+          role: "assistant",
+          content:
+            error?.message ||
+            "Mình chưa thể tạo sổ tay này. Bạn thử lại giúp mình nhé.",
+          timestamp: new Date(),
+          actions: [],
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+      setPendingActionKey(null);
+    }
+  };
+
   const handleActionClick = (action) => {
     if (action?.type === "view_notebook" && action.notebookId) {
       navigate(`${config.routes.notebook}/${action.notebookId}`);
@@ -597,15 +712,21 @@ function ChatAI() {
     let streamErrored = false;
     let quotaExceeded = false;
     let streamStopped = false;
+    let hasReceivedChunk = false;
+    let hasProgressContent = false;
+    const progressItems = [];
+    const progressStageIndexes = new Map();
     const abortController = new AbortController();
     streamAbortControllerRef.current = abortController;
     streamStoppedRef.current = false;
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...dismissPendingNotebookActions(prev), userMessage]);
     setInput("");
     setIsLoading(true);
     setQuotaMessage("");
     setOpenMenuId(null);
+    setOpenCandidateActionKey(null);
+    setDeclinedActionKeys([]);
     updateConversationLocal(sessionId, (conversation) => ({
       ...conversation,
       title:
@@ -640,15 +761,72 @@ function ChatAI() {
 
     const appendChunk = (text) => {
       if (!text) return;
+      hasReceivedChunk = true;
+      if (!assistantCreated) ensureAssistantMessage("");
+
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === assistantId
+            ? {
+                ...message,
+                isProgress: false,
+                progressItems: [],
+                content: hasProgressContent
+                  ? text
+                  : message.content + text,
+              }
+            : message,
+        ),
+      );
+      hasProgressContent = false;
+    };
+
+    const appendProgress = (event) => {
+      const message = (event?.message || "").trim();
+      if (!message || hasReceivedChunk) return;
+
+      const stage = event?.stage || `progress-${progressItems.length}`;
+      const progressItem = {
+        stage,
+        message,
+        current: event?.current,
+        total: event?.total,
+      };
+
+      if (progressStageIndexes.has(stage)) {
+        progressItems[progressStageIndexes.get(stage)] = progressItem;
+      } else {
+        progressStageIndexes.set(stage, progressItems.length);
+        progressItems.push(progressItem);
+      }
+
+      hasProgressContent = true;
+      const progressContent = formatProgressContent(progressItems);
       if (!assistantCreated) {
-        ensureAssistantMessage(text);
+        ensureAssistantMessage("");
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === assistantId
+              ? {
+                  ...message,
+                  isProgress: true,
+                  progressItems: progressContent,
+                }
+              : message,
+          ),
+        );
         return;
       }
 
       setMessages((prev) =>
         prev.map((message) =>
           message.id === assistantId
-            ? { ...message, content: message.content + text }
+            ? {
+                ...message,
+                content: "",
+                isProgress: true,
+                progressItems: progressContent,
+              }
             : message,
         ),
       );
@@ -670,6 +848,8 @@ function ChatAI() {
             ? message
             : {
                 ...message,
+                isProgress: false,
+                progressItems: [],
                 actions: filterVisibleActions([...existing, action]),
               };
         }),
@@ -690,6 +870,7 @@ function ChatAI() {
       await streamMessage(sessionId, textToSend, {
         onChunk: appendChunk,
         onAction: appendAction,
+        onProgress: appendProgress,
         signal: abortController.signal,
         onDone: (event) => {
           if (event?.usage) {
@@ -706,7 +887,13 @@ function ChatAI() {
             setMessages((prev) =>
               prev.map((message) =>
                 message.id === assistantId
-                  ? { ...message, timestamp: new Date(event.timestamp) }
+                  ? {
+                      ...message,
+                      isProgress: false,
+                      progressItems: [],
+                      content: event.aiMessage || message.content,
+                      timestamp: new Date(event.timestamp),
+                    }
                   : message,
               ),
             );
@@ -1141,6 +1328,8 @@ function ChatAI() {
                     </div>
                     {isUser ? (
                       <p className={cx("user-text")}>{message.content}</p>
+                    ) : message.isProgress ? (
+                      <ProgressMessage items={message.progressItems} />
                     ) : (
                       <MarkdownMessage content={message.content} />
                     )}
@@ -1158,7 +1347,7 @@ function ChatAI() {
                               : [];
                             const actionBusy = pendingActionKey === actionKey;
                             const actionDisabled =
-                              isLoading || hasNoQuota || !!pendingActionKey;
+                              isLoading || !!pendingActionKey;
                             const isDeclined =
                               declinedActionKeys.includes(actionKey);
 
@@ -1197,12 +1386,11 @@ function ChatAI() {
                                         type="button"
                                         className={cx("secondary")}
                                         onClick={() => {
-                                          setDeclinedActionKeys((current) =>
-                                            current.includes(actionKey)
-                                              ? current
-                                              : [...current, actionKey],
+                                          consumedActionKeysRef.current.add(
+                                            actionKey,
                                           );
-                                          setOpenCandidateActionKey(actionKey);
+                                          hideActionLocal(actionKey);
+                                          setOpenCandidateActionKey(null);
                                         }}
                                         disabled={isLoading || !!pendingActionKey}
                                       >
@@ -1269,6 +1457,129 @@ function ChatAI() {
                                         {candidate.name}
                                       </button>
                                     ))}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            if (
+                              action.type ===
+                              "confirm_add_limited_to_notebook"
+                            ) {
+                              const limitedCount = action.limitedCount || 30;
+                              const requestedCount =
+                                action.requestedCount || limitedCount;
+
+                              return (
+                                <div
+                                  key={actionKey}
+                                  className={cx("action-card")}
+                                >
+                                  <div className={cx("action-card-title")}>
+                                    <BookOpen size={17} />
+                                    <div>
+                                      <strong>
+                                        Giới hạn {limitedCount} từ vựng/lần
+                                      </strong>
+                                      <span>
+                                        Bạn yêu cầu {requestedCount} từ. Mình có
+                                        thể thêm {limitedCount} từ vào sổ tay
+                                        {action.notebookName
+                                          ? ` "${action.notebookName}"`
+                                          : ""}{" "}
+                                        trước.
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className={cx("action-card-buttons")}>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleNotebookAddAction(
+                                          action,
+                                          null,
+                                          actionKey,
+                                        )
+                                      }
+                                      disabled={actionDisabled}
+                                    >
+                                      <Check size={16} />
+                                      <span>
+                                        {actionBusy
+                                          ? "Đang thêm..."
+                                          : `Thêm ${limitedCount} từ`}
+                                      </span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={cx("secondary")}
+                                      onClick={() => hideActionLocal(actionKey)}
+                                      disabled={isLoading || !!pendingActionKey}
+                                    >
+                                      <X size={16} />
+                                      <span>Không</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            if (
+                              action.type ===
+                              "confirm_create_limited_notebook"
+                            ) {
+                              const limitedCount = action.limitedCount || 30;
+                              const requestedCount =
+                                action.requestedCount || limitedCount;
+
+                              return (
+                                <div
+                                  key={actionKey}
+                                  className={cx("action-card")}
+                                >
+                                  <div className={cx("action-card-title")}>
+                                    <BookOpen size={17} />
+                                    <div>
+                                      <strong>
+                                        Giới hạn {limitedCount} từ vựng/lần
+                                      </strong>
+                                      <span>
+                                        Bạn yêu cầu {requestedCount} từ. Mình có
+                                        thể tạo {limitedCount} từ cho sổ tay
+                                        {action.notebookName
+                                          ? ` "${action.notebookName}"`
+                                          : ""}{" "}
+                                        trước.
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className={cx("action-card-buttons")}>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleNotebookCreateLimitedAction(
+                                          action,
+                                          actionKey,
+                                        )
+                                      }
+                                      disabled={actionDisabled}
+                                    >
+                                      <Check size={16} />
+                                      <span>
+                                        {actionBusy
+                                          ? "Đang tạo..."
+                                          : `Tạo ${limitedCount} từ`}
+                                      </span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={cx("secondary")}
+                                      onClick={() => hideActionLocal(actionKey)}
+                                      disabled={isLoading || !!pendingActionKey}
+                                    >
+                                      <X size={16} />
+                                      <span>Không</span>
+                                    </button>
                                   </div>
                                 </div>
                               );
