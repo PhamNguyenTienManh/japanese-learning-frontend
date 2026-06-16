@@ -138,6 +138,34 @@ export async function confirmNotebookAdd(sessionId, payload) {
   return response.json();
 }
 
+export async function confirmNotebookCreateLimited(sessionId, payload) {
+  const response = await fetch(
+    `${BASE_URL}/ai-chat/${sessionId}/notebook-actions/create-limited`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => null);
+    const err = new Error(
+      errorPayload?.message ||
+        `Failed to confirm notebook creation: ${response.statusText}`,
+    );
+    err.code = errorPayload?.code;
+    err.usage = errorPayload?.usage;
+    throw err;
+  }
+
+  return response.json();
+}
+
 // Gửi tin nhắn trong session
 export async function sendMessage(sessionId, message) {
   const response = await fetch(`${BASE_URL}/ai-chat/${sessionId}/message`, {
@@ -162,7 +190,7 @@ export async function sendMessage(sessionId, message) {
 export async function streamMessage(
   sessionId,
   message,
-  { onChunk, onDone, onError, onAction, signal } = {},
+  { onChunk, onDone, onError, onAction, onProgress, signal } = {},
 ) {
   const response = await fetch(
     `${BASE_URL}/ai-chat/${sessionId}/message/stream`,
@@ -225,6 +253,8 @@ export async function streamMessage(
 
         if (event.type === "chunk") {
           onChunk?.(event.text ?? "");
+        } else if (event.type === "progress") {
+          onProgress?.(event);
         } else if (event.type === "action") {
           onAction?.(event.action);
         } else if (event.type === "done" || event.type === "aborted") {
