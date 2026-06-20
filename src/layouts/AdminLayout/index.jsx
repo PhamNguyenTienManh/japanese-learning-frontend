@@ -11,6 +11,7 @@ import {
   faComments,
   faBookReader,
   faCommentDots,
+  faRoute,
   faTriangleExclamation,
   faReceipt,
   faArrowLeft,
@@ -45,6 +46,7 @@ const navItems = [
   { to: "/admin/transactions", icon: faReceipt, label: "Giao dịch" },
   { to: "/admin/reading", icon: faBookReader, label: "Luyện đọc" },
   { to: "/admin/conversation", icon: faCommentDots, label: "Hội thoại" },
+  { to: "/admin/learning-paths", icon: faRoute, label: "Lộ trình" },
 ];
 
 function AdminLayout({ children }) {

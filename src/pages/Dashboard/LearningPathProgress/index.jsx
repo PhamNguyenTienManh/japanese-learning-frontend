@@ -16,18 +16,19 @@ const eyebrowClass = "mb-2 inline-flex min-h-7 items-center rounded-full bg-[rgb
 const titleClass = "m-0 text-[clamp(30px,4.8vw,48px)] font-[950] leading-[1.05] tracking-[-0.03em] text-text-high";
 const subtitleClass = "mt-2 mb-0 max-w-[680px] text-[15px] font-bold leading-[1.7] text-grey";
 const baseButtonClass = "min-h-[42px] cursor-pointer rounded-[12px] border-0 px-4 font-black transition-[transform,box-shadow,background,border-color,color,opacity] duration-150 ease-[ease] hover:not-disabled:-translate-y-px disabled:cursor-not-allowed disabled:opacity-[0.68]";
-const regenerateBtnClass = cn(baseButtonClass, "shrink-0 bg-white text-primary shadow-[0_12px_28px_rgba(0,135,154,0.12)] ring-1 ring-[rgba(0,135,154,0.12)] hover:bg-[rgba(0,135,154,0.06)] max-[780px]:w-full");
+const regenerateBtnClass = cn(baseButtonClass, "shrink-0 bg-primary text-white shadow-[0_12px_28px_rgba(0,135,154,0.18)] hover:opacity-85 max-[780px]:w-full");
 const mainGridClass = "grid grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)] gap-5 max-[980px]:grid-cols-1";
 const cardShellClass = "rounded-[24px] border border-[#edf2f4] bg-[rgba(255,255,255,0.94)] shadow-[0_18px_46px_rgba(16,42,45,0.08)] max-[480px]:rounded-[18px]";
 const todayCardClass = cn(cardShellClass, "relative overflow-hidden p-6 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-1.5 before:bg-[linear-gradient(90deg,var(--primary),var(--orange))] max-[780px]:p-5");
+const leftStackClass = "grid content-start gap-5";
 const sideStackClass = "grid content-start gap-5";
 const panelClass = cn(cardShellClass, "p-5 max-[780px]:p-[18px]");
+const weeklyCardClass = cn(cardShellClass, "p-6 max-[780px]:p-5");
 const sectionHeaderClass = "mb-4 flex items-start justify-between gap-4 max-[640px]:flex-col";
 const sectionTitleClass = "m-0 text-[22px] font-[950] leading-[1.2] tracking-[-0.01em] text-text-high";
 const sectionDescriptionClass = "mt-1.5 mb-0 max-w-[640px] text-[13px] font-bold leading-[1.65] text-grey";
 const pillBaseClass = "inline-flex min-h-[30px] items-center justify-center whitespace-nowrap rounded-full px-3 text-xs font-black";
 const panelBadgeClass = cn(pillBaseClass, "bg-[rgba(0,135,154,0.08)] text-primary");
-const fallbackBadgeClass = "bg-[rgba(252,95,0,0.1)] text-[#b94600]";
 const todayListClass = "grid gap-3.5";
 const weekListClass = "grid gap-3";
 const todayTaskClass = "rounded-[20px] border border-[rgba(0,135,154,0.12)] bg-[linear-gradient(135deg,#ffffff_0%,#f7fcfb_100%)] p-5 shadow-[0_14px_30px_rgba(16,42,45,0.07)] transition-[border-color,box-shadow,transform] duration-150 ease-[ease] hover:-translate-y-px hover:border-[rgba(0,135,154,0.28)] hover:shadow-[0_18px_38px_rgba(16,42,45,0.1)]";
@@ -78,7 +79,6 @@ const messageBoxBaseClass = "rounded-[16px] p-3.5 text-[13px] font-bold leading-
 const reviewEmptyClass = cn(messageBoxBaseClass, "bg-[#f8fafb] text-grey");
 const reviewErrorClass = cn(messageBoxBaseClass, "bg-[rgba(252,95,0,0.1)] text-[#b94600]");
 const applySuccessClass = cn(messageBoxBaseClass, "bg-[rgba(16,185,129,0.12)] text-[#047857]");
-const lowerSectionClass = "mt-5";
 const panelBadgesClass = "flex flex-wrap justify-end gap-2";
 const stateClass = "grid justify-items-center gap-2.5 rounded-[22px] border border-dashed border-[#dce7e8] bg-[rgba(255,255,255,0.9)] px-[22px] py-[34px] text-center font-bold text-grey shadow-[0_14px_34px_rgba(16,42,45,0.06)]";
 const emptyTasksClass = stateClass;
@@ -216,7 +216,6 @@ function LearningPathProgress() {
   const todayTasks = data?.todayTasks || [];
   const weekProgress = data?.weekProgress || {};
   const weekPercent = Math.min(Math.max(Number(weekProgress.percent) || 0, 0), 100);
-  const generationSource = data?.generationSource === "ai" ? "ai" : "fallback";
   const adjustedWeeklyItems = data?.lastReview?.adjustedWeeklyItems || [];
   const canApplyReview = adjustedWeeklyItems.length > 0 && !reviewDismissed;
   const dailyMinutes = data?.goal?.dailyMinutes || 30;
@@ -317,27 +316,49 @@ function LearningPathProgress() {
         ) : (
           <>
             <section className={mainGridClass}>
-              <div className={todayCardClass}>
-                <div className={sectionHeaderClass}>
-                  <div>
-                    <h2 className={sectionTitleClass}>Nhiệm vụ hôm nay</h2>
-                    <p className={sectionDescriptionClass}>
-                      Ưu tiên các mục chưa hoàn thành theo thứ tự lộ trình, vừa với mục tiêu {dailyMinutes} phút/ngày.
-                    </p>
+              <div className={leftStackClass}>
+                <div className={todayCardClass}>
+                  <div className={sectionHeaderClass}>
+                    <div>
+                      <h2 className={sectionTitleClass}>Nhiệm vụ hôm nay</h2>
+                      <p className={sectionDescriptionClass}>
+                        Ưu tiên các mục chưa hoàn thành theo thứ tự lộ trình, vừa với mục tiêu {dailyMinutes} phút/ngày.
+                      </p>
+                    </div>
+                    <span className={panelBadgeClass}>{todayTasks.length} mục hôm nay</span>
                   </div>
-                  <span className={panelBadgeClass}>{todayTasks.length} mục hôm nay</span>
+
+                  {todayTasks.length === 0 ? (
+                    <div className={emptyTasksClass}>
+                      <strong className={stateTitleClass}>Hôm nay bạn đã hoàn thành các mục gợi ý.</strong>
+                      <p className={stateTextClass}>Bạn có thể ôn lại bài cũ hoặc xem kế hoạch tuần bên dưới để học trước.</p>
+                    </div>
+                  ) : (
+                    <div className={todayListClass}>
+                      {todayTasks.map((task) => renderTaskCard(task, "today", "today"))}
+                    </div>
+                  )}
                 </div>
 
-                {todayTasks.length === 0 ? (
-                  <div className={emptyTasksClass}>
-                    <strong className={stateTitleClass}>Hôm nay bạn đã hoàn thành các mục gợi ý.</strong>
-                    <p className={stateTextClass}>Bạn có thể ôn lại bài cũ hoặc xem kế hoạch tuần bên dưới để học trước.</p>
+                <section className={weeklyCardClass}>
+                  <div className={sectionHeaderClass}>
+                    <div>
+                      <h2 className={sectionTitleClass}>Kế hoạch tuần</h2>
+                      <p className={sectionDescriptionClass}>{weekTasks.length} mục trong tuần này, dùng để học tiếp sau nhiệm vụ hôm nay.</p>
+                    </div>
+                    <div className={panelBadgesClass}>
+                      <span className={panelBadgeClass}>{weekPercent}% hoàn thành</span>
+                    </div>
                   </div>
-                ) : (
-                  <div className={todayListClass}>
-                    {todayTasks.map((task) => renderTaskCard(task, "today", "today"))}
-                  </div>
-                )}
+
+                  {weekTasks.length === 0 ? (
+                    <div className={emptyTasksClass}>Tuần này chưa có mục học nào trong lộ trình.</div>
+                  ) : (
+                    <div className={weekListClass}>
+                      {weekTasks.map((task) => renderTaskCard(task, "week", "week"))}
+                    </div>
+                  )}
+                </section>
               </div>
 
               <aside className={sideStackClass}>
@@ -451,29 +472,6 @@ function LearningPathProgress() {
                   )}
                 </section>
               </aside>
-            </section>
-
-            <section className={cn(panelClass, lowerSectionClass)}>
-              <div className={sectionHeaderClass}>
-                <div>
-                  <h2 className={sectionTitleClass}>Kế hoạch tuần</h2>
-                  <p className={sectionDescriptionClass}>{weekTasks.length} mục được AI đề xuất cho tuần này, dùng để học tiếp sau nhiệm vụ hôm nay.</p>
-                </div>
-                <div className={panelBadgesClass}>
-                  <span className={cn(panelBadgeClass, generationSource === "fallback" && fallbackBadgeClass)}>
-                    {generationSource === "ai" ? "Tạo bởi AI" : "Kế hoạch dự phòng"}
-                  </span>
-                  <span className={panelBadgeClass}>{weekPercent}% hoàn thành</span>
-                </div>
-              </div>
-
-              {weekTasks.length === 0 ? (
-                <div className={emptyTasksClass}>Tuần này chưa có mục học nào trong lộ trình.</div>
-              ) : (
-                <div className={weekListClass}>
-                  {weekTasks.map((task) => renderTaskCard(task, "week", "week"))}
-                </div>
-              )}
             </section>
           </>
         )}

@@ -44,6 +44,7 @@ import Violations from "~/pages/Admin/Violations";
 import AdminTransactions from "~/pages/Admin/AdminTransactions";
 import AdminReading from "~/pages/Admin/AdminReading";
 import AdminConversation from "~/pages/Admin/AdminConversation";
+import AdminLearningPaths from "~/pages/Admin/AdminLearningPaths";
 import EditTest from "~/pages/Admin/AdminTest/UpdateTest";
 import AdminTestStatistics from "~/pages/Admin/AdminTest/Statistics";
 
@@ -97,6 +98,10 @@ export const publicRouter = [
   { path: config.routes.adminTransactions, component: AdminTransactions },
   { path: config.routes.adminReading, component: AdminReading },
   { path: config.routes.adminConversation, component: AdminConversation },
+  { path: config.routes.adminLearningPaths, component: AdminLearningPaths },
+  { path: config.routes.adminLearningPathPlacementNew, component: AdminLearningPaths },
+  { path: config.routes.adminLearningPathPlacementEdit, component: AdminLearningPaths },
+  { path: config.routes.adminLearningPathDetail, component: AdminLearningPaths },
   { path: config.routes.jlptFlashcard, component: JLPTFlashcard },
   { path: config.routes.updateTest, component: EditTest },
 

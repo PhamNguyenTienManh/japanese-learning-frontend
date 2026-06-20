@@ -45,6 +45,10 @@ const routes = {
   adminTransactions: "/admin/transactions",
   adminReading: "/admin/reading",
   adminConversation: "/admin/conversation",
+  adminLearningPaths: "/admin/learning-paths",
+  adminLearningPathPlacementNew: "/admin/learning-paths/placement/new",
+  adminLearningPathPlacementEdit: "/admin/learning-paths/placement/:questionId/edit",
+  adminLearningPathDetail: "/admin/learning-paths/:id",
   translate: "/translate"
   ,
   payment: "/payment"
