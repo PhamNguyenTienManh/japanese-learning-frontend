@@ -289,7 +289,7 @@ function Translate() {
 
                         <button
                             type="button"
-                            className="absolute left-1/2 top-1/2 z-[2] inline-flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-[6px] border-[#eef3f6] bg-white text-base text-[#0f2a2a] shadow-[0_10px_24px_rgba(15,42,42,0.12)] transition-all duration-150 hover:-translate-x-1/2 hover:-translate-y-1/2 hover:scale-105 hover:text-primary hover:shadow-[0_14px_28px_rgba(15,42,42,0.16)] active:scale-95 max-md:top-[calc(50%-2px)] max-md:-translate-x-1/2 max-md:-translate-y-1/2 max-md:rotate-90 max-md:hover:-translate-x-1/2 max-md:hover:-translate-y-1/2 max-md:hover:rotate-90 max-md:hover:scale-105 max-md:active:rotate-90 max-md:active:scale-95"
+                            className="absolute left-[calc(50%-24px)] top-[calc(50%-24px)] z-[2] inline-flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border-[6px] border-[#eef3f6] bg-white text-base text-[#0f2a2a] shadow-[0_10px_24px_rgba(15,42,42,0.12)] transition-all duration-150 hover:scale-105 hover:text-primary hover:shadow-[0_14px_28px_rgba(15,42,42,0.16)] active:scale-95 max-md:rotate-90 max-md:hover:rotate-90 max-md:hover:scale-105 max-md:active:rotate-90 max-md:active:scale-95"
                             onClick={handleSwapLanguages}
                             aria-label="Đảo ngôn ngữ"
                         >
