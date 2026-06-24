@@ -42,6 +42,12 @@ const GOALS = [
 
 const EXPERIENCE_OPTIONS = [
   {
+    value: "absolute_beginner",
+    icon: "🌸",
+    title: "Người chưa biết gì",
+    text: "Chưa biết Hiragana/Katakana, học bảng chữ cái trước.",
+  },
+  {
     value: "new",
     icon: "🌱",
     title: "Hoàn toàn mới",
@@ -194,6 +200,11 @@ function Onboarding() {
   const goToLevelStep = async () => {
     setError("");
     if (!canContinueStep1) return;
+
+    if (experience === "absolute_beginner") {
+      navigate("/kana");
+      return;
+    }
 
     if (experience === "new") {
       setLevel("N5");
