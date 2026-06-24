@@ -23,6 +23,9 @@ import Achievements from "~/pages/Dashboard/Achievements";
 import Goals from "~/pages/Dashboard/Goals";
 import Setting from "~/pages/Dashboard/Setting";
 import KanjiLookup from "~/pages/KanjiLookup";
+import Kana from "~/pages/Kana";
+import KanaCombinations from "~/pages/KanaCombinations";
+import KanaBasics from "~/pages/KanaBasics";
 import ResetPassword from "~/pages/auth/ResetPass";
 import JLPT from "~/pages/Dictionary/JLPT";
 import Reading from "~/pages/Reading";
@@ -77,6 +80,9 @@ export const publicRouter = [
   { path: config.routes.setting, component: Setting },
   { path: config.routes.settingLegacy, component: Setting },
   { path: config.routes.kanjiLookup, component: KanjiLookup },
+  { path: config.routes.kana, component: Kana },
+  { path: config.routes.kanaCombinations, component: KanaCombinations },
+  { path: config.routes.kanaBasics, component: KanaBasics },
   { path: config.routes.jlpt, component: JLPT },
   { path: config.routes.reading, component: Reading },
   { path: config.routes.resultDetail, component: ExamReview },

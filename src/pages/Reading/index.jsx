@@ -26,6 +26,7 @@ import { assessPronunciation } from "~/services/voiceAssessService";
 import { getFurigana } from "~/services/furiganaService";
 import { showToast } from "~/components/ToastManager";
 import GuidedCoachmark from "~/components/GuidedCoachmark";
+import KanaReference from "~/components/KanaReference";
 import styles from "./Reading.module.scss";
 
 const cx = classNames.bind(styles);
@@ -66,6 +67,7 @@ function renderFuriganaSegments(segments) {
 
 export default function Reading() {
     const location = useLocation();
+    const [topTab, setTopTab] = useState("articles");
     const [readingArticles, setReadingArticles] = useState([]);
     const [selectedArticle, setSelectedArticle] = useState(null);
     const [articleFilter, setArticleFilter] = useState("all");
@@ -599,6 +601,38 @@ export default function Reading() {
     const isLiked = selectedArticle ? likedIds.includes(selectedArticle.id) : false;
     const content = selectedArticle?.content?.replace(/\/n\/n/g, "\n\n") ?? "";
 
+    const renderTopTabs = () => (
+        <div className="mb-4 flex gap-1.5 rounded-[10px] bg-[#ddd5d7] p-1">
+            <button
+                type="button"
+                className={[
+                    "flex-1 cursor-pointer rounded-lg border-0 px-3 py-2 text-sm transition",
+                    topTab === "articles"
+                        ? "bg-white font-semibold text-text-high"
+                        : "bg-transparent font-medium text-grey",
+                ].join(" ")}
+                onClick={() => setTopTab("articles")}
+            >
+                Bài đọc
+            </button>
+            <button
+                type="button"
+                className={[
+                    "flex-1 cursor-pointer rounded-lg border-0 px-3 py-2 text-sm transition",
+                    topTab === "kana"
+                        ? "bg-white font-semibold text-text-high"
+                        : "bg-transparent font-medium text-grey",
+                ].join(" ")}
+                onClick={() => {
+                    setSelectedArticle(null);
+                    setTopTab("kana");
+                }}
+            >
+                Bảng chữ cái
+            </button>
+        </div>
+    );
+
     const renderFrame = (body) => (
         <div className={cx("wrapper")}>
             <div className={cx("inner")}>
@@ -620,6 +654,8 @@ export default function Reading() {
                         <span className={cx("panelText")}>bài đọc đã xuất bản</span>
                     </div>
                 </section>
+
+                {renderTopTabs()}
 
                 {body}
             </div>
@@ -706,6 +742,10 @@ export default function Reading() {
             </button>
         );
     };
+
+    if (topTab === "kana") {
+        return renderFrame(<KanaReference />);
+    }
 
     if (loading) {
         return renderFrame(
