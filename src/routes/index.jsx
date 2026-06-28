@@ -26,6 +26,8 @@ import KanjiLookup from "~/pages/KanjiLookup";
 import Kana from "~/pages/Kana";
 import KanaCombinations from "~/pages/KanaCombinations";
 import KanaBasics from "~/pages/KanaBasics";
+import KanaRadicals from "~/pages/KanaRadicals";
+import FullRadicals from "~/pages/FullRadicals";
 import ResetPassword from "~/pages/auth/ResetPass";
 import JLPT from "~/pages/Dictionary/JLPT";
 import Reading from "~/pages/Reading";
@@ -83,6 +85,8 @@ export const publicRouter = [
   { path: config.routes.kana, component: Kana },
   { path: config.routes.kanaCombinations, component: KanaCombinations },
   { path: config.routes.kanaBasics, component: KanaBasics },
+  { path: config.routes.kanaRadicals, component: KanaRadicals },
+  { path: config.routes.fullRadicals, component: FullRadicals },
   { path: config.routes.jlpt, component: JLPT },
   { path: config.routes.reading, component: Reading },
   { path: config.routes.resultDetail, component: ExamReview },

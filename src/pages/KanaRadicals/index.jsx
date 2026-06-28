@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import KanaStepper from "~/components/KanaStepper";
-import { getKanaBasics } from "~/services/kanaService";
+import { getKanaRadicals } from "~/services/kanaService";
 
-const STORAGE_KEY = "kana_basics_progress";
+const STORAGE_KEY = "kana_radicals_progress";
 
 const wrapperCls =
   "min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(0,135,154,0.10),transparent_28%),linear-gradient(180deg,#f6fbfb_0%,#eef6f7_100%)] px-5 pb-10 pt-5";
@@ -18,7 +18,7 @@ const sectionPanelCls =
 const sectionHeadCls =
   "mb-2 flex items-baseline justify-between border-b border-[#eef3f4] pb-2";
 
-const phraseRowBaseCls =
+const radicalRowBaseCls =
   "group flex items-center gap-3 rounded-md border px-3 py-2.5 transition-colors";
 
 function loadProgress() {
@@ -53,33 +53,38 @@ function speak(text) {
   }
 }
 
-function PhraseRow({ item, learned, onToggle }) {
+function RadicalRow({ item, learned, onToggle }) {
   return (
     <div
       className={[
-        phraseRowBaseCls,
+        radicalRowBaseCls,
         learned
           ? "border-orange/40 bg-[#fff7ef]"
           : "border-[#eef3f4] bg-white hover:border-primary hover:bg-primary-low/30",
       ].join(" ")}
     >
+      <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#f0f7f8] text-[26px] font-bold text-text-high">
+        {item.radical}
+      </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <span className="truncate text-[19px] font-semibold leading-tight text-text-high">
-            {item.japanese}
+          <span className="text-[15px] font-semibold leading-tight text-text-high">
+            {item.meaning}
           </span>
           <span className="shrink-0 text-[11px] lowercase text-orange">
-            {item.romaji}
+            {item.reading}
           </span>
         </div>
-        <div className="truncate text-[12px] text-grey-low">{item.meaning}</div>
+        <div className="text-[11px] text-grey-low">
+          {item.strokeCount} nét
+        </div>
       </div>
       <button
         type="button"
         title="Phát âm"
         aria-label="Phát âm"
         className="shrink-0 rounded border-0 bg-primary px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-hover"
-        onClick={() => speak(item.japanese)}
+        onClick={() => speak(item.reading)}
       >
         🔊
       </button>
@@ -125,7 +130,7 @@ function SectionPanel({ section, learnedKeys, onToggle }) {
         {section.items.map((item, index) => {
           const key = `${section.sectionKey}:${index}`;
           return (
-            <PhraseRow
+            <RadicalRow
               key={key}
               item={item}
               learned={learnedKeys.includes(key)}
@@ -138,7 +143,7 @@ function SectionPanel({ section, learnedKeys, onToggle }) {
   );
 }
 
-function KanaBasics() {
+function KanaRadicals() {
   const [sections, setSections] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -148,10 +153,10 @@ function KanaBasics() {
     setLoading(true);
     setError("");
     try {
-      const data = await getKanaBasics();
+      const data = await getKanaRadicals();
       setSections(data || []);
     } catch (err) {
-      setError(err?.message || "Không tải được dữ liệu câu cơ bản.");
+      setError(err?.message || "Không tải được dữ liệu bộ thủ.");
     } finally {
       setLoading(false);
     }
@@ -205,22 +210,22 @@ function KanaBasics() {
       <div className={shellCls}>
         <div className={toolbarCls}>
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1">
-            <KanaStepper active="basics" />
+            <KanaStepper active="radicals" />
             <div className="hidden h-5 w-px bg-[#d6e4e7] md:block" />
             <div className="min-w-0">
               <h1 className="text-lg font-bold text-text-high">
-                Chào hỏi, số đếm &amp; giao tiếp
+                80 bộ thủ cơ bản
               </h1>
               <p className="text-xs text-grey-low">
-                Bước 3 trước khi sang học bộ thủ.
+                Nền tảng để nhận diện và ghi nhớ kanji.
               </p>
             </div>
           </div>
           <Link
-            to="/kana/radicals"
+            to="/onboarding"
             className="cursor-pointer rounded-md border-0 bg-orange px-3.5 py-2 text-[13px] font-semibold text-white no-underline hover:bg-[#e85500]"
           >
-            Sang bước Bộ thủ →
+            Tới lộ trình N5 →
           </Link>
         </div>
 
@@ -236,4 +241,4 @@ function KanaBasics() {
   );
 }
 
-export default KanaBasics;
+export default KanaRadicals;

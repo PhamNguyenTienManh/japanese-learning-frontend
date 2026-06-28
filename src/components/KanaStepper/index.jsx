@@ -4,6 +4,7 @@ const STEPS = [
   { key: "alphabet", label: "Bảng chữ cái", to: "/kana" },
   { key: "combinations", label: "Cách ghép âm", to: "/kana/combinations" },
   { key: "basics", label: "Câu cơ bản", to: "/kana/basics" },
+  { key: "radicals", label: "Bộ thủ", to: "/kana/radicals" },
 ];
 
 function KanaStepper({ active }) {
