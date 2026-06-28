@@ -32,6 +32,10 @@ export async function getKanaBasics() {
   return request("/kana/basics");
 }
 
-const kanaService = { getKanaGroups, getKanaCombinations, getKanaBasics };
+export async function getKanaRadicals() {
+  return request("/kana/radicals");
+}
+
+const kanaService = { getKanaGroups, getKanaCombinations, getKanaBasics, getKanaRadicals };
 
 export default kanaService;

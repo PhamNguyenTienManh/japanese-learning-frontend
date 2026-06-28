@@ -31,6 +31,8 @@ const routes = {
   kana: "/kana",
   kanaCombinations: "/kana/combinations",
   kanaBasics: "/kana/basics",
+  kanaRadicals: "/kana/radicals",
+  fullRadicals: "/radicals",
   jlpt: "/jlpt",
   reading: "/reading",
   jlptFlashcard: "jlpt/flashcards",
