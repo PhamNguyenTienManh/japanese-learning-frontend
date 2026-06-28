@@ -59,7 +59,7 @@ export default function Checkout() {
   const plan = searchParams.get("plan") || "Pro";
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const { isPremium, premiumExpiredDate } = useAuth();
+  const { email, isPremium, premiumExpiredDate } = useAuth();
 
   const [method, setMethod] = useState("zalopay");
   const [loading, setLoading] = useState(false);
@@ -225,7 +225,7 @@ export default function Checkout() {
           <div className={styles.sectionCard} style={{ marginTop: 20 }}>
             <h2 className={styles.sectionTitle}>Hoá đơn điện tử</h2>
             <p className={styles.sectionSub}>Chúng tôi sẽ gửi xác nhận và hoá đơn về email này.</p>
-            <input className={styles.input} defaultValue="nguyenvana@email.com" disabled={alreadyPremium} style={{ width: '100%' }} />
+            <input className={styles.input} defaultValue={email || ""} disabled={alreadyPremium} style={{ width: '100%' }} />
           </div>
         </div>
 

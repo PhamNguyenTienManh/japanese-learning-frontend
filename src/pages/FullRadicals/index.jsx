@@ -114,8 +114,7 @@ function FullRadicals() {
                 Bảng 214 Bộ Thủ Kanji
               </h1>
               <p className="text-xs text-grey-low">
-                Danh sách đầy đủ 214 bộ thủ Khang Hy dùng trong tiếng Nhật và Hán tự.
-              </p>
+                Danh sách đầy đủ 214 bộ thủ            </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
