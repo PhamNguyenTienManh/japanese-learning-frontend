@@ -11,9 +11,12 @@ import {
   faClock,
   faBookOpen,
   faBullseye,
+  faLock,
 } from "@fortawesome/free-solid-svg-icons";
+import { useAuth } from "~/context/AuthContext";
 
 import { getExamCountByLevel } from "~/services/examService";
+const FREE_LEVELS = ["N5", "N4"];
 
 const cx = classNames.bind(styles);
 
@@ -88,6 +91,7 @@ const LEVEL_META = [
 ];
 
 export default function Practice() {
+  const { isPremium } = useAuth();
   const [levels, setLevels] = useState(() =>
     LEVEL_META.map((level) => ({ ...level, totalTests: 0 })),
   );
@@ -147,15 +151,20 @@ export default function Practice() {
                 chấm điểm ngay sau khi nộp và có trang kết quả để xem lại.
               </p>
               <div className={cx("quick-levels")} aria-label="Chọn nhanh cấp độ JLPT">
-                {levels.map((lvl) => (
-                  <Link
-                    key={lvl.level}
-                    className={cx("quick-chip", lvl.colorClass)}
-                    to={`/practice/${lvl.level.toLowerCase()}`}
-                  >
-                    {lvl.level}
-                  </Link>
-                ))}
+                {levels.map((lvl) => {
+                  const isLocked = !isPremium && !FREE_LEVELS.includes(lvl.level);
+                  
+                  return (
+                    <Link
+                      key={lvl.level}
+                      className={cx("quick-chip", lvl.colorClass, { locked: isLocked })}
+                      to={isLocked ? "/payment?plan=Pro" : `/practice/${lvl.level.toLowerCase()}`}
+                    >
+                      {lvl.level}
+                      {isLocked && <FontAwesomeIcon icon={faLock} style={{ marginLeft: 6, fontSize: 12 }} />}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 
@@ -216,20 +225,33 @@ export default function Practice() {
           animate={levels.length > 0 ? "show" : "hidden"}
           variants={stagger}
         >
-          {levels.map((lvl) => (
-            <motion.div
-              key={lvl.level}
-              className={cx("level-wrap", lvl.colorClass)}
-              variants={fadeUp}
-              whileHover={{ y: -4 }}
-              transition={{ type: "spring", stiffness: 320, damping: 22 }}
-            >
-              <LevelCard
-                level={lvl}
-                startTo={`/practice/${lvl.level.toLowerCase()}`}
-              />
-            </motion.div>
-          ))}
+          {levels.map((lvl) => {
+            const isLocked = !isPremium && !FREE_LEVELS.includes(lvl.level);
+
+            return (
+              <motion.div
+                key={lvl.level}
+                className={cx("level-wrap", lvl.colorClass, { locked: isLocked })}
+                variants={fadeUp}
+                whileHover={!isLocked ? { y: -4 } : {}}
+                transition={{ type: "spring", stiffness: 320, damping: 22 }}
+              >
+                {isLocked ? (
+                  <Link to="/payment?plan=Pro" className={cx("locked-card")}>
+                    <div className={cx("locked-glyph")}>{lvl.level}</div>
+                    <FontAwesomeIcon icon={faLock} className={cx("locked-icon")} />
+                    <span className={cx("locked-label")}>Dành cho gói Pro</span>
+                    <span className={cx("locked-hint")}>Nâng cấp để mở khoá</span>
+                  </Link>
+                ) : (
+                  <LevelCard
+                    level={lvl}
+                    startTo={`/practice/${lvl.level.toLowerCase()}`}
+                  />
+                )}
+              </motion.div>
+            );
+          })}
         </motion.div>
       </div>
     </div>

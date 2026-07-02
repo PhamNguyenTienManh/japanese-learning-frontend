@@ -298,3 +298,66 @@ $line: #d7e3e4;
     flex-direction: column;
   }
 }
+
+/* ── Locked level card ── */
+.level-wrap.locked {
+  pointer-events: none;
+  opacity: 1;
+}
+
+.locked-card {
+  position: relative;
+  height: 100%;
+  padding: 32px 22px;
+  border: 2px dashed #d0d8da;
+  border-radius: 22px;
+  background: #f4f7f7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s;
+
+  &:hover {
+    border-color: var(--primary);
+    background: rgba(0, 135, 154, 0.04);
+  }
+}
+
+.locked-glyph {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: #a0b0b2;
+  background: #e8eef0;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.locked-icon {
+  font-size: 18px;
+  color: #a0b0b2;
+}
+
+.locked-label {
+  font-size: 15px;
+  font-weight: 800;
+  color: #607578;
+}
+
+.locked-hint {
+  font-size: 12px;
+  color: #8fa0a2;
+  font-weight: 600;
+}
+
+.quick-chip.locked {
+  opacity: 0.55;
+  pointer-events: auto;
+}

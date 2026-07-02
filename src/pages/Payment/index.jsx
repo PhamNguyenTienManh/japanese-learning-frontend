@@ -3,29 +3,12 @@ import Button from "~/components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCreditCard, faCheck, faShield, faLock,
-  faArrowLeft, faGem, faRobot, faGraduationCap,
-  faChartLine, faComments, faHeadset, faBookOpen,
+  faArrowLeft, faGem,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "~/context/AuthContext";
 import { formatPremiumExpiry } from "~/utils/premium";
+import { FREE_FEATURES, PRO_FEATURES } from "~/constants/planFeatures";
 import styles from "./Payment.module.scss";
-
-const FREE_FEATURES = [
-  { icon: faBookOpen, label: "Từ điển tiếng Nhật cơ bản" },
-  { icon: faRobot, label: "AI Chat giới hạn" },
-  { icon: faGraduationCap, label: "Đề thi JLPT N5 - N4" },
-  { icon: faComments, label: "Tham gia cộng đồng" },
-  { icon: faCheck, label: "Sổ tay từ vựng" },
-];
-
-const PRO_FEATURES = [
-  { icon: faRobot, label: "AI Chat không giới hạn" },
-  { icon: faGraduationCap, label: "Đề thi JLPT N5 - N1 đầy đủ" },
-  { icon: faChartLine, label: "Phân tích chi tiết tiến độ" },
-  { icon: faComments, label: "Luyện hội thoại không giới hạn" },
-  { icon: faHeadset, label: "Ưu tiên hỗ trợ 24/7" },
-  { icon: faBookOpen, label: "Tất cả tính năng Miễn phí" },
-];
 
 function Payment() {
   const [searchParams] = useSearchParams();

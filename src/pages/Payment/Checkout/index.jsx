@@ -13,6 +13,7 @@ import {
 } from "~/services/paymentService";
 import { useAuth } from "~/context/AuthContext";
 import { formatPremiumExpiry } from "~/utils/premium";
+import { PRO_FEATURES, MONTHLY_PRICE, YEARLY_PRICE } from "~/constants/planFeatures";
 
 /* ── Brand logo badges ─────────────────────────────────────── */
 const BrandVisa = () => (
@@ -40,16 +41,7 @@ const METHODS = [
   { id: "zalopay", label: "ZaloPay", sub: "Quét QR hoặc thanh toán qua ví ZaloPay", logos: [BrandZaloPay] },
 ];
 
-const PLAN_FEATURES = [
-  "AI Chat không giới hạn",
-  "Đề thi JLPT N5 → N1",
-  "Phân tích chi tiết",
-  "Luyện hội thoại",
-  "Ưu tiên hỗ trợ",
-];
-
-const MONTHLY_PRICE = 249000;
-const YEARLY_PRICE = 2390000; // ~20% off
+const PLAN_FEATURES = PRO_FEATURES;
 
 const formatVND = (amount) =>
   `${new Intl.NumberFormat("vi-VN").format(amount)} ₫`;
@@ -272,11 +264,11 @@ export default function Checkout() {
               {/* Features */}
               <div className={styles.featureList}>
                 {PLAN_FEATURES.map((f) => (
-                  <div key={f} className={styles.featureItem}>
+                  <div key={f.label} className={styles.featureItem}>
                     <span className={styles.featureCheck}>
                       <FontAwesomeIcon icon={faCheck} style={{ fontSize: 9 }} />
                     </span>
-                    {f}
+                    {f.label}
                   </div>
                 ))}
               </div>
