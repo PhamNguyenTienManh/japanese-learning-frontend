@@ -102,6 +102,18 @@ const postService = {
     }
   },
 
+  getActiveMembers: async (limit = 5) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/profiles/active-members`, {
+        params: { limit }
+      });
+      return response.data?.data || response.data || [];
+    } catch (error) {
+      console.error('Error fetching active members:', error);
+      throw error;
+    }
+  },
+
   getCategories: async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/post-categories`);
@@ -111,8 +123,6 @@ const postService = {
       throw error;
     }
   },
-
-
 
   getComments: async (postId) => {
     try {

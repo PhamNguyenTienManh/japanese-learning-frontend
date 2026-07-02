@@ -23,8 +23,9 @@ import { useToast } from "~/context/ToastContext";
 
 const cx = classNames.bind(styles);
 
-function PostDetail() {
-  const { id } = useParams();
+function PostDetail({ postIdProp, isModal, onClose }) {
+  const { id: paramId } = useParams();
+  const id = postIdProp || paramId;
   const navigate = useNavigate();
   const location = useLocation();
   const { addToast } = useToast();
@@ -467,13 +468,15 @@ function PostDetail() {
   }
 
   return (
-    <div className={cx("wrapper")}>
-      <main className={cx("main")}>
+    <div className={cx(isModal ? "modal-wrapper" : "wrapper")}>
+      <main className={cx(isModal ? "modal-main" : "main")}>
         <div className={cx("container")}>
-          <button type="button" onClick={handleBack} className={cx("back-link")}>
-            <FontAwesomeIcon icon={faArrowLeft} className={cx("back-icon")} />
-            <span>{backLabel}</span>
-          </button>
+          {!isModal && (
+            <button type="button" onClick={handleBack} className={cx("back-link")}>
+              <FontAwesomeIcon icon={faArrowLeft} className={cx("back-icon")} />
+              <span>{backLabel}</span>
+            </button>
+          )}
 
           {post?.status === 0 && (isAdminContext || isOwner) && (
             <div className={cx("admin-deleted-notice")}>

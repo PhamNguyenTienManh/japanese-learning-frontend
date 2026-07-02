@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHeart as faHeartSolid,
-  faMessage,
-  faShareNodes,
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
 import formatDateVN from "~/services/formatDate";
@@ -12,9 +10,9 @@ import { useAuth } from "~/context/AuthContext";
 import { useToast } from "~/context/ToastContext";
 import postService from "~/services/postService";
 import PostActionsMenu from "~/components/PostActionsMenu/PostActionsMenu";
-import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
+import { getAvatarUrl, getInitials, getAvatarGradient } from "~/utils/avatar";
 
-function PostCard({ post, commentCount }) {
+function PostCard({ post, commentCount, onCommentClick }) {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { isLoggedIn, userId: currentUserId } = useAuth();
@@ -101,26 +99,48 @@ function PostCard({ post, commentCount }) {
   };
 
   return (
-    <article className="relative overflow-hidden rounded-[18px] border border-slate-200 bg-white px-6 py-[22px] text-inherit shadow-[0_6px_18px_rgba(15,23,42,0.08)] transition hover:border-primary/35 hover:shadow-[0_12px_28px_rgba(15,23,42,0.11)] max-[640px]:rounded-2xl max-[640px]:px-[18px] max-[640px]:py-[18px]">
-      <div className="flex items-start gap-3">
-        <img
-          src={avatarUrl}
-          alt={authorName}
-          className="h-11 w-11 shrink-0 rounded-full border-2 border-white object-cover shadow-[0_2px_6px_rgba(0,0,0,0.08)]"
-          onError={handleAvatarError}
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-text-high">{authorName}</span>
-            {categoryName && (
-              <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                {categoryName}
-              </span>
-            )}
-          </div>
-          <div className="mt-0.5 text-xs text-grey">
-            {formatDateVN(post.created_at) || "Vừa xong"}
-            {post.edited_at && <span className="ml-1.5">· Đã sửa</span>}
+    <article className="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/30 hover:border-outline-variant/60 transition-colors">
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex items-center gap-3">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={authorName}
+              data-name={authorName}
+              className="w-10 h-10 rounded-full object-cover border border-outline-variant/20"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (target.dataset.fallbacked) return;
+                target.dataset.fallbacked = "true";
+                const parent = target.parentNode;
+                const span = document.createElement("span");
+                span.className = "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0 border border-outline-variant/20";
+                span.style.background = getAvatarGradient(authorName);
+                span.textContent = getInitials(authorName);
+                parent.replaceChild(span, target);
+              }}
+            />
+          ) : (
+            <span
+              className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0 border border-outline-variant/20"
+              style={{ background: getAvatarGradient(authorName) }}
+            >
+              {getInitials(authorName)}
+            </span>
+          )}
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-on-surface">{authorName}</h3>
+              {categoryName && (
+                <span className="bg-tertiary-container/10 text-tertiary text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  {categoryName}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-on-surface-variant mt-0.5">
+              {formatDateVN(post.created_at) || "Vừa xong"}
+              {post.edited_at && <span className="ml-1.5">· Đã sửa</span>}
+            </p>
           </div>
         </div>
         <PostActionsMenu
@@ -133,19 +153,16 @@ function PostCard({ post, commentCount }) {
         />
       </div>
 
-      <div className="mt-4">
-        <h3 className="m-0 text-[20px] font-bold leading-[1.35] text-text-high max-[640px]:text-[18px]">
-          {post.title}
-        </h3>
-        {content && (
-          <p className="m-0 mt-3 whitespace-pre-line break-words text-[15px] leading-7 text-grey-low">
-            {content}
-          </p>
-        )}
-      </div>
+      <h2 className="text-[20px] font-bold leading-snug text-on-surface mb-3">{post.title}</h2>
+
+      {content && (
+        <div className="text-base leading-6 text-on-surface-variant mb-5 space-y-3">
+          <p className="whitespace-pre-line break-words">{content}</p>
+        </div>
+      )}
 
       {hasImage && (
-        <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-[var(--card)]">
+        <div className="mt-4 mb-4 overflow-hidden rounded-xl">
           <img
             className="block max-h-[520px] w-full object-contain"
             src={post.image_url}
@@ -154,56 +171,31 @@ function PostCard({ post, commentCount }) {
         </div>
       )}
 
-      <div className="mt-4 flex items-center justify-between gap-3 border-b border-border pb-3 text-[13px] text-grey max-[480px]:flex-col max-[480px]:items-start">
-        <div className="flex items-center gap-[18px]">
-          <span
-            className={[
-              "inline-flex items-center gap-1.5",
-              isLiked ? "text-[#e11d63]" : "text-grey",
-            ].join(" ")}
+      <div className="flex items-center justify-between pt-4 border-t border-surface-container-high">
+        <div className="flex items-center gap-6">
+          <button
+            className={`flex items-center gap-1.5 text-sm font-semibold transition-colors bg-transparent border-none cursor-pointer ${isLiked ? "text-[#e11d63]" : "text-on-surface-variant hover:text-primary"}`}
+            onClick={handleLike}
+            disabled={liking}
           >
-            <FontAwesomeIcon icon={isLiked ? faHeartSolid : faHeartRegular} />
-            {likeCount}
-          </span>
-          <Link
-            to={`/community/${postId}`}
-            className="inline-flex items-center gap-1.5 text-grey no-underline transition hover:text-primary"
+            <FontAwesomeIcon icon={isLiked ? faHeartSolid : faHeartRegular} className="text-[20px]" />
+            <span>{likeCount}</span>
+          </button>
+          <button
+            type="button"
+            className="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors text-sm font-semibold bg-transparent border-none cursor-pointer"
+            onClick={() => (onCommentClick ? onCommentClick(postId) : navigate(`/community/${postId}`))}
           >
-            {displayCommentCount} bình luận
-          </Link>
+            <span className="material-symbols-outlined text-[20px]">chat_bubble_outline</span>
+            <span>{displayCommentCount} bình luận</span>
+          </button>
         </div>
-        {post.view_count != null && <span>{post.view_count || 0} lượt xem</span>}
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 pt-2">
         <button
-          type="button"
-          className={[
-            "inline-flex h-10 items-center justify-center gap-2 rounded-xl border-none bg-transparent text-sm font-semibold transition hover:bg-primary/10",
-            isLiked ? "text-[#e11d63]" : "text-grey-low hover:text-primary",
-            liking ? "cursor-wait opacity-70" : "cursor-pointer",
-          ].join(" ")}
-          onClick={handleLike}
-          disabled={liking}
-        >
-          <FontAwesomeIcon icon={isLiked ? faHeartSolid : faHeartRegular} />
-          <span>{isLiked ? "Đã thích" : "Thích"}</span>
-        </button>
-        <button
-          type="button"
-          className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border-none bg-transparent text-sm font-semibold text-grey-low transition hover:bg-primary/10 hover:text-primary"
-          onClick={() => navigate(`/community/${postId}`)}
-        >
-          <FontAwesomeIcon icon={faMessage} />
-          <span>Bình luận</span>
-        </button>
-        <button
-          type="button"
-          className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border-none bg-transparent text-sm font-semibold text-grey-low transition hover:bg-primary/10 hover:text-primary"
+          className="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors text-sm font-semibold bg-transparent border-none cursor-pointer"
           onClick={handleShare}
         >
-          <FontAwesomeIcon icon={faShareNodes} />
-          <span>Chia sẻ</span>
+          <span className="material-symbols-outlined text-[20px]">share</span>
+          <span className="hidden sm:inline">Chia sẻ</span>
         </button>
       </div>
     </article>

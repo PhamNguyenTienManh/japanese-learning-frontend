@@ -1,6 +1,3 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faXmark } from "@fortawesome/free-solid-svg-icons";
-
 function CommunitySearch({ searchQuery, onChange, onSearch }) {
   const handleKeyPress = (e) => {
     if (e.key === "Enter") onSearch();
@@ -11,15 +8,12 @@ function CommunitySearch({ searchQuery, onChange, onSearch }) {
   };
 
   return (
-    <div
-      className="relative flex items-center gap-2 rounded-full border border-border bg-white py-2 pl-[18px] pr-2 shadow-[0_4px_14px_rgba(15,23,42,0.04)] transition focus-within:border-primary focus-within:shadow-[0_0_0_4px_rgba(0,135,154,0.12)] max-[520px]:pl-3.5"
-      id="feed"
-    >
-      <FontAwesomeIcon icon={faSearch} className="shrink-0 text-base text-grey" />
+    <div className="relative w-full">
+      <span className="material-symbols-outlined text-outline absolute left-3 top-1/2 -translate-y-1/2">search</span>
       <input
-        type="text"
-        className="min-w-0 flex-1 border-0 bg-transparent px-1 py-2.5 text-[15px] text-text-high outline-none placeholder:text-grey"
+        className="w-full pl-10 pr-4 py-2 bg-surface-container hover:bg-surface-container-high focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary focus:outline-none border border-transparent focus:border-primary rounded-lg text-base text-on-surface transition-all"
         placeholder="Tìm bài viết, chủ đề, từ vựng..."
+        type="text"
         value={searchQuery}
         onChange={onChange}
         onKeyPress={handleKeyPress}
@@ -27,20 +21,13 @@ function CommunitySearch({ searchQuery, onChange, onSearch }) {
       {searchQuery && (
         <button
           type="button"
-          className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-black/[0.04] text-grey transition hover:bg-black/[0.08] hover:text-text-high"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface p-1 rounded-full transition-colors"
           onClick={handleClear}
           aria-label="Xoá tìm kiếm"
         >
-          <FontAwesomeIcon icon={faXmark} />
+          <span className="material-symbols-outlined text-xl">close</span>
         </button>
       )}
-      <button
-        type="button"
-        className="shrink-0 cursor-pointer rounded-full border-0 bg-[linear-gradient(135deg,var(--primary)_0%,var(--primary-hover)_100%)] px-[22px] py-2.5 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(0,135,154,0.25)] transition hover:-translate-y-px hover:brightness-105 hover:shadow-[0_6px_16px_rgba(0,135,154,0.35)] max-[520px]:px-3.5 max-[520px]:text-[13px]"
-        onClick={onSearch}
-      >
-        Tìm kiếm
-      </button>
     </div>
   );
 }

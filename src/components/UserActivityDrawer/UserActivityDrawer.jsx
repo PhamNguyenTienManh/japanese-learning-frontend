@@ -11,7 +11,7 @@ import {
   Timer,
   X,
 } from "lucide-react";
-import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
+import { getAvatarUrl, getInitials, getAvatarGradient } from "~/utils/avatar";
 
 const ACTIVITY_META = {
   study_time_added: {
@@ -128,12 +128,36 @@ function UserActivityDrawer({
         <header className="border-b border-slate-200 px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
-              <img
-                src={getAvatarUrl(user?.profile?.image_url)}
-                alt={getUserName(user)}
-                className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
-                onError={handleAvatarError}
-              />
+              {(() => {
+                const userName = getUserName(user);
+                const avatarUrl = getAvatarUrl(user?.profile?.image_url);
+                return avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={userName}
+                    data-name={userName}
+                    className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (target.dataset.fallbacked) return;
+                      target.dataset.fallbacked = "true";
+                      const parent = target.parentNode;
+                      const span = document.createElement("span");
+                      span.className = "h-12 w-12 shrink-0 rounded-full flex items-center justify-center font-bold text-sm text-white ring-1 ring-slate-200";
+                      span.style.background = getAvatarGradient(userName);
+                      span.textContent = getInitials(userName);
+                      parent.replaceChild(span, target);
+                    }}
+                  />
+                ) : (
+                  <span
+                    className="h-12 w-12 shrink-0 rounded-full flex items-center justify-center font-bold text-sm text-white ring-1 ring-slate-200"
+                    style={{ background: getAvatarGradient(userName) }}
+                  >
+                    {getInitials(userName)}
+                  </span>
+                );
+              })()}
               <div className="min-w-0">
                 <h2 className="m-0 truncate text-lg font-bold text-slate-950">
                   Lịch sử hoạt động
