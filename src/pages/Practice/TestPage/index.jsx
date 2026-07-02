@@ -19,6 +19,8 @@ import Button from "~/components/Button";
 
 import { checkExamResult, checkExamStatus, getExamsByLevel } from "~/services/examService";
 import { getLearningPathDashboard } from "~/services/learningPathService";
+import { useAuth } from "~/context/AuthContext";
+import PremiumGate from "~/components/PremiumGate";
 
 const cx = classNames.bind(styles);
 
@@ -129,6 +131,7 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
   const location = useLocation();
   const upperLevel = (levelInfo.level || level || "n5").toUpperCase();
   const lowerLevel = upperLevel.toLowerCase();
+  const { isPremium } = useAuth();
   const [tests, setTests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [weeklyHighestExamScore, setWeeklyHighestExamScore] = useState(null);
@@ -141,6 +144,11 @@ export default function TestPage({ levelInfo = {}, basePath = "/practice" }) {
 
   useEffect(() => {
     async function fetchTests() {
+      if (!isPremium && ["N3", "N2", "N1"].includes(upperLevel)) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
         const res = await getExamsByLevel(upperLevel);

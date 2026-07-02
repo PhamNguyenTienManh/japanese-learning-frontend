@@ -4,37 +4,11 @@ import Button from "~/components/Button";
 import Card from "~/components/Card";
 import { useAuth } from "~/context/AuthContext";
 import { formatPremiumExpiry } from "~/utils/premium";
+import { PLANS } from "~/constants/planFeatures";
 
 const cx = classNames.bind(styles);
 
-const plans = [
-  {
-    name: "Miễn phí",
-    price: "0 ₫/tháng",
-    desc: "Hoàn hảo để bắt đầu",
-    features: [
-      "Từ điển cơ bản",
-      "AI Chat giới hạn",
-      "Đề thi JLPT N5-N4",
-      "Cộng đồng",
-      "Sổ tay từ vựng",
-    ],
-  },
-  {
-    name: "Pro",
-    price: "249.000 ₫/tháng",
-    desc: "Tối ưu cho học viên nghiêm túc",
-    features: [
-      "Tất cả tính năng Miễn phí",
-      "50 lượt chat với AI JAVI mỗi ngày",
-      "Đề thi JLPT N5-N1",
-      "Phân tích chi tiết",
-      "Luyện hội thoại",
-      "Ưu tiên hỗ trợ",
-    ],
-    highlight: true,
-  },
-];
+const plans = PLANS;
 
 function Pricing() {
   const { isPremium, premiumExpiredDate } = useAuth();
@@ -92,7 +66,7 @@ function Pricing() {
               <div className={cx("plan-features")}>
                 {plan.features.map((feat, i) => (
                   <div key={i} className={cx("feature-item")}>
-                    <span>✔</span> {feat}
+                    <span>✔</span> {feat.label}
                   </div>
                 ))}
               </div>

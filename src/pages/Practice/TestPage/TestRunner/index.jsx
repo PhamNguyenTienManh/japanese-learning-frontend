@@ -22,6 +22,8 @@ import {
   saveProgress,
 } from "~/services/examService";
 import PopupModal from "~/components/Popup";
+import { useAuth } from "~/context/AuthContext";
+import PremiumGate from "~/components/PremiumGate";
 
 const cx = classNames.bind(styles);
 
@@ -141,6 +143,7 @@ function TestRunner() {
   const navigate = useNavigate();
   const upperLevel = level?.toUpperCase();
   const lowerLevel = level?.toLowerCase();
+  const { isPremium } = useAuth();
 
   const [examData, setExamData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -160,6 +163,11 @@ function TestRunner() {
   const [showConfirmSave, setShowConfirmSave] = useState(false);
 
   useEffect(() => {
+    if (!isPremium && ["N3", "N2", "N1"].includes(upperLevel)) {
+      setLoading(false);
+      return;
+    }
+
     const handleBeforeUnload = (e) => {
       e.preventDefault();
       e.returnValue = "";
@@ -515,6 +523,15 @@ function TestRunner() {
       );
     }, 0);
   };
+
+  if (!isPremium && ["N3", "N2", "N1"].includes(upperLevel)) {
+    return (
+      <PremiumGate
+        title={`Thi thử ${upperLevel} dành cho gói Pro`}
+        description={`Nâng cấp gói Pro để làm bài thi cấp độ ${upperLevel} và xem phân tích kết quả chi tiết.`}
+      />
+    );
+  }
 
   if (loading || (examResultId && !progressRestored)) {
     return (

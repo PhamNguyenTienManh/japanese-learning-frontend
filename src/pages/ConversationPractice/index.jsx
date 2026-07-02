@@ -18,6 +18,9 @@ import {
   getConversationLesson,
 } from "~/services/conversationService";
 import GuidedCoachmark from "~/components/GuidedCoachmark";
+import { useAuth } from "~/context/AuthContext";
+import PremiumGate from "~/components/PremiumGate";
+
 import VocabGrammarStudy from "./VocabGrammarStudy";
 import ConversationChat from "./ConversationChat";
 import styles from "./ConversationPractice.module.scss";
@@ -115,6 +118,8 @@ function ConversationPractice() {
     [location.search],
   );
 
+  const { isPremium } = useAuth();
+
   const dialogueLines = selectedLesson?.lines || [];
   const conversationTourLesson = useMemo(() => {
     const firstGroupWithLessons = conversationGroups.find(
@@ -152,6 +157,8 @@ function ConversationPractice() {
       recognitionRef.current?.abort();
     };
   }, []);
+
+
 
   useEffect(() => {
     let active = true;
@@ -305,6 +312,15 @@ function ConversationPractice() {
     setListeningLineIndex(index);
     recognition.start();
   };
+
+  if (!isPremium) {
+    return (
+      <PremiumGate
+        title="Luyện hội thoại dành cho gói Pro"
+        description="Nâng cấp gói Pro để luyện hội thoại tiếng Nhật với AI, cải thiện phát âm và phản xạ giao tiếp."
+      />
+    );
+  }
 
   if (selectedLesson) {
     const selectedLevelClass = (selectedLesson.level || "").toLowerCase();
