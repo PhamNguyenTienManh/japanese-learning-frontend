@@ -602,27 +602,17 @@ export default function Reading() {
     const content = selectedArticle?.content?.replace(/\/n\/n/g, "\n\n") ?? "";
 
     const renderTopTabs = () => (
-        <div className="mb-4 flex gap-1.5 rounded-[10px] bg-[#ddd5d7] p-1">
+        <div className={cx("topTabs")}>
             <button
                 type="button"
-                className={[
-                    "flex-1 cursor-pointer rounded-lg border-0 px-3 py-2 text-sm transition",
-                    topTab === "articles"
-                        ? "bg-white font-semibold text-text-high"
-                        : "bg-transparent font-medium text-grey",
-                ].join(" ")}
+                className={cx("topTab", { active: topTab === "articles" })}
                 onClick={() => setTopTab("articles")}
             >
                 Bài đọc
             </button>
             <button
                 type="button"
-                className={[
-                    "flex-1 cursor-pointer rounded-lg border-0 px-3 py-2 text-sm transition",
-                    topTab === "kana"
-                        ? "bg-white font-semibold text-text-high"
-                        : "bg-transparent font-medium text-grey",
-                ].join(" ")}
+                className={cx("topTab", { active: topTab === "kana" })}
                 onClick={() => {
                     setSelectedArticle(null);
                     setTopTab("kana");
