@@ -71,7 +71,7 @@ export const publicRouter = [
   { path: config.routes.test, component: TestRunner },
   { path: config.routes.results, component: Results },
   { path: config.routes.chatAI, component: ChatAI },
-  { path: config.routes.community, component: Community },
+  { path: config.routes.community, component: Community, layout: null },
   { path: config.routes.postDetail, component: PostDetail },
   { path: config.routes.newPost, component: NewPost },
   { path: config.routes.dashboard, component: Dashboard },

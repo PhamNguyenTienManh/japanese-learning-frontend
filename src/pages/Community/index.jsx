@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
-import Tabs, { TabsList, TabsTrigger, TabsContent } from "~/components/Tabs";
 
 import postService from "~/services/postService";
 import CommunityHeader from "~/components/CommunityHeader";
-import CommunitySearch from "~/components/CommunitySearch";
+import CommunityLeftSidebar from "~/components/CommunityLeftSidebar";
 import CommunitySidebar from "~/components/CommunitySidebar/CommunitySidebar";
 import PostList from "~/components/PostList/PostList";
+import Header from "~/layouts/components/Header";
 import { useAuth } from "~/context/AuthContext";
+import PostDetail from "./PostDetail";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faXmark } from "@fortawesome/free-solid-svg-icons";
 
 function Community() {
   const [posts, setPosts] = useState([]);
@@ -15,9 +18,10 @@ function Community() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("popular");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [activePostId, setActivePostId] = useState(null);
 
   const { userId: currentUserId } = useAuth();
 
@@ -67,12 +71,13 @@ function Community() {
     } catch (err) {
       console.error("Error fetching categories:", err);
       setCategories([
-        { name: "Tất cả", count: 234 },
-        { name: "Ngữ pháp", count: 89 },
-        { name: "Từ vựng", count: 67 },
-        { name: "Kanji", count: 45 },
-        { name: "Tài liệu", count: 23 },
-        { name: "Kinh nghiệm", count: 10 },
+        { name: "Tất cả", count: 13 },
+        { name: "Công việc", count: 2 },
+        { name: "Học tập", count: 4 },
+        { name: "Hỏi đáp", count: 1 },
+        { name: "Khác", count: 5 },
+        { name: "Ngữ pháp", count: 0 },
+        { name: "Từ vựng", count: 1 },
       ]);
     }
   };
@@ -82,17 +87,28 @@ function Community() {
     fetchCategories();
   }, [currentUserId]);
 
+  useEffect(() => {
+    if (activePostId) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [activePostId]);
+
   const handleTabChange = (value) => {
     setActiveTab(value);
     setSelectedCategory(null);
     setSearchQuery("");
-    fetchPosts(1, value === "all" ? "popular" : "recent");
+    fetchPosts(1, value === "popular" ? "popular" : "recent");
   };
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       setSelectedCategory(null);
-      fetchPosts(1, activeTab === "all" ? "popular" : "recent");
+      fetchPosts(1, activeTab === "popular" ? "popular" : "recent");
       return;
     }
 
@@ -127,7 +143,7 @@ function Community() {
   const handleCategoryClick = (categoryName) => {
     setSearchQuery("");
     setSelectedCategory(categoryName);
-    const sort = activeTab === "all" ? "popular" : "recent";
+    const sort = activeTab === "popular" ? "popular" : "recent";
     if (categoryName === "Tất cả") {
       fetchPosts(1, sort, null);
     } else {
@@ -137,78 +153,85 @@ function Community() {
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      const sort = activeTab === "all" ? "popular" : "recent";
+      const sort = activeTab === "popular" ? "popular" : "recent";
       fetchPosts(page, sort, selectedCategory);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const handleRetry = () => {
-    fetchPosts(null, activeTab === "all" ? "popular" : "recent", selectedCategory);
+    fetchPosts(null, activeTab === "popular" ? "popular" : "recent", selectedCategory);
   };
 
   return (
-    <div className="relative min-h-screen bg-[radial-gradient(1200px_480px_at_0%_-10%,rgba(0,135,154,0.10),transparent_60%),radial-gradient(900px_360px_at_100%_0%,rgba(252,95,0,0.06),transparent_60%),var(--background)] px-4 pb-20 pt-8">
-      <main className="flex justify-center">
-        <div className="w-full max-w-[1200px]">
-          <CommunityHeader />
+    <div className="bg-surface text-on-surface min-h-screen">
+      <Header />
 
-          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="flex min-w-0 flex-col gap-4">
-              <CommunitySearch
-                searchQuery={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onSearch={handleSearch}
-              />
-
-              <Tabs active={activeTab} onChange={handleTabChange}>
-                <TabsList>
-                  <TabsTrigger value="all">Phổ biến</TabsTrigger>
-                  <TabsTrigger value="recent">Mới nhất</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="all">
-                  <div className="flex flex-col gap-3.5">
-                    <PostList
-                      posts={posts}
-                      loading={loading}
-                      error={error}
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      activeTab={activeTab}
-                      selectedCategory={selectedCategory}
-                      onPageChange={handlePageChange}
-                      onRetry={handleRetry}
-                    />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="recent">
-                  <div className="flex flex-col gap-3.5">
-                    <PostList
-                      posts={posts}
-                      loading={loading}
-                      error={error}
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      activeTab={activeTab}
-                      selectedCategory={selectedCategory}
-                      onPageChange={handlePageChange}
-                      onRetry={handleRetry}
-                    />
-                  </div>
-                </TabsContent>
-              </Tabs>
+      {activePostId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm:p-6 backdrop-blur-[2px]" onClick={() => setActivePostId(null)}>
+          <div className="relative w-full max-w-[860px] max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+            <button
+              type="button"
+              className="absolute right-4 top-4 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-surface-container text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface"
+              onClick={() => setActivePostId(null)}
+            >
+              <FontAwesomeIcon icon={faXmark} className="text-lg" />
+            </button>
+            <div className="pt-2">
+              <PostDetail postIdProp={activePostId} isModal={true} onClose={() => setActivePostId(null)} />
             </div>
-
-            <CommunitySidebar
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategoryClick={handleCategoryClick}
-            />
           </div>
         </div>
-      </main>
+      )}
+
+      <div className="flex pt-[64px]">
+        <CommunityLeftSidebar
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onCategoryClick={handleCategoryClick}
+        />
+
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6 md:p-8">
+            <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-8 items-start">
+              <main className="flex-1 w-full flex flex-col gap-6">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-outline-variant/30">
+                  <CommunityHeader />
+                  <div className="flex bg-surface-container rounded-lg p-1 flex-shrink-0">
+                    <button
+                      className={`font-semibold text-sm px-4 py-1.5 rounded-md transition-all ${activeTab === "popular" ? "bg-surface-container-lowest text-on-surface shadow-sm border border-outline-variant/20" : "text-on-surface-variant hover:text-on-surface"}`}
+                      onClick={() => handleTabChange("popular")}
+                    >
+                      Phổ biến
+                    </button>
+                    <button
+                      className={`font-semibold text-sm px-4 py-1.5 rounded-md transition-all ${activeTab === "recent" ? "bg-surface-container-lowest text-on-surface shadow-sm border border-outline-variant/20" : "text-on-surface-variant hover:text-on-surface"}`}
+                      onClick={() => handleTabChange("recent")}
+                    >
+                      Mới nhất
+                    </button>
+                  </div>
+                </div>
+
+                <PostList
+                  posts={posts}
+                  loading={loading}
+                  error={error}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  activeTab={activeTab}
+                  selectedCategory={selectedCategory}
+                  onPageChange={handlePageChange}
+                  onRetry={handleRetry}
+                  onCommentClick={(postId) => setActivePostId(postId)}
+                />
+              </main>
+
+              <CommunitySidebar />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

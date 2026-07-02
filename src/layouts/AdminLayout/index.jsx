@@ -24,7 +24,7 @@ import {
 
 import styles from "./AdminLayout.module.scss";
 import { useAuth } from "~/context/AuthContext";
-import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
+import { getAvatarUrl, getInitials, getAvatarGradient } from "~/utils/avatar";
 import moderationService, {
   MODERATION_COUNTS_REFRESH_EVENT,
 } from "~/services/moderationService";
@@ -53,6 +53,10 @@ function AdminLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { logout, name, avatar, email } = useAuth();
+  const avatarUrl = getAvatarUrl(avatar);
+  const adminName = name || email || "Admin";
+  const avatarInitials = getInitials(adminName);
+  const avatarGradient = getAvatarGradient(adminName);
   const accountRef = useRef(null);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -204,11 +208,35 @@ function AdminLayout({ children }) {
                 aria-expanded={accountOpen}
               >
                 <span className={cx("admin-avatar")}>
-                  <img
-                    src={getAvatarUrl(avatar)}
-                    alt={name || "Admin"}
-                    onError={handleAvatarError}
-                  />
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={adminName}
+                      data-name={adminName}
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        if (target.dataset.fallbacked) return;
+                        target.dataset.fallbacked = "true";
+                        const parent = target.parentNode;
+                        const span = document.createElement("span");
+                        span.className = target.className;
+                        span.style.cssText = target.style.cssText;
+                        span.style.background = avatarGradient;
+                        span.style.display = "inline-flex";
+                        span.style.alignItems = "center";
+                        span.style.justifyContent = "center";
+                        span.style.fontWeight = "700";
+                        span.style.fontSize = "12px";
+                        span.style.color = "#fff";
+                        span.textContent = avatarInitials;
+                        parent.replaceChild(span, target);
+                      }}
+                    />
+                  ) : (
+                    <span className={cx("admin-avatar")} style={{ background: avatarGradient, display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: "700", fontSize: "12px", color: "#fff" }}>
+                      {avatarInitials}
+                    </span>
+                  )}
                 </span>
                 <span className={cx("admin-name")}>
                   {name || email || "Admin"}
@@ -223,11 +251,35 @@ function AdminLayout({ children }) {
                 <div className={cx("admin-menu")} role="menu">
                   <div className={cx("admin-menu-head")}>
                     <span className={cx("admin-menu-avatar")}>
-                      <img
-                        src={getAvatarUrl(avatar)}
-                        alt={name || "Admin"}
-                        onError={handleAvatarError}
-                      />
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={adminName}
+                          data-name={adminName}
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            if (target.dataset.fallbacked) return;
+                            target.dataset.fallbacked = "true";
+                            const parent = target.parentNode;
+                            const span = document.createElement("span");
+                            span.className = target.className;
+                            span.style.cssText = target.style.cssText;
+                            span.style.background = avatarGradient;
+                            span.style.display = "inline-flex";
+                            span.style.alignItems = "center";
+                            span.style.justifyContent = "center";
+                            span.style.fontWeight = "700";
+                            span.style.fontSize = "14px";
+                            span.style.color = "#fff";
+                            span.textContent = avatarInitials;
+                            parent.replaceChild(span, target);
+                          }}
+                        />
+                      ) : (
+                        <span className={cx("admin-menu-avatar")} style={{ background: avatarGradient, display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: "700", fontSize: "14px", color: "#fff" }}>
+                          {avatarInitials}
+                        </span>
+                      )}
                     </span>
                     <div className={cx("admin-menu-info")}>
                       <p className={cx("admin-menu-name")}>

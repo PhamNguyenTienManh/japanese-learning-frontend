@@ -138,3 +138,16 @@
     border-radius: 18px;
   }
 }
+
+.modal-wrapper {
+  position: relative;
+  background: transparent;
+  padding: 0;
+  min-height: auto;
+}
+
+.modal-main {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}

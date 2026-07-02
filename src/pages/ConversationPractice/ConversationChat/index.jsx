@@ -53,31 +53,45 @@ function ChatBubble({ line, side }) {
   );
 }
 
-function normalizeForCompare(text) {
-  return (text || "")
-    .replace(/[\s\u3000、。！？…　・「」『』（）]/g, "")
-    .trim();
-}
-
-function computeSimilarity(expected, actual) {
-  const e = normalizeForCompare(expected);
-  const a = normalizeForCompare(actual);
-  if (!e || !a) return 0;
-
-  const eChars = [...e];
-  const aChars = [...a];
-  let matches = 0;
-  const maxLen = Math.max(eChars.length, aChars.length);
-
-  for (let i = 0; i < Math.min(eChars.length, aChars.length); i += 1) {
-    if (eChars[i] === aChars[i]) matches += 1;
+function calculateSimilarity(str1, str2) {
+  if (!str1 || !str2) return 0;
+  const s1 = str1.toLowerCase().replace(/[\s\u3000、。！？…　・「」『』（）?.,!]/g, '');
+  const s2 = str2.toLowerCase().replace(/[\s\u3000、。！？…　・「」『』（）?.,!]/g, '');
+  const track = Array(s2.length + 1).fill(null).map(() => Array(s1.length + 1).fill(null));
+  for (let i = 0; i <= s1.length; i += 1) track[0][i] = i;
+  for (let j = 0; j <= s2.length; j += 1) track[j][0] = j;
+  for (let j = 1; j <= s2.length; j += 1) {
+    for (let i = 1; i <= s1.length; i += 1) {
+      const indicator = s1[i - 1] === s2[j - 1] ? 0 : 1;
+      track[j][i] = Math.min(track[j][i - 1] + 1, track[j - 1][i] + 1, track[j - 1][i - 1] + indicator);
+    }
   }
-
-  return Math.round((matches / maxLen) * 100);
+  return Math.round((1 - track[s2.length][s1.length] / Math.max(s1.length, s2.length)) * 100);
 }
 
-function SpeechResult({ expected, transcript }) {
-  const similarity = computeSimilarity(expected, transcript);
+function SpeechResult({ expectedLine, transcript, kuroshiro }) {
+  const [kanaTranscript, setKanaTranscript] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    if (kuroshiro && transcript) {
+      kuroshiro.convert(transcript, { to: "hiragana" })
+        .then(res => {
+          if (isMounted) setKanaTranscript(res);
+        })
+        .catch(() => {});
+    }
+    return () => { isMounted = false; };
+  }, [transcript, kuroshiro]);
+
+  const expectedText = expectedLine?.japanese || "";
+  const expectedKana = expectedLine?.kana || "";
+
+  const score1 = calculateSimilarity(expectedText, transcript);
+  const score2 = calculateSimilarity(expectedKana, transcript);
+  const score3 = calculateSimilarity(expectedKana, kanaTranscript || transcript);
+
+  const similarity = Math.max(score1, score2, score3);
   const passed = similarity >= 60;
 
   return (
@@ -88,7 +102,7 @@ function SpeechResult({ expected, transcript }) {
       </div>
       <div className={cx("srRow")}>
         <span className={cx("srLabel")}>Mẫu:</span>
-        <span className={cx("srMuted")}>{expected}</span>
+        <span className={cx("srMuted")}>{expectedKana}</span>
       </div>
       <div className={cx("srScore", { passed, failed: !passed })}>
         <FontAwesomeIcon icon={passed ? faCircleCheck : faTriangleExclamation} />
@@ -98,7 +112,7 @@ function SpeechResult({ expected, transcript }) {
   );
 }
 
-function ConversationChat({ lesson, lines }) {
+function ConversationChat({ lesson, lines, kuroshiro }) {
   const [revealed, setRevealed] = useState(0);
   const [userTurn, setUserTurn] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -278,7 +292,6 @@ function ConversationChat({ lesson, lines }) {
   const visibleLines = lines.slice(0, revealed);
 
   const currentUserLine = userTurn ? lines[revealed - 1] : null;
-  const expected = currentUserLine ? currentUserLine.japanese : "";
 
   const setRate = (val) => {
     rateRef.current = val;
@@ -343,7 +356,7 @@ function ConversationChat({ lesson, lines }) {
         <div className={cx("micWrap")}>
           {transcript ? (
             <>
-              <SpeechResult expected={expected} transcript={transcript} />
+              <SpeechResult expectedLine={currentUserLine} transcript={transcript} kuroshiro={kuroshiro} />
               {!listening && (
                 <button type="button" className={cx("nextButton")} onClick={handleNext}>
                   Tiếp tục

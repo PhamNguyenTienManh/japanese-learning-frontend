@@ -21,11 +21,30 @@ import GuidedCoachmark from "~/components/GuidedCoachmark";
 import { useAuth } from "~/context/AuthContext";
 import PremiumGate from "~/components/PremiumGate";
 
+import Kuroshiro from "kuroshiro";
+import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
+
 import VocabGrammarStudy from "./VocabGrammarStudy";
 import ConversationChat from "./ConversationChat";
 import styles from "./ConversationPractice.module.scss";
 
 const cx = classNames.bind(styles);
+
+function calculateSimilarity(str1, str2) {
+  if (!str1 || !str2) return 0;
+  const s1 = str1.toLowerCase().replace(/[\s。、！？?.,!]/g, '');
+  const s2 = str2.toLowerCase().replace(/[\s。、！？?.,!]/g, '');
+  const track = Array(s2.length + 1).fill(null).map(() => Array(s1.length + 1).fill(null));
+  for (let i = 0; i <= s1.length; i += 1) track[0][i] = i;
+  for (let j = 0; j <= s2.length; j += 1) track[j][0] = j;
+  for (let j = 1; j <= s2.length; j += 1) {
+    for (let i = 1; i <= s1.length; i += 1) {
+      const indicator = s1[i - 1] === s2[j - 1] ? 0 : 1;
+      track[j][i] = Math.min(track[j][i - 1] + 1, track[j - 1][i] + 1, track[j - 1][i - 1] + indicator);
+    }
+  }
+  return Math.round((1 - track[s2.length][s1.length] / Math.max(s1.length, s2.length)) * 100);
+}
 
 function getRecognitionConstructor() {
   return window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -111,12 +130,59 @@ function ConversationPractice() {
   const [loadError, setLoadError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedGroups, setExpandedGroups] = useState(new Set());
+  const [kuroshiro, setKuroshiro] = useState(null);
+  const [translatedSpeech, setTranslatedSpeech] = useState({});
   const recognitionRef = useRef(null);
   const conversationTourRef = useRef(null);
   const tourParam = useMemo(
     () => new URLSearchParams(location.search).get("tour"),
     [location.search],
   );
+
+  useEffect(() => {
+    let isMounted = true;
+    const initKuroshiro = async () => {
+      try {
+        const k = new Kuroshiro();
+        await k.init(new KuromojiAnalyzer({ dictPath: "/dict" }));
+        if (isMounted) setKuroshiro(k);
+      } catch (e) {
+        console.error("Failed to init kuroshiro", e);
+      }
+    };
+    initKuroshiro();
+    return () => { isMounted = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!kuroshiro) return;
+    
+    const translateSpeech = async () => {
+      const newTranslated = { ...translatedSpeech };
+      let changed = false;
+      
+      for (const [index, text] of Object.entries(speechResults)) {
+        if (!text) continue;
+        const currentTranslation = newTranslated[index];
+        
+        if (!currentTranslation || currentTranslation.original !== text) {
+          try {
+            const kana = await kuroshiro.convert(text, { to: "hiragana" });
+            newTranslated[index] = { original: text, kana };
+            changed = true;
+          } catch (e) {
+            console.error("Kuroshiro convert error", e);
+          }
+        }
+      }
+      
+      if (changed) {
+        setTranslatedSpeech(newTranslated);
+      }
+    };
+    
+    translateSpeech();
+  }, [speechResults, kuroshiro]);
 
   const { isPremium } = useAuth();
 
@@ -362,7 +428,7 @@ function ConversationPractice() {
                   grammar={selectedLesson.grammar}
                 />
               ) : chatStarted ? (
-                <ConversationChat lesson={selectedLesson} lines={dialogueLines} />
+                <ConversationChat lesson={selectedLesson} lines={dialogueLines} kuroshiro={kuroshiro} />
               ) : (
                 <>
                   <section className={cx("detailHero")}>
@@ -413,20 +479,50 @@ function ConversationPractice() {
                           <h2>{line.japanese}</h2>
                           <p className={cx("kana")}>{line.kana}</p>
                           <p className={cx("meaning")}>{line.vietnamese}</p>
-                          {speechResults[index] && (
-                            <div className={cx("speechCompare")}>
-                              <FontAwesomeIcon
-                                className={cx("compareIcon")}
-                                icon={faReply}
-                              />
-                              <div>
-                                <p className={cx("expectedSpeech")}>{line.kana}</p>
-                                <p className={cx("recognizedSpeech")}>
-                                  {speechResults[index]}
-                                </p>
+                          {speechResults[index] && (() => {
+                            const recognized = speechResults[index];
+                            const recognizedKana = translatedSpeech[index]?.kana || recognized;
+                            
+                            const expectedText = line.japanese || "";
+                            const expectedKana = line.kana || "";
+                            
+                            const score1 = calculateSimilarity(expectedText, recognized);
+                            const score2 = calculateSimilarity(expectedKana, recognized);
+                            const score3 = calculateSimilarity(expectedKana, recognizedKana);
+                            
+                            const bestScore = Math.max(score1, score2, score3);
+                            
+                            let scoreColor = "#ef4444"; // Đỏ
+                            let scoreLabel = "Chưa chính xác";
+                            if (bestScore >= 80) {
+                              scoreColor = "#10b981"; // Xanh lá
+                              scoreLabel = "Tuyệt vời!";
+                            } else if (bestScore >= 50) {
+                              scoreColor = "#f59e0b"; // Vàng
+                              scoreLabel = "Tạm được";
+                            }
+                          
+                            return (
+                              <div className={cx("speechCompare")} style={{ borderColor: scoreColor + "40", backgroundColor: scoreColor + "08" }}>
+                                <FontAwesomeIcon
+                                  className={cx("compareIcon")}
+                                  icon={faReply}
+                                  style={{ color: scoreColor }}
+                                />
+                                <div style={{ width: "100%" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                                    <span style={{ fontSize: "12px", fontWeight: "bold", padding: "2px 8px", borderRadius: "10px", backgroundColor: scoreColor, color: "#fff", lineHeight: 1 }}>
+                                      {scoreLabel} ({bestScore}%)
+                                    </span>
+                                  </div>
+                                  <p className={cx("expectedSpeech")}>{line.kana}</p>
+                                  <p className={cx("recognizedSpeech")} style={{ color: scoreColor, marginTop: "4px" }}>
+                                    {recognized}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            );
+                          })()}
                         </div>
                         {activeLineIndex === index && (
                           <div className={cx("lineActions")}>

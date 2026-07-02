@@ -108,17 +108,9 @@ function Header() {
             onMouseEnter={() => toggleMenu("community")}
             onMouseLeave={() => toggleMenu(null)}
           >
-            <Button text rightIcon={<FontAwesomeIcon icon={faChevronDown} />}>
+            <Button to="/community" text >
               Cộng đồng
             </Button>
-            <div className={cx("dropdown-menu")}>
-              <Button to="/community" text>
-                Diễn đàn
-              </Button>
-              <Button to="/community/new" text>
-                Tạo bài viết
-              </Button>
-            </div>
           </div>
         </nav>
 

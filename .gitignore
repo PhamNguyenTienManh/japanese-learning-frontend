@@ -26,3 +26,6 @@ yarn-error.log*
 
 pronounce_output/
 gggg
+
+# kuromoji dictionary
+/public/dict
