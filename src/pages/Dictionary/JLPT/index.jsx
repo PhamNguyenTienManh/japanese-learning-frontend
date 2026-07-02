@@ -208,7 +208,7 @@ function JLPT() {
     const getFlashcardLink = () => {
         const typeParam =
             selectedType === "Từ vựng" ? "word" :
-            selectedType === "Ngữ pháp" ? "grammar" : "kanji";
+                selectedType === "Ngữ pháp" ? "grammar" : "kanji";
 
         const params = new URLSearchParams({
             type: typeParam,
@@ -254,7 +254,7 @@ function JLPT() {
 
             const typeParam =
                 selectedType === "Từ vựng" ? "word" :
-                selectedType === "Hán tự" ? "kanji" : "grammar";
+                    selectedType === "Hán tự" ? "kanji" : "grammar";
 
             const url = `${process.env.REACT_APP_BASE_URL_API}/pdf/jlpt?page=${currentPage}&limit=${itemsPerPage}&level=${selectedLevel}&type=${typeParam}`;
 
@@ -503,7 +503,7 @@ function JLPT() {
                     <div className={cx("heroLeft")}>
                         <div className={cx("heroBadge")}>{selectedLevel}</div>
                         <div>
-                            <h1 className={cx("title")}>JLPT Dictionary</h1>
+                            <h1 className={cx("title")}>Từ điển JLPT</h1>
                             <div className={cx("subtitle")}>
                                 <span>{selectedType}</span>
                                 <span className={cx("dot")}>•</span>

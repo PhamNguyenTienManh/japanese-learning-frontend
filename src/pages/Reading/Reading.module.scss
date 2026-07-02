@@ -94,6 +94,39 @@ $coral: #f26a3d;
   font-weight: 650;
 }
 
+.topTabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(215, 227, 228, 0.64);
+}
+
+.topTab {
+  flex: 1;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 650;
+  transition: background 0.16s ease, color 0.16s ease;
+  background: transparent;
+  color: $muted;
+
+  &:hover {
+    color: $ink;
+  }
+
+  &.active {
+    background: $surface;
+    color: $ink;
+    font-weight: 800;
+    box-shadow: 0 2px 8px rgba(16, 39, 43, 0.06);
+  }
+}
+
 .controlsRow {
   display: flex;
   align-items: flex-end;
