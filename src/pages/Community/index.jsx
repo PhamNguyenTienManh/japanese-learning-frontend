@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import postService from "~/services/postService";
 import CommunityHeader from "~/components/CommunityHeader";
@@ -22,6 +23,7 @@ function Community() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categories, setCategories] = useState([]);
   const [activePostId, setActivePostId] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { userId: currentUserId } = useAuth();
 
@@ -98,6 +100,21 @@ function Community() {
     };
   }, [activePostId]);
 
+  useEffect(() => {
+    const postIdFromUrl = searchParams.get("postId");
+    if (postIdFromUrl) {
+      setActivePostId(postIdFromUrl);
+    }
+  }, [searchParams]);
+
+  const closeModal = () => {
+    setActivePostId(null);
+    setSearchParams((prev) => {
+      prev.delete("postId");
+      return prev;
+    });
+  };
+
   const handleTabChange = (value) => {
     setActiveTab(value);
     setSelectedCategory(null);
@@ -168,17 +185,17 @@ function Community() {
       <Header />
 
       {activePostId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm:p-6 backdrop-blur-[2px]" onClick={() => setActivePostId(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm:p-6 backdrop-blur-[2px]" onClick={closeModal}>
           <div className="relative w-full max-w-[860px] max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
             <button
               type="button"
               className="absolute right-4 top-4 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-surface-container text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface"
-              onClick={() => setActivePostId(null)}
+              onClick={closeModal}
             >
               <FontAwesomeIcon icon={faXmark} className="text-lg" />
             </button>
             <div className="pt-2">
-              <PostDetail postIdProp={activePostId} isModal={true} onClose={() => setActivePostId(null)} />
+              <PostDetail postIdProp={activePostId} isModal={true} onClose={closeModal} />
             </div>
           </div>
         </div>
