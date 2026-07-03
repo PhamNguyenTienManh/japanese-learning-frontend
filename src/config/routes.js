@@ -18,7 +18,6 @@ const routes = {
   conversationPractice: "/conversation",
   chatAI: "/chat-ai",
   community: "/community",
-  postDetail: "/community/:id",
   newPost: "/community/new",
   dashboard: "/dashboard",
   onboarding: "/onboarding",

@@ -14,7 +14,6 @@ import TestRunner from "~/pages/Practice/TestPage/TestRunner";
 import Results from "~/pages/Practice/TestPage/Results";
 import ChatAI from "~/pages/ChatAI";
 import Community from "~/pages/Community";
-import PostDetail from "~/pages/Community/PostDetail";
 import NewPost from "~/pages/Community/NewPost";
 import Dashboard from "~/pages/Dashboard";
 import Onboarding from "~/pages/Onboarding";
@@ -72,7 +71,6 @@ export const publicRouter = [
   { path: config.routes.results, component: Results },
   { path: config.routes.chatAI, component: ChatAI },
   { path: config.routes.community, component: Community, layout: null },
-  { path: config.routes.postDetail, component: PostDetail },
   { path: config.routes.newPost, component: NewPost },
   { path: config.routes.dashboard, component: Dashboard },
   { path: config.routes.onboarding, component: Onboarding, layout: null },

@@ -79,7 +79,7 @@ function getId(value) {
 function getPostLink(item) {
   const postId =
     item.targetType === "post" ? getId(item.targetId) : getId(item.parentPostId);
-  return postId ? `/community/${postId}` : "";
+  return postId ? `/community?postId=${postId}` : "";
 }
 
 function getLatestReport(item) {

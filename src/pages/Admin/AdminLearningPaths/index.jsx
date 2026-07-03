@@ -929,7 +929,7 @@ function AdminLearningPaths() {
             <select value={pathFilters.generationSource} onChange={(e) => updatePathFilter("generationSource", e.target.value)}>
               <option value="">Mọi nguồn tạo</option>
               <option value="ai">AI</option>
-              <option value="fallback">Fallback</option>
+              <option value="fallback">Hệ thống</option>
             </select>
           </div>
           <button type="button" onClick={loadPaths} disabled={pathLoading}>

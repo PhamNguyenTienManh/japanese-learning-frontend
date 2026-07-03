@@ -39,7 +39,7 @@ function AdminPostCard({ post, commentCount, onDelete }) {
         </div>
 
         <div className={cx("actions")}>
-          <Link to={`/community/${post._id}`}>
+          <Link to={`/community?postId=${post._id}`}>
             <Button outline rounded leftIcon={<FontAwesomeIcon icon={faEye} />} />
           </Link>
           <Button

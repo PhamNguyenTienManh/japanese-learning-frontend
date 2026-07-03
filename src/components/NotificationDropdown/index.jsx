@@ -128,7 +128,7 @@ function NotificationDropdown({ isOpen, onToggle, onClose }) {
     }
 
     if (notification.targetId) {
-      navigate(`/community/${notification.targetId}`);
+      navigate(`/community?postId=${notification.targetId}`);
     }
 
     onClose();

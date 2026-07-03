@@ -958,7 +958,7 @@ function AdminPosts() {
                         <div className={cx("tableActions")}>
                           <Link
                             className={cx("iconBtn")}
-                            to={`/community/${postId}`}
+                            to={`/community?postId=${postId}`}
                             state={{
                               fromAdminPosts: true,
                               returnTo: "/admin/posts",
@@ -1064,7 +1064,7 @@ function AdminPosts() {
                             {postId && (
                               <Link
                                 className={cx("iconBtn")}
-                                to={`/community/${postId}`}
+                                to={{ pathname: "/community", search: `?postId=${postId}` }}
                                 state={{
                                   fromAdminPosts: true,
                                   returnTo: "/admin/posts",

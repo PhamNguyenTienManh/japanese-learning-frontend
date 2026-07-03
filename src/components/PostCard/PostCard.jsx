@@ -83,7 +83,7 @@ function PostCard({ post, commentCount, onCommentClick }) {
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/community/${postId}`;
+    const url = `${window.location.origin}/community?postId=${postId}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: post.title, url });
@@ -184,7 +184,7 @@ function PostCard({ post, commentCount, onCommentClick }) {
           <button
             type="button"
             className="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors text-sm font-semibold bg-transparent border-none cursor-pointer"
-            onClick={() => (onCommentClick ? onCommentClick(postId) : navigate(`/community/${postId}`))}
+            onClick={() => (onCommentClick ? onCommentClick(postId) : navigate(`/community?postId=${postId}`))}
           >
             <span className="material-symbols-outlined text-[20px]">chat_bubble_outline</span>
             <span>{displayCommentCount} bình luận</span>
