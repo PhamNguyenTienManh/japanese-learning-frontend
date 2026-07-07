@@ -1,22 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import classNames from "classnames/bind";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useNavigate, useParams } from "react-router-dom";
 import styles from "./Results.module.scss";
 
 import Button from "~/components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faTrophy,
-  faClock,
+  faArrowLeft,
   faRotateLeft,
-  faHouse,
-  faCheck,
-  faXmark,
-  faBookOpen,
-  faChartSimple,
-  faAngleRight,
 } from "@fortawesome/free-solid-svg-icons";
+import { useAuth } from "~/context/AuthContext";
 import { checkExamResult, startExam } from "~/services/examService";
 
 const cx = classNames.bind(styles);
@@ -28,91 +22,56 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: easeOut } },
 };
 
-const stagger = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
-};
-
-function formatTime(seconds) {
-  const total = Math.floor(seconds);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+function formatJapaneseDate(date) {
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
 }
 
-function ScoreRing({ percent, passed }) {
-  const size = 200;
-  const stroke = 14;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
+function formatEnglishDate(date) {
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  });
+}
 
-  const progress = useMotionValue(0);
-  const dashOffset = useTransform(
-    progress,
-    (v) => circumference - (v / 100) * circumference,
-  );
-  const displayPct = useTransform(progress, (v) => Math.round(v));
-  const [shownPct, setShownPct] = useState(0);
+function getSectionMeta(name = "", index) {
+  const lowerName = name.toLowerCase();
 
-  useEffect(() => {
-    const controls = animate(progress, percent, {
-      duration: 1.4,
-      ease: easeOut,
-    });
-    const unsub = displayPct.on("change", (v) => setShownPct(v));
-    return () => {
-      controls.stop();
-      unsub();
-    };
-  }, [percent, progress, displayPct]);
+  if (
+    lowerName.includes("reading") ||
+    lowerName.includes("đọc") ||
+    lowerName.includes("doc")
+  ) {
+    return { jp: "文法・読解", en: "Reading" };
+  }
 
-  const gradientId = passed ? "ring-pass" : "ring-fail";
+  if (
+    lowerName.includes("listening") ||
+    lowerName.includes("nghe") ||
+    lowerName.includes("聴")
+  ) {
+    return { jp: "聴解", en: "Listening" };
+  }
 
-  return (
-    <div className={cx("score-ring-wrap")}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className={cx("score-ring")}
-      >
-        <defs>
-          <linearGradient id="ring-pass" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#1f9bac" />
-            <stop offset="100%" stopColor="#00879a" />
-          </linearGradient>
-          <linearGradient id="ring-fail" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ff8a4c" />
-            <stop offset="100%" stopColor="#fc5f00" />
-          </linearGradient>
-        </defs>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="#e6f7f2"
-          strokeWidth={stroke}
-        />
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={`url(#${gradientId})`}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          style={{ strokeDashoffset: dashOffset }}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-      </svg>
-      <div className={cx("score-center")}>
-        <span className={cx("score-pct")}>{shownPct}%</span>
-        <span className={cx("score-pct-label")}>điểm</span>
-      </div>
-    </div>
-  );
+  if (
+    lowerName.includes("grammar") ||
+    lowerName.includes("vocabulary") ||
+    lowerName.includes("word") ||
+    lowerName.includes("từ") ||
+    lowerName.includes("ngữ") ||
+    lowerName.includes("文字")
+  ) {
+    return { jp: "文字・語彙", en: "Language Knowledge" };
+  }
+
+  const fallback = [
+    { jp: "文字・語彙", en: "Language Knowledge" },
+    { jp: "文法・読解", en: "Reading" },
+    { jp: "聴解", en: "Listening" },
+  ];
+
+  return fallback[index] || { jp: name || `Section ${index + 1}`, en: name || "-" };
 }
 
 function Results() {
@@ -122,7 +81,9 @@ function Results() {
   const [error, setError] = useState("");
   const { testId } = useParams();
   const navigate = useNavigate();
+  const auth = useAuth();
   const examId = testId;
+  const testDate = useMemo(() => new Date(), []);
 
   useEffect(() => {
     async function fetchResult() {
@@ -187,11 +148,12 @@ function Results() {
     );
   }
 
-  const scorePercent = Math.round(
-    (results.totalScore / results.totalMaxScore) * 100,
-  );
   const passed = results.passed;
   const levelLower = results.exam.level.toLowerCase();
+  const scoreText = `${results.totalScore}/${results.totalMaxScore}`;
+  const learnerName = (auth?.name || auth?.email || "JAVI LEARNER").toUpperCase();
+  const resultJa = passed ? "合格" : "不合格";
+  const resultLabel = passed ? "Passed" : "Not Passed";
 
   const handleRetryExam = async () => {
     try {
@@ -213,253 +175,150 @@ function Results() {
     }
   };
 
-  const stats = [
-    {
-      icon: faChartSimple,
-      tone: "teal",
-      value: results.totalScore,
-      label: "Tổng điểm",
-    },
-    {
-      icon: faBookOpen,
-      tone: "yellow",
-      value: results.totalMaxScore,
-      label: "Điểm tối đa",
-    },
-    {
-      icon: faClock,
-      tone: "mint",
-      value: formatTime(results.durationSeconds),
-      label: "Thời gian",
-    },
-  ];
-
   return (
     <div className={cx("wrapper")}>
-      <motion.div
-        className={cx("blob1")}
-        animate={{ y: [0, -22, 0], x: [0, 12, 0] }}
-        transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className={cx("blob2")}
-        animate={{ y: [0, 18, 0], x: [0, -14, 0] }}
-        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-      />
-
       <main className={cx("main")}>
-        <div className={cx("container")}>
-          {/* Breadcrumb */}
-          <motion.div
-            className={cx("breadcrumb")}
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: easeOut }}
-          >
-            <Link to="/practice">Thi thử</Link>
-            <FontAwesomeIcon icon={faAngleRight} />
-            <Link to={`/practice/${levelLower}`}>
-              JLPT - {results.exam.level}
-            </Link>
-            <FontAwesomeIcon icon={faAngleRight} />
-            <span className={cx("breadcrumb-current")}>Kết quả</span>
-          </motion.div>
+        <motion.section
+          className={cx("summary-card")}
+          initial="hidden"
+          animate="show"
+          variants={fadeUp}
+        >
+          <div className={cx("result-scene")} aria-hidden="true">
+            <span className={cx("torii", "left")} />
+            <img
+              className={cx("mascot")}
+              src={`${process.env.PUBLIC_URL}/javi-icon-512.png`}
+              alt=""
+            />
+            <span className={cx("torii", "right")} />
+          </div>
 
-          {/* Header */}
-          <motion.div
-            className={cx("header")}
-            initial="hidden"
-            animate="show"
-            variants={stagger}
-          >
-            <motion.span
-              className={cx("hero-badge", passed ? "pass" : "fail")}
-              variants={fadeUp}
-            >
-              <FontAwesomeIcon icon={passed ? faCheck : faXmark} />
-              <span>
-                {passed ? "Đạt yêu cầu" : "Chưa đạt"} · JLPT{" "}
-                {results.exam.level}
-              </span>
-            </motion.span>
-            <motion.h1 className={cx("title")} variants={fadeUp}>
-              Kết quả{" "}
-              <span className={cx("title-accent")}>bài thi</span>
-            </motion.h1>
-            <motion.p className={cx("subtitle")} variants={fadeUp}>
-              {results.exam.title}
-            </motion.p>
-          </motion.div>
+          <h1>Hoàn thành bài thi!</h1>
+          <p className={cx("score-line")}>
+            Kết quả thi:{" "}
+            <strong className={cx(passed ? "passed-text" : "failed-text")}>
+              {scoreText} điểm
+            </strong>
+          </p>
+          <p className={cx("encourage")}>
+            {passed
+              ? "Bạn đã hoàn thành rất tốt. Hãy xem lại đáp án để giữ chắc kiến thức nhé."
+              : "Chưa được tốt lắm! Mỗi sai sót là một bước tiến mới! Đừng nản nhé, hãy luyện tập lại và bạn sẽ giỏi hơn mỗi ngày"}
+          </p>
 
-          {/* Score Card */}
-          <motion.div
-            className={cx("score-card", passed ? "passed" : "failed")}
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.6, ease: easeOut, delay: 0.15 }}
-          >
-            <div className={cx("score-card-inner")}>
-              <div className={cx("score-trophy")}>
-                <motion.div
-                  className={cx("trophy-bubble")}
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{
-                    duration: 2.6,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <FontAwesomeIcon icon={faTrophy} />
-                </motion.div>
-                <motion.h2
-                  className={cx("score-status")}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6, duration: 0.45 }}
-                >
-                  {passed ? "Chúc mừng bạn!" : "Cố gắng lần sau nhé!"}
-                </motion.h2>
-                <motion.p
-                  className={cx("score-detail")}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.75, duration: 0.45 }}
-                >
-                  <strong>{results.totalScore}</strong> /{" "}
-                  {results.totalMaxScore} điểm
-                </motion.p>
-              </div>
-              <ScoreRing percent={scorePercent} passed={passed} />
-            </div>
-          </motion.div>
-
-          {/* Stats Grid */}
-          <motion.div
-            className={cx("stats-grid")}
-            initial="hidden"
-            animate="show"
-            variants={stagger}
-          >
-            {stats.map((s) => (
-              <motion.div
-                key={s.label}
-                className={cx("stat-card")}
-                variants={fadeUp}
-                whileHover={{ y: -3 }}
-                transition={{ type: "spring", stiffness: 320, damping: 20 }}
-              >
-                <div className={cx("stat-header")}>
-                  <div className={cx("stat-icon", `tone-${s.tone}`)}>
-                    <FontAwesomeIcon icon={s.icon} />
-                  </div>
-                  <div>
-                    <p className={cx("stat-value")}>{s.value}</p>
-                    <p className={cx("stat-label")}>{s.label}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Section Breakdown */}
-          <motion.div
-            className={cx("sections-card")}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.55, ease: easeOut }}
-          >
-            <div className={cx("sections-head")}>
-              <h3 className={cx("sections-title")}>Phân tích theo phần thi</h3>
-              <span className={cx("sections-meta")}>
-                {results.parts.length} phần
-              </span>
-            </div>
-            <div className={cx("sections-list")}>
-              {results.parts.map((p, index) => {
-                const percent = Math.round((p.score / p.max_score) * 100);
-                const tone =
-                  percent >= 80 ? "high" : percent >= 50 ? "mid" : "low";
-                return (
-                  <motion.div
-                    key={index}
-                    className={cx("section-item")}
-                    initial={{ opacity: 0, x: -16 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true, amount: 0.4 }}
-                    transition={{
-                      duration: 0.45,
-                      ease: easeOut,
-                      delay: index * 0.08,
-                    }}
-                  >
-                    <div className={cx("section-header")}>
-                      <div>
-                        <p className={cx("section-name")}>{p.name}</p>
-                        <p className={cx("section-detail")}>
-                          {p.score} / {p.max_score} điểm
-                        </p>
-                      </div>
-                      <span className={cx("section-percentage", tone)}>
-                        {percent}%
-                      </span>
-                    </div>
-
-                    <div className={cx("progress")}>
-                      <motion.div
-                        className={cx("progress-bar", tone)}
-                        initial={{ width: 0 }}
-                        whileInView={{ width: `${percent}%` }}
-                        viewport={{ once: true, amount: 0.4 }}
-                        transition={{
-                          duration: 1,
-                          ease: easeOut,
-                          delay: index * 0.08 + 0.15,
-                        }}
-                      />
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
-
-          {/* Actions */}
-          <motion.div
-            className={cx("actions")}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: easeOut, delay: 0.4 }}
-          >
-            <Button
-              primary
-              onClick={handleRetryExam}
-              disabled={isRetrying}
-              leftIcon={<FontAwesomeIcon icon={faRotateLeft} />}
-            >
-              {isRetrying ? "Đang tạo phiên mới..." : "Làm lại bài thi"}
-            </Button>
-
+          <div className={cx("actions")}>
             <Button
               outline
+              className={cx("back-action")}
+              onClick={() => navigate(-1)}
+              leftIcon={<FontAwesomeIcon icon={faArrowLeft} />}
+            >
+              Quay lại
+            </Button>
+            <Button
+              outline
+              className={cx("secondary-action")}
               to={`/practice/${levelLower}/results/detail/${testId}`}
             >
               Xem đáp án
             </Button>
-
-            <Button outline to={`/practice/${levelLower}`}>
-              Chọn đề khác
-            </Button>
-
             <Button
-              outline
-              to="/practice"
-              leftIcon={<FontAwesomeIcon icon={faHouse} />}
+              primary
+              className={cx("primary-action")}
+              onClick={handleRetryExam}
+              disabled={isRetrying}
+              leftIcon={<FontAwesomeIcon icon={faRotateLeft} />}
             >
-              Về trang luyện thi
+              {isRetrying ? "Đang tạo..." : "Thi lại"}
             </Button>
-          </motion.div>
-        </div>
+          </div>
+        </motion.section>
+
+        <motion.section
+          className={cx("certificate-wrap")}
+          initial="hidden"
+          animate="show"
+          variants={fadeUp}
+          transition={{ delay: 0.08 }}
+        >
+          <div className={cx("certificate")}>
+            <header className={cx("certificate-head")}>
+              <p>日本語 能力試験合否結果通知書</p>
+              <h2>
+                Japanese Language Proficiency Test
+                <span>Test Result</span>
+              </h2>
+            </header>
+
+            <dl className={cx("info-list")}>
+              <div>
+                <dt>受験日</dt>
+                <dd>{formatJapaneseDate(testDate)}</dd>
+              </div>
+              <div>
+                <dt>Test Date</dt>
+                <dd>{formatEnglishDate(testDate)}</dd>
+              </div>
+              <div>
+                <dt>受験レベル Level</dt>
+                <dd>{results.exam.level}</dd>
+              </div>
+              <div>
+                <dt>氏名 Name</dt>
+                <dd>{learnerName}</dd>
+              </div>
+            </dl>
+
+            <div className={cx("score-table")}>
+              <div className={cx("table-title")}>
+                <span>得点区分別得点</span>
+                <strong>Scores by Scoring Section</strong>
+              </div>
+
+              <div
+                className={cx("section-row")}
+                style={{ "--section-count": results.parts.length || 1 }}
+              >
+                {results.parts.map((part, index) => {
+                  const meta = getSectionMeta(part.name, index);
+                  return (
+                    <div className={cx("section-cell")} key={`${part.name}-${index}`}>
+                      <strong>{meta.jp}</strong>
+                      <span>{meta.en}</span>
+                      <small>{part.name}</small>
+                    </div>
+                  );
+                })}
+                <div className={cx("total-cell")}>
+                  <strong>総合得点</strong>
+                  <span>Total Score</span>
+                </div>
+              </div>
+
+              <div
+                className={cx("score-row")}
+                style={{ "--section-count": results.parts.length || 1 }}
+              >
+                {results.parts.map((part, index) => (
+                  <div key={`${part.name}-score-${index}`}>
+                    {part.score} / {part.max_score}
+                  </div>
+                ))}
+                <div>
+                  {results.totalScore}/{results.totalMaxScore}
+                </div>
+              </div>
+            </div>
+
+            <footer className={cx("certificate-foot")}>
+              <span className={cx(passed ? "pass-stamp" : "fail-stamp")}>
+                {resultJa}　{resultLabel}
+              </span>
+              <span className={cx("seal")}>JAVI</span>
+            </footer>
+          </div>
+        </motion.section>
       </main>
     </div>
   );
