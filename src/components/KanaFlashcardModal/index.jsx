@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 
+import FlipCard from "~/components/FlipCard";
+
 const overlayCls =
   "fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(16,42,45,0.45)] p-5";
 const modalCls =
   "relative w-full max-w-[520px] rounded-[14px] bg-white p-7 shadow-[0_30px_60px_rgba(16,42,45,0.25)]";
 const flashcardFaceBaseCls =
-  "absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-xl border border-border [backface-visibility:hidden] [-webkit-backface-visibility:hidden]";
+  "flex flex-col items-center justify-center gap-2 rounded-xl border border-border";
 
 function speak(text) {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
@@ -66,44 +68,35 @@ function KanaFlashcardModal({
           )}
         </div>
 
-        <div
-          className="mb-4 h-[220px] w-full cursor-pointer [perspective:1000px]"
-          onClick={() => setFlipped((f) => !f)}
-        >
-          <div
-            className={[
-              "relative h-full w-full transition-transform duration-[550ms] ease-in-out [transform-style:preserve-3d]",
-              flipped ? "[transform:rotateY(180deg)]" : "",
-            ].join(" ")}
-          >
-            <div
-              className={[
-                flashcardFaceBaseCls,
-                "bg-[linear-gradient(180deg,#ffffff_0%,#e9fbfa_100%)]",
-              ].join(" ")}
-            >
+        <FlipCard
+          flipped={flipped}
+          onFlip={() => setFlipped((f) => !f)}
+          duration={550}
+          className="mb-4 h-[220px] w-full"
+          faceClassName={flashcardFaceBaseCls}
+          frontClassName="bg-[linear-gradient(180deg,#ffffff_0%,#e9fbfa_100%)]"
+          backClassName="bg-[linear-gradient(180deg,#fff7ef_0%,#ffe1cc_100%)]"
+          front={
+            <>
               <div className="text-[96px] font-semibold leading-none text-text-high">
                 {current.character}
               </div>
               <div className="mt-1.5 text-[11px] text-grey">
                 Bấm để xem cách đọc
               </div>
-            </div>
-            <div
-              className={[
-                flashcardFaceBaseCls,
-                "[transform:rotateY(180deg)] bg-[linear-gradient(180deg,#fff7ef_0%,#ffe1cc_100%)]",
-              ].join(" ")}
-            >
+            </>
+          }
+          back={
+            <>
               <div className="text-5xl font-bold lowercase text-orange">
                 {current.romaji}
               </div>
               <div className="mt-1.5 text-[11px] text-grey">
                 Bấm để xem ký tự
               </div>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         <div className="mb-4 flex items-center justify-between gap-2">
           <button

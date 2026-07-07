@@ -20,6 +20,7 @@ import {
     getJlptKanjiDetail,
 } from "~/services/jlptService";
 import notebookService from "~/services/notebookService";
+import { recordLearningResourceProgress } from "~/services/learningPathService";
 import AuthRequiredModal from "~/components/AuthRequiredModal";
 import GuidedCoachmark from "~/components/GuidedCoachmark";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -263,6 +264,17 @@ function JLPT() {
 
             const blob = await response.blob();
             setPdfUrl(URL.createObjectURL(blob));
+
+            // Ghi nhận tiến độ luyện viết cho lộ trình (chỉ khi tải PDF kanji).
+            if (isLoggedIn && typeParam === "kanji") {
+                recordLearningResourceProgress({
+                    skill: "writing",
+                    refKey: `jlpt-${selectedLevel}-${typeParam}-p${currentPage}`,
+                    metadata: { level: selectedLevel, page: currentPage },
+                }).catch((error) => {
+                    console.error("Record writing progress error:", error);
+                });
+            }
         } catch (err) {
             console.error(err);
             setShowPdfModal(false);
