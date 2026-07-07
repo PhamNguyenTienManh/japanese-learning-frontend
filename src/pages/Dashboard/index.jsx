@@ -832,36 +832,6 @@ function Dashboard() {
                 </div>
               </div>
 
-              {/* Achievements */}
-              <div className={cx("sideCard")}>
-                <div className={cx("sideHeader")}>
-                  <h3 className={cx("sideTitle")}>
-                    <FontAwesomeIcon icon={faTrophy} className={cx("sideTitleIcon")} />
-                    Thành tích
-                  </h3>
-                  <Button
-                    outline
-                    href="/dashboard/achievements"
-                    className={cx("sectionAction")}
-                  >
-                    Xem tất cả
-                  </Button>
-                </div>
-                <div className={cx("achievementsGrid")}>
-                  {mockUserData.achievements.map((a) => (
-                    <div
-                      key={a.id}
-                      className={cx("achievement", {
-                        achievementUnlocked: a.unlocked,
-                      })}
-                      title={a.description}
-                    >
-                      {a.icon}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* Quick actions */}
               <div className={cx("sideCard")}>
                 <h3 className={cx("sideTitle")}>

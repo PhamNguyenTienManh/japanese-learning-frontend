@@ -1,141 +1,113 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
-  applyLearningPathReview,
   getLearningPathDashboard,
-  reviewLearningPath,
+  completeLearningPathItem
 } from "~/services/learningPathService";
+import TaskModal from "./TaskModal";
+import PracticePanel from "./PracticePanel";
 
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
-const wrapperClass = "min-h-screen bg-[radial-gradient(circle_at_14%_8%,rgba(0,135,154,0.14),transparent_30%),radial-gradient(circle_at_86%_10%,rgba(252,95,0,0.1),transparent_26%),linear-gradient(180deg,#f0fbf7_0%,#f8fbfb_54%,#ffffff_100%)] px-5 pt-8 pb-16 max-[780px]:px-3.5 max-[780px]:pt-5 max-[780px]:pb-11";
-const containerClass = "mx-auto w-[min(1120px,100%)]";
-const topBarClass = "mb-5 flex items-center justify-between gap-5 rounded-[24px] border border-white/70 bg-[rgba(255,255,255,0.78)] p-5 shadow-[0_18px_48px_rgba(16,42,45,0.08)] backdrop-blur-[14px] max-[780px]:flex-col max-[780px]:items-stretch max-[480px]:rounded-[18px]";
-const eyebrowClass = "mb-2 inline-flex min-h-7 items-center rounded-full bg-[rgba(0,135,154,0.1)] px-3 text-xs font-black uppercase tracking-[0.08em] text-primary";
-const titleClass = "m-0 text-[clamp(30px,4.8vw,48px)] font-[950] leading-[1.05] tracking-[-0.03em] text-text-high";
-const subtitleClass = "mt-2 mb-0 max-w-[680px] text-[15px] font-bold leading-[1.7] text-grey";
-const baseButtonClass = "min-h-[42px] cursor-pointer rounded-[12px] border-0 px-4 font-black transition-[transform,box-shadow,background,border-color,color,opacity] duration-150 ease-[ease] hover:not-disabled:-translate-y-px disabled:cursor-not-allowed disabled:opacity-[0.68]";
-const regenerateBtnClass = cn(baseButtonClass, "shrink-0 bg-primary text-white shadow-[0_12px_28px_rgba(0,135,154,0.18)] hover:opacity-85 max-[780px]:w-full");
-const mainGridClass = "grid grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)] gap-5 max-[980px]:grid-cols-1";
-const cardShellClass = "rounded-[24px] border border-[#edf2f4] bg-[rgba(255,255,255,0.94)] shadow-[0_18px_46px_rgba(16,42,45,0.08)] max-[480px]:rounded-[18px]";
-const todayCardClass = cn(cardShellClass, "relative overflow-hidden p-6 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-1.5 before:bg-[linear-gradient(90deg,var(--primary),var(--orange))] max-[780px]:p-5");
-const leftStackClass = "grid content-start gap-5";
-const sideStackClass = "grid content-start gap-5";
-const panelClass = cn(cardShellClass, "p-5 max-[780px]:p-[18px]");
-const weeklyCardClass = cn(cardShellClass, "p-6 max-[780px]:p-5");
-const sectionHeaderClass = "mb-4 flex items-start justify-between gap-4 max-[640px]:flex-col";
-const sectionTitleClass = "m-0 text-[22px] font-[950] leading-[1.2] tracking-[-0.01em] text-text-high";
-const sectionDescriptionClass = "mt-1.5 mb-0 max-w-[640px] text-[13px] font-bold leading-[1.65] text-grey";
-const pillBaseClass = "inline-flex min-h-[30px] items-center justify-center whitespace-nowrap rounded-full px-3 text-xs font-black";
-const panelBadgeClass = cn(pillBaseClass, "bg-[rgba(0,135,154,0.08)] text-primary");
-const todayListClass = "grid gap-3.5";
-const weekListClass = "grid gap-3";
-const todayTaskClass = "rounded-[20px] border border-[rgba(0,135,154,0.12)] bg-[linear-gradient(135deg,#ffffff_0%,#f7fcfb_100%)] p-5 shadow-[0_14px_30px_rgba(16,42,45,0.07)] transition-[border-color,box-shadow,transform] duration-150 ease-[ease] hover:-translate-y-px hover:border-[rgba(0,135,154,0.28)] hover:shadow-[0_18px_38px_rgba(16,42,45,0.1)]";
-const weekTaskClass = "rounded-[16px] border border-[#e7eef0] bg-white p-4 transition-[border-color,box-shadow,transform] duration-150 ease-[ease] hover:-translate-y-px hover:border-[rgba(0,135,154,0.24)] hover:shadow-[0_14px_28px_rgba(16,42,45,0.07)]";
-const taskTopClass = "flex items-start justify-between gap-4 max-[640px]:flex-col";
-const taskSkillClass = "mb-2 flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-[0.05em] text-primary";
-const skillMarkClass = "text-lg leading-none";
-const taskTitleClass = "m-0 text-[18px] font-[950] leading-[1.35] text-text-high";
-const weekTaskTitleClass = "m-0 text-base font-[950] leading-[1.35] text-text-high";
-const taskMetaClass = "mt-1.5 mb-0 text-[13px] font-bold leading-[1.55] text-grey";
-const timeBadgeClass = cn(pillBaseClass, "bg-[rgba(252,95,0,0.1)] text-[#b94600]");
-const doneBadgeClass = "bg-[rgba(16,185,129,0.12)] text-[#047857]";
-const progressBlockClass = "mt-4 rounded-[14px] bg-[#f8fafb] p-3.5";
-const progressMetaClass = "mb-2 flex justify-between gap-3 text-xs font-black text-grey";
-const progressTrackClass = "h-[9px] overflow-hidden rounded-full bg-[#e4ebee]";
-const progressFillClass = "h-full rounded-[inherit] bg-[linear-gradient(90deg,var(--primary),var(--primary-hover))] transition-[width] duration-[240ms] ease-[ease]";
-const progressFillDoneClass = "bg-[linear-gradient(90deg,#10b981,#34d399)]";
-const taskActionsClass = "mt-4 flex justify-end max-[640px]:justify-stretch";
-const startBtnClass = cn(baseButtonClass, "bg-primary text-white shadow-[0_10px_24px_rgba(0,135,154,0.18)] hover:bg-primary-hover max-[640px]:w-full");
-const progressPanelClass = cn(panelClass, "bg-[linear-gradient(135deg,rgba(0,135,154,0.08),rgba(252,95,0,0.04)),#ffffff]");
-const statsGridClass = "grid grid-cols-3 gap-2.5";
-const statBoxClass = "rounded-[16px] bg-white/80 p-3 text-center ring-1 ring-[#edf2f4]";
-const statLabelClass = "text-[11px] font-black uppercase tracking-[0.05em] text-grey";
-const statValueClass = "mt-1 text-2xl font-[950] leading-none text-text-high";
-const weeklyTrackClass = "mt-4 h-3 overflow-hidden rounded-full bg-white ring-1 ring-[#e1ecee]";
-const weeklyFillClass = "block h-full rounded-[inherit] bg-[linear-gradient(90deg,var(--primary),var(--orange))]";
-const reviewPanelClass = cn(panelClass, "grid gap-3.5");
-const reviewBtnClass = cn(baseButtonClass, "bg-primary text-white shadow-[0_10px_24px_rgba(0,135,154,0.18)] hover:bg-primary-hover");
-const reviewMetaRowClass = "flex items-center justify-between gap-2.5 max-[640px]:items-start max-[640px]:flex-col";
-const reviewMetaClass = "text-xs font-black text-grey";
-const reviewStatusClass = cn(pillBaseClass, "bg-[rgba(16,185,129,0.12)] text-[#047857]");
-const reviewStatusWarningClass = "bg-[rgba(252,95,0,0.1)] text-[#b94600]";
-const assessmentClass = "m-0 text-[14px] font-bold leading-[1.7] text-text-high";
-const suggestionListClass = "grid gap-2";
-const suggestionCardClass = "rounded-[14px] border border-[rgba(0,135,154,0.12)] bg-[rgba(0,135,154,0.04)] p-3";
-const suggestionTitleClass = "text-xs font-[950] uppercase tracking-[0.03em] text-primary";
-const suggestionTextClass = "mt-1.5 mb-0 text-[13px] font-bold leading-[1.55] text-grey";
-const adjustedBlockClass = "grid gap-2.5 rounded-[16px] bg-[#f8fafb] p-3.5";
-const adjustedTitleClass = "text-[13px] font-[950] text-text-high";
-const adjustedListClass = "grid gap-2";
-const adjustedItemClass = "grid gap-[3px] rounded-[12px] border border-[#e7eef0] bg-white p-3";
-const adjustedSkillClass = "text-[11px] font-[950] uppercase tracking-[0.04em] text-primary";
-const adjustedItemTitleClass = "text-sm leading-[1.35] text-text-high";
-const adjustedMetaClass = "text-xs font-extrabold text-grey";
-const reviewActionsClass = "flex flex-wrap justify-end gap-2.5";
-const keepBtnClass = cn(baseButtonClass, "border border-[#dbe7ea] bg-white text-text-high hover:border-[rgba(0,135,154,0.35)] hover:text-primary");
-const messageBoxBaseClass = "rounded-[16px] p-3.5 text-[13px] font-bold leading-[1.6]";
-const reviewEmptyClass = cn(messageBoxBaseClass, "bg-[#f8fafb] text-grey");
-const reviewErrorClass = cn(messageBoxBaseClass, "bg-[rgba(252,95,0,0.1)] text-[#b94600]");
-const applySuccessClass = cn(messageBoxBaseClass, "bg-[rgba(16,185,129,0.12)] text-[#047857]");
-const panelBadgesClass = "flex flex-wrap justify-end gap-2";
-const stateClass = "grid justify-items-center gap-2.5 rounded-[22px] border border-dashed border-[#dce7e8] bg-[rgba(255,255,255,0.9)] px-[22px] py-[34px] text-center font-bold text-grey shadow-[0_14px_34px_rgba(16,42,45,0.06)]";
-const emptyTasksClass = stateClass;
-const stateTitleClass = "text-base text-text-high";
-const stateTextClass = "m-0 max-w-[520px] leading-[1.6]";
-const stateBtnClass = cn(baseButtonClass, "bg-primary text-white shadow-[0_10px_24px_rgba(0,135,154,0.18)] hover:bg-primary-hover");
-const stateSpinnerClass = "h-[34px] w-[34px] animate-spin rounded-full border-[3px] border-[rgba(0,135,154,0.15)] border-t-primary";
+// Skill dạng flashcard học ngay trong TaskModal (flip-card).
+// Các skill còn lại mở PracticePanel nhúng trang thực hành chuyên dụng.
+const FLASHCARD_SKILLS = ["vocab", "kanji", "grammar"];
 
 const skillMeta = {
-  vocab: { icon: "🔤", label: "Từ vựng" },
-  grammar: { icon: "📝", label: "Ngữ pháp" },
-  kanji: { icon: "🖊", label: "Kanji" },
-  conversation: { icon: "🗣", label: "Hội thoại" },
-  jlpt_exam: { icon: "📋", label: "Đề JLPT" },
-  reading: { icon: "📖", label: "Đọc hiểu" },
-  writing: { icon: "✍️", label: "Viết" },
+  vocab: { icon: "font_download", label: "Từ vựng" },
+  grammar: { icon: "menu_book", label: "Ngữ pháp" },
+  kanji: { icon: "translate", label: "Kanji" },
+  conversation: { icon: "chat_bubble", label: "Hội thoại" },
+  jlpt_exam: { icon: "assignment", label: "Đề JLPT" },
+  reading: { icon: "library_books", label: "Đọc hiểu" },
+  writing: { icon: "edit", label: "Viết" },
 };
 
-const suggestionTypeLabels = {
-  speed_up: "Có thể tăng tốc",
-  slow_down: "Nên giảm tải",
-  focus_skill: "Tập trung kỹ năng",
-  add_review: "Thêm ôn tập",
+// Chữ kanji mờ trang trí nền roadmap (vị trí theo % của khung trail).
+const KANJI_WATERMARKS = [
+  { char: "大", top: "2%", left: "4%" },
+  { char: "涧", top: "4%", left: "88%" },
+  { char: "字", top: "24%", left: "90%" },
+  { char: "玩", top: "26%", left: "6%" },
+  { char: "枚", top: "48%", left: "88%" },
+  { char: "日", top: "50%", left: "4%" },
+  { char: "学", top: "70%", left: "88%" },
+  { char: "字", top: "68%", left: "6%" },
+  { char: "語", top: "90%", left: "6%" },
+  { char: "又", top: "90%", left: "88%" },
+];
+
+// Số mục học mỗi buổi theo mục tiêu phút/ngày.
+// Phản chiếu getGenericTaskCounts ở backend để tách WeeklyItem thành các node/buổi.
+const getDailyCaps = (dailyMinutes) => {
+  if (dailyMinutes <= 15)
+    return { vocab: 5, kanji: 5, grammar: 5, reading: 1, writing: 1, conversation: 1, jlpt_exam: 1 };
+  if (dailyMinutes <= 30)
+    return { vocab: 10, kanji: 10, grammar: 10, reading: 2, writing: 1, conversation: 1, jlpt_exam: 1 };
+  if (dailyMinutes <= 45)
+    return { vocab: 15, kanji: 12, grammar: 12, reading: 3, writing: 2, conversation: 1, jlpt_exam: 1 };
+  return { vocab: 20, kanji: 15, grammar: 15, reading: 4, writing: 2, conversation: 2, jlpt_exam: 1 };
 };
 
-const formatReviewDate = (value) => {
-  if (!value) return "Chưa có đánh giá";
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+const sessionTitle = (skill, count, level) => {
+  const l = level ? ` ${level}` : "";
+  switch (skill) {
+    case "vocab": return `Học ${count} từ vựng${l}`;
+    case "kanji": return `Học ${count} kanji${l}`;
+    case "grammar": return `Học ${count} mẫu ngữ pháp${l}`;
+    case "reading": return `Đọc ${count} bài luyện đọc`;
+    case "writing": return `Tải ${count} PDF luyện viết${l}`;
+    case "conversation": return `Luyện ${count} bài hội thoại${l}`;
+    case "jlpt_exam": return `Luyện ${count} đề thi${l}`;
+    default: return `Học ${count} mục`;
+  }
 };
 
-const getTaskHref = (task, level) => {
-  const order = Number(task.order) || 1;
-  const levelLower = String(level || "N5").toLowerCase();
+// Chẻ 1 WeeklyItem (target cả tuần) thành nhiều node theo buổi học.
+// Tiến độ mỗi buổi tính dồn từ số mục đã hoàn thành trong tuần (progress.count).
+// week dùng để phân trang nội dung: tuần W lấy trang W của kỹ năng đó,
+// đảm bảo nội dung không lặp lại giữa các tuần.
+const splitTaskIntoSessions = (task, caps, level, week) => {
+  const weeklyTarget = Number(task.progress?.target ?? task.targetCount) || 1;
+  const doneCount = Number(task.progress?.count) || 0;
+  const cap = Math.max(1, caps[task.skill] || weeklyTarget);
+  const sessions = Math.max(1, Math.ceil(weeklyTarget / cap));
+  const perMinutes = Math.max(
+    1,
+    Math.round((Number(task.estimatedMinutes) || sessions) / sessions)
+  );
 
-  if (task.skill === "vocab") {
-    return `/jlpt?type=word&level=${level}&tour=flashcard&lpSkill=vocab&lpOrder=${order}`;
-  }
-  if (task.skill === "kanji") {
-    return `/jlpt?type=kanji&level=${level}&tour=flashcard&lpSkill=kanji&lpOrder=${order}`;
-  }
-  if (task.skill === "grammar") {
-    return `/jlpt?type=grammar&level=${level}&tour=flashcard&lpSkill=grammar&lpOrder=${order}`;
-  }
-  if (task.skill === "jlpt_exam") {
-    return `/practice/${levelLower}?tour=exam`;
-  }
-  if (task.skill === "conversation") return "/conversation?tour=conversation";
-  if (task.skill === "reading") return "/reading?tour=reading";
-  if (task.skill === "writing") return `/jlpt?type=kanji&level=${level}&writing=1&tour=writing`;
+  return Array.from({ length: sessions }, (_, d) => {
+    const startAt = d * cap;
+    const nodeTarget = Math.min(cap, weeklyTarget - startAt);
+    const nodeCount = Math.max(0, Math.min(nodeTarget, doneCount - startAt));
+    const percent = nodeTarget ? Math.round((nodeCount / nodeTarget) * 100) : 0;
+    const isComplete = doneCount >= startAt + nodeTarget;
 
-  return null;
+    return {
+      ...task,
+      title: sessionTitle(task.skill, nodeTarget, level),
+      sessionIndex: d,
+      sessionTotal: sessions,
+      weeklyTarget,
+      // Trang nội dung = số tuần → mỗi tuần lấy phần nội dung kế tiếp, không lặp.
+      contentPage: week,
+      contentLimit: weeklyTarget,
+      cardOffset: startAt,
+      cardLimit: nodeTarget,
+      targetCount: nodeTarget,
+      estimatedMinutes: perMinutes,
+      completedAt: isComplete ? task.completedAt || null : undefined,
+      progress: {
+        ...(task.progress || {}),
+        count: nodeCount,
+        target: nodeTarget,
+        percent,
+        isComplete,
+      },
+    };
+  });
 };
 
 function LearningPathProgress() {
@@ -143,12 +115,17 @@ function LearningPathProgress() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [reviewLoading, setReviewLoading] = useState(false);
-  const [reviewError, setReviewError] = useState("");
-  const [applyLoading, setApplyLoading] = useState(false);
-  const [applyError, setApplyError] = useState("");
-  const [applySuccess, setApplySuccess] = useState("");
-  const [reviewDismissed, setReviewDismissed] = useState(false);
+  
+  // Track container width for SVG curves
+  const containerRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(600); // Default to max-w
+
+  // Node flashcard mở trong TaskModal; node còn lại mở trong PracticePanel.
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [panelTask, setPanelTask] = useState(null);
+  const [isCompleting, setIsCompleting] = useState(false);
+  // Index node vừa hoàn thành để chạy animation chúc mừng.
+  const [celebrateIndex, setCelebrateIndex] = useState(null);
 
   const loadProgress = useCallback(async () => {
     try {
@@ -164,319 +141,413 @@ function LearningPathProgress() {
     }
   }, []);
 
+  // Refresh dữ liệu roadmap mà không hiện spinner toàn trang.
+  // Dùng khi cập nhật tiến độ flashcard để trail đánh dấu node ngay.
+  const refreshProgress = useCallback(async () => {
+    try {
+      const result = await getLearningPathDashboard();
+      setData(result);
+    } catch (err) {
+      console.error("Failed to refresh learning path progress:", err);
+    }
+  }, []);
+
+  // Số node đã hoàn thành trong tuần (để phát hiện node mới xong sau khi refresh).
+  const countCompleted = useCallback((dashboard) => {
+    return Number(dashboard?.weekProgress?.completed) || 0;
+  }, []);
+
+  // Refresh sau khi học ở panel; nếu có node mới hoàn thành thì chạy animation.
+  const refreshWithCelebration = useCallback(async () => {
+    const before = countCompleted(data);
+    try {
+      const result = await getLearningPathDashboard();
+      setData(result);
+      const after = countCompleted(result);
+      if (after > before) {
+        // Node vừa hoàn thành = node hoàn thành cuối cùng theo thứ tự.
+        setCelebrateIndex(after - 1);
+        setTimeout(() => setCelebrateIndex(null), 1800);
+      }
+    } catch (err) {
+      console.error("Failed to refresh learning path progress:", err);
+    }
+  }, [data, countCompleted]);
+
+  // Quyết định mở TaskModal (flashcard) hay PracticePanel (skill còn lại).
+  const openTask = useCallback((task) => {
+    if (FLASHCARD_SKILLS.includes(task.skill)) {
+      setSelectedTask(task);
+    } else {
+      setPanelTask(task);
+    }
+  }, []);
+
   useEffect(() => {
     loadProgress();
   }, [loadProgress]);
 
-  const handleReview = async () => {
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      setContainerWidth(entries[0].contentRect.width);
+    });
+    observer.observe(containerRef.current);
+    setContainerWidth(containerRef.current.getBoundingClientRect().width);
+    return () => observer.disconnect();
+  }, [loading]);
+
+  const handleCompleteTask = async (task) => {
     try {
-      setReviewLoading(true);
-      setReviewError("");
-      setApplyError("");
-      setApplySuccess("");
-      setReviewDismissed(false);
-      const result = await reviewLearningPath();
-      setData((current) => ({
-        ...current,
-        lastReview: result.lastReview,
-        reviewStats: result.stats,
-      }));
+      setIsCompleting(true);
+      await completeLearningPathItem({ skill: task.skill, order: task.order });
+      setSelectedTask(null);
+      setPanelTask(null);
+      await refreshWithCelebration(); // Cập nhật UI + animation node vừa xong
     } catch (err) {
-      console.error("Failed to review learning path:", err);
-      setReviewError(err?.message || "Hệ thống AI đánh giá lộ trình đang gặp lỗi. Vui lòng thử lại sau.");
+      console.error("Failed to complete task", err);
+      alert(err?.message || "Lỗi khi hoàn thành bài học");
     } finally {
-      setReviewLoading(false);
+      setIsCompleting(false);
     }
   };
 
-  const handleApplyReview = async () => {
-    const confirmedItems = data?.lastReview?.adjustedWeeklyItems || [];
-    if (!confirmedItems.length) {
-      setApplyError("Không có điều chỉnh nào để áp dụng.");
-      return;
-    }
-
-    try {
-      setApplyLoading(true);
-      setApplyError("");
-      setApplySuccess("");
-      const result = await applyLearningPathReview({ confirmedItems });
-      setData(result);
-      setReviewDismissed(true);
-      setApplySuccess("Đã áp dụng điều chỉnh vào tuần tiếp theo.");
-    } catch (err) {
-      console.error("Failed to apply learning path review:", err);
-      setApplyError(err?.message || "Không áp dụng được điều chỉnh. Vui lòng thử lại sau.");
-    } finally {
-      setApplyLoading(false);
-    }
+  // Đóng PracticePanel: refresh để bắt tiến độ auto-track (đọc/viết/đề thi).
+  const handlePanelClose = async () => {
+    setPanelTask(null);
+    await refreshWithCelebration();
   };
+
+  if (loading) {
+    return (
+      <main className="max-w-7xl mx-auto px-container-padding py-lg flex justify-center items-center min-h-[60vh]">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin border-solid"></div>
+      </main>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <main className="max-w-7xl mx-auto px-container-padding py-lg">
+        <div className="bg-error-container text-on-error-container p-4 rounded-xl text-center">
+          {error || "Không có dữ liệu"}
+        </div>
+      </main>
+    );
+  }
 
   const weekTasks = data?.weekTasks || [];
   const todayTasks = data?.todayTasks || [];
   const weekProgress = data?.weekProgress || {};
   const weekPercent = Math.min(Math.max(Number(weekProgress.percent) || 0, 0), 100);
-  const adjustedWeeklyItems = data?.lastReview?.adjustedWeeklyItems || [];
-  const canApplyReview = adjustedWeeklyItems.length > 0 && !reviewDismissed;
-  const dailyMinutes = data?.goal?.dailyMinutes || 30;
+  const dailyMinutes = data?.goal?.dailyMinutes || 15;
+  const currentLevel = data?.level || "N5";
 
-  const renderTaskCard = (task, keyPrefix = "task", variant = "week") => {
-    const meta = skillMeta[task.skill] || { icon: "", label: task.skill };
-    const progress = task.progress || {
-      count: task.completedAt ? task.targetCount || 1 : 0,
-      target: task.targetCount || 1,
-      percent: task.completedAt ? 100 : 0,
-      label: `${task.completedAt ? task.targetCount || 1 : 0}/${task.targetCount || 1} mục`,
-    };
-    const progressPercent = Math.min(Math.max(Number(progress.percent) || 0, 0), 100);
-    const href = getTaskHref(task, data.level);
-    const isDone = Boolean(task.completedAt || progress.isComplete);
-    const isToday = variant === "today";
+  // Roadmap = toàn bộ bài học của tuần hiện tại, tách thành từng buổi học (node).
+  // Mỗi WeeklyItem (target cả tuần) được chẻ theo daily-cap để mỗi node là 1 buổi.
+  const dailyCaps = getDailyCaps(dailyMinutes);
+  const currentWeek = Number(weekProgress.week) || 1;
+  const allTasks = [...weekTasks]
+    // Bỏ node đề JLPT: node cúp cuối tuần đã là bài thi rồi nên bị trùng.
+    .filter((task) => task.skill !== "jlpt_exam")
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .flatMap((task) => splitTaskIntoSessions(task, dailyCaps, currentLevel, currentWeek));
+  
+  // Find index of first active task to highlight
+  let activeIndex = allTasks.findIndex((task) => {
+     const isDone = Boolean(task.completedAt || task.progress?.isComplete);
+     return !isDone;
+  });
+  if (activeIndex === -1) activeIndex = allTasks.length; // all done
 
-    return (
-      <article key={`${keyPrefix}-${task.skill}-${task.order}`} className={isToday ? todayTaskClass : weekTaskClass}>
-        <div className={taskTopClass}>
-          <div>
-            <div className={taskSkillClass}>
-              {meta.icon && <span className={skillMarkClass}>{meta.icon}</span>}
-              <span>{meta.label}</span>
-            </div>
-            <h3 className={isToday ? taskTitleClass : weekTaskTitleClass}>{task.title || meta.label}</h3>
-            <p className={taskMetaClass}>{progress.requirement || progress.label}</p>
-          </div>
-          <span className={cn(timeBadgeClass, isDone && doneBadgeClass)}>
-            {isDone ? "Hoàn thành" : `${task.estimatedMinutes || 15} phút`}
-          </span>
-        </div>
-
-        <div className={progressBlockClass}>
-          <div className={progressMetaClass}>
-            <span>{progress.label}</span>
-            <span>{progressPercent}%</span>
-          </div>
-          <div className={progressTrackClass}>
-            <div
-              className={cn(progressFillClass, isDone && progressFillDoneClass)}
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          {progress.latestScore !== null && progress.latestScore !== undefined && (
-            <p className={taskMetaClass}>Điểm cao nhất tuần này: {progress.latestScore}</p>
-          )}
-        </div>
-
-        {href && (
-          <div className={taskActionsClass}>
-            <button type="button" className={startBtnClass} onClick={() => navigate(href)}>
-              {isDone ? "Tiếp tục luyện" : "Bắt đầu"}
-            </button>
-          </div>
-        )}
-      </article>
-    );
+  // --- Path Coordinates Generation ---
+  const rowHeight = 220; 
+  const getPoint = (index) => {
+    const rIndex = Math.floor(index / 3);
+    const cIndex = index % 3;
+    const isEven = rIndex % 2 === 0;
+    
+    let x = 0;
+    // 70px from edge to center of outer nodes
+    if (isEven) {
+      if (cIndex === 0) x = 70;
+      if (cIndex === 1) x = containerWidth / 2;
+      if (cIndex === 2) x = containerWidth - 70;
+    } else {
+      if (cIndex === 0) x = containerWidth - 70;
+      if (cIndex === 1) x = containerWidth / 2;
+      if (cIndex === 2) x = 70;
+    }
+    
+    // Node giữa hàng võng xuống tạo hiệu ứng sóng
+    const y = rIndex * rowHeight + (cIndex === 1 ? 70 : 0) + 48; 
+    return { x, y };
   };
 
+  let pathD = "";
+  const totalRows = Math.ceil((allTasks.length || 0) / 3);
+  const finalNodeY = totalRows * rowHeight + 48;
+  const finalNodeX = containerWidth / 2;
+
+  if (allTasks.length > 0) {
+    pathD = `M ${getPoint(0).x} ${getPoint(0).y}`;
+    for (let i = 1; i < allTasks.length; i++) {
+      const prev = getPoint(i - 1);
+      const curr = getPoint(i);
+      const prevR = Math.floor((i - 1) / 3);
+      const currR = Math.floor(i / 3);
+      
+      if (prevR === currR) {
+        // S-curve horizontally to connect nodes in the same row
+        const midX = (prev.x + curr.x) / 2;
+        pathD += ` C ${midX} ${prev.y}, ${midX} ${curr.y}, ${curr.x} ${curr.y}`;
+      } else {
+        // C-loop vertically to avoid text block when moving to next row
+        const isRight = prev.x > containerWidth / 2;
+        const offset = isRight ? 80 : -80; 
+        pathD += ` C ${prev.x + offset} ${prev.y}, ${curr.x + offset} ${curr.y}, ${curr.x} ${curr.y}`;
+      }
+    }
+    
+    // Connect to final node
+    const last = getPoint(allTasks.length - 1);
+    pathD += ` C ${last.x} ${last.y + 60}, ${finalNodeX} ${finalNodeY - 60}, ${finalNodeX} ${finalNodeY}`;
+  }
+
+  const pathContainerHeight = finalNodeY + 140; // Pad bottom for final node
+
   return (
-    <main className={wrapperClass}>
-      <div className={containerClass}>
-        <header className={topBarClass}>
-          <div>
-            <div className={eyebrowClass}>Lộ trình cá nhân</div>
-            <h1 className={titleClass}>Hôm nay học gì?</h1>
-            <p className={subtitleClass}>
-              Tập trung vào các nhiệm vụ quan trọng nhất trong khoảng {dailyMinutes} phút học hôm nay, rồi xem phần còn lại của tuần ở bên dưới.
-            </p>
+    <div className="bg-background text-on-background min-h-screen font-['Be_Vietnam_Pro',_sans-serif]">
+      <main className="max-w-7xl mx-auto px-container-padding py-lg flex flex-col lg:flex-row gap-lg">
+        {/* Left Column: The Learning Trail */}
+        <div className="flex-1">
+          {/* Overall Progress Header */}
+          <div className="bg-surface-container-lowest rounded-xl p-sm shadow-[0_4px_20px_rgba(0,0,0,0.05)] mb-lg flex items-center gap-4">
+            <div className="flex-1 h-2 bg-surface-variant rounded-full overflow-hidden relative">
+              <div 
+                 className="absolute top-0 left-0 h-full bg-secondary rounded-full transition-all duration-500"
+                 style={{ width: `${weekPercent}%` }}
+              ></div>
+            </div>
+            <div className="flex gap-2 items-center">
+              <span className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-on-secondary font-label-sm text-label-sm shadow-md z-10">{currentLevel}</span>
+            </div>
           </div>
-          <button type="button" className={regenerateBtnClass} onClick={() => navigate("/onboarding")}>
-            Tạo lại lộ trình
-          </button>
-        </header>
 
-        {loading ? (
-          <div className={stateClass}>
-            <span className={stateSpinnerClass} />
-            <strong className={stateTitleClass}>Đang tải tiến độ lộ trình...</strong>
-            <p className={stateTextClass}>Chúng tôi đang lấy kế hoạch học mới nhất của bạn.</p>
+          {/* The Trail Canvas */}
+          <div className="bg-surface-container-lowest rounded-3xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-xl relative min-h-[600px] overflow-hidden flex flex-col items-center">
+            {/* Section Title */}
+            <h2 className="font-label-sm text-label-sm text-on-surface-variant mb-xl text-center uppercase tracking-widest z-10">
+              Tuần {weekProgress.week || 1} · {weekProgress.completed || 0}/{weekProgress.total || 0} bài
+            </h2>
+
+            {/* Node Path Container */}
+            <div 
+               ref={containerRef}
+               className="relative w-full max-w-[600px] mx-auto pb-lg"
+               style={{ height: `${pathContainerHeight}px` }}
+            >
+              {/* Kanji watermark nền */}
+              {KANJI_WATERMARKS.map((wm, idx) => (
+                <span
+                  key={idx}
+                  aria-hidden="true"
+                  className="absolute select-none pointer-events-none text-[80px] font-bold text-on-surface/[0.04] leading-none font-['Kosugi_Maru',_sans-serif]"
+                  style={{ top: wm.top, left: wm.left, transform: "translate(-50%, -50%)" }}
+                >
+                  {wm.char}
+                </span>
+              ))}
+
+              <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 1, width: '100%', height: '100%', overflow: 'visible' }}>
+                 <defs>
+                   <linearGradient id="trailGradient" x1="0" y1="0" x2="0" y2="1">
+                     <stop offset="0%" stopColor="#a8e86a" />
+                     <stop offset="55%" stopColor="#6fdca0" />
+                     <stop offset="100%" stopColor="#3ec9c4" />
+                   </linearGradient>
+                 </defs>
+                 <path d={pathD} stroke="url(#trailGradient)" strokeWidth="9" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              
+              {allTasks.map((task, i) => {
+                 const p = getPoint(i);
+                 const isCompleted = Boolean(task.completedAt || task.progress?.isComplete);
+                 const isActive = !isCompleted && i === activeIndex;
+                 const isLocked = !isCompleted && i > activeIndex;
+                 
+                 const meta = skillMeta[task.skill] || { icon: "menu_book", label: task.skill };
+
+                 return (
+                    <div 
+                       key={i} 
+                       className={cn("absolute flex flex-col items-center gap-2 group w-[130px] z-10", !isLocked ? "cursor-pointer" : "")}
+                       style={{ left: p.x, top: p.y, transform: 'translate(-50%, -48px)' }}
+                       onClick={() => { if (!isLocked) openTask(task); }}
+                    >
+                       {/* Node tròn trắng có bóng đổ */}
+                       {isCompleted && (
+                         <div className={cn(
+                           "w-[72px] h-[72px] rounded-full bg-white flex items-center justify-center shadow-[0_6px_18px_rgba(0,0,0,0.12)] transform transition-transform group-hover:scale-105 relative",
+                           celebrateIndex === i && "animate-bounce"
+                         )}>
+                           {celebrateIndex === i && (
+                             <span className="absolute inset-0 rounded-full ring-4 ring-secondary/40 animate-ping"></span>
+                           )}
+                           <span className="material-symbols-outlined text-[38px] text-secondary fill">check_circle</span>
+                         </div>
+                       )}
+
+                       {isActive && (
+                         <div className="w-[84px] h-[84px] rounded-full border-[5px] border-primary border-solid bg-white flex items-center justify-center shadow-[0_8px_22px_rgba(0,0,0,0.15)] transform transition-transform group-hover:scale-105 relative">
+                           <div className="absolute -top-1 -right-1 bg-error text-on-error font-bold text-[11px] px-2.5 py-0.5 rounded-full shadow-md">Mới</div>
+                           <span className="material-symbols-outlined text-primary text-[42px] fill">{meta.icon}</span>
+                         </div>
+                       )}
+
+                       {isLocked && (
+                         <div className="w-[72px] h-[72px] rounded-full bg-white flex items-center justify-center shadow-[0_6px_18px_rgba(0,0,0,0.1)]">
+                           <span className="material-symbols-outlined text-[34px] text-on-surface-variant/60">lock</span>
+                         </div>
+                       )}
+
+                       {(!isCompleted && !isActive && !isLocked) && (
+                         <div className="w-[72px] h-[72px] rounded-full bg-white flex items-center justify-center shadow-[0_6px_18px_rgba(0,0,0,0.12)] transform transition-transform group-hover:scale-105">
+                           <span className="material-symbols-outlined text-[36px] text-primary">{meta.icon}</span>
+                         </div>
+                       )}
+
+                       <span className={cn(
+                         "font-label-md text-center leading-tight mt-1",
+                         isActive ? "text-primary font-bold" : "text-on-surface-variant"
+                       )}>
+                         {task.title || meta.label}
+                       </span>
+
+                       {isActive && task.progress && (
+                         <div className="w-20 h-1.5 bg-surface-variant rounded-full">
+                           <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${task.progress.percent || 0}%` }}></div>
+                         </div>
+                       )}
+                    </div>
+                 );
+              })}
+              
+              {/* End of Section Node — Bài kiểm tra */}
+              {allTasks.length > 0 && (
+                 <div 
+                    className="absolute flex flex-col items-center gap-2 group cursor-pointer z-10" 
+                    style={{ left: finalNodeX, top: finalNodeY, width: '160px', transform: 'translate(-50%, -56px)' }}
+                    onClick={() => navigate(`/practice/${currentLevel.toLowerCase()}?tour=exam`)}
+                 >
+                    <div className="w-[104px] h-[104px] rounded-full bg-[#a67c1a] flex items-center justify-center shadow-[0_10px_26px_rgba(166,124,26,0.35)] transform transition-transform group-hover:scale-105">
+                      <span className="material-symbols-outlined text-[52px] text-white fill">emoji_events</span>
+                    </div>
+                    <span className="font-label-md font-bold text-on-surface-variant uppercase tracking-wider mt-2 text-center">Bài kiểm tra {currentLevel}</span>
+                 </div>
+              )}
+            </div>
           </div>
-        ) : error ? (
-          <div className={stateClass}>
-            <strong className={stateTitleClass}>{error}</strong>
-            <button type="button" className={stateBtnClass} onClick={loadProgress}>
-              Thử lại
-            </button>
-          </div>
-        ) : !data?.hasLearningPath ? (
-          <div className={stateClass}>
-            <strong className={stateTitleClass}>Bạn chưa có lộ trình học.</strong>
-            <p className={stateTextClass}>Hãy tạo lộ trình cá nhân hóa để AI sắp xếp bài học phù hợp với mục tiêu của bạn.</p>
-            <button type="button" className={stateBtnClass} onClick={() => navigate("/onboarding")}>
-              Tạo lộ trình
-            </button>
-          </div>
-        ) : (
-          <>
-            <section className={mainGridClass}>
-              <div className={leftStackClass}>
-                <div className={todayCardClass}>
-                  <div className={sectionHeaderClass}>
-                    <div>
-                      <h2 className={sectionTitleClass}>Nhiệm vụ hôm nay</h2>
-                      <p className={sectionDescriptionClass}>
-                        Ưu tiên các mục chưa hoàn thành theo thứ tự lộ trình, vừa với mục tiêu {dailyMinutes} phút/ngày.
-                      </p>
-                    </div>
-                    <span className={panelBadgeClass}>{todayTasks.length} mục hôm nay</span>
-                  </div>
+        </div>
 
-                  {todayTasks.length === 0 ? (
-                    <div className={emptyTasksClass}>
-                      <strong className={stateTitleClass}>Hôm nay bạn đã hoàn thành các mục gợi ý.</strong>
-                      <p className={stateTextClass}>Bạn có thể ôn lại bài cũ hoặc xem kế hoạch tuần bên dưới để học trước.</p>
-                    </div>
-                  ) : (
-                    <div className={todayListClass}>
-                      {todayTasks.map((task) => renderTaskCard(task, "today", "today"))}
-                    </div>
-                  )}
-                </div>
+        {/* Right Column: Dashboard Cards */}
+        <div className="w-full lg:w-[360px] flex flex-col gap-lg">
+          {/* Nhiệm vụ hôm nay */}
+          <div className="bg-surface-container-lowest rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-container-padding">
+            <div className="flex justify-between items-center mb-sm">
+              <h3 className="font-headline-sm text-headline-sm text-on-surface">Nhiệm vụ hôm nay</h3>
+              <span className="bg-primary-container/20 text-primary font-label-sm text-label-sm px-2 py-1 rounded-full">{todayTasks.length} mục hôm nay</span>
+            </div>
+            <p className="font-body-sm text-sm text-on-surface-variant mb-lg">Ưu tiên các mục chưa hoàn thành theo thứ tự lộ trình, vừa với mục tiêu {dailyMinutes} phút/ngày.</p>
+            
+            {todayTasks.length === 0 ? (
+               <div className="text-center py-4 text-on-surface-variant text-sm">Hôm nay bạn đã hoàn thành các mục gợi ý.</div>
+            ) : (
+              todayTasks.map((task, idx) => {
+                const meta = skillMeta[task.skill] || { label: task.skill };
+                const isDone = Boolean(task.completedAt || task.progress?.isComplete);
+                const percent = Math.min(Math.max(Number(task.progress?.percent) || 0, 0), 100);
 
-                <section className={weeklyCardClass}>
-                  <div className={sectionHeaderClass}>
-                    <div>
-                      <h2 className={sectionTitleClass}>Kế hoạch tuần</h2>
-                      <p className={sectionDescriptionClass}>{weekTasks.length} mục trong tuần này, dùng để học tiếp sau nhiệm vụ hôm nay.</p>
-                    </div>
-                    <div className={panelBadgesClass}>
-                      <span className={panelBadgeClass}>{weekPercent}% hoàn thành</span>
-                    </div>
-                  </div>
-
-                  {weekTasks.length === 0 ? (
-                    <div className={emptyTasksClass}>Tuần này chưa có mục học nào trong lộ trình.</div>
-                  ) : (
-                    <div className={weekListClass}>
-                      {weekTasks.map((task) => renderTaskCard(task, "week", "week"))}
-                    </div>
-                  )}
-                </section>
-              </div>
-
-              <aside className={sideStackClass}>
-                <section className={progressPanelClass}>
-                  <div className={sectionHeaderClass}>
-                    <div>
-                      <h2 className={sectionTitleClass}>Nhịp học tuần này</h2>
-                      <p className={sectionDescriptionClass}>Theo dõi nhanh để biết hôm nay cần giữ nhịp hay tăng tốc.</p>
-                    </div>
-                  </div>
-                  <div className={statsGridClass}>
-                    <div className={statBoxClass}>
-                      <div className={statLabelClass}>Tuần</div>
-                      <div className={statValueClass}>{weekProgress.week || 1}</div>
-                    </div>
-                    <div className={statBoxClass}>
-                      <div className={statLabelClass}>Xong</div>
-                      <div className={statValueClass}>{weekProgress.completed || 0}/{weekProgress.total || 0}</div>
-                    </div>
-                    <div className={statBoxClass}>
-                      <div className={statLabelClass}>Tiến độ</div>
-                      <div className={statValueClass}>{weekPercent}%</div>
-                    </div>
-                  </div>
-                  <div className={weeklyTrackClass}>
-                    <span className={weeklyFillClass} style={{ width: `${weekPercent}%` }} />
-                  </div>
-                  <p className={sectionDescriptionClass}>Cấp độ hiện tại: {data.level || "N5"}</p>
-                </section>
-
-                <section className={reviewPanelClass}>
-                  <div className={sectionHeaderClass}>
-                    <div>
-                      <h2 className={sectionTitleClass}>AI coach</h2>
-                      <p className={sectionDescriptionClass}>Đánh giá lộ trình và đề xuất điều chỉnh khi nhịp học thay đổi.</p>
-                    </div>
-                    <button type="button" className={reviewBtnClass} onClick={handleReview} disabled={reviewLoading}>
-                      {reviewLoading ? "Đang đánh giá..." : data?.lastReview ? "Đánh giá lại" : "Tạo đánh giá"}
-                    </button>
-                  </div>
-
-                  {reviewError && <div className={reviewErrorClass}>{reviewError}</div>}
-
-                  {data?.lastReview ? (
-                    <>
-                      <div className={reviewMetaRowClass}>
-                        <div className={reviewMetaClass}>Lần đánh giá gần nhất: {formatReviewDate(data.lastReview.reviewedAt)}</div>
-                        {typeof data.lastReview.onTrack === "boolean" && (
-                          <span className={cn(reviewStatusClass, !data.lastReview.onTrack && reviewStatusWarningClass)}>
-                            {data.lastReview.onTrack ? "Đúng tiến độ" : "Cần điều chỉnh"}
-                          </span>
-                        )}
+                return (
+                  <div key={idx} className="mb-gutter pb-gutter border-0 border-b border-solid border-surface-variant last:border-0 last:mb-0 last:pb-0">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <span className="bg-surface-variant text-on-surface-variant font-label-sm text-[10px] px-2 py-0.5 rounded-sm uppercase tracking-wider mb-1 inline-block">
+                          {meta.label}
+                        </span>
+                        <h4 className="font-label-lg text-label-lg text-on-surface">{task.title || meta.label}</h4>
                       </div>
-                      <p className={assessmentClass}>{data.lastReview.assessment}</p>
-                      {data.lastReview.suggestions?.length > 0 && (
-                        <div className={suggestionListClass}>
-                          {data.lastReview.suggestions.map((suggestion, index) => (
-                            <article key={`${suggestion.type}-${suggestion.skill || index}`} className={suggestionCardClass}>
-                              <div className={suggestionTitleClass}>
-                                {suggestionTypeLabels[suggestion.type] || "Gợi ý"}
-                                {suggestion.skill && skillMeta[suggestion.skill]?.label ? ` · ${skillMeta[suggestion.skill].label}` : ""}
-                              </div>
-                              <p className={suggestionTextClass}>{suggestion.reason}</p>
-                            </article>
-                          ))}
-                        </div>
-                      )}
-
-                      {adjustedWeeklyItems.length > 0 && (
-                        <div className={adjustedBlockClass}>
-                          <div className={adjustedTitleClass}>Điều chỉnh đề xuất cho tuần tiếp theo</div>
-                          <div className={adjustedListClass}>
-                            {adjustedWeeklyItems.map((item, index) => (
-                              <div key={`${item.skill}-${item.order || index}`} className={adjustedItemClass}>
-                                <span className={adjustedSkillClass}>{skillMeta[item.skill]?.label || item.skill}</span>
-                                <strong className={adjustedItemTitleClass}>{item.title}</strong>
-                                <small className={adjustedMetaClass}>{item.targetCount || 1} mục · {item.estimatedMinutes || 15} phút</small>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {applyError && <div className={reviewErrorClass}>{applyError}</div>}
-                      {applySuccess && <div className={applySuccessClass}>{applySuccess}</div>}
-
-                      {canApplyReview && (
-                        <div className={reviewActionsClass}>
-                          <button type="button" className={reviewBtnClass} onClick={handleApplyReview} disabled={applyLoading}>
-                            {applyLoading ? "Đang áp dụng..." : "Áp dụng điều chỉnh"}
-                          </button>
-                          <button
-                            type="button"
-                            className={keepBtnClass}
-                            onClick={() => {
-                              setReviewDismissed(true);
-                              setApplyError("");
-                              setApplySuccess("Đã giữ nguyên lộ trình hiện tại.");
-                            }}
-                            disabled={applyLoading}
-                          >
-                            Giữ nguyên lộ trình
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className={reviewEmptyClass}>
-                      Chưa có đánh giá nào. Khi bạn đã học được vài ngày, hãy tạo đánh giá để AI đề xuất điều chỉnh phù hợp.
+                      <span className="bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-[10px] px-2 py-1 rounded-full">
+                        {isDone ? "Hoàn thành" : `${task.estimatedMinutes || 15} phút`}
+                      </span>
                     </div>
-                  )}
-                </section>
-              </aside>
-            </section>
-          </>
-        )}
-      </div>
-    </main>
+                    <p className="font-body-sm text-xs text-on-surface-variant mb-3">Mục tiêu hôm nay: {task.progress?.label || "Hoàn thành nhiệm vụ"}</p>
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="flex-1 h-1.5 bg-surface-variant rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${percent}%` }}></div>
+                      </div>
+                      <span className="font-label-sm text-[10px] text-on-surface-variant">{percent}%</span>
+                    </div>
+                    <div className="flex justify-end">
+                      <button 
+                        className="bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg px-4 py-1.5 rounded-full transition-colors"
+                        onClick={() => openTask(task)}
+                      >
+                        {isDone ? "Xem lại" : "Bắt đầu"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Nhịp học tuần này */}
+          <div className="bg-surface-container-lowest rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-container-padding">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Nhịp học tuần này</h3>
+            <p className="font-body-sm text-sm text-on-surface-variant mb-4">Theo dõi nhanh để biết hôm nay cần giữ nhịp hay tăng tốc.</p>
+            <div className="grid grid-cols-3 gap-2 text-center mb-4">
+              <div className="p-2">
+                <div className="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider mb-1">Tuần</div>
+                <div className="font-headline-md text-headline-md text-primary">{weekProgress.week || 1}</div>
+              </div>
+              <div className="p-2 border-0 border-l border-solid border-surface-variant">
+                <div className="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider mb-1">Xong</div>
+                <div className="font-headline-md text-headline-md text-on-surface">{weekProgress.completed || 0}/{weekProgress.total || 0}</div>
+              </div>
+              <div className="p-2 border-0 border-l border-solid border-surface-variant">
+                <div className="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider mb-1">Tiến độ</div>
+                <div className="font-headline-md text-headline-md text-on-surface">{weekPercent}%</div>
+              </div>
+            </div>
+            <div className="font-body-sm text-xs text-on-surface-variant pt-3 border-0 border-t border-solid border-surface-variant">Cấp độ hiện tại: {currentLevel}</div>
+          </div>
+        </div>
+      </main>
+
+      {/* Node flashcard: học flip-card ngay trong TaskModal */}
+      {selectedTask && (
+        <TaskModal 
+           task={selectedTask} 
+           level={data.level}
+           onClose={() => setSelectedTask(null)}
+           onComplete={handleCompleteTask}
+           onProgress={refreshProgress}
+           isCompleting={isCompleting}
+        />
+      )}
+
+      {/* Node còn lại: ngăn kéo trượt nhúng trang thực hành */}
+      {panelTask && (
+        <PracticePanel
+           task={panelTask}
+           level={data.level}
+           onClose={handlePanelClose}
+           onComplete={handleCompleteTask}
+           isCompleting={isCompleting}
+        />
+      )}
+    </div>
   );
 }
 
