@@ -41,6 +41,7 @@ import {
 const cx = classNames.bind(styles);
 const DRAFT_SESSION_ID = "draft-session";
 const DEFAULT_TITLE = "Cuộc trò chuyện mới";
+const NOTEBOOK_ACTION_PROGRESS_INTERVAL_MS = 1300;
 
 const suggestedPrompts = [
   "Giải thích ngữ pháp て形 cho tôi",
@@ -94,6 +95,61 @@ function isPendingNotebookAction(action) {
     action?.type === "confirm_add_limited_to_notebook" ||
     action?.type === "confirm_create_limited_notebook"
   );
+}
+
+function normalizeNotebookActionReply(value) {
+  return (value || "")
+    .toLocaleLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isAffirmativeNotebookActionReply(value) {
+  return [
+    "ok",
+    "oke",
+    "okay",
+    "yes",
+    "co",
+    "co nhe",
+    "dong y",
+    "duoc",
+    "xac nhan",
+    "lam di",
+    "tao di",
+    "them di",
+    "tiep tuc",
+  ].includes(normalizeNotebookActionReply(value));
+}
+
+function parseNotebookActionCount(value) {
+  const normalized = normalizeNotebookActionReply(value);
+  const match =
+    normalized.match(/\b(\d{1,3})\s*(?:tu vung|tu|kanji|muc|items?|words?)\b/) ||
+    normalized.match(/\b(?:tao|them|sinh|generate|add|make|create)\s+(\d{1,3})\b/);
+
+  if (!match) return null;
+
+  const count = Number(match[1]);
+  return Number.isFinite(count) && count > 0 ? count : null;
+}
+
+function replaceNotebookActionPromptCount(prompt, count) {
+  const source = (prompt || "").trim();
+  if (!source) return `${count} từ vựng`;
+
+  const countPattern =
+    /\b(\d{1,6})\s*(từ\s+vựng|từ|kanji|mục|items?|words?)\b/i;
+
+  if (countPattern.test(source)) {
+    return source.replace(countPattern, `${count} $2`);
+  }
+
+  return `${count} từ vựng. ${source}`;
 }
 
 function dismissPendingNotebookActions(messages) {
@@ -366,6 +422,7 @@ function ChatAI() {
   const streamAbortControllerRef = useRef(null);
   const streamStoppedRef = useRef(false);
   const consumedActionKeysRef = useRef(new Set());
+  const notebookActionProgressTimersRef = useRef([]);
 
   const isDraftActive = activeSessionId === DRAFT_SESSION_ID;
   const hasNoQuota = aiUsage && aiUsage.remaining <= 0;
@@ -415,6 +472,16 @@ function ChatAI() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, isLoading]);
+
+  useEffect(
+    () => () => {
+      notebookActionProgressTimersRef.current.forEach((timerId) =>
+        clearTimeout(timerId),
+      );
+      notebookActionProgressTimersRef.current = [];
+    },
+    [],
+  );
 
   const refreshConversations = async () => {
     const sessions = unwrap(await getUserSessions()) || [];
@@ -514,6 +581,100 @@ function ChatAI() {
     );
   };
 
+  const clearNotebookActionProgressTimers = () => {
+    notebookActionProgressTimersRef.current.forEach((timerId) =>
+      clearTimeout(timerId),
+    );
+    notebookActionProgressTimersRef.current = [];
+  };
+
+  const startNotebookActionProgress = ({ type, notebookName, count }) => {
+    clearNotebookActionProgressTimers();
+
+    const progressId = `notebook-action-progress-${Date.now()}`;
+    const safeCount = count || 30;
+    const safeNotebookName = notebookName || "sổ tay đã chọn";
+    const steps =
+      type === "create"
+        ? [
+            `Đang tạo sổ tay "${safeNotebookName}"...`,
+            `Đang sinh ${safeCount} từ vựng phù hợp...`,
+            "Đang lưu từ vựng vào sổ tay...",
+          ]
+        : [
+            `Đang mở sổ tay "${safeNotebookName}"...`,
+            `Đang sinh ${safeCount} từ vựng mới...`,
+            "Đang lọc trùng và lưu vào sổ tay...",
+          ];
+
+    const buildProgressItems = (lastIndex) =>
+      formatProgressContent(
+        steps.slice(0, lastIndex + 1).map((message) => ({ message })),
+      );
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: progressId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+        actions: [],
+        isProgress: true,
+        progressItems: buildProgressItems(0),
+      },
+    ]);
+
+    steps.slice(1).forEach((_, index) => {
+      const timerId = setTimeout(() => {
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === progressId
+              ? {
+                  ...message,
+                  progressItems: buildProgressItems(index + 1),
+                }
+              : message,
+          ),
+        );
+      }, NOTEBOOK_ACTION_PROGRESS_INTERVAL_MS * (index + 1));
+      notebookActionProgressTimersRef.current.push(timerId);
+    });
+
+    return progressId;
+  };
+
+  const replaceNotebookActionProgress = (progressId, message) => {
+    clearNotebookActionProgressTimers();
+
+    setMessages((prev) =>
+      prev.map((item) =>
+        item.id === progressId ? formatMessage(message, "assistant") : item,
+      ),
+    );
+  };
+
+  const getLatestPendingNotebookAction = () => {
+    for (let messageIndex = messages.length - 1; messageIndex >= 0; messageIndex -= 1) {
+      const message = messages[messageIndex];
+      const actions = message.actions || [];
+
+      for (let actionIndex = actions.length - 1; actionIndex >= 0; actionIndex -= 1) {
+        const action = actions[actionIndex];
+        if (isPendingNotebookAction(action)) {
+          return {
+            action,
+            actionKey: `${message.id}-${action.type}-${
+              action.notebookId || actionIndex
+            }`,
+          };
+        }
+      }
+    }
+
+    return null;
+  };
+
   const handleStopGenerating = () => {
     if (!isLoading || pendingActionKey) return;
     streamStoppedRef.current = true;
@@ -521,7 +682,12 @@ function ChatAI() {
     setQuotaMessage("Đã dừng phản hồi.");
   };
 
-  const handleNotebookAddAction = async (action, notebook, actionKey) => {
+  const handleNotebookAddAction = async (
+    action,
+    notebook,
+    actionKey,
+    userContent,
+  ) => {
     const targetNotebook = notebook || {
       id: action?.notebookId,
       name: action?.notebookName,
@@ -543,7 +709,9 @@ function ChatAI() {
     const userMessage = {
       id: `notebook-action-user-${Date.now()}`,
       role: "user",
-      content: `Xác nhận thêm từ vào sổ tay "${notebookName || "đã chọn"}".`,
+      content:
+        userContent ||
+        `Xác nhận thêm từ vào sổ tay "${notebookName || "đã chọn"}".`,
       timestamp: new Date(),
     };
 
@@ -553,6 +721,11 @@ function ChatAI() {
     setIsLoading(true);
     setPendingActionKey(actionKey);
     setQuotaMessage("");
+    const progressId = startNotebookActionProgress({
+      type: "add",
+      notebookName,
+      count: action?.limitedCount,
+    });
 
     try {
       const response = unwrap(
@@ -566,10 +739,7 @@ function ChatAI() {
         setAiUsage(response.usage);
       }
 
-      setMessages((prev) => [
-        ...prev,
-        formatMessage(response?.aiMessage, "assistant"),
-      ]);
+      replaceNotebookActionProgress(progressId, response?.aiMessage);
       setOpenCandidateActionKey(null);
       setDeclinedActionKeys((prev) =>
         prev.filter((item) => !actionKey.startsWith(item)),
@@ -585,25 +755,26 @@ function ChatAI() {
         );
       }
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `notebook-action-error-${Date.now()}`,
-          role: "assistant",
-          content:
-            error?.message ||
-            "Mình chưa thể thêm từ vào sổ tay này. Bạn thử lại giúp mình nhé.",
-          timestamp: new Date(),
-          actions: [],
-        },
-      ]);
+      replaceNotebookActionProgress(progressId, {
+        id: `notebook-action-error-${Date.now()}`,
+        role: "assistant",
+        content:
+          error?.message ||
+          "Mình chưa thể thêm từ vào sổ tay này. Bạn thử lại giúp mình nhé.",
+        timestamp: new Date(),
+        actions: [],
+      });
     } finally {
       setIsLoading(false);
       setPendingActionKey(null);
     }
   };
 
-  const handleNotebookCreateLimitedAction = async (action, actionKey) => {
+  const handleNotebookCreateLimitedAction = async (
+    action,
+    actionKey,
+    userContent,
+  ) => {
     const notebookName = action?.notebookName;
     const prompt = action?.prompt;
 
@@ -620,7 +791,9 @@ function ChatAI() {
     const userMessage = {
       id: `notebook-create-user-${Date.now()}`,
       role: "user",
-      content: `Tạo ${action?.limitedCount || 30} từ vựng cho sổ tay "${notebookName}".`,
+      content:
+        userContent ||
+        `Tạo ${action?.limitedCount || 30} từ vựng cho sổ tay "${notebookName}".`,
       timestamp: new Date(),
     };
 
@@ -630,6 +803,11 @@ function ChatAI() {
     setIsLoading(true);
     setPendingActionKey(actionKey);
     setQuotaMessage("");
+    const progressId = startNotebookActionProgress({
+      type: "create",
+      notebookName,
+      count: action?.limitedCount,
+    });
 
     try {
       const response = unwrap(
@@ -643,10 +821,7 @@ function ChatAI() {
         setAiUsage(response.usage);
       }
 
-      setMessages((prev) => [
-        ...prev,
-        formatMessage(response?.aiMessage, "assistant"),
-      ]);
+      replaceNotebookActionProgress(progressId, response?.aiMessage);
       await refreshConversations();
       await refreshTodayUsage();
     } catch (error) {
@@ -658,18 +833,15 @@ function ChatAI() {
         );
       }
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `notebook-create-error-${Date.now()}`,
-          role: "assistant",
-          content:
-            error?.message ||
-            "Mình chưa thể tạo sổ tay này. Bạn thử lại giúp mình nhé.",
-          timestamp: new Date(),
-          actions: [],
-        },
-      ]);
+      replaceNotebookActionProgress(progressId, {
+        id: `notebook-create-error-${Date.now()}`,
+        role: "assistant",
+        content:
+          error?.message ||
+          "Mình chưa thể tạo sổ tay này. Bạn thử lại giúp mình nhé.",
+        timestamp: new Date(),
+        actions: [],
+      });
     } finally {
       setIsLoading(false);
       setPendingActionKey(null);
@@ -691,6 +863,71 @@ function ChatAI() {
         "Bạn đã dùng hết 50 request hôm nay. Quay lại vào ngày mai.",
       );
       return;
+    }
+
+    const pendingNotebookAction = getLatestPendingNotebookAction();
+    if (
+      pendingNotebookAction &&
+      isAffirmativeNotebookActionReply(textToSend)
+    ) {
+      const { action, actionKey } = pendingNotebookAction;
+      setInput("");
+
+      if (
+        action.type === "confirm_add_to_notebook" ||
+        action.type === "confirm_add_limited_to_notebook"
+      ) {
+        await handleNotebookAddAction(action, null, actionKey, textToSend);
+        return;
+      }
+
+      if (action.type === "confirm_create_limited_notebook") {
+        await handleNotebookCreateLimitedAction(action, actionKey, textToSend);
+        return;
+      }
+    }
+
+    const notebookActionCount = pendingNotebookAction
+      ? parseNotebookActionCount(textToSend)
+      : null;
+    if (
+      pendingNotebookAction &&
+      notebookActionCount &&
+      notebookActionCount <= 30
+    ) {
+      const { action, actionKey } = pendingNotebookAction;
+      const adjustedAction = {
+        ...action,
+        prompt: replaceNotebookActionPromptCount(
+          action.prompt,
+          notebookActionCount,
+        ),
+        requestedCount: notebookActionCount,
+        limitedCount: notebookActionCount,
+      };
+      setInput("");
+
+      if (
+        action.type === "confirm_add_to_notebook" ||
+        action.type === "confirm_add_limited_to_notebook"
+      ) {
+        await handleNotebookAddAction(
+          adjustedAction,
+          null,
+          actionKey,
+          textToSend,
+        );
+        return;
+      }
+
+      if (action.type === "confirm_create_limited_notebook") {
+        await handleNotebookCreateLimitedAction(
+          adjustedAction,
+          actionKey,
+          textToSend,
+        );
+        return;
+      }
     }
 
     let sessionId = activeSessionId;
@@ -1611,7 +1848,7 @@ function ChatAI() {
             })
           )}
 
-          {isLoading && (
+          {isLoading && !pendingActionKey && (
             <article className={cx("message-row")}>
               <span className={cx("avatar")}>
                 <Bot size={17} />
