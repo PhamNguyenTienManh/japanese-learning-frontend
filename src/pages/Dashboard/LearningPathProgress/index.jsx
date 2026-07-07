@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 import {
   getLearningPathDashboard,
-  completeLearningPathItem
+  completeLearningPathItem,
+  reviewLearningPath
 } from "~/services/learningPathService";
 import TaskModal from "./TaskModal";
 import PracticePanel from "./PracticePanel";
@@ -13,6 +14,14 @@ const cn = (...classes) => classes.filter(Boolean).join(" ");
 // Skill dạng flashcard học ngay trong TaskModal (flip-card).
 // Các skill còn lại mở PracticePanel nhúng trang thực hành chuyên dụng.
 const FLASHCARD_SKILLS = ["vocab", "kanji", "grammar"];
+
+// Nhãn tiếng Việt cho các loại gợi ý của AI review.
+const SUGGESTION_META = {
+  speed_up: { icon: "trending_up", label: "Tăng tốc" },
+  slow_down: { icon: "trending_down", label: "Giảm nhịp" },
+  focus_skill: { icon: "target", label: "Tập trung" },
+  add_review: { icon: "history", label: "Ôn lại" },
+};
 
 const skillMeta = {
   vocab: { icon: "font_download", label: "Từ vựng" },
@@ -126,6 +135,9 @@ function LearningPathProgress() {
   const [isCompleting, setIsCompleting] = useState(false);
   // Index node vừa hoàn thành để chạy animation chúc mừng.
   const [celebrateIndex, setCelebrateIndex] = useState(null);
+  // Trạng thái AI đánh giá lộ trình.
+  const [reviewing, setReviewing] = useState(false);
+  const [reviewError, setReviewError] = useState("");
 
   const loadProgress = useCallback(async () => {
     try {
@@ -218,6 +230,21 @@ function LearningPathProgress() {
     await refreshWithCelebration();
   };
 
+  // Gọi AI đánh giá lại lộ trình rồi refresh để hiển thị nhận xét mới.
+  const handleRunReview = async () => {
+    try {
+      setReviewing(true);
+      setReviewError("");
+      await reviewLearningPath();
+      await refreshProgress();
+    } catch (err) {
+      console.error("Failed to review learning path", err);
+      setReviewError(err?.message || "Không thể chạy đánh giá AI.");
+    } finally {
+      setReviewing(false);
+    }
+  };
+
   if (loading) {
     return (
       <main className="max-w-7xl mx-auto px-container-padding py-lg flex justify-center items-center min-h-[60vh]">
@@ -237,11 +264,11 @@ function LearningPathProgress() {
   }
 
   const weekTasks = data?.weekTasks || [];
-  const todayTasks = data?.todayTasks || [];
   const weekProgress = data?.weekProgress || {};
   const weekPercent = Math.min(Math.max(Number(weekProgress.percent) || 0, 0), 100);
   const dailyMinutes = data?.goal?.dailyMinutes || 15;
   const currentLevel = data?.level || "N5";
+  const lastReview = data?.lastReview || null;
 
   // Roadmap = toàn bộ bài học của tuần hiện tại, tách thành từng buổi học (node).
   // Mỗi WeeklyItem (target cả tuần) được chẻ theo daily-cap để mỗi node là 1 buổi.
@@ -452,53 +479,81 @@ function LearningPathProgress() {
 
         {/* Right Column: Dashboard Cards */}
         <div className="w-full lg:w-[360px] flex flex-col gap-lg">
-          {/* Nhiệm vụ hôm nay */}
+          {/* AI đánh giá lộ trình */}
           <div className="bg-surface-container-lowest rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-container-padding">
             <div className="flex justify-between items-center mb-sm">
-              <h3 className="font-headline-sm text-headline-sm text-on-surface">Nhiệm vụ hôm nay</h3>
-              <span className="bg-primary-container/20 text-primary font-label-sm text-label-sm px-2 py-1 rounded-full">{todayTasks.length} mục hôm nay</span>
+              <h3 className="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+                AI đánh giá
+              </h3>
+              <button
+                className="bg-primary hover:bg-primary-hover text-on-primary font-label-sm text-label-sm px-3 py-1.5 rounded-full transition-colors flex items-center gap-1 disabled:opacity-50"
+                onClick={handleRunReview}
+                disabled={reviewing}
+              >
+                {reviewing ? (
+                  <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+                ) : (
+                  <span className="material-symbols-outlined text-[16px]">refresh</span>
+                )}
+                {reviewing ? "Đang đánh giá" : "Đánh giá lại"}
+              </button>
             </div>
-            <p className="font-body-sm text-sm text-on-surface-variant mb-lg">Ưu tiên các mục chưa hoàn thành theo thứ tự lộ trình, vừa với mục tiêu {dailyMinutes} phút/ngày.</p>
-            
-            {todayTasks.length === 0 ? (
-               <div className="text-center py-4 text-on-surface-variant text-sm">Hôm nay bạn đã hoàn thành các mục gợi ý.</div>
-            ) : (
-              todayTasks.map((task, idx) => {
-                const meta = skillMeta[task.skill] || { label: task.skill };
-                const isDone = Boolean(task.completedAt || task.progress?.isComplete);
-                const percent = Math.min(Math.max(Number(task.progress?.percent) || 0, 0), 100);
 
-                return (
-                  <div key={idx} className="mb-gutter pb-gutter border-0 border-b border-solid border-surface-variant last:border-0 last:mb-0 last:pb-0">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <span className="bg-surface-variant text-on-surface-variant font-label-sm text-[10px] px-2 py-0.5 rounded-sm uppercase tracking-wider mb-1 inline-block">
-                          {meta.label}
-                        </span>
-                        <h4 className="font-label-lg text-label-lg text-on-surface">{task.title || meta.label}</h4>
-                      </div>
-                      <span className="bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-[10px] px-2 py-1 rounded-full">
-                        {isDone ? "Hoàn thành" : `${task.estimatedMinutes || 15} phút`}
-                      </span>
-                    </div>
-                    <p className="font-body-sm text-xs text-on-surface-variant mb-3">Mục tiêu hôm nay: {task.progress?.label || "Hoàn thành nhiệm vụ"}</p>
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="flex-1 h-1.5 bg-surface-variant rounded-full overflow-hidden">
-                        <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${percent}%` }}></div>
-                      </div>
-                      <span className="font-label-sm text-[10px] text-on-surface-variant">{percent}%</span>
-                    </div>
-                    <div className="flex justify-end">
-                      <button 
-                        className="bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg px-4 py-1.5 rounded-full transition-colors"
-                        onClick={() => openTask(task)}
-                      >
-                        {isDone ? "Xem lại" : "Bắt đầu"}
-                      </button>
-                    </div>
+            {reviewError && (
+              <div className="bg-error-container text-on-error-container text-xs rounded-lg p-2 mb-3">{reviewError}</div>
+            )}
+
+            {!lastReview ? (
+              <div className="text-center py-6 text-on-surface-variant text-sm">
+                Chưa có đánh giá. Bấm "Đánh giá lại" để AI phân tích tiến độ và gợi ý cho tuần tới.
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={cn(
+                    "font-label-sm text-[10px] px-2 py-1 rounded-full uppercase tracking-wider flex items-center gap-1",
+                    lastReview.onTrack
+                      ? "bg-secondary/15 text-secondary"
+                      : "bg-error/15 text-error"
+                  )}>
+                    <span className="material-symbols-outlined text-[14px]">
+                      {lastReview.onTrack ? "check_circle" : "warning"}
+                    </span>
+                    {lastReview.onTrack ? "Đúng tiến độ" : "Cần điều chỉnh"}
+                  </span>
+                </div>
+
+                <p className="font-body-sm text-sm text-on-surface mb-4 leading-relaxed">{lastReview.assessment}</p>
+
+                {Array.isArray(lastReview.suggestions) && lastReview.suggestions.length > 0 && (
+                  <div className="flex flex-col gap-2 mb-3">
+                    {lastReview.suggestions.map((s, idx) => {
+                      const sm = SUGGESTION_META[s.type] || { icon: "lightbulb", label: s.type };
+                      const skillLabel = s.skill ? (skillMeta[s.skill]?.label || s.skill) : null;
+                      return (
+                        <div key={idx} className="flex gap-3 bg-surface-container rounded-lg p-3">
+                          <span className="material-symbols-outlined text-[20px] text-primary shrink-0">{sm.icon}</span>
+                          <div>
+                            <div className="font-label-md text-label-md text-on-surface flex items-center gap-2">
+                              {sm.label}
+                              {skillLabel && (
+                                <span className="bg-primary-container/30 text-primary font-label-sm text-[10px] px-1.5 py-0.5 rounded-sm">{skillLabel}</span>
+                              )}
+                            </div>
+                            <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">{s.reason}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })
+                )}
+
+                {lastReview.reviewedAt && (
+                  <div className="font-body-sm text-xs text-on-surface-variant pt-3 border-0 border-t border-solid border-surface-variant">
+                    Đánh giá lúc: {new Date(lastReview.reviewedAt).toLocaleString("vi-VN")}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
