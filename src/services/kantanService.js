@@ -1,7 +1,7 @@
 // src/services/kantanService.js
 
 const DEFAULT_API_BASE_URL =
-    process.env.REACT_APP_BASE_URL_API;
+    process.env.REACT_APP_API_URL;
 
 class KantanService {
     constructor(baseUrl = DEFAULT_API_BASE_URL) {

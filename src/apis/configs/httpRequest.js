@@ -1,16 +1,11 @@
 import axios from "axios";
 
-// Tạo instance axios
 const request = axios.create({
-  baseURL: process.env.REACT_APP_BASE_URL,
+  baseURL: process.env.REACT_APP_API_URL,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
 
-// Log baseURL để kiểm tra
-console.log("Axios baseURL:", request.defaults.baseURL);
-
-// Wrapper GET
 export const get = async (url, options = {}) => {
   const res = await request.get(url, options);
   return res.data;

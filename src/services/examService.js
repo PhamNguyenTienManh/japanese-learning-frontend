@@ -1,4 +1,4 @@
-const BASE_URL = process.env.REACT_APP_BASE_URL_API;
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 // Lấy token từ cookie
 // Hàm lấy headers cookie
@@ -367,4 +367,3 @@ export async function deleteExamQuestions(questionIds) {
 
   return response.json();
 }
-

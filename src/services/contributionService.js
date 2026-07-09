@@ -1,5 +1,5 @@
 const ContributionService = {
-    LOCAL_URL: process.env.REACT_APP_BASE_URL_API,
+    LOCAL_URL: process.env.REACT_APP_API_URL,
 
     async getComments(wordId, word) {
         try {

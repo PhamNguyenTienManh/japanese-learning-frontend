@@ -1,0 +1,19 @@
+# Keep Docker build context small and avoid copying local-only artifacts.
+node_modules
+build
+coverage
+.git
+.gitignore
+.dockerignore
+
+# Never bake local secrets into the image. CRA public build vars are passed as build args.
+.env
+.env.*
+!.env.example
+
+# Local/editor noise.
+.vscode
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+report.md

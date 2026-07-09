@@ -1,4 +1,4 @@
-const BASE_URL = process.env.REACT_APP_BASE_URL_API;
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 export const FALLBACK_VOICEVOX_SPEAKERS = [
     { value: 2, label: "Nữ trẻ - bình thường | 四国めたん / ノーマル (2)" },

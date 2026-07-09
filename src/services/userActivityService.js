@@ -1,4 +1,4 @@
-const BASE_URL = process.env.REACT_APP_BASE_URL_API;
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 function getAuthHeaders() {
   return {};

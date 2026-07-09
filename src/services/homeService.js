@@ -1,5 +1,5 @@
 import axios from "axios";
-const API_BASE_URL = process.env.REACT_APP_BASE_URL_API;
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 const trendingWordsService = {
     // // Lấy danh sách từ nổi bật từ Mazii API
     // getTrendingWords: async (limit = 5) => {

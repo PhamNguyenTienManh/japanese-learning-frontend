@@ -1,6 +1,6 @@
 // src/services/authService.js
 
-const API_BASE_URL = process.env.REACT_APP_BASE_URL_API;
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 const SESSION_REFRESH_THRESHOLD_MS = 60 * 1000;
 
 class AuthService {
