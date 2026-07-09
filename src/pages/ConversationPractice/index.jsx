@@ -10,6 +10,7 @@ import {
   faReply,
   faBookOpen,
   faComments,
+  faWandMagicSparkles,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
@@ -26,6 +27,7 @@ import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
 
 import VocabGrammarStudy from "./VocabGrammarStudy";
 import ConversationChat from "./ConversationChat";
+import AiConversation from "./AiConversation";
 import styles from "./ConversationPractice.module.scss";
 
 const cx = classNames.bind(styles);
@@ -109,6 +111,17 @@ function ModeRail({ lesson, studyMode, onChangeMode }) {
           <FontAwesomeIcon icon={faComments} />
         </span>
         <span>Luyện nói với phụ đề</span>
+      </button>
+
+      <button
+        className={cx("modeButton", { active: studyMode === "ai" })}
+        type="button"
+        onClick={() => onChangeMode("ai")}
+      >
+        <span className={cx("modeIcon")}>
+          <FontAwesomeIcon icon={faWandMagicSparkles} />
+        </span>
+        <span>Luyện hội thoại với AI</span>
       </button>
     </aside>
   );
@@ -427,6 +440,8 @@ function ConversationPractice() {
                   vocabulary={selectedLesson.vocabulary}
                   grammar={selectedLesson.grammar}
                 />
+              ) : studyMode === "ai" ? (
+                <AiConversation key={selectedLesson.slug || selectedLesson.id} lesson={selectedLesson} />
               ) : chatStarted ? (
                 <ConversationChat lesson={selectedLesson} lines={dialogueLines} kuroshiro={kuroshiro} />
               ) : (
