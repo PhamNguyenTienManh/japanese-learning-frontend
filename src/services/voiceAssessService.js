@@ -1,4 +1,4 @@
-const ASSESS_API_URL = "https://MinhNguyenMinj-voice-recognize.hf.space/assess";
+const ASSESS_API_URL = process.env.REACT_APP_VOICE_ASSESS_API_URL;
 
 export async function assessPronunciation(audioBlob, targetText) {
     const formData = new FormData();

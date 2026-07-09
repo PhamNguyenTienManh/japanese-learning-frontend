@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_BASE_URL_API;
+const API_URL = process.env.REACT_APP_API_URL;
 
 // Tạo axios instance với config mặc định
 const apiClient = axios.create({

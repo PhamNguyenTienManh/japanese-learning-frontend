@@ -1,4 +1,4 @@
-const FURIGANA_API_URL = "https://MinhNguyenMinj-voice-recognize.hf.space/furigana";
+const FURIGANA_API_URL = process.env.REACT_APP_FURIGANA_API_URL;
 
 /**
  * Convert one or many Japanese strings into pykakasi segments.

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = process.env.REACT_APP_BASE_URL_API;
+const API_BASE_URL = process.env.REACT_APP_API_URL;
 export const MODERATION_COUNTS_REFRESH_EVENT = "moderation-counts-refresh";
 
 const moderationClient = axios.create({

@@ -1,4 +1,4 @@
-const BASE_URL = (process.env.REACT_APP_BASE_URL_API || "").replace(/\/$/, "");
+const BASE_URL = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
 const normalizeKanjiRecord = (record) => {
     if (!record) return null;

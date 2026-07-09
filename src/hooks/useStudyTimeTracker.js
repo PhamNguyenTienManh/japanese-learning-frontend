@@ -43,7 +43,7 @@ export function useStudyTimeTracker() {
             const minutes = await studyTimeTracker.stopTracking();
 
             if (minutes > 0) {
-                const BASE_URL = process.env.REACT_APP_BASE_URL_API;
+                const BASE_URL = process.env.REACT_APP_API_URL;
                 const data = JSON.stringify({ minutes });
                 const blob = new Blob([data], { type: 'application/json' });
 

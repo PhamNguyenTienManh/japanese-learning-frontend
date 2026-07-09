@@ -257,7 +257,7 @@ function JLPT() {
                 selectedType === "Từ vựng" ? "word" :
                     selectedType === "Hán tự" ? "kanji" : "grammar";
 
-            const url = `${process.env.REACT_APP_BASE_URL_API}/pdf/jlpt?page=${currentPage}&limit=${itemsPerPage}&level=${selectedLevel}&type=${typeParam}`;
+            const url = `${process.env.REACT_APP_API_URL}/pdf/jlpt?page=${currentPage}&limit=${itemsPerPage}&level=${selectedLevel}&type=${typeParam}`;
 
             const response = await fetch(url, { credentials: "include" });
             if (!response.ok) throw new Error("PDF request failed");
