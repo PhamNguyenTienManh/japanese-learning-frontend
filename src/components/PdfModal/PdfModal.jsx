@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import styles from "./PdfModal.module.scss";
 
 export default function PdfModal({ show, onClose, pdfUrl, loading, title = "Xem trước PDF" }) {
@@ -46,7 +48,7 @@ export default function PdfModal({ show, onClose, pdfUrl, loading, title = "Xem 
                         onClick={onClose}
                         aria-label="Đóng"
                     >
-                        ×
+                        <FontAwesomeIcon icon={faXmark} />
                     </button>
                 </div>
 

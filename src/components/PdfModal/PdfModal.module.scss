@@ -57,23 +57,28 @@
 }
 
 .iconCloseBtn {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border: none;
     border-radius: 50%;
-    background: transparent;
-    color: #6b7280;
+    background: #f8fafc;
+    color: #334155;
     cursor: pointer;
-    font-size: 34px;
-    line-height: 1;
+    font-size: 16px;
+    line-height: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s ease, color 0.15s ease;
+    padding: 0;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 
     &:hover {
-        background: #f1f5f9;
-        color: #111827;
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    &:active {
+        transform: scale(0.96);
     }
 }
 
