@@ -470,7 +470,7 @@ function PostDetail({ postIdProp, isModal, onClose }) {
   return (
     <div className={cx(isModal ? "modal-wrapper" : "wrapper")}>
       <main className={cx(isModal ? "modal-main" : "main")}>
-        <div className={cx("container")}>
+        <div className={cx("container", { "modal-container": isModal })}>
           {!isModal && (
             <button type="button" onClick={handleBack} className={cx("back-link")}>
               <FontAwesomeIcon icon={faArrowLeft} className={cx("back-icon")} />

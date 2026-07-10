@@ -14,7 +14,7 @@ import Button from "~/components/Button";
 import formatDateVN from "~/services/formatDate";
 import ReportPostModal from "~/components/ReportPostModal/ReportPostModal";
 import { useToast } from "~/context/ToastContext";
-import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
+import UserAvatar from "~/components/UserAvatar/UserAvatar";
 
 const cx = classNames.bind(styles);
 
@@ -39,6 +39,8 @@ function CommentItem({
   const menuRef = useRef(null);
   const commentId = comment._id || comment.id || comment.commentId;
   const isDeleted = comment.isDeleted === true || Number(comment.status) === 0;
+  const authorName = comment.profileId?.name || comment.profile_id?.name || "Anonymous";
+  const authorAvatar = comment.profileId?.image_url || comment.profile_id?.image_url;
 
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -67,11 +69,12 @@ function CommentItem({
       className={cx("comment-item", { highlighted: isHighlighted })}
       data-comment-id={commentId}
     >
-      <img
-        src={getAvatarUrl(comment.profileId?.image_url)}
-        alt={comment.profileId?.name}
+      <UserAvatar
+        src={authorAvatar}
+        name={authorName}
+        alt={authorName}
         className={cx("comment-avatar")}
-        onError={handleAvatarError}
+        fallbackStyle={{ fontSize: "13px" }}
       />
       <div className={cx("comment-body")}>
         {isEditing ? (
@@ -114,7 +117,7 @@ function CommentItem({
             <div className={cx("comment-bubble")}>
               <div className={cx("comment-header")}>
                 <span className={cx("comment-author")}>
-                  {comment.profileId?.name || "Anonymous"}
+                  {authorName}
                 </span>
                 <span className={cx("comment-time")}>
                   • {formatDateVN(comment.createdAt)}

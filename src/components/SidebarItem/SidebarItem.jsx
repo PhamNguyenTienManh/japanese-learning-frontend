@@ -68,7 +68,7 @@ const Sidebar = ({ keyword, onSelectKanji, selectedKanji }) => {
   }, [keyword]);
 
   return (
-    <aside className="sticky top-6 w-full bg-white border border-border rounded-2xl shadow-[0_4px_14px_rgba(15,23,42,0.04)] p-4 max-h-[calc(100vh-48px)] flex flex-col max-[900px]:static max-[900px]:max-h-[360px]">
+    <aside className="w-full bg-white border-[1.5px] border-[#dce8e8] rounded-[18px] shadow-[0_4px_14px_rgba(15,23,42,0.04)] p-4 max-h-[calc(100vh-48px)] flex flex-col max-[900px]:max-h-[360px]">
       <header className="flex items-center justify-between px-1.5 pb-3 mb-1.5">
         <h2 className="text-sm font-bold text-text-high m-0">Kết quả</h2>
         {kanjiList.length > 0 && (

@@ -50,7 +50,7 @@ const VocabContent = ({ selectedVocab }) => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border border-border rounded-2xl text-center text-grey gap-2 min-h-[360px]">
+      <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border-[1.5px] border-[#dce8e8] rounded-[18px] text-center text-grey gap-2 min-h-[360px]">
         <div className="w-8 h-8 border-[3px] border-primary/15 border-t-primary rounded-full animate-[spin_0.8s_linear_infinite] mb-2" />
         <div>Đang tải dữ liệu từ vựng...</div>
       </div>
@@ -59,7 +59,7 @@ const VocabContent = ({ selectedVocab }) => {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border border-border rounded-2xl text-center text-[#b71247] gap-2 min-h-[360px]">
+      <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border-[1.5px] border-[#dce8e8] rounded-[18px] text-center text-[#b71247] gap-2 min-h-[360px]">
         <div>Lỗi: {error}</div>
       </div>
     );
@@ -67,7 +67,7 @@ const VocabContent = ({ selectedVocab }) => {
 
   if (!vocabData) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border border-border rounded-2xl text-center text-grey gap-2 min-h-[360px]">
+      <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border-[1.5px] border-[#dce8e8] rounded-[18px] text-center text-grey gap-2 min-h-[360px]">
         <div>Tìm một từ vựng ở thanh trên để xem chi tiết</div>
       </div>
     );
@@ -78,7 +78,7 @@ const VocabContent = ({ selectedVocab }) => {
 
   return (
     <>
-      <div className="bg-white border border-border rounded-[18px] py-7 px-8 shadow-[0_4px_16px_rgba(15,23,42,0.04)] max-[720px]:py-[22px] max-[720px]:px-5">
+      <div className="bg-white border-[1.5px] border-[#dce8e8] rounded-[18px] py-7 px-8 shadow-[0_4px_16px_rgba(15,23,42,0.04)] max-[720px]:py-[22px] max-[720px]:px-5">
         <div className="flex items-center gap-3 flex-wrap">
           <h1 className="text-[28px] font-bold text-primary leading-tight">{vocabData.word}</h1>
           <button
@@ -107,7 +107,7 @@ const VocabContent = ({ selectedVocab }) => {
       </div>
 
       {meanings.length > 0 && (
-        <div className="bg-white border border-border rounded-[18px] py-6 px-7 shadow-[0_4px_16px_rgba(15,23,42,0.04)] max-[720px]:py-5 max-[720px]:px-[18px]">
+        <div className="bg-white border-[1.5px] border-[#dce8e8] rounded-[18px] py-6 px-7 shadow-[0_4px_16px_rgba(15,23,42,0.04)] max-[720px]:py-5 max-[720px]:px-[18px]">
           <h2 className="flex items-center gap-2 text-base font-bold text-text-high mb-4 pl-2.5 border-l-[3px] border-primary">
             Nghĩa
             <span className="text-xs font-semibold py-0.5 px-2.5 rounded-full bg-primary/10 text-primary">{meanings.length}</span>

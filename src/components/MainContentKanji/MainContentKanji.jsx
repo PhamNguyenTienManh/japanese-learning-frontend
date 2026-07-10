@@ -77,7 +77,7 @@ const MainContent = ({ selectedKanji }) => {
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border border-border rounded-2xl text-center text-grey gap-2 min-h-[360px]">
+            <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border-[1.5px] border-[#dce8e8] rounded-[18px] text-center text-grey gap-2 min-h-[360px]">
                 <div className="w-8 h-8 border-[3px] border-primary/15 border-t-primary rounded-full animate-[spin_0.8s_linear_infinite] mb-2" />
                 <div>Đang tải dữ liệu kanji...</div>
             </div>
@@ -86,7 +86,7 @@ const MainContent = ({ selectedKanji }) => {
 
     if (error) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border border-border rounded-2xl text-center text-[#b71247] gap-2 min-h-[360px]">
+            <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border-[1.5px] border-[#dce8e8] rounded-[18px] text-center text-[#b71247] gap-2 min-h-[360px]">
                 <div>Lỗi: {error}</div>
             </div>
         );
@@ -94,7 +94,7 @@ const MainContent = ({ selectedKanji }) => {
 
     if (!kanjiData) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border border-border rounded-2xl text-center text-grey gap-2 min-h-[360px]">
+            <div className="flex flex-col items-center justify-center py-20 px-6 bg-white border-[1.5px] border-[#dce8e8] rounded-[18px] text-center text-grey gap-2 min-h-[360px]">
                 <div>Tìm một kanji ở thanh trên để xem chi tiết</div>
             </div>
         );
@@ -107,7 +107,7 @@ const MainContent = ({ selectedKanji }) => {
 
     return (
         <>
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-7 items-start bg-white border border-border rounded-[18px] py-7 px-8 shadow-[0_4px_16px_rgba(15,23,42,0.04)] max-[720px]:grid-cols-1 max-[720px]:py-[22px] max-[720px]:px-5">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-7 items-start bg-white border-[1.5px] border-[#dce8e8] rounded-[18px] py-7 px-8 shadow-[0_4px_16px_rgba(15,23,42,0.04)] max-[720px]:grid-cols-1 max-[720px]:py-[22px] max-[720px]:px-5">
                 <div className="min-w-0">
                     <h1 className="text-lg font-bold text-text-high mb-4">
                         Chi tiết chữ kanji <span className="text-[22px] font-bold text-primary">{kanjiData.kanji}</span>
@@ -150,7 +150,7 @@ const MainContent = ({ selectedKanji }) => {
             </div>
 
             {meaningParts.length > 0 && (
-                <div className="bg-white border border-border rounded-[18px] py-6 px-7 shadow-[0_4px_16px_rgba(15,23,42,0.04)] max-[720px]:py-5 max-[720px]:px-[18px]">
+                <div className="bg-white border-[1.5px] border-[#dce8e8] rounded-[18px] py-6 px-7 shadow-[0_4px_16px_rgba(15,23,42,0.04)] max-[720px]:py-5 max-[720px]:px-[18px]">
                     <h2 className="flex items-center gap-2 text-base font-bold text-text-high mb-4 pl-2.5 border-l-[3px] border-primary">Nghĩa</h2>
                     <div className="text-sm leading-[1.85] text-text-high bg-[#f1fbfb] rounded-xl py-4 px-[18px] whitespace-pre-line">
                         {meaningParts.map((para, idx) => (
@@ -161,7 +161,7 @@ const MainContent = ({ selectedKanji }) => {
             )}
 
             {kanjiData.examples && kanjiData.examples.length > 0 && (
-                <div className="bg-white border border-border rounded-[18px] py-6 px-7 shadow-[0_4px_16px_rgba(15,23,42,0.04)] max-[720px]:py-5 max-[720px]:px-[18px]">
+                <div className="bg-white border-[1.5px] border-[#dce8e8] rounded-[18px] py-6 px-7 shadow-[0_4px_16px_rgba(15,23,42,0.04)] max-[720px]:py-5 max-[720px]:px-[18px]">
                     <h2 className="flex items-center gap-2 text-base font-bold text-text-high mb-4 pl-2.5 border-l-[3px] border-primary">
                         Ví dụ
                         <span className="text-xs font-semibold py-0.5 px-2.5 rounded-full bg-primary/10 text-primary">{kanjiData.examples.length}</span>

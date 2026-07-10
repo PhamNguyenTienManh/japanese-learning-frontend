@@ -12,6 +12,8 @@ import PostDetail from "./PostDetail";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 
+const DEFAULT_SORT = "popular";
+
 function Community() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +21,6 @@ function Community() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("popular");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [categories, setCategories] = useState([]);
   const [activePostId, setActivePostId] = useState(null);
@@ -27,7 +28,25 @@ function Community() {
 
   const { userId: currentUserId } = useAuth();
 
-  const fetchPosts = async (page, sort = "popular", category = null) => {
+  const mapPostsResponse = (data) => {
+    const postsData = data.posts || data.data || data;
+    return {
+      ...postsData,
+      data: postsData.data?.map((post) => {
+        const likedArray = Array.isArray(post.liked) ? post.liked : [];
+        return {
+          ...post,
+          likeCount: likedArray.length,
+          isLiked: likedArray.includes(currentUserId),
+        };
+      }) || [],
+    };
+  };
+
+  const getTotalPage = (data, mappedPosts) =>
+    mappedPosts.totalPage || data?.data?.totalPage || data?.totalPage || 1;
+
+  const fetchPosts = async (page, category = null) => {
     setLoading(true);
     setError(null);
     try {
@@ -35,24 +54,12 @@ function Community() {
       if (category && category !== "Tất cả") {
         data = await postService.getPostsByCategory(category, page, 5);
       } else {
-        data = await postService.getPosts(page, 5, sort);
+        data = await postService.getPosts(page, 5, DEFAULT_SORT);
       }
 
-      const postsData = data.posts || data.data || data;
-      const mappedPosts = {
-        ...postsData,
-        data: postsData.data?.map((post) => {
-          const likedArray = Array.isArray(post.liked) ? post.liked : [];
-          return {
-            ...post,
-            likeCount: likedArray.length,
-            isLiked: likedArray.includes(currentUserId),
-          };
-        }) || [],
-      };
-
+      const mappedPosts = mapPostsResponse(data);
       setPosts(mappedPosts);
-      setTotalPages(data.data.totalPage || 1);
+      setTotalPages(getTotalPage(data, mappedPosts));
       setCurrentPage(page);
     } catch (err) {
       setError("Không thể tải bài viết. Vui lòng thử lại sau.");
@@ -85,9 +92,22 @@ function Community() {
   };
 
   useEffect(() => {
-    fetchPosts(1, "popular");
+    fetchPosts(1);
     fetchCategories();
   }, [currentUserId]);
+
+  useEffect(() => {
+    const query = searchQuery.trim();
+    const timer = setTimeout(() => {
+      if (query) {
+        fetchSearchPosts(query, 1);
+      } else {
+        fetchPosts(1, selectedCategory);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     if (activePostId) {
@@ -115,40 +135,16 @@ function Community() {
     });
   };
 
-  const handleTabChange = (value) => {
-    setActiveTab(value);
-    setSelectedCategory(null);
-    setSearchQuery("");
-    fetchPosts(1, value === "popular" ? "popular" : "recent");
-  };
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      setSelectedCategory(null);
-      fetchPosts(1, activeTab === "popular" ? "popular" : "recent");
-      return;
-    }
-
+  const fetchSearchPosts = async (query, page = 1) => {
     setLoading(true);
     setError(null);
     setSelectedCategory(null);
     try {
-      const data = await postService.searchPosts(searchQuery, 1, 5);
-      const postsData = data.posts || data.data || data;
-      const mappedPosts = {
-        ...postsData,
-        data: postsData.data?.map((post) => {
-          const likedArray = Array.isArray(post.liked) ? post.liked : [];
-          return {
-            ...post,
-            likeCount: likedArray.length,
-            isLiked: likedArray.includes(currentUserId),
-          };
-        }) || [],
-      };
+      const data = await postService.searchPosts(query, page, 5);
+      const mappedPosts = mapPostsResponse(data);
       setPosts(mappedPosts);
-      setTotalPages(data.data.totalPage || 1);
-      setCurrentPage(1);
+      setTotalPages(getTotalPage(data, mappedPosts));
+      setCurrentPage(page);
     } catch (err) {
       setError("Không thể tìm kiếm. Vui lòng thử lại sau.");
       console.error(err);
@@ -157,27 +153,44 @@ function Community() {
     }
   };
 
+  const handleSearchSubmit = () => {
+    const query = searchQuery.trim();
+    if (query) {
+      fetchSearchPosts(query, 1);
+    } else {
+      fetchPosts(1, selectedCategory);
+    }
+  };
+
   const handleCategoryClick = (categoryName) => {
     setSearchQuery("");
     setSelectedCategory(categoryName);
-    const sort = activeTab === "popular" ? "popular" : "recent";
     if (categoryName === "Tất cả") {
-      fetchPosts(1, sort, null);
+      fetchPosts(1, null);
     } else {
-      fetchPosts(1, sort, categoryName);
+      fetchPosts(1, categoryName);
     }
   };
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
-      const sort = activeTab === "popular" ? "popular" : "recent";
-      fetchPosts(page, sort, selectedCategory);
+      const query = searchQuery.trim();
+      if (query) {
+        fetchSearchPosts(query, page);
+      } else {
+        fetchPosts(page, selectedCategory);
+      }
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const handleRetry = () => {
-    fetchPosts(null, activeTab === "popular" ? "popular" : "recent", selectedCategory);
+    const query = searchQuery.trim();
+    if (query) {
+      fetchSearchPosts(query, currentPage);
+    } else {
+      fetchPosts(currentPage, selectedCategory);
+    }
   };
 
   return (
@@ -186,15 +199,16 @@ function Community() {
 
       {activePostId && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 sm:p-6 pt-0 backdrop-blur-[2px] overflow-y-auto" onClick={closeModal}>
-          <div className="relative w-full max-w-[800px] max-h-[82vh] overflow-y-auto rounded-xl bg-white shadow-2xl mt-[80px] flex-shrink-0" onClick={e => e.stopPropagation()}>
+          <div className="relative w-full max-w-[800px] max-h-[82vh] overflow-y-auto rounded-[20px] bg-transparent mt-[80px] flex-shrink-0" onClick={e => e.stopPropagation()}>
             <button
               type="button"
-              className="sticky right-4 top-3 z-20 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-surface-container text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface border border-solid border-surface-variant/50 ml-auto mr-3"
+              className="absolute right-3 top-3 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-outline-variant/60 bg-white/95 p-0 text-on-surface-variant shadow-[0_2px_8px_rgba(15,23,42,0.12)] transition-colors hover:border-primary/30 hover:bg-surface-container-low hover:text-on-surface"
               onClick={closeModal}
+              aria-label="Đóng"
             >
-              <FontAwesomeIcon icon={faXmark} className="text-lg" />
+              <FontAwesomeIcon icon={faXmark} className="h-3.5 w-3.5" />
             </button>
-            <div className="-mt-6">
+            <div>
               <PostDetail postIdProp={activePostId} isModal={true} onClose={closeModal} />
             </div>
           </div>
@@ -206,6 +220,9 @@ function Community() {
           categories={categories}
           selectedCategory={selectedCategory}
           onCategoryClick={handleCategoryClick}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          onSearchSubmit={handleSearchSubmit}
         />
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -214,20 +231,6 @@ function Community() {
               <main className="flex-1 w-full flex flex-col gap-6">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-outline-variant/30">
                   <CommunityHeader />
-                  <div className="flex bg-surface-container rounded-lg p-1 flex-shrink-0">
-                    <button
-                      className={`font-semibold text-sm px-4 py-1.5 rounded-md transition-all ${activeTab === "popular" ? "bg-surface-container-lowest text-on-surface shadow-sm border border-outline-variant/20" : "text-on-surface-variant hover:text-on-surface"}`}
-                      onClick={() => handleTabChange("popular")}
-                    >
-                      Phổ biến
-                    </button>
-                    <button
-                      className={`font-semibold text-sm px-4 py-1.5 rounded-md transition-all ${activeTab === "recent" ? "bg-surface-container-lowest text-on-surface shadow-sm border border-outline-variant/20" : "text-on-surface-variant hover:text-on-surface"}`}
-                      onClick={() => handleTabChange("recent")}
-                    >
-                      Mới nhất
-                    </button>
-                  </div>
                 </div>
 
                 <PostList
@@ -236,7 +239,6 @@ function Community() {
                   error={error}
                   currentPage={currentPage}
                   totalPages={totalPages}
-                  activeTab={activeTab}
                   selectedCategory={selectedCategory}
                   onPageChange={handlePageChange}
                   onRetry={handleRetry}

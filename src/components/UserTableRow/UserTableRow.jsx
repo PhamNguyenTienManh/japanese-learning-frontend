@@ -4,7 +4,7 @@ import {
   USER_STATUS,
   PROVIDER_LABELS,
 } from "~/services/userConstants";
-import { getAvatarUrl, getInitials, getAvatarGradient } from "~/utils/avatar";
+import UserAvatar from "~/components/UserAvatar/UserAvatar";
 
 function UserTableRow({ user, onViewActivity, onEditUser }) {
   const isBanned = user.status === USER_STATUS.BANNED;
@@ -17,38 +17,18 @@ function UserTableRow({ user, onViewActivity, onEditUser }) {
     premiumExpiredAt > new Date();
 
   const userName = user.profile?.name || "Chưa có tên";
-  const avatarUrl = getAvatarUrl(user.profile?.image_url);
 
   return (
     <tr className="transition hover:bg-slate-50 [&:last-child_td]:border-b-0">
       <td className="border-b border-slate-200 px-4 py-4 align-middle">
         <div className="flex items-center gap-3">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={userName}
-              data-name={userName}
-              className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm outline outline-1 outline-slate-200"
-              onError={(e) => {
-                const target = e.currentTarget;
-                if (target.dataset.fallbacked) return;
-                target.dataset.fallbacked = "true";
-                const parent = target.parentNode;
-                const span = document.createElement("span");
-                span.className = "h-11 w-11 shrink-0 rounded-full flex items-center justify-center font-bold text-sm text-white ring-2 ring-white shadow-sm outline outline-1 outline-slate-200";
-                span.style.background = getAvatarGradient(userName);
-                span.textContent = getInitials(userName);
-                parent.replaceChild(span, target);
-              }}
-            />
-          ) : (
-            <span
-              className="h-11 w-11 shrink-0 rounded-full flex items-center justify-center font-bold text-sm text-white ring-2 ring-white shadow-sm outline outline-1 outline-slate-200"
-              style={{ background: getAvatarGradient(userName) }}
-            >
-              {getInitials(userName)}
-            </span>
-          )}
+          <UserAvatar
+            src={user.profile?.image_url}
+            name={userName}
+            alt={userName}
+            className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm outline outline-1 outline-slate-200"
+            fallbackStyle={{ fontSize: "14px" }}
+          />
           <div className="min-w-0">
             <p className="m-0 truncate text-[15px] font-black leading-snug text-slate-950">
               {userName}
