@@ -57,6 +57,12 @@ export default function PracticePanel({
     return () => cancelAnimationFrame(id);
   }, []);
 
+  // Đánh dấu body để các component khác (vd: FloatingAIChatIcon) biết panel đang mở.
+  useEffect(() => {
+    document.body.setAttribute("data-practice-panel-open", "true");
+    return () => document.body.removeAttribute("data-practice-panel-open");
+  }, []);
+
   // Trượt ra rồi mới gọi onClose để hoàn tất animation.
   const handleClose = () => {
     setVisible(false);

@@ -67,7 +67,7 @@ const mockWords = [
 
 const shortcuts = [
     {
-        to: "/dictionary",
+        to: "/kanji",
         icon: faBookOpen,
         title: "Từ điển",
         desc: "Tra từ vựng, kanji, ngữ pháp",

@@ -74,7 +74,7 @@ function Header() {
                 Tổng quan
               </Button>
               <Button to="/practice/n5" text>
-                Thi Thử N5
+                Thi Thử
               </Button>
               <Button to="/reading" text>
                 Luyện đọc
@@ -93,14 +93,10 @@ function Header() {
             onMouseEnter={() => toggleMenu("chat")}
             onMouseLeave={() => toggleMenu(null)}
           >
-            <Button text rightIcon={<FontAwesomeIcon icon={faChevronDown} />}>
+            <Button text to="/chat-ai">
               AI Chat
             </Button>
-            <div className={cx("dropdown-menu")}>
-              <Button to="/chat-ai" text>
-                Trò chuyện AI
-              </Button>
-            </div>
+            
           </div>
 
           <div

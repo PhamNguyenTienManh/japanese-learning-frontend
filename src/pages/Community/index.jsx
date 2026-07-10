@@ -185,16 +185,16 @@ function Community() {
       <Header />
 
       {activePostId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm:p-6 backdrop-blur-[2px]" onClick={closeModal}>
-          <div className="relative w-full max-w-[860px] max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 sm:p-6 pt-0 backdrop-blur-[2px] overflow-y-auto" onClick={closeModal}>
+          <div className="relative w-full max-w-[800px] max-h-[82vh] overflow-y-auto rounded-xl bg-white shadow-2xl mt-[80px] flex-shrink-0" onClick={e => e.stopPropagation()}>
             <button
               type="button"
-              className="absolute right-4 top-4 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-surface-container text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface"
+              className="sticky right-4 top-3 z-20 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-surface-container text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface border border-solid border-surface-variant/50 ml-auto mr-3"
               onClick={closeModal}
             >
               <FontAwesomeIcon icon={faXmark} className="text-lg" />
             </button>
-            <div className="pt-2">
+            <div className="-mt-6">
               <PostDetail postIdProp={activePostId} isModal={true} onClose={closeModal} />
             </div>
           </div>

@@ -14,12 +14,25 @@ function FloatingAIChatIcon() {
   const navigate = useNavigate();
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
   const [isTracking, setIsTracking] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const isAdminPage = location.pathname.startsWith(config.routes.admin);
   const isTestRunnerPage = /^\/practice\/[^/]+\/test\/[^/]+\/?$/.test(
     location.pathname,
   );
-  const shouldHide = isAdminPage || isTestRunnerPage;
+  // Ẩn trong iframe embed (trang thực hành nhúng trong PracticePanel).
+  const isEmbedMode = new URLSearchParams(location.search).get("embed") === "true";
+  const shouldHide = isAdminPage || isTestRunnerPage || panelOpen || isEmbedMode;
+
+  // Ẩn icon khi PracticePanel (bài luyện đọc/viết/đề thi) đang mở.
+  useEffect(() => {
+    const check = () =>
+      setPanelOpen(document.body.hasAttribute("data-practice-panel-open"));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["data-practice-panel-open"] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (shouldHide) return undefined;
