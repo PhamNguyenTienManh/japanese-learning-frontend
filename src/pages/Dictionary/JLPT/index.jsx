@@ -123,6 +123,7 @@ function JLPT() {
                 : "Từ vựng";
     const detailTourLabel =
         selectedType === "Hán tự" ? "kanji" : flashcardTourLabel.toLowerCase();
+    const canDownloadWritingPdf = selectedType !== "Ngữ pháp";
 
     const learningPathParams = useMemo(() => {
         const params = new URLSearchParams(location.search);
@@ -251,6 +252,8 @@ function JLPT() {
 
     // PDF preview (fetches real PDF from API — feat branch behavior)
     const handlePreviewPdf = async () => {
+        if (!canDownloadWritingPdf) return;
+
         try {
             setPdfLoading(true);
             setShowPdfModal(true);
@@ -637,15 +640,17 @@ function JLPT() {
                                 >
                                     FlashCard
                                 </button>
-                                <button
-                                    ref={writingButtonRef}
-                                    type="button"
-                                    className={cx("toolbarBtn", "pdfBtn")}
-                                    onClick={handlePreviewPdf}
-                                    aria-label="Tải PDF"
-                                >
-                                    Tải file viết tay
-                                </button>
+                                {canDownloadWritingPdf && (
+                                    <button
+                                        ref={writingButtonRef}
+                                        type="button"
+                                        className={cx("toolbarBtn", "pdfBtn")}
+                                        onClick={handlePreviewPdf}
+                                        aria-label="Tải file viết tay"
+                                    >
+                                        Tải file viết tay
+                                    </button>
+                                )}
                             </div>
                         </section>
 
@@ -666,7 +671,7 @@ function JLPT() {
                             />
                         )}
 
-                        {tourParam === "writing" && (
+                        {tourParam === "writing" && canDownloadWritingPdf && (
                             <GuidedCoachmark
                                 targetRef={writingButtonRef}
                                 tourKey={`jlpt-writing-${selectedLevel}`}
