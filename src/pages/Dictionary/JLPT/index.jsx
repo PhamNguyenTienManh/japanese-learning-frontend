@@ -8,6 +8,7 @@ import {
     faChevronLeft,
     faChevronRight,
     faXmark,
+    faDownload,
 } from "@fortawesome/free-solid-svg-icons";
 
 import styles from "./JLPT.module.scss";
@@ -94,6 +95,7 @@ function JLPT() {
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [showPdfModal, setShowPdfModal] = useState(false);
     const [pdfUrl, setPdfUrl] = useState("");
+    const [pdfTitle, setPdfTitle] = useState(`Tài liệu JLPT ${selectedLevel}`);
     const [pdfLoading, setPdfLoading] = useState(false);
     const [detailOpen, setDetailOpen] = useState(false);
     const [detailItem, setDetailItem] = useState(null);
@@ -252,6 +254,8 @@ function JLPT() {
         try {
             setPdfLoading(true);
             setShowPdfModal(true);
+            setPdfTitle(`Tài liệu JLPT ${selectedLevel}`);
+            setPdfUrl("");
 
             const typeParam =
                 selectedType === "Từ vựng" ? "word" :
@@ -271,6 +275,52 @@ function JLPT() {
                     skill: "writing",
                     refKey: `jlpt-${selectedLevel}-${typeParam}-p${currentPage}`,
                     metadata: { level: selectedLevel, page: currentPage },
+                }).catch((error) => {
+                    console.error("Record writing progress error:", error);
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            setShowPdfModal(false);
+            addToast("Không thể tải PDF. Vui lòng thử lại.", "error");
+        } finally {
+            setPdfLoading(false);
+        }
+    };
+
+    const handlePreviewSingleWritingPdf = async (item, type = detailType) => {
+        if (!item || (type !== "Từ vựng" && type !== "Hán tự")) return;
+
+        const title = getDetailLabel(item, type);
+        if (!title) return;
+
+        try {
+            setPdfLoading(true);
+            setShowPdfModal(true);
+            setPdfTitle(`File viết tay: ${title}`);
+            setPdfUrl("");
+
+            const typeParam = type === "Hán tự" ? "kanji" : "word";
+            const params = new URLSearchParams({
+                page: "1",
+                limit: "1",
+                level: selectedLevel,
+                type: typeParam,
+                item: title,
+            });
+            const url = `${process.env.REACT_APP_API_URL}/pdf/jlpt?${params.toString()}`;
+
+            const response = await fetch(url, { credentials: "include" });
+            if (!response.ok) throw new Error("PDF request failed");
+
+            const blob = await response.blob();
+            setPdfUrl(URL.createObjectURL(blob));
+
+            if (isLoggedIn && typeParam === "kanji") {
+                recordLearningResourceProgress({
+                    skill: "writing",
+                    refKey: `jlpt-${selectedLevel}-${typeParam}-${title}`,
+                    metadata: { level: selectedLevel, item: title },
                 }).catch((error) => {
                     console.error("Record writing progress error:", error);
                 });
@@ -701,6 +751,7 @@ function JLPT() {
                 onClose={closeDetail}
                 onPlayAudio={handlePlayAudio}
                 onAddToNotebook={(notebook) => handleAddToNotebook(notebook)}
+                onDownloadWritingPdf={(item, type) => handlePreviewSingleWritingPdf(item, type)}
                 formatPhonetic={formatPhonetic}
                 formatMeanings={formatMeanings}
                 getDetailLabel={getDetailLabel}
@@ -718,7 +769,7 @@ function JLPT() {
                 onClose={() => setShowPdfModal(false)}
                 pdfUrl={pdfUrl}
                 loading={pdfLoading}
-                title={`Tài liệu JLPT ${selectedLevel}`}
+                title={pdfTitle}
             />
         </div>
     );
@@ -736,6 +787,7 @@ function JLPTDetailModal({
     onClose,
     onPlayAudio,
     onAddToNotebook,
+    onDownloadWritingPdf,
     formatPhonetic,
     formatMeanings,
     getDetailLabel,
@@ -976,6 +1028,18 @@ function JLPTDetailModal({
                                         aria-label="Nghe phát âm"
                                     >
                                         <FontAwesomeIcon icon={faVolumeHigh} />
+                                    </button>
+                                )}
+                                {(type === "Từ vựng" || type === "Hán tự") && (
+                                    <button
+                                        type="button"
+                                        className={cx("detailIconBtn", "detailDownloadBtn")}
+                                        onClick={() => onDownloadWritingPdf(item, type)}
+                                        aria-label="Tải file viết tay cho mục này"
+                                        title="Tải file viết tay"
+                                        disabled={!item || loading}
+                                    >
+                                        <FontAwesomeIcon icon={faDownload} />
                                     </button>
                                 )}
                                 <button

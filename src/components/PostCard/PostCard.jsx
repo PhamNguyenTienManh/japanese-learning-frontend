@@ -10,14 +10,14 @@ import { useAuth } from "~/context/AuthContext";
 import { useToast } from "~/context/ToastContext";
 import postService from "~/services/postService";
 import PostActionsMenu from "~/components/PostActionsMenu/PostActionsMenu";
-import { getAvatarUrl, getInitials, getAvatarGradient } from "~/utils/avatar";
+import UserAvatar from "~/components/UserAvatar/UserAvatar";
 
 function PostCard({ post, commentCount, onCommentClick }) {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { isLoggedIn, userId: currentUserId } = useAuth();
-  const authorName = post.profile_id?.name || "Anonymous";
-  const avatarUrl = getAvatarUrl(post.profile_id?.image_url);
+  const authorName = post.profile_id?.name || post.profileId?.name || "Anonymous";
+  const authorAvatar = post.profile_id?.image_url || post.profileId?.image_url;
   const hasImage = Boolean(post.image_url);
   const postId = post._id || post.id;
   const isOwner = Boolean(currentUserId && post.profile_id?.userId === currentUserId);
@@ -102,32 +102,13 @@ function PostCard({ post, commentCount, onCommentClick }) {
     <article className="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/30 hover:border-outline-variant/60 transition-colors">
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-3">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={authorName}
-              data-name={authorName}
-              className="w-10 h-10 rounded-full object-cover border border-outline-variant/20"
-              onError={(e) => {
-                const target = e.currentTarget;
-                if (target.dataset.fallbacked) return;
-                target.dataset.fallbacked = "true";
-                const parent = target.parentNode;
-                const span = document.createElement("span");
-                span.className = "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0 border border-outline-variant/20";
-                span.style.background = getAvatarGradient(authorName);
-                span.textContent = getInitials(authorName);
-                parent.replaceChild(span, target);
-              }}
-            />
-          ) : (
-            <span
-              className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0 border border-outline-variant/20"
-              style={{ background: getAvatarGradient(authorName) }}
-            >
-              {getInitials(authorName)}
-            </span>
-          )}
+          <UserAvatar
+            src={authorAvatar}
+            name={authorName}
+            alt={authorName}
+            className="w-10 h-10 rounded-full object-cover border border-outline-variant/20 flex-shrink-0"
+            fallbackStyle={{ fontSize: "14px" }}
+          />
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-on-surface">{authorName}</h3>

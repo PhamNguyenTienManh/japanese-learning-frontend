@@ -495,11 +495,201 @@ $yellow: #ffd166;
   font-weight: 600;
 }
 
-/* ============ FEATURED WORDS ============ */
-.results {
+/* ============ RECENT ACTIVITY ============ */
+.activityPanel {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.85fr);
   gap: 16px;
+}
+
+.activityMain,
+.activitySide {
+  min-width: 0;
+}
+
+.activityMain {
+  border: 2px solid $soft-border;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 22px;
+  box-shadow: 0 8px 24px rgba(15, 42, 42, 0.06);
+}
+
+.activityMainHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.activityMainIcon,
+.activityActionIcon,
+.activityItemIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.activityMainIcon {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, var(--primary), #25b8bf);
+  color: #fff;
+  font-size: 18px;
+  box-shadow: 0 10px 20px rgba(0, 135, 154, 0.18);
+}
+
+.activityTitle {
+  margin: 0;
+  color: $ink;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.activityDesc {
+  margin: 4px 0 0;
+  color: $ink-soft;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.activityList {
+  display: grid;
+  gap: 10px;
+}
+
+.activityItem {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  border: 1.5px solid $soft-border;
+  border-radius: 14px;
+  background: #fff;
+  padding: 8px 12px;
+  color: $ink;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: var(--primary-low);
+    background: #f7fffc;
+    transform: translateY(-1px);
+  }
+}
+
+.activityItemIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: $soft-tint;
+  color: var(--primary);
+  font-size: 13px;
+}
+
+.activityItemText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: "Noto Sans JP", sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.activityItemMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: $ink-soft;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.activityEmpty {
+  min-height: 178px;
+  border: 1.5px dashed $soft-border;
+  border-radius: 16px;
+  background: #f8fffd;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 28px 24px;
+  color: $ink-soft;
+  font-size: 13px;
+
+  strong {
+    color: rgba(91, 117, 117, 0.72);
+    font-size: 15px;
+    font-weight: 700;
+  }
+}
+
+.activitySide {
+  display: grid;
+  gap: 10px;
+}
+
+.activityAction {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 76px;
+  border: 2px solid $soft-border;
+  border-radius: 18px;
+  background: #fff;
+  padding: 14px;
+  color: $ink;
+  text-decoration: none;
+  transition: all 0.15s;
+  box-shadow: 0 3px 0 rgba(15, 42, 42, 0.03);
+
+  &:hover {
+    border-color: var(--primary-low);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 rgba(15, 42, 42, 0.05);
+  }
+}
+
+.activityActionIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: $soft-tint;
+  color: var(--primary);
+  font-size: 16px;
+}
+
+.activityActionBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  strong {
+    font-size: 14px;
+    font-weight: 900;
+    color: $ink;
+  }
+
+  span {
+    font-size: 12px;
+    line-height: 1.35;
+    color: $ink-soft;
+  }
+}
+
+.activityActionArrow {
+  color: $ink-soft;
+  font-size: 12px;
 }
 
 /* ============ RESPONSIVE ============ */
@@ -512,8 +702,8 @@ $yellow: #ffd166;
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .results {
-    grid-template-columns: repeat(2, 1fr);
+  .activityPanel {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -538,8 +728,24 @@ $yellow: #ffd166;
     grid-template-columns: 1fr;
   }
 
-  .results {
+  .activityPanel {
     grid-template-columns: 1fr;
+  }
+
+  .activityMain {
+    padding: 18px;
+  }
+
+  .activityMainHead {
+    align-items: flex-start;
+  }
+
+  .activityItem {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .activityItemMeta {
+    grid-column: 2;
   }
 
   .learningPathModal {

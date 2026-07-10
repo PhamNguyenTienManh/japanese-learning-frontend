@@ -7,63 +7,21 @@ import {
     faGraduationCap,
     faRobot,
     faNewspaper,
+    faClockRotateLeft,
+    faMagnifyingGlass,
+    faPenNib,
+    faBolt,
+    faArrowRight,
 } from "@fortawesome/free-solid-svg-icons";
 
-import WordCard from "~/components/WordCard";
 import styles from "./Home.module.scss";
 import SearchInput from "~/components/searchInput/searchInput";
 import searchHistoryService from "~/services/searchHistoryService";
 import trendingWordsService from "~/services/homeService";
-import handlePlayAudio from "~/services/handlePlayAudio";
 import { useAuth } from "~/context/AuthContext";
 import { getLearningPathStatus } from "~/services/learningPathService";
 
 const cx = classNames.bind(styles);
-
-const mockWords = [
-    {
-        id: 1,
-        kanji: "勉強",
-        hiragana: "べんきょう",
-        romaji: "benkyou",
-        meaning: "học tập, học hành",
-        jlptLevel: "N5",
-        examples: [
-            {
-                japanese: "毎日日本語を勉強します。",
-                vietnamese: "Tôi học tiếng Nhật mỗi ngày.",
-            },
-        ],
-    },
-    {
-        id: 2,
-        kanji: "学校",
-        hiragana: "がっこう",
-        romaji: "gakkou",
-        meaning: "trường học",
-        jlptLevel: "N5",
-        examples: [
-            {
-                japanese: "学校に行きます。",
-                vietnamese: "Tôi đi đến trường.",
-            },
-        ],
-    },
-    {
-        id: 3,
-        kanji: "先生",
-        hiragana: "せんせい",
-        romaji: "sensei",
-        meaning: "giáo viên, thầy/cô",
-        jlptLevel: "N5",
-        examples: [
-            {
-                japanese: "田中先生は優しいです。",
-                vietnamese: "Thầy Tanaka rất tốt bụng.",
-            },
-        ],
-    },
-];
 
 const shortcuts = [
     {
@@ -96,9 +54,29 @@ const shortcuts = [
     },
 ];
 
+const activityActions = [
+    {
+        to: "/jlpt?type=word",
+        icon: faBolt,
+        title: "Ôn nhanh JLPT",
+        desc: "Vào danh sách từ vựng đang học",
+    },
+    {
+        to: "/jlpt?writing=1",
+        icon: faPenNib,
+        title: "Luyện viết Kanji",
+        desc: "Mở file viết tay theo cấp độ",
+    },
+    {
+        to: "/chat-ai",
+        icon: faRobot,
+        title: "Hỏi AI tiếng Nhật",
+        desc: "Giải thích từ hoặc mẫu câu khó",
+    },
+];
+
 function Home() {
     const navigate = useNavigate();
-    const [savedWords, setSavedWords] = useState([]);
     const [searchHistory, setSearchHistory] = useState([]);
     const [trendingWords, setTrendingWords] = useState([]);
     const [isLoadingTrending, setIsLoadingTrending] = useState(true);
@@ -218,12 +196,6 @@ function Home() {
         }
     };
 
-    const toggleSaveWord = (id) => {
-        setSavedWords((prev) =>
-            prev.includes(id) ? prev.filter((w) => w !== id) : [...prev, id]
-        );
-    };
-
     const closeLearningPathPrompt = () => {
         if (userId) {
             sessionStorage.setItem(`learning_path_prompt_dismissed_${userId}`, "true");
@@ -233,6 +205,7 @@ function Home() {
 
     const hasHistory = Array.isArray(searchHistory) && searchHistory.length > 0;
     const hasTrending = Array.isArray(trendingWords) && trendingWords.length > 0;
+    const recentActivities = hasHistory ? searchHistory.slice(0, 5) : [];
 
     return (
         <div className={cx("wrapper")}>
@@ -376,22 +349,67 @@ function Home() {
                     )}
                 </section>
 
-                {/* Featured words */}
+                {/* Recent activity */}
                 <section className={cx("section")}>
                     <div className={cx("sectionHead")}>
-                        <h2 className={cx("sectionTitle")}>Từ vựng gợi ý hôm nay</h2>
+                        <h2 className={cx("sectionTitle")}>Hoạt động gần đây</h2>
                     </div>
 
-                    <div className={cx("results")}>
-                        {mockWords.map((word) => (
-                            <WordCard
-                                key={word.id}
-                                word={word}
-                                saved={savedWords.includes(word.id)}
-                                onToggleSave={toggleSaveWord}
-                                onPlay={handlePlayAudio}
-                            />
-                        ))}
+                    <div className={cx("activityPanel")}>
+                        <div className={cx("activityMain")}>
+                            <div className={cx("activityMainHead")}>
+                                <span className={cx("activityMainIcon")}>
+                                    <FontAwesomeIcon icon={faClockRotateLeft} />
+                                </span>
+                                <div>
+                                    <h3 className={cx("activityTitle")}>Tra cứu vừa rồi</h3>
+                                    <p className={cx("activityDesc")}>
+                                        Quay lại nhanh các từ bạn đã tìm gần đây.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {recentActivities.length ? (
+                                <div className={cx("activityList")}>
+                                    {recentActivities.map((query, index) => (
+                                        <button
+                                            key={`${query}-${index}`}
+                                            type="button"
+                                            className={cx("activityItem")}
+                                            onClick={() => handleSearch(query)}
+                                        >
+                                            <span className={cx("activityItemIcon")}>
+                                                <FontAwesomeIcon icon={faMagnifyingGlass} />
+                                            </span>
+                                            <span className={cx("activityItemText")}>{query}</span>
+                                            <span className={cx("activityItemMeta")}>
+                                                Tra lại
+                                                <FontAwesomeIcon icon={faArrowRight} />
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className={cx("activityEmpty")}>
+                                    <strong>Chưa có lịch sử tra cứu</strong>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className={cx("activitySide")}>
+                            {activityActions.map((action) => (
+                                <Link key={action.to} to={action.to} className={cx("activityAction")}>
+                                    <span className={cx("activityActionIcon")}>
+                                        <FontAwesomeIcon icon={action.icon} />
+                                    </span>
+                                    <span className={cx("activityActionBody")}>
+                                        <strong>{action.title}</strong>
+                                        <span>{action.desc}</span>
+                                    </span>
+                                    <FontAwesomeIcon icon={faArrowRight} className={cx("activityActionArrow")} />
+                                </Link>
+                            ))}
+                        </div>
                     </div>
                 </section>
             </div>

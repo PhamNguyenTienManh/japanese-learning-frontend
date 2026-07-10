@@ -11,7 +11,7 @@ import {
   Timer,
   X,
 } from "lucide-react";
-import { getAvatarUrl, getInitials, getAvatarGradient } from "~/utils/avatar";
+import UserAvatar from "~/components/UserAvatar/UserAvatar";
 
 const ACTIVITY_META = {
   study_time_added: {
@@ -130,32 +130,14 @@ function UserActivityDrawer({
             <div className="flex min-w-0 items-center gap-3">
               {(() => {
                 const userName = getUserName(user);
-                const avatarUrl = getAvatarUrl(user?.profile?.image_url);
-                return avatarUrl ? (
-                  <img
-                    src={avatarUrl}
+                return (
+                  <UserAvatar
+                    src={user?.profile?.image_url}
+                    name={userName}
                     alt={userName}
-                    data-name={userName}
                     className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
-                    onError={(e) => {
-                      const target = e.currentTarget;
-                      if (target.dataset.fallbacked) return;
-                      target.dataset.fallbacked = "true";
-                      const parent = target.parentNode;
-                      const span = document.createElement("span");
-                      span.className = "h-12 w-12 shrink-0 rounded-full flex items-center justify-center font-bold text-sm text-white ring-1 ring-slate-200";
-                      span.style.background = getAvatarGradient(userName);
-                      span.textContent = getInitials(userName);
-                      parent.replaceChild(span, target);
-                    }}
+                    fallbackStyle={{ fontSize: "14px" }}
                   />
-                ) : (
-                  <span
-                    className="h-12 w-12 shrink-0 rounded-full flex items-center justify-center font-bold text-sm text-white ring-1 ring-slate-200"
-                    style={{ background: getAvatarGradient(userName) }}
-                  >
-                    {getInitials(userName)}
-                  </span>
                 );
               })()}
               <div className="min-w-0">

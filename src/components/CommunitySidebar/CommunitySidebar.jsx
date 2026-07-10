@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import postService from "~/services/postService";
-import { getAvatarUrl, getInitials, getAvatarGradient } from "~/utils/avatar";
+import UserAvatar from "~/components/UserAvatar/UserAvatar";
 
 function CommunitySidebar() {
   const [activeMembers, setActiveMembers] = useState([]);
@@ -13,26 +13,12 @@ function CommunitySidebar() {
       .catch(() => {});
   }, []);
 
-  const getGradient = (name) => getAvatarGradient(name);
-
-  const getInitialsFn = (name) => getInitials(name);
-
-  const gradientColors = [
-    "linear-gradient(135deg, #00879a, #1f9bac)",
-    "linear-gradient(135deg, #fc5f00, #ff9800)",
-    "linear-gradient(135deg, #7c3aed, #a78bfa)",
-    "linear-gradient(135deg, #059669, #34d399)",
-    "linear-gradient(135deg, #dc2626, #f87171)",
-  ];
-
   return (
     <aside className="w-72 lg:w-80 flex-shrink-0 hidden md:flex flex-col gap-6 sticky">
       <Link
         to="/community/new"
-        className="bg-white text-on-surface hover:bg-surface-container-high font-semibold text-base px-5 py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm no-underline"
-        style={{ border: "2px solid rgba(0, 0, 0, 0.3)" }}
+        className="bg-primary text-on-primary hover:bg-primary-hover font-semibold text-base px-5 py-3 rounded-xl flex items-center justify-center transition-all shadow-primary-soft no-underline"
       >
-        <span className="material-symbols-outlined">edit_square</span>
         Tạo bài viết
       </Link>
 
@@ -43,22 +29,15 @@ function CommunitySidebar() {
         </h3>
         <div className="flex flex-col gap-3">
           {activeMembers.length > 0 ? (
-            activeMembers.map((member, idx) => (
+            activeMembers.map((member) => (
               <div key={member._id} className="flex items-center gap-3">
-                {member.image_url ? (
-                  <img
-                    src={getAvatarUrl(member.image_url)}
-                    alt={member.name}
-                    className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-outline-variant/20"
-                  />
-                ) : (
-                  <span
-                    className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs text-white flex-shrink-0"
-                    style={{ background: getGradient(member.name) }}
-                  >
-                    {getInitialsFn(member.name)}
-                  </span>
-                )}
+                <UserAvatar
+                  src={member.image_url}
+                  name={member.name}
+                  alt={member.name}
+                  className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-outline-variant/20"
+                  fallbackStyle={{ fontSize: "12px" }}
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-on-surface truncate">{member.name}</p>
                   <p className="text-[11px] text-on-surface-variant">{member.postCount} bài viết</p>

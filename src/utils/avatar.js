@@ -35,7 +35,11 @@ export function getInitials(name) {
 export const DEFAULT_AVATAR_URL = "/user.png";
 
 export function getAvatarUrl(...urls) {
-  return urls.find((url) => typeof url === "string" && url.trim()) || null;
+  return urls.find((url) => {
+    if (typeof url !== "string") return false;
+    const normalized = url.trim().toLowerCase();
+    return normalized && normalized !== "null" && normalized !== "undefined";
+  }) || null;
 }
 
 export function handleAvatarError(event) {

@@ -29,10 +29,22 @@ function parseKanjiStrokeSvg(svgContent) {
 
     const viewBox = svgContent.match(/viewBox="([^"]+)"/)?.[1] || "0 0 109 109";
     const byStrokeId = (path) => /-s\d+\b/.test(path.id || "");
+    const parseWithRegex = () => Array.from(svgContent.matchAll(/<path\b[^>]*\bd=(["'])(.*?)\1[^>]*>/g))
+        .map((match, index) => ({
+            id: `stroke-${index + 1}`,
+            d: match[2],
+            start: getStrokeStartPoint(match[2]),
+        }));
 
     if (typeof DOMParser !== "undefined") {
         try {
             const doc = new DOMParser().parseFromString(svgContent, "image/svg+xml");
+            const hasParseError = doc.querySelector("parsererror");
+
+            if (hasParseError) {
+                return { viewBox, paths: parseWithRegex() };
+            }
+
             const parsedPaths = Array.from(doc.querySelectorAll("path"));
             const strokePaths = parsedPaths.filter(byStrokeId);
             const paths = (strokePaths.length ? strokePaths : parsedPaths)
@@ -48,18 +60,15 @@ function parseKanjiStrokeSvg(svgContent) {
                 })
                 .filter(Boolean);
 
-            return { viewBox, paths };
+            if (paths.length) {
+                return { viewBox, paths };
+            }
         } catch (err) {
             console.warn("Cannot parse kanji stroke SVG:", err);
         }
     }
 
-    const paths = Array.from(svgContent.matchAll(/<path\b[^>]*\bd="([^"]+)"[^>]*>/g))
-        .map((match, index) => ({
-            id: `stroke-${index + 1}`,
-            d: match[1],
-            start: getStrokeStartPoint(match[1]),
-        }));
+    const paths = parseWithRegex();
 
     return { viewBox, paths };
 }

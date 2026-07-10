@@ -151,3 +151,41 @@
   justify-content: center;
   width: 100%;
 }
+
+.modal-container {
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+
+  .post-card {
+    margin-bottom: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 28px 32px 24px;
+  }
+
+  .comments-card {
+    border: 0;
+    border-top: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 0;
+    box-shadow: none;
+    padding: 24px 32px 30px;
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-container {
+    border-radius: 18px;
+
+    .post-card {
+      padding: 24px 20px 22px;
+    }
+
+    .comments-card {
+      padding: 22px 20px 26px;
+    }
+  }
+}
