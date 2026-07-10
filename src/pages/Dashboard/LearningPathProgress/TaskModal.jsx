@@ -131,7 +131,7 @@ export default function TaskModal({ task, level, onClose, onComplete, onProgress
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-up">
-      <div className="bg-surface-container-lowest w-full max-w-4xl h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden relative border border-solid border-surface-variant/30">
+      <div className="bg-surface-container-lowest w-full max-w-4xl h-[105vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden relative border border-solid border-surface-variant/30">
         
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-0 border-b border-solid border-surface-variant/30 bg-gradient-to-r from-surface-container-lowest to-surface-container-low">

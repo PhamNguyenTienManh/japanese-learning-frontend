@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faTrash,
@@ -8,6 +9,8 @@ import {
 
 import { useToast } from "~/context/ToastContext";
 import { recognizeJapaneseHandwriting } from "~/services/traslate";
+
+const HF_RECOGNIZE_URL = "https://minhnguyenminj-kanjidetector.hf.space/recognize";
 
 const CANVAS_SIZE = 360;
 
@@ -26,6 +29,7 @@ function HandwritingOverlay({
     const [isRecognizing, setIsRecognizing] = useState(false);
     const [recognizedCandidates, setRecognizedCandidates] = useState([]);
     const [selectedText, setSelectedText] = useState("");
+    const [engine, setEngine] = useState("google"); // "google" | "model"
     const canvasRef = useRef(null);
     const drawingRef = useRef(false);
     const lastPointRef = useRef(null);
@@ -34,6 +38,8 @@ function HandwritingOverlay({
     const strokeStartTimeRef = useRef(0);
     const recognitionTimerRef = useRef(null);
     const { addToast } = useToast();
+    const [searchParams] = useSearchParams();
+    const isDebug = searchParams.get("debug") === "1";
 
     const drawCanvasGuide = useCallback((ctx) => {
         ctx.fillStyle = "#ffffff";
@@ -144,7 +150,48 @@ function HandwritingOverlay({
         return true;
     };
 
-    const recognizeHandwritingFromCanvas = useCallback(async ({ notifyEmpty = false } = {}) => {
+    // --- Nhận diện bằng model training (HuggingFace) ---
+    const recognizeWithModel = useCallback(async ({ notifyEmpty = false } = {}) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return "";
+
+        try {
+            setIsRecognizing(true);
+            const dataUrl = canvas.toDataURL("image/png");
+            const response = await fetch(HF_RECOGNIZE_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: dataUrl }),
+            });
+
+            if (!response.ok) throw new Error(`HF API error: ${response.status}`);
+            const results = await response.json();
+            // results = [{ kanji, confidence }, ...]
+            const candidates = Array.isArray(results)
+                ? results.map((r) => r.kanji).filter(Boolean)
+                : [];
+            const text = candidates[0] || "";
+
+            setRecognizedCandidates(candidates);
+            setSelectedText((current) =>
+                current && candidates.includes(current) ? current : ""
+            );
+
+            if (!text && notifyEmpty) {
+                addToast("Model không nhận diện được chữ viết tay", "warning");
+            }
+            return text;
+        } catch (error) {
+            console.error("Model recognition failed:", error);
+            if (notifyEmpty) addToast("Lỗi nhận diện từ Model", "error");
+            return "";
+        } finally {
+            setIsRecognizing(false);
+        }
+    }, [addToast]);
+
+    // --- Nhận diện bằng Google API (mặc định) ---
+    const recognizeWithGoogle = useCallback(async ({ notifyEmpty = false } = {}) => {
         if (!strokesRef.current.length) {
             if (notifyEmpty) addToast("Vui lòng viết chữ Nhật trên khung trước", "info");
             return "";
@@ -185,6 +232,11 @@ function HandwritingOverlay({
             setIsRecognizing(false);
         }
     }, [addToast]);
+
+    const recognizeHandwritingFromCanvas = useCallback(async (opts) => {
+        if (engine === "model") return recognizeWithModel(opts);
+        return recognizeWithGoogle(opts);
+    }, [engine, recognizeWithModel, recognizeWithGoogle]);
 
     const scheduleHandwritingRecognition = useCallback(() => {
         if (recognitionTimerRef.current) {
@@ -273,14 +325,26 @@ function HandwritingOverlay({
             <section className="flex max-h-[calc(100vh-40px)] w-[min(750px,calc(100vw-40px))] flex-col overflow-hidden rounded-[22px] bg-white shadow-[0_24px_70px_rgba(15,23,42,0.32)] max-md:max-h-[calc(100vh-24px)] max-md:w-[calc(100vw-24px)] max-md:rounded-[18px]">
                 <header className="flex min-h-[58px] items-center justify-between gap-4 border-b-[1.5px] border-[#e3eaf0] px-4 pb-2.5 pt-3 pl-5">
                     <h2 className="m-0 text-xl font-extrabold text-[#0f2a2a]">{title}</h2>
-                    <button
-                        type="button"
-                        className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-[#e3eaf0] bg-slate-50 text-[#5b7575] transition-all duration-150 hover:bg-[#f6fafc] hover:text-[#0f2a2a]"
-                        onClick={onClose}
-                        aria-label="Đóng"
-                    >
-                        <FontAwesomeIcon icon={faXmark} />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {isDebug && (
+                            <select
+                                value={engine}
+                                onChange={(e) => setEngine(e.target.value)}
+                                className="h-9 cursor-pointer rounded-lg border-[1.5px] border-[#e3eaf0] bg-white px-2.5 text-sm font-semibold text-[#0f2a2a] outline-none transition-all duration-150 hover:border-[#00879a] focus:border-[#00879a] focus:ring-2 focus:ring-[#00879a]/20"
+                            >
+                                <option value="google">Google API</option>
+                                <option value="model">Model Training</option>
+                            </select>
+                        )}
+                        <button
+                            type="button"
+                            className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-[1.5px] border-[#e3eaf0] bg-slate-50 text-[#5b7575] transition-all duration-150 hover:bg-[#f6fafc] hover:text-[#0f2a2a]"
+                            onClick={onClose}
+                            aria-label="Đóng"
+                        >
+                            <FontAwesomeIcon icon={faXmark} />
+                        </button>
+                    </div>
                 </header>
 
                 <div className="grid min-h-0 grid-cols-[minmax(360px,1fr)_minmax(250px,0.8fr)] overflow-hidden max-md:grid-cols-1 max-md:overflow-auto">
