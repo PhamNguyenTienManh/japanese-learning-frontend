@@ -577,6 +577,19 @@ function LearningPathProgress() {
             </div>
             <div className="font-body-sm text-xs text-on-surface-variant pt-3 border-0 border-t border-solid border-surface-variant">Cấp độ hiện tại: {currentLevel}</div>
           </div>
+
+          {/* Tuỳ chỉnh lộ trình */}
+          <div className="bg-surface-container-lowest rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] p-container-padding">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Cài đặt lộ trình</h3>
+            <p className="font-body-sm text-sm text-on-surface-variant mb-4">Bạn muốn thay đổi mục tiêu hoặc nhịp độ học tập?</p>
+            <button
+              onClick={() => navigate("/onboarding")}
+              className="w-full bg-transparent border border-solid border-primary cursor-pointer hover:bg-primary/10 text-primary font-label-md px-4 py-2 rounded-full transition-colors flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined text-[18px]">autorenew</span>
+              Tạo lại lộ trình
+            </button>
+          </div>
         </div>
       </main>
 

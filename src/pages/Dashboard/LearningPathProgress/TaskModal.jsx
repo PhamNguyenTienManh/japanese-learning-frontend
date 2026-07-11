@@ -154,7 +154,7 @@ export default function TaskModal({ task, level, onClose, onComplete, onProgress
                  <h3 className="font-headline-sm text-headline-sm text-on-surface">{task.title || "Bài học"}</h3>
               </div>
            </div>
-           <button onClick={onClose} className="w-10 h-10 hover:bg-surface-variant/50 rounded-full text-on-surface-variant flex items-center justify-center transition-colors">
+           <button onClick={onClose} className="w-10 h-10 cursor-pointer hover:bg-surface-variant/50 rounded-full text-on-surface-variant flex items-center justify-center transition-colors">
               <span className="material-symbols-outlined text-[24px]">close</span>
            </button>
         </div>
@@ -293,7 +293,7 @@ export default function TaskModal({ task, level, onClose, onComplete, onProgress
            <div className="flex gap-4">
              <button 
                 onClick={onClose} 
-                className="bg-transparent hover:bg-surface-variant/50 text-on-surface font-label-lg px-6 py-2.5 rounded-full transition-colors"
+                className="bg-transparent cursor-pointer hover:bg-surface-variant/50 text-on-surface font-label-lg px-6 py-2.5 rounded-full transition-colors"
              >
                 Đóng
              </button>
