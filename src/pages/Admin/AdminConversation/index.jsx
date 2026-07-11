@@ -467,7 +467,6 @@ function AdminConversation() {
           <div className="grid gap-3 lg:grid-cols-[minmax(260px,1fr)_240px]">
             <label className="relative block">
               <span className="sr-only">Tìm kiếm</span>
-              <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

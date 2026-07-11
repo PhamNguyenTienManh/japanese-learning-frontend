@@ -73,7 +73,7 @@ function Header() {
               <Button to="/practice" text>
                 Tổng quan
               </Button>
-              <Button to="/practice/n5" text>
+              <Button to="/practice" text>
                 Thi Thử
               </Button>
               <Button to="/reading" text>
