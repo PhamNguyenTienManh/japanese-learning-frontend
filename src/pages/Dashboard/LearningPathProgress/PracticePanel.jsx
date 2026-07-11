@@ -120,7 +120,7 @@ export default function PracticePanel({
           </div>
           <button
             onClick={handleClose}
-            className="w-10 h-10 hover:bg-surface-variant/50 rounded-full text-on-surface-variant flex items-center justify-center transition-colors"
+            className="w-10 h-10 cursor-pointer hover:bg-surface-variant/50 rounded-full text-on-surface-variant flex items-center justify-center transition-colors"
             aria-label="Đóng"
           >
             <span className="material-symbols-outlined text-[24px]">close</span>
@@ -158,7 +158,7 @@ export default function PracticePanel({
           <div className="flex gap-3 shrink-0">
             <button
               onClick={handleClose}
-              className="bg-transparent hover:bg-surface-variant/50 text-on-surface font-label-lg px-5 py-2.5 rounded-full transition-colors"
+              className="bg-transparent cursor-pointer hover:bg-surface-variant/50 text-on-surface font-label-lg px-5 py-2.5 rounded-full transition-colors"
             >
               Đóng
             </button>
