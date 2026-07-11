@@ -9,9 +9,9 @@ import styles from "./AuthShell.module.scss";
 const cx = classNames.bind(styles);
 
 const DEFAULT_FEATURES = [
-    { icon: "🎴", label: "Hơn 10,000 từ vựng & ngữ pháp JLPT" },
-    { icon: "🤖", label: "AI luyện hội thoại tiếng Nhật mỗi ngày" },
-    { icon: "🔥", label: "Theo dõi chuỗi học và tiến độ cá nhân" },
+    { icon: "", label: "Hơn 10,000 từ vựng & ngữ pháp JLPT" },
+    { icon: "", label: "AI luyện hội thoại tiếng Nhật mỗi ngày" },
+    { icon: "", label: "Theo dõi chuỗi học và tiến độ cá nhân" },
 ];
 
 function AuthShell({
@@ -48,7 +48,6 @@ function AuthShell({
                 <div className={cx("brandFeatures")}>
                     {features.map((f) => (
                         <div key={f.label} className={cx("brandFeature")}>
-                            <span className={cx("brandFeatureIcon")}>{f.icon}</span>
                             <span>{f.label}</span>
                         </div>
                     ))}

@@ -64,7 +64,7 @@ function LoginPage() {
 
     return (
         <AuthShell
-            title="Chào mừng trở lại 👋"
+            title="Chào mừng trở lại"
             subtitle="Đăng nhập để tiếp tục hành trình tiếng Nhật của bạn."
             backTo="/"
             backLabel="Trang chủ"
