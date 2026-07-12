@@ -152,11 +152,10 @@ function Toast({ toast, onClose }) {
   if (!toast) return null;
   return (
     <div
-      className={`fixed bottom-5 right-5 z-[10000] flex max-w-sm items-start gap-3 rounded-lg border px-4 py-3 text-sm font-semibold shadow-lg ${
-        toast.type === "error"
-          ? "border-rose-200 bg-rose-50 text-rose-700"
-          : "border-emerald-200 bg-white text-emerald-700"
-      }`}
+      className={`fixed bottom-5 right-5 z-[10000] flex max-w-sm items-start gap-3 rounded-lg border px-4 py-3 text-sm font-semibold shadow-lg ${toast.type === "error"
+        ? "border-rose-200 bg-rose-50 text-rose-700"
+        : "border-emerald-200 bg-white text-emerald-700"
+        }`}
     >
       <span className="min-w-0 flex-1">{toast.message}</span>
       <button
@@ -470,7 +469,7 @@ function AdminConversation() {
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm theo tiêu đề hoặc slug..."
+                placeholder="Tìm theo tiêu đề hoặc nội dung..."
                 className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-3 text-sm font-medium text-slate-900 shadow-sm outline outline-1 outline-slate-200 placeholder:text-slate-400 focus:border-slate-500 focus:outline-slate-500 focus:ring-4 focus:ring-slate-100"
               />
             </label>
@@ -558,8 +557,8 @@ function AdminConversation() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[920px] table-fixed border-collapse">
                 <colgroup>
-                  <col className="w-[360px]" /><col className="w-[190px]" /><col className="w-[90px]" />
-                  <col className="w-[100px]" /><col className="w-[130px]" /><col className="w-[100px]" />
+                  <col className="w-[380px]" /><col className="w-[190px]" /><col className="w-[90px]" />
+                  <col className="w-[80px]" /><col className="w-[110px]" /><col className="w-[120px]" />
                 </colgroup>
                 <thead className="bg-slate-50">
                   <tr>
@@ -686,9 +685,8 @@ function AdminConversation() {
               key={t.key}
               type="button"
               onClick={() => setLessonTab(t.key)}
-              className={`flex-1 rounded-md px-3 py-2 text-sm font-semibold transition ${
-                lessonTab === t.key ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"
-              }`}
+              className={`flex-1 rounded-md px-3 py-2 text-sm font-semibold transition ${lessonTab === t.key ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                }`}
             >
               {t.label}
               {t.key === "lines" && <span className="ml-1.5 text-xs text-slate-400">{lessonForm?.lines?.length || 0}</span>}
