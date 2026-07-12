@@ -7,6 +7,7 @@ import {
     faVolumeHigh,
     faChevronLeft,
     faChevronRight,
+    faChevronDown,
     faXmark,
     faDownload,
 } from "@fortawesome/free-solid-svg-icons";
@@ -97,6 +98,12 @@ function JLPT() {
     const [pdfUrl, setPdfUrl] = useState("");
     const [pdfTitle, setPdfTitle] = useState(`Tài liệu JLPT ${selectedLevel}`);
     const [pdfLoading, setPdfLoading] = useState(false);
+    const [showPdfComposer, setShowPdfComposer] = useState(false);
+    const [pdfItems, setPdfItems] = useState([]);
+    const [newPdfItem, setNewPdfItem] = useState("");
+    const [pdfChoices, setPdfChoices] = useState([]);
+    const [pdfChoicesLoading, setPdfChoicesLoading] = useState(false);
+    const [pdfChoiceOpen, setPdfChoiceOpen] = useState(false);
     const [detailOpen, setDetailOpen] = useState(false);
     const [detailItem, setDetailItem] = useState(null);
     const [detailType, setDetailType] = useState("Từ vựng");
@@ -152,6 +159,13 @@ function JLPT() {
     useEffect(() => {
         return () => window.clearTimeout(flashcardTourTimerRef.current);
     }, []);
+
+    useEffect(() => {
+        if (!pdfChoiceOpen) return undefined;
+        const close = () => setPdfChoiceOpen(false);
+        document.addEventListener("click", close);
+        return () => document.removeEventListener("click", close);
+    }, [pdfChoiceOpen]);
 
     // Sync filters from URL changes
     useEffect(() => {
@@ -254,19 +268,51 @@ function JLPT() {
     const handlePreviewPdf = async () => {
         if (!canDownloadWritingPdf) return;
 
+        setPdfItems(data.map((item) => ({
+            value: getDetailLabel(item),
+            traceRows: 1,
+            blankRows: 1,
+        })).filter((item) => item.value));
+        setNewPdfItem("");
+        setPdfChoiceOpen(false);
+        setShowPdfComposer(true);
+        setPdfChoicesLoading(true);
+        try {
+            const response = selectedType === "Hán tự"
+                ? await getJlptKanji(1, 10000, selectedLevel)
+                : await getJlptWords(1, 10000, selectedLevel);
+            const payload = response?.success ? response.data : response;
+            const choices = payload?.data || payload?.items || payload?.results || [];
+            setPdfChoices(choices.map((item) => getDetailLabel(item)).filter(Boolean));
+        } catch (err) {
+            console.error("Error fetching PDF choices:", err);
+            setPdfChoices(data.map((item) => getDetailLabel(item)).filter(Boolean));
+            addToast("Không thể tải toàn bộ danh sách. Đang hiển thị trang hiện tại.", "error");
+        } finally {
+            setPdfChoicesLoading(false);
+        }
+    };
+
+    const handleGenerateCustomPdf = async () => {
+        if (!pdfItems.length) {
+            addToast("Hãy thêm ít nhất một mục.", "error");
+            return;
+        }
+
         try {
             setPdfLoading(true);
+            setShowPdfComposer(false);
             setShowPdfModal(true);
             setPdfTitle(`Tài liệu JLPT ${selectedLevel}`);
             setPdfUrl("");
 
-            const typeParam =
-                selectedType === "Từ vựng" ? "word" :
-                    selectedType === "Hán tự" ? "kanji" : "grammar";
-
-            const url = `${process.env.REACT_APP_API_URL}/pdf/jlpt?page=${currentPage}&limit=${itemsPerPage}&level=${selectedLevel}&type=${typeParam}`;
-
-            const response = await fetch(url, { credentials: "include" });
+            const typeParam = selectedType === "Hán tự" ? "kanji" : "word";
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/pdf/jlpt/custom`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: typeParam, level: selectedLevel, items: pdfItems }),
+            });
             if (!response.ok) throw new Error("PDF request failed");
 
             const blob = await response.blob();
@@ -289,6 +335,21 @@ function JLPT() {
         } finally {
             setPdfLoading(false);
         }
+    };
+
+    const addPdfItem = () => {
+        const value = newPdfItem.trim();
+        if (!pdfChoices.includes(value) || pdfItems.some((item) => item.value === value)) return;
+        setPdfItems((items) => [...items, { value, traceRows: 1, blankRows: 1 }]);
+        setNewPdfItem("");
+        setPdfChoiceOpen(false);
+    };
+
+    const updatePdfItem = (index, field, value) => {
+        const rows = Math.min(10, Math.max(0, Number(value) || 0));
+        setPdfItems((items) => items.map((item, itemIndex) =>
+            itemIndex === index ? { ...item, [field]: rows } : item
+        ));
     };
 
     const handlePreviewSingleWritingPdf = async (item, type = detailType) => {
@@ -776,6 +837,68 @@ function JLPT() {
                 loading={pdfLoading}
                 title={pdfTitle}
             />
+
+            {showPdfComposer && createPortal(
+                <div className={cx("pdfComposerOverlay")} onClick={() => setShowPdfComposer(false)}>
+                    <section className={cx("pdfComposer")} onClick={(event) => event.stopPropagation()}>
+                        <header className={cx("pdfComposerHeader")}>
+                            <div><h2>Tùy chỉnh file viết tay</h2><p>{selectedType} · {selectedLevel}</p></div>
+                            <button type="button" onClick={() => setShowPdfComposer(false)} aria-label="Đóng"><FontAwesomeIcon icon={faXmark} /></button>
+                        </header>
+                        <div className={cx("pdfAddRow")}>
+                            <div className={cx("pdfSelect", { open: pdfChoiceOpen })} onClick={(event) => event.stopPropagation()}>
+                                <button
+                                    type="button"
+                                    className={cx("pdfSelectTrigger")}
+                                    disabled={pdfChoicesLoading}
+                                    aria-haspopup="listbox"
+                                    aria-expanded={pdfChoiceOpen}
+                                    onClick={() => setPdfChoiceOpen((open) => !open)}
+                                >
+                                    <span>{pdfChoicesLoading ? "Đang tải danh sách..." : newPdfItem || `Chọn ${selectedType.toLowerCase()}...`}</span>
+                                    <FontAwesomeIcon icon={faChevronDown} />
+                                </button>
+                                {pdfChoiceOpen && !pdfChoicesLoading && (
+                                    <div className={cx("pdfSelectMenu")} role="listbox">
+                                        {pdfChoices
+                                            .filter((value) => !pdfItems.some((item) => item.value === value))
+                                            .map((value) => (
+                                                <button
+                                                    key={value}
+                                                    type="button"
+                                                    role="option"
+                                                    aria-selected={newPdfItem === value}
+                                                    className={cx("pdfSelectOption", { selected: newPdfItem === value })}
+                                                    onClick={() => { setNewPdfItem(value); setPdfChoiceOpen(false); }}
+                                                >
+                                                    {value}
+                                                </button>
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
+                            <button type="button" onClick={addPdfItem} disabled={!pdfChoices.includes(newPdfItem) || pdfItems.some((item) => item.value === newPdfItem)}>Thêm</button>
+                        </div>
+                        <div className={cx("pdfItemHead")}><span>Nội dung</span><span>Hàng mẫu mờ</span><span>Hàng trống</span><span /></div>
+                        <div className={cx("pdfItemList")}>
+                            {pdfItems.map((item, index) => (
+                                <div className={cx("pdfItemRow")} key={`${item.value}-${index}`}>
+                                    <strong>{item.value}</strong>
+                                    <input type="number" min="0" max="10" value={item.traceRows} onChange={(event) => updatePdfItem(index, "traceRows", event.target.value)} aria-label={`Số hàng mẫu mờ cho ${item.value}`} />
+                                    <input type="number" min="0" max="10" value={item.blankRows} onChange={(event) => updatePdfItem(index, "blankRows", event.target.value)} aria-label={`Số hàng trống cho ${item.value}`} />
+                                    <button type="button" onClick={() => setPdfItems((items) => items.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Xóa ${item.value}`}><FontAwesomeIcon icon={faXmark} /></button>
+                                </div>
+                            ))}
+                            {!pdfItems.length && <p className={cx("pdfEmpty")}>Chưa có nội dung.</p>}
+                        </div>
+                        <footer className={cx("pdfComposerActions")}>
+                            <button type="button" onClick={() => setShowPdfComposer(false)}>Hủy</button>
+                            <button type="button" onClick={handleGenerateCustomPdf} disabled={!pdfItems.length}>Tạo bản xem trước</button>
+                        </footer>
+                    </section>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }
