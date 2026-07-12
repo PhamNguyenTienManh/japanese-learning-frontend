@@ -77,9 +77,13 @@ export function AuthProvider({ children }) {
       if (!data) return;
 
       const name = data.name || "";
-      const avatar = data.image_url || "";
+      const avatar = data.image_url || null;
       if (name) localStorage.setItem("userName", name);
-      if (avatar) localStorage.setItem("userAvatar", avatar);
+      if (avatar) {
+        localStorage.setItem("userAvatar", avatar);
+      } else {
+        localStorage.removeItem("userAvatar");
+      }
 
       setAuth((prev) => {
         const premiumState = extractPremiumState(data, prev);
