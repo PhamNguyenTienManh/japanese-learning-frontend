@@ -71,9 +71,6 @@ function Header() {
             </Button>
             <div className={cx("dropdown-menu")}>
               <Button to="/practice" text>
-                Tổng quan
-              </Button>
-              <Button to="/practice" text>
                 Thi Thử
               </Button>
               <Button to="/reading" text>
