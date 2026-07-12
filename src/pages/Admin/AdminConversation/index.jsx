@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   Check,
+  ChevronDown,
   Edit3,
   FolderOpen,
   Hash,
@@ -121,6 +122,50 @@ function Field({ label, children, className = "" }) {
       <span className="text-xs font-bold uppercase text-slate-500">{label}</span>
       {children}
     </label>
+  );
+}
+
+function AdminSelect({ options, value, onChange, ariaLabel }) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((option) => option.value === value) || options[0];
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = () => setOpen(false);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [open]);
+
+  return (
+    <div className="relative min-w-0" onClick={(event) => event.stopPropagation()}>
+      <button
+        type="button"
+        className={`flex h-11 w-full items-center justify-between gap-2 rounded-lg border bg-white px-3 text-sm font-bold text-slate-800 shadow-sm transition ${open ? "border-slate-700 ring-4 ring-slate-100" : "border-slate-300 hover:border-slate-400"}`}
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className="min-w-0 truncate">{selected?.label || "Chọn"}</span>
+        <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-30 max-h-64 overflow-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl" role="listbox">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={option.value === value}
+              className={`min-h-9 w-full rounded-lg px-3 text-left text-sm font-bold transition ${option.value === value ? "bg-slate-950 text-white" : "bg-transparent text-slate-800 hover:bg-slate-100"}`}
+              onClick={() => { onChange(option.value); setOpen(false); }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -418,8 +463,6 @@ function AdminConversation() {
   /* ====== input styles ====== */
   const inputC =
     "h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-900 shadow-sm outline outline-1 outline-slate-200 placeholder:text-slate-400 focus:border-slate-500 focus:outline-slate-500 focus:ring-4 focus:ring-slate-100 disabled:bg-slate-50 disabled:text-slate-500";
-  const selectC =
-    "h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 shadow-sm outline outline-1 outline-slate-200 focus:border-slate-500 focus:outline-slate-500 focus:ring-4 focus:ring-slate-100";
   const textareaC =
     "min-h-[80px] w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium leading-6 text-slate-900 shadow-sm outline outline-1 outline-slate-200 placeholder:text-slate-400 focus:border-slate-500 focus:outline-slate-500 focus:ring-4 focus:ring-slate-100";
   const btn2 =
@@ -473,15 +516,12 @@ function AdminConversation() {
                 className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-3 text-sm font-medium text-slate-900 shadow-sm outline outline-1 outline-slate-200 placeholder:text-slate-400 focus:border-slate-500 focus:outline-slate-500 focus:ring-4 focus:ring-slate-100"
               />
             </label>
-            <label>
-              <span className="sr-only">Lọc chủ đề</span>
-              <select className={selectC} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
-                <option value="all">Tất cả chủ đề</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.title}</option>
-                ))}
-              </select>
-            </label>
+            <AdminSelect
+              ariaLabel="Lọc chủ đề"
+              value={categoryFilter}
+              onChange={setCategoryFilter}
+              options={[{ value: "all", label: "Tất cả chủ đề" }, ...categories.map((c) => ({ value: c.id, label: c.title }))]}
+            />
           </div>
         </section>
 
@@ -700,15 +740,20 @@ function AdminConversation() {
         {lessonTab === "info" && (
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="Chủ đề">
-              <select className={selectC} value={lessonForm?.categoryId || ""} onChange={(e) => setLessonField("categoryId", e.target.value)}>
-                <option value="">Chọn chủ đề</option>
-                {categories.map((c) => (<option key={c.id} value={c.id}>{c.title}</option>))}
-              </select>
+              <AdminSelect
+                ariaLabel="Chọn chủ đề"
+                value={lessonForm?.categoryId || ""}
+                onChange={(value) => setLessonField("categoryId", value)}
+                options={[{ value: "", label: "Chọn chủ đề" }, ...categories.map((c) => ({ value: c.id, label: c.title }))]}
+              />
             </Field>
             <Field label="Level">
-              <select className={selectC} value={lessonForm?.level || "N5"} onChange={(e) => setLessonField("level", e.target.value)}>
-                {["N5", "N4", "N3", "N2", "N1"].map((lv) => (<option key={lv} value={lv}>{lv}</option>))}
-              </select>
+              <AdminSelect
+                ariaLabel="Chọn level"
+                value={lessonForm?.level || "N5"}
+                onChange={(value) => setLessonField("level", value)}
+                options={["N5", "N4", "N3", "N2", "N1"].map((level) => ({ value: level, label: level }))}
+              />
             </Field>
             <Field label="Tiêu đề">
               <input value={lessonForm?.title || ""} onChange={(e) => setLessonField("title", e.target.value)} className={inputC} />

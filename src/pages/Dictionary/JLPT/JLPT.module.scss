@@ -17,6 +17,144 @@ $yellow-deep: #d4a93f;
   overflow: hidden;
 }
 
+.pdfComposerOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 42, 42, 0.55);
+}
+
+.pdfComposer {
+  width: min(760px, 100%);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 42, 42, 0.25);
+}
+
+.pdfComposerHeader,
+.pdfComposerActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  border-bottom: 1px solid $soft-border;
+
+  h2, p { margin: 0; }
+  p { margin-top: 4px; color: $ink-soft; font-size: 13px; }
+  button { border: 0; background: transparent; cursor: pointer; }
+}
+
+.pdfAddRow {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  padding: 16px 22px;
+
+  button { border: 0; border-radius: 10px; padding: 0 18px; color: #fff; background: var(--primary); font-weight: 700; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+}
+
+.pdfSelect {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.pdfSelectTrigger {
+  width: 100%;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid $soft-border !important;
+  border-radius: 10px !important;
+  padding: 0 12px !important;
+  color: $ink !important;
+  background: #fff !important;
+  font-size: 14px;
+  transition: border-color .18s ease, box-shadow .18s ease;
+
+  span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  svg { color: var(--primary); font-size: 12px; transition: transform .18s ease; }
+}
+
+.pdfSelect.open .pdfSelectTrigger {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(0, 135, 154, .14);
+  svg { transform: rotate(180deg); }
+}
+
+.pdfSelectMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  left: 0;
+  z-index: 20;
+  max-height: 260px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid $soft-border;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 18px 36px -22px rgba(15, 42, 42, .36);
+}
+
+.pdfSelectOption {
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  border-radius: 9px !important;
+  padding: 0 10px !important;
+  color: $ink !important;
+  background: transparent !important;
+  font-size: 13px;
+  text-align: left;
+
+  &:hover { background: $soft-tint !important; }
+  &.selected { color: #fff !important; background: var(--primary) !important; }
+}
+
+.pdfItemHead,
+.pdfItemRow {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 130px 130px 36px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 22px;
+}
+
+.pdfItemHead { color: $ink-soft; background: $soft-bg; font-size: 12px; font-weight: 700; }
+.pdfItemList { min-height: 100px; overflow-y: auto; }
+.pdfItemRow { border-bottom: 1px solid $soft-border; }
+.pdfItemRow input { width: 100%; border: 1px solid $soft-border; border-radius: 8px; padding: 8px; }
+.pdfItemRow button { border: 0; color: #a33; background: transparent; cursor: pointer; }
+.pdfEmpty { padding: 30px; text-align: center; color: $ink-soft; }
+
+.pdfComposerActions {
+  justify-content: flex-end;
+  border-top: 1px solid $soft-border;
+  border-bottom: 0;
+
+  button { border-radius: 10px; padding: 10px 16px; background: $soft-bg; font-weight: 700; }
+  button:last-child { color: #fff; background: var(--primary); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+}
+
+@media (max-width: 600px) {
+  .pdfItemHead { display: none; }
+  .pdfItemRow { grid-template-columns: 1fr 78px 78px 28px; gap: 7px; padding: 10px 14px; }
+  .pdfComposerHeader, .pdfComposerActions, .pdfAddRow { padding-left: 14px; padding-right: 14px; }
+}
+
 .blob1,
 .blob2 {
   position: absolute;
