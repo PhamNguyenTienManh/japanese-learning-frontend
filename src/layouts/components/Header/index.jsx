@@ -8,8 +8,8 @@ import styles from "./Header.module.scss";
 import Logo from "~/components/Logo";
 import { useAuth } from "~/context/AuthContext";
 import NotificationDropdown from "~/components/NotificationDropdown";
+import UserAvatar from "~/components/UserAvatar/UserAvatar";
 import { useNavigate } from "react-router-dom";
-import { getAvatarUrl, handleAvatarError } from "~/utils/avatar";
 const cx = classNames.bind(styles);
 
 function Header() {
@@ -139,13 +139,13 @@ function Header() {
               >
                 <button type="button" className={cx("userTrigger")}>
                   <span className={cx("avatarWrap")}>
-                    <span className={cx("avatar")}>
-                      <img
-                        src={getAvatarUrl(avatar)}
-                        alt={name || "Avatar"}
-                        onError={handleAvatarError}
-                      />
-                    </span>
+                    <UserAvatar
+                      src={avatar}
+                      name={name || email}
+                      alt={name || "Avatar"}
+                      className={cx("avatar")}
+                      fallbackClassName={cx("avatar", "avatarFallback")}
+                    />
                     {isPremium && (
                       <span className={cx("premiumBadge")} title="Premium">
                         <FontAwesomeIcon icon={faCrown} />
@@ -160,13 +160,13 @@ function Header() {
                 <div className={cx("dropdown-menu", "right")}>
                   <div className={cx("userMenuHeader")}>
                     <span className={cx("userMenuAvatarWrap")}>
-                      <span className={cx("userMenuAvatar")}>
-                        <img
-                          src={getAvatarUrl(avatar)}
-                          alt={name || "Avatar"}
-                          onError={handleAvatarError}
-                        />
-                      </span>
+                      <UserAvatar
+                        src={avatar}
+                        name={name || email}
+                        alt={name || "Avatar"}
+                        className={cx("userMenuAvatar")}
+                        fallbackClassName={cx("userMenuAvatar", "userMenuAvatarFallback")}
+                      />
                       {isPremium && (
                         <span className={cx("premiumBadge", "menu")} title="Premium">
                           <FontAwesomeIcon icon={faCrown} />
