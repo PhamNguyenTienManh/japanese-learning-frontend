@@ -566,8 +566,8 @@ function Admin() {
       </section>
 
       <Panel
-        title="Post Moderation Analytics"
-        subtitle="Precision, recall, F1 và Precision-Recall Curve"
+        title="Content Moderation Analytics"
+        subtitle="Precision, recall, F1 cho bài viết, bình luận và phản hồi"
         className="ai-metrics-panel"
         action={
           <div
